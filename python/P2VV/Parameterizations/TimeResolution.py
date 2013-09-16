@@ -45,12 +45,13 @@ class TimeResolution ( _util_parse_mixin, _util_extConstraints_mixin, _util_cond
 
 class Truth_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
+        namePF = self.getNamePrefix(kwargs)
         from P2VV.RooFitWrappers import ResolutionModel
         self._parseArg( 'time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
 
         self._check_extraneous_kw( kwargs )
         from ROOT import RooTruthModel as TruthModel
-        TimeResolution.__init__( self, Model = ResolutionModel( Name = 'timeResModelTruth'
+        TimeResolution.__init__( self, Model = ResolutionModel( Name = namePF + 'timeResModelTruth'
                                                                , Type = TruthModel
                                                                , Parameters = [ self._time ]
                                                               )
@@ -181,7 +182,7 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                                                            , Coefficients = [ self._sf2_offset, self._sf2_slope ] )
                 self._parseArg( 'sfc_slope', kwargs, Value = -3.41081, MinMax = (-20, 20) )
                 self._parseArg( 'sfc_offset', kwargs, Value = 1.43297, MinMax = (-20, 20) )
-                self._comb = self._parseArg( 'timeResComb_linear', kwargs, ObjectType = 'PolyVar', ObsVar = self.__st_placeholder,
+                self._comb = self._parseArg( 'timeResComb_linear', kwargs, ObjectType = 'PolyVar', ObsVar = self.__st_placeholder
                                             , Coefficients = [ self._sfc_offset, self._sfc_slope ] )
             else:
                 self._comb = self._parseArg(  'timeResComb', kwargs

@@ -1,6 +1,8 @@
 
 
 
+
+
 ############################################################################################################
 ## Specify paths and paramters ##
 ################################
@@ -10,10 +12,13 @@ globalOutputFolder = '/project/bfys/vsyropou/PhD/macros/iterativeAngAcc/output/'
 mcTupleFile = 'Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20130628.root'
 mcTuplePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/' + mcTupleFile
 # sData input file
-sDataPath    = '/project/bfys/vsyropou/data/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp_sWeights.root'
+sDataPath    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_noKKMassBins_2TagCats.root'
+             # '/project/bfys/vsyropou/data/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp_sWeights.root'
              # '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_6KKMassBins_2TagCats.root' 
-sDataName    = 'DecayTree'  #'JpsiKK_sigSWeight'
-sWeightsName = 'sWeight'    #'N_sigMass_sw'
+             # '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_noKKMassBins_2TagCats.root'
+sDataName    = 'JpsiKK_sigSWeight' # 'DecayTree' # 'JpsiKK_sigSWeight'
+sWeightsName = 'N_sigMass_sw' # 'sWeight'   # 'N_sigMass_sw' # 'weightVar'
+sDataType    =  'RooDataSet' # 'TTree'     # 'RooDataSet'
       
 # Time acceptance
 timeEffPath       = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs_HltPropertimeAcceptance_Data-20120816.root'
@@ -38,36 +43,39 @@ initDataParameters = dict(ParNamePrefix   = 'data_initVals'
                        ,lambdaCPSq  = 0.901019**2
                        )
 # varius flags / parameters
-makePlots = True
+makePlots = False
 physWeightName = 'weightPhys'
 
 ############################################################################################################
 ## Begin iterative procedure ##
 ################################
-from P2VV.Utilities.MCReweighting import matchMCphysics2Data, matchWeightedDistributions, \
-                                         compareWeightedDistributions, buildBs2JpsiKK2011sFit
+from P2VV.Utilities.MCReweighting import MatchMCphysics2Data, MatchWeightedDistributions, \
+                                         CompareWeightedDistributions, BuildBs2JpsiKK2011sFit
 from P2VV.RooFitWrappers import RooObject
 from ROOT import TFile
 
 worksp = RooObject( workspace = 'iterativeAngularAcceptance' ).ws()
 
-# #  Build data pdf for sFiting ( This pdf is not multiplied by the angular acceptance )
-# Bs2JpsiKK2011sFit = buildBs2JpsiKK2011sFit( dataSetPath = sDataPath,
-#                                dataSetName = sDataName,
-#                                timeEffHistFile = timeEffPath, 
-#                                timeEffHistUBName    = timeEffUBName,
-#                                timeEffHistExclBName = timeEffExclBName, 
-#                                angEffMomentsFile    = angEffMomentsFile, 
-#                                parFileIn = None  , 
-#                                parFileOut = None  , 
-                        
-#                                )
-# dataPdf = Bs2JpsiKK2011sFit.getPdf() 
 
-# # Build MC pdf
-matchPhysics = matchMCphysics2Data( mcTuplePath )
-matchPhysics.buildMonteCarloPdf( modelSwave=True )
+#  Build data pdf for sFiting ( This pdf is not multiplied by the angular acceptance )
+Bs2JpsiKK2011sFit = BuildBs2JpsiKK2011sFit( dataSetPath          = sDataPath,
+                                            dataSetName          = sDataName,
+                                            timeEffHistFile      = timeEffPath, 
+                                            timeEffHistUBName    = timeEffUBName,
+                                            timeEffHistExclBName = timeEffExclBName, 
+                                            KKmassBins           = None  , # '4KKMassBins',
+                                            parFileIn            = None  , 
+                                            parFileOut           = None  , 
+                                            )
+# Build MC pdf
+matchPhysics = MatchMCphysics2Data( mcTuplePath )
+matchPhysics.buildMonteCarloPdf( dataPdfBuilder=Bs2JpsiKK2011sFit.getPdfBuilderObject() )
+
 mcPdf = matchPhysics.getPdf() # Monte Carlo pdf
+dataPdf = Bs2JpsiKK2011sFit.getPdf() 
+
+
+assert False
 
 for iterNumb in range(1,3):
     print 'P2VV - INFO: Iteration number ' +str(iterNumb) + '.'  
@@ -79,7 +87,7 @@ for iterNumb in range(1,3):
         dataParameters = initDataParameters # Specify pdf paramters from the sFit at the end of the loop
         mcData = matchPhysics.getInitialMCafterSel()
     else: 
-       mcData =  momReweightOutputFile 
+       mcData =  reweightedData
 
     # Calculate and write physics matcing weights
     matchPhysics.calculateWeights( iterNumb, dataParameters, mcData )
@@ -96,8 +104,8 @@ for iterNumb in range(1,3):
  ############################################################################################################
  ## Reweight Kaon momenta of the previously reweighted MC to match the Kaon momenta of sData.##
  ##############################################################################################
-    reweightArgs = dict( inTree         = physReweightOutput # Distribution to be modified 
-                         outTree        = TFile.Open(sDataPath).Get(sDataName) # Distribution to be matched with,
+    reweightArgs = dict( inTree         = physReweightOutput, # Distribution to be modified 
+                         outTree        = TFile.Open(sDataPath).Get(sDataName), # Distribution to be matched with
                          whichVars      = ['Kminus_P'],
                          inWeightName   = matchPhysics.getWeightName(),
                          outWeightName  = sWeightsName,
@@ -110,9 +118,21 @@ for iterNumb in range(1,3):
     matchMC2Data.reweightMC( matchPhysics.getObservables(), copyVars= matchPhysics.getNtupleVars() )
     reweightedData = matchMC2Data.getDataSet()
     
-    if makePlots: i,j = compareWeightedDistributions( TFile.Open(sDataPath).Get(sDataName), \
+    if makePlots: 
+        # Check if the reweighting worked.
+        comp = compareWeightedDistributions( TFile.Open(sDataPath).Get(sDataName), \
                                                   reweightedData.buildTree(), 'Kminus_P', weight = sWeightsName)
+        #Check B_P  between sWeighted data and mc.
+ 
 
+
+
+
+    assert False
+
+
+
+    reweightedData = TFile.Open('/project/bfys/vsyropou/PhD/macros/iterativeAngAcc/output/MomRewMC_1_Iter.root').Get('MomRewMC_1_Iter')
 ################################################################################################################
 ## Compute angular efficiency moments for the new reweighted MC sample.##
 #########################################################################
@@ -141,43 +161,56 @@ for iterNumb in range(1,3):
 # ############################################################################################################
 # ## Perform sFit on data using the new angular acceptance.##
 # #########################################################################
-    assert False
-    # Read efficiency moments file
-    # from P2VV.Parameterizations.AngularFunctions import JpsiphiHelicityAngles     as AngleFuncs
-    # angleFuncs = AngleFuncs( cpsi = observables['cpsi'], ctheta = observables['ctheta'], phi = observables['phi'] )
+   
+    # #Read efficiency moments file
+    from P2VV.Parameterizations.AngularFunctions import JpsiphiHelicityAngles     as AngleFuncs
+    angleFuncs = AngleFuncs( cpsi = observables['cpsi'], ctheta = observables['ctheta'], phi = observables['phi'] )
     
-    # Multiply pure pdf with angular acceptance
-    # from P2VV.Utilities.DataMoments import angularMomentIndices
-    # moments = RealMomentsBuilder()
-    # moments.appendPYList( angleFuncs.angles, angularMomentIndices(multiplyByAngEff,angleFuncs ) )
-    # moments.read(globalOutputFolder + effWieghtsOutputFile)
-    # moments.Print()
-    # dataPdfAngAcc = moments * dataPdf
+    # #Multiply pure pdf with angular acceptance
+    from P2VV.Utilities.DataMoments import angularMomentIndices
+    moments = RealMomentsBuilder()
+    moments.appendPYList( angleFuncs.angles, angularMomentIndices(multiplyByAngEff,angleFuncs ) )
+    moments.read(globalOutputFolder + effWieghtsOutputFile)
+    moments.Print()
+    dataPdfAngAcc = moments * dataPdf
 
 
-#     # do Fit
-#     Bs2JpsiKK2011sFit.doFit( iterNumb )
+    # do Fit
+    Bs2JpsiKK2011sFit.doFit( iterNumb )
 
-#     # grab the fit result
-#     sFitResult = Bs2JpsiKK2011sFit.getFitResult( iterNumb )   
+    # grab the fit result
+    sFitResult = Bs2JpsiKK2011sFit.getFitResult( iterNumb )   
 
-#     sFitParameters = dict( prefix   = 'data_%s_Iter'%iterNumb
-#                             ,AperpMag2   = sFitResult.find('AperpMag2')
-#                             ,AperpPhase  = sFitResult.find('AperpPhase')
-#                             ,A0Mag2      = sFitResult.find('A0Mag2')
-#                             ,A0Phase     =  0 # cosntrained
-#                             ,AparPhase   = sFitResult.find('AparPhase')
-#                             ,ASOddPhase  = sFitResult.find('ASOddPhase')
-#                             ,f_S         = sFitResult.find('f_S')
-#                             ,C_SP        = sFitResult.find('C_SP')
-#                             ,dM          = sFitResult.find('')
-#                             ,dGamma      = sFitResult.find('')
-#                             ,Gamma       = sFitResult.find('')
-#                             ,phiCP       = sFitResult.find('')
-#                             ,lambdaCPSq  = sFitResult.find('')
-#                             )
-
-
+    sFitParameters = dict( prefix   = 'data_%s_Iter'%iterNumb
+                            ,AperpMag2   = sFitResult.find('AperpMag2')
+                            ,AperpPhase  = sFitResult.find('AperpPhase')
+                            ,A0Mag2      = sFitResult.find('A0Mag2')
+                            ,A0Phase     =  0 # cosntrained
+                            ,AparPhase   = sFitResult.find('AparPhase')
+                            ,ASOddPhase  = sFitResult.find('ASOddPhase')
+                            ,f_S         = sFitResult.find('f_S')
+                            ,C_SP        = sFitResult.find('C_SP')
+                            ,dM          = sFitResult.find('')
+                            ,dGamma      = sFitResult.find('')
+                            ,Gamma       = sFitResult.find('')
+                            ,phiCP       = sFitResult.find('')
+                            ,lambdaCPSq  = sFitResult.find('')
+                            )
 
 
 
+
+
+# Improvements idea:
+#  Modulate the building of pdfs in the classes matchMCphysics2Data and matchWeightedDistributions
+# Unify the two classes into 1.
+
+
+# Temp shortcuts
+# dataPdf.getPdf(worksp.cat('KKMassCat').lookupType(0).GetName()).Print()
+
+
+# >>>dataPdf.getPdf(worksp.cat('KKMassCat').lookupType(0).GetName()).Print()
+# RooBTagDecay::data_sig_t_angles_bin0[ time=time iTag0=iTagOS iTag1=iTagSS fTag=NULL tagCat0=tagCatP2VVOS tagCat1=tagCatP2VVSS tau=data_MeanLifetime dGamma=data_dGamma dm=data_dM dilutions0=(data_tagDilution0_0,data_tagDilutionOS1) dilutions1=(data_tagDilution1_0,data_tagDilutionSS1) ADilWTags0=(data_ADilWTag0_0,data_ADilWTagOS1) ADilWTags1=(data_ADilWTag1_0,data_ADilWTagSS1) ANorm=NULL avgCEvenSum=data_avgCEvenSum avgCOddSum=data_avgCOddSum coshCoef=data_coshCoef_bin0 sinhCoef=data_sinhCoef_bin0 cosCoef=data_cosCoef_bin0 sinCoef=data_sinCoef_bin0 createdVars=() tagCatCoefs0=(data_sig_t_angles_tagCatCoef0,data_tagCatCoef0-1) tagCatCoefs1=(data_tagCatCoef1-0,data_tagCatCoef1-1) avgCEvens0=(data_sig_t_angles_avgCEven0,data_avgCEvenSSTagged) avgCOdds0=(data_sig_t_angles_avgCOdd0,data_avgCOddSSTagged) avgCEvens1=(data_avgCEvenOSTagged,data_avgCEvenTagged) avgCOdds1=(data_avgCOddOSTagged,data_avgCOddTagged) ] = 0.402156
+# >>> mcPdf.Print()
+# RooBTagDecay::_sig_t_angles_tagCat_iTag[ time=truetime iTag0=NULL iTag1=iTag fTag=NULL tagCat0=NULL tagCat1=NULL tau=mc_MeanLifetime dGamma=mc_dGamma dm=mc_dM dilutions0=() dilutions1=(mc_one) ADilWTags0=() ADilWTags1=(mc_zero) ANorm=NULL avgCEvenSum=one avgCOddSum=zero coshCoef=mc_coshCoef sinhCoef=mc_sinhCoef cosCoef=mc_cosCoef sinCoef=mc_sinCoef createdVars=() avgCEvens0=(one) avgCOdds0=(zero) ] = 9.66352

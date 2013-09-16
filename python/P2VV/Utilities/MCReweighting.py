@@ -6,7 +6,7 @@
 ##                                                                                                                                       ##
 ###########################################################################################################################################
 
-def compareWeightedDistributions(tree, sTree, var, **kwargs):
+def CompareWeightedDistributions(tree, sTree, var, **kwargs):
     sVar      =  kwargs.pop('sVar',      None        )
     cut       =  kwargs.pop('cut',       None        )
     sCut      =  kwargs.pop('sCut',      None        )
@@ -240,23 +240,25 @@ class UniFunc:
 
 
 # Vertical reweighting class of MC to match the physics of sWeighted data.
-class matchMCphysics2Data():
-    def __init__( self,nTupleFile, nTupleName = 'DecayTree' ):
+class MatchMCphysics2Data():
+    def __init__( self,nTupleFile, **kwargs ):
         print 'P2VV - INFO: Initialised physics reweighting class: matchMCphysics2Data().'
+        self._pref       = kwargs.pop('ParNamePrefix','')
         self._nTupleFile = nTupleFile
-        self._nTupleName = nTupleName
+        self._nTupleName = kwargs.pop('nTupleName', 'DecayTree')
         self._allWeights = {}
+        
+        self._trueTime   = kwargs.pop('trueTime',  True) 
+        self._modelSwave = kwargs.pop('modelSwave', True) 
 
-    def buildMonteCarloPdf(self,TIME=True,modelSwave=False):
-        # Build Mc pdf
+    def buildMonteCarloPdf( self, dataPdfBuilder=None ):
+        if not dataPdfBuilder: assert False, 'P2VV - ERORR: Build data pdf first and provide the pdf builder object.'
         from math import pi, sin, cos, sqrt
 
         # job parameters
-      #  physPdf     = True
         tResModel   = ''
         trigger     = ''
         timeInt     = False
-        self._TIME = TIME
 
         # transversity amplitudes
         A0Mag2Val    = 0.60
@@ -265,28 +267,15 @@ class matchMCphysics2Data():
         A0PhVal    =  0.
         AperpPhVal = -0.17
         AparPhVal  =  2.50
-
-        AngAmpsParsVals = {}        
-        AngAmpsParsVals['A0Mag2']    = A0Mag2Val
-        AngAmpsParsVals['AperpMag2'] = AperpMag2Val
-        AngAmpsParsVals['AparMag2']  = AparMag2Val
-        AngAmpsParsVals['A0Ph']      = A0PhVal 
-        AngAmpsParsVals['AperpPh']   = AperpPhVal
-        AngAmpsParsVals['AparPh']    = AparPhVal
-
+    
         # CP violation parameters
         phiCPVal      = -0.04
-        AngAmpsParsVals['phiCP'] = phiCPVal
 
         # B lifetime parameters
         GammaVal  = 0.679
         dGammaVal = 0.060
         dMVal     = 17.8
         tResSigma = 0.045
-
-        AngAmpsParsVals['Gamma']  = GammaVal
-        AngAmpsParsVals['dGamma'] = dGammaVal
-        AngAmpsParsVals['dM']     = dMVal 
 
         angleNames = ( 'cos#kern[0.1]{#theta_{K}}', 'cos#kern[0.1]{#theta_{l}}', '#varphi [rad]' )
         effLabels  = (  '#int d_{}cos#theta_{#mu} d#varphi #varepsilon_{#Omega}(#Omega) / (4#pi #LT#varepsilon_{#Omega}#GT)'
@@ -301,53 +290,34 @@ class matchMCphysics2Data():
         # import RooFit wrappers
         from P2VV.Load import RooFitOutput
 
+        # Set global object prefix
+        from P2VV.Parameterizations.GeneralUtils import setParNamePrefix
+        setParNamePrefix( 'mc' )
+
         # angular functions
-        from P2VV.Parameterizations.AngularFunctions import JpsiphiHelicityAngles as AngleFuncs
-        angleFuncs = AngleFuncs( cpsi = 'helcosthetaK', ctheta = 'helcosthetaL', phi = 'helphi' )
+        #from P2VV.Parameterizations.AngularFunctions import JpsiphiHelicityAngles as AngleFuncs
+        #self._angleFuncs = AngleFuncs( cpsi = 'helcosthetaK', ctheta = 'helcosthetaL', phi = 'helphi' )
+        self._angleFuncs = dataPdfBuilder['angleFuncs']
 
-        # variables in PDF
-        from P2VV.RooFitWrappers import RealVar, Category
-        time     = RealVar(  'time',     Title = 'Decay time',      Unit = 'ps', Observable = True, Value = 0.5, MinMax = ( 0.3, 14. ) )
-        trueTime = RealVar(  'truetime', Title = 'True decay time', Unit = 'ps', Observable = True, Value = 0.,  MinMax = ( 0.,  20. ) )
-        iTag     = Category( 'iTag', Title = 'Initial state flavour tag', Observable = True, States = { 'Untagged' : 0 } )
-        angles   = [ angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] ]
+        # get observables.
+        self._obsSet = dataPdfBuilder['obsSetP2VV']        
+        for obs in self._obsSet: 
+                if obs.GetName() == 'time': 
+                    time = obs
+                    break
+        if self._trueTime: 
+            from P2VV.RooFitWrappers import RealVar    
+            trueTime = RealVar( 'truetime', Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0.5, MinMax = ( 0.3, 14. ))
+            self._obsSet.remove( time )
+            self._obsSet.append( trueTime )
+     
+        from  P2VV.RooFitWrappers import Category
+        iTag = Category('iTag',     Title = 'Initial state flavour tag',    Observable = True, States = { 'Untagged' : 0 } )
+        self._obsSet.append( iTag )
 
-        # ntuple variables
-        B_P        = RealVar( 'B_P',        Title='B_P',          Unit = 'MeV/c',    Observable = False,  MinMax = ( 0  , 1e7 )   )
-        B_PT       = RealVar( 'B_Pt',       Title='B_Pt',         Unit = 'MeV/c',    Observable = False,  MinMax = ( 0  , 1e7 )   )
-        Kplus_P    = RealVar( 'Kplus_P',    Title = 'Kplus_P',    Unit = 'MeV/c',    Observable = False,  MinMax = ( 0  , 1e7 )   )
-        Kplus_PX   = RealVar( 'Kplus_PX',   Title = 'Kplus_PX',   Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
-        Kplus_PY   = RealVar( 'Kplus_PY',   Title = 'Kplus_PY',   Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
-        Kplus_PZ   = RealVar( 'Kplus_PZ',   Title = 'Kplus_PZ',   Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
-        Kminus_P   = RealVar( 'Kminus_P',   Title = 'Kminus_P',   Unit = 'MeV/c',    Observable = False,  MinMax = ( 0  , 1e7 )   )
-        Kminus_PX  = RealVar( 'Kminus_PX',  Title = 'Kminus_PX',  Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
-        Kminus_PY  = RealVar( 'Kminus_PY',  Title = 'Kminus_PY',  Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
-        Kminus_PZ  = RealVar( 'Kminus_PZ',  Title = 'Kminus_PZ',  Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
-        muplus_P   = RealVar( 'muplus_P',   Title = 'muplus_P',   Unit = 'MeV/c',    Observable = False,  MinMax = ( 0  , 1e7 )   )
-        muplus_PX  = RealVar( 'muplus_PX',  Title = 'muplus_PX',  Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
-        muplus_PY  = RealVar( 'muplus_PY',  Title = 'muplus_PY',  Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
-        muplus_PZ  = RealVar( 'muplus_PZ',  Title = 'muplus_PZ',  Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
-        muminus_P  = RealVar( 'muminus_P',  Title = 'muminus_P',  Unit = 'MeV/c',    Observable = False,  MinMax = ( 0  , 1e7 )   )
-        muminus_PX = RealVar( 'muminus_PX', Title = 'muminus_PX', Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
-        muminus_PY = RealVar( 'muminus_PY', Title = 'muminus_PY', Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
-        muminus_PZ = RealVar( 'muminus_PZ', Title = 'muminus_PZ', Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
-        ntupleVars = [ Kplus_P, Kplus_PX, Kplus_PY, Kplus_PZ, Kminus_P, Kminus_PX, Kminus_PY, Kminus_PZ,\
-                       muminus_P, muminus_PX, muminus_PY, muminus_PZ, muplus_P, muplus_PX, muplus_PY, muplus_PZ, B_P, B_PT]
-
-        obsSet = [ trueTime if TIME else time ] + angles 
-
-        # read ntuple
-        bkgcatCut      = '(bkgcat == 0 || bkgcat == 50)'
-        trackChiSqCuts = 'muplus_track_chi2ndof < 4. && muminus_track_chi2ndof < 4. && Kplus_track_chi2ndof < 4. && Kminus_track_chi2ndof < 4.'
-        massCuts       = 'mass > 5200. && mass < 5550. && mdau1 > 3030. && mdau1 < 3150. && mdau2 > 990. && mdau2 < 1050.'
-        timeCuts       = 'time > 0.3 && time < 14. && sigmat < 0.12'
-        tagCuts        = '(tagdecision == 0 || tagdecision == -1 || tagdecision == +1)'
-
-        from P2VV.Utilities.DataHandling import readData
-        cuts = bkgcatCut + ' && ' + trackChiSqCuts + ' && ' + massCuts + ' && ' + timeCuts + ' && ' + tagCuts
-        cuts = 'sel == 1 && sel_cleantail==1 && (hlt1_unbiased_dec == 1 || hlt1_biased == 1) && hlt2_biased == 1 && ' + cuts
-        data = readData(  self._nTupleFile, dataSetName = self._nTupleName, NTuple = True, observables = obsSet+ntupleVars, ntupleCuts = cuts )
-
+        # Read data
+        self._readMonteCarloData()
+        
         #####################################################################
         ## build the B_s -> J/psi phi signal time, angular and tagging PDF ##
         #####################################################################
@@ -368,7 +338,7 @@ class matchMCphysics2Data():
         tResArgs = { }
         if tResModel == 'Gauss' :
             from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
-            tResArgs['time']         = time
+            tResArgs['time']         = self._obsSettime
             tResArgs['timeResSigma'] = tResSigma
         elif tResModel == '3Gauss' :
             from P2VV.Parameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
@@ -381,16 +351,15 @@ class matchMCphysics2Data():
         # CP violation parameters
         from P2VV.Parameterizations.CPVParams import LambdaSqArg_CPParam as CPParam
         lambdaCP = CPParam( lambdaCPSq = 1., phiCP = phiCPVal )
-        AngAmpsParsVals['lambdaCPSq'] = 1.
-
+   
         # tagging parameters
         from P2VV.Parameterizations.FlavourTagging import Trivial_TaggingParams as TaggingParams
         taggingParams = TaggingParams()
 
         # coefficients for time functions
         from P2VV.Parameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients as TimeBasisCoefs
-        index = [ 'A0', 'Apar', 'Aperp', 'AS' ] if modelSwave else [ 'A0', 'Apar', 'Aperp' ]
-        timeBasisCoefs = TimeBasisCoefs( angleFuncs.functions, amplitudes, lambdaCP, [ 'A0', 'Apar', 'Aperp' ] )
+        index = [ 'A0', 'Apar', 'Aperp', 'AS' ] if self._modelSwave else [ 'A0', 'Apar', 'Aperp' ]
+        timeBasisCoefs = TimeBasisCoefs( self._angleFuncs.functions, amplitudes, lambdaCP, index )
         
         # build underlying physics PDF
         args = dict(    time            = time if tResModel in [ 'Gauss', '3Gauss' ] else trueTime
@@ -410,15 +379,59 @@ class matchMCphysics2Data():
                       )
 
         from P2VV.RooFitWrappers import BTagDecay
-        self._pdf = pdf = BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
-        self._initData = data
-        self._cuts = cuts
-
-        self._angleFuncs = angleFuncs
-        self._obsSet     = obsSet
-        self._ntupleVars = ntupleVars
+        self._pdf = pdf = BTagDecay(self._pref + '_sig_t_angles_tagCat_iTag', **args )
         
-        self._AngAmpsParsVals = AngAmpsParsVals
+        self._AngAmpsParsVals = dict(A0Mag2Val=A0Mag2Val, 
+                                     AperpMag2Val=AperpMag2Val,
+                                     AparMag2Val=AparMag2Val,
+                                     A0PhVal=A0PhVal,
+                                     AperpPhVal=AperpPhVal,
+                                     AparPhVal=AparPhVal,
+                                     phiCPVal=phiCPVal,
+                                     GammaVal=GammaVal,
+                                     dGammaVal=dGammaVal,
+                                     dMVal=dMVal,
+                                     tResSigma=tResSigma,
+                                     lambdaCPSq=1)     
+        
+
+    def _readMonteCarloData(self):
+        # ntuple variables
+        from P2VV.RooFitWrappers import RealVar
+        B_P        = RealVar( 'B_P',        Title='B_P',          Unit = 'MeV/c',    Observable = False,  MinMax = ( 0  , 1e7 )   )
+        B_PT       = RealVar( 'B_Pt',       Title='B_Pt',         Unit = 'MeV/c',    Observable = False,  MinMax = ( 0  , 1e7 )   )
+        Kplus_P    = RealVar( 'Kplus_P',    Title = 'Kplus_P',    Unit = 'MeV/c',    Observable = False,  MinMax = ( 0  , 1e7 )   )
+        Kplus_PX   = RealVar( 'Kplus_PX',   Title = 'Kplus_PX',   Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
+        Kplus_PY   = RealVar( 'Kplus_PY',   Title = 'Kplus_PY',   Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
+        Kplus_PZ   = RealVar( 'Kplus_PZ',   Title = 'Kplus_PZ',   Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
+        Kminus_P   = RealVar( 'Kminus_P',   Title = 'Kminus_P',   Unit = 'MeV/c',    Observable = False,  MinMax = ( 0  , 1e7 )   )
+        Kminus_PX  = RealVar( 'Kminus_PX',  Title = 'Kminus_PX',  Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
+        Kminus_PY  = RealVar( 'Kminus_PY',  Title = 'Kminus_PY',  Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
+        Kminus_PZ  = RealVar( 'Kminus_PZ',  Title = 'Kminus_PZ',  Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
+        muplus_P   = RealVar( 'muplus_P',   Title = 'muplus_P',   Unit = 'MeV/c',    Observable = False,  MinMax = ( 0  , 1e7 )   )
+        muplus_PX  = RealVar( 'muplus_PX',  Title = 'muplus_PX',  Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
+        muplus_PY  = RealVar( 'muplus_PY',  Title = 'muplus_PY',  Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
+        muplus_PZ  = RealVar( 'muplus_PZ',  Title = 'muplus_PZ',  Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
+        muminus_P  = RealVar( 'muminus_P',  Title = 'muminus_P',  Unit = 'MeV/c',    Observable = False,  MinMax = ( 0  , 1e7 )   )
+        muminus_PX = RealVar( 'muminus_PX', Title = 'muminus_PX', Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
+        muminus_PY = RealVar( 'muminus_PY', Title = 'muminus_PY', Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
+        muminus_PZ = RealVar( 'muminus_PZ', Title = 'muminus_PZ', Unit = 'MeV/c',    Observable = False,  MinMax = (-1e7, 1e7 )   )
+        
+        self._ntupleVars = [ Kplus_P, Kplus_PX, Kplus_PY, Kplus_PZ, Kminus_P, Kminus_PX, Kminus_PY, Kminus_PZ,\
+                             muminus_P, muminus_PX, muminus_PY, muminus_PZ, muplus_P, muplus_PX, muplus_PY, muplus_PZ, B_P, B_PT ]
+        
+        bkgcatCut      = '(bkgcat == 0 || bkgcat == 50)'
+        trackChiSqCuts = 'muplus_track_chi2ndof < 4. && muminus_track_chi2ndof < 4. && Kplus_track_chi2ndof < 4. && Kminus_track_chi2ndof < 4.'
+        massCuts       = 'mass > 5200. && mass < 5550. && mdau1 > 3030. && mdau1 < 3150. && mdau2 > 990. && mdau2 < 1050.'
+        timeCuts       = 'time > 0.3 && time < 14. && sigmat < 0.12'
+        tagCuts        = '(tagdecision == 0 || tagdecision == -1 || tagdecision == +1)'
+
+        from P2VV.Utilities.DataHandling import readData
+        cuts = bkgcatCut + ' && ' + trackChiSqCuts + ' && ' + massCuts + ' && ' + timeCuts + ' && ' + tagCuts
+        cuts = 'sel == 1 && sel_cleantail==1 && (hlt1_unbiased_dec == 1 || hlt1_biased == 1) && hlt2_biased == 1 && ' + cuts
+        data = readData(  self._nTupleFile, dataSetName = self._nTupleName, NTuple = True, observables = self._obsSet+self._ntupleVars, ntupleCuts = cuts )
+
+        self._initData = data
 
 
     def setMonteCarloParameters(self, pars=None):
@@ -539,9 +552,8 @@ class matchMCphysics2Data():
         return self._allWeights
 
 
-
 # Match MC to sWeighted data with horizontal reweighting of B_P and recalculate angles.
-class matchWeightedDistributions():
+class MatchWeightedDistributions():
     def __init__( self,  **kwargs ):
         print 'P2VV - INFO: Initialised kinematic reweighting class: matchWeightedDistributions().'
         self._inTree      = kwargs.pop('inTree')
@@ -717,23 +729,22 @@ class matchWeightedDistributions():
 
 
 
-class buildBs2JpsiKK2011sFit():
+class BuildBs2JpsiKK2011sFit():
     def __init__(self,**kwargs):
         print 'P2VV - INFO: Initialised physics reweighting class: buildBs2JpsiKK2011sFit().'
         from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_2011Analysis as PdfConfig
         pdfConfig = PdfConfig()
-    
+
         pdfConfig['timeEffHistFile']      = kwargs.pop('timeEffHistFile')
         pdfConfig['timeEffHistUBName']    = kwargs.pop('timeEffHistUBName')
         pdfConfig['timeEffHistExclBName'] = kwargs.pop('timeEffHistExclBName')
     
         self._dataSetPath =  kwargs.pop('dataSetPath', None)
         self._dataSetName =  kwargs.pop('dataSetName', None)
+        self._dataType    =  kwargs.pop('dataType', 'TTree')
    
         parFileIn  = kwargs.pop( 'parFileIn',  '' )
         parFileOut = kwargs.pop( 'parFileOut', '' )
-
-        pdfConfig['selection']  = 'paper2012'                
         
         # fit options
         pdfConfig['fitOptions'] = kwargs.pop( 'fitOpts', None)
@@ -748,7 +759,7 @@ class buildBs2JpsiKK2011sFit():
                                              )
         self._FitResults = {} # Save all the fit results
 
-        self._corrSFitErr     = 'sumWeight' # '' / 'sumWeight' / ( 0.887, [ 0.566, 0.863, 0.956, 0.948, 0.855, 0.662 ] ) / 'matrix'
+        self._corrSFitErr     = '' #  'sumWeight' 
         randomParVals   = ( ) # ( 1., 12345 )
         self._MinosPars = [#  'AparPhase'
                            #, 'f_S_bin0',        'f_S_bin1',        'f_S_bin2',        'f_S_bin3',        'f_S_bin4',        'f_S_bin5'
@@ -756,30 +767,20 @@ class buildBs2JpsiKK2011sFit():
                           ]
 
         # PDF options 
-        pdfConfig['multiplyByTimeEff']    = 'signal'
+        KKmassParam = kwargs.pop( 'KKmassBins', None )
         pdfConfig['timeEffType']          = 'paper2012'
-        pdfConfig['multiplyByAngEff']     = '' #'weights'
-        pdfConfig['parameterizeKKMass']   = 'simultaneous'
-        pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ]
-        pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.067, 0.029), (0.008, 0.011), (0.016, 0.011), (0.055, 0.026), (0.17,  0.04) ]
-                                             , [ (1.3,  0.7 ), (0.77,  0.28 ), (0.50,  0.47 ), (-0.51, 0.25 ), (-0.46, 0.21 ), (-0.65, 0.20) ] )
-        pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
+        pdfConfig['anglesEffType']        = '' 
+        pdfConfig['KKMassBinBounds']      = [ 990., 1050. ] if  not KKmassParam else [ 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12. ]
+        pdfConfig['CSPValues']            = [ 0.498]        if not KKmassParam else [ 0.959, 0.770, 0.824, 0.968 ] 
 
         KKMassPars = pdfConfig['obsDict']['KKMass']
         pdfConfig['obsDict']['KKMass'] = ( KKMassPars[0], KKMassPars[1], KKMassPars[2]
                                          , 1020., pdfConfig['KKMassBinBounds'][0], pdfConfig['KKMassBinBounds'][-1] )
         
-        pdfConfig['sameSideTagging']    = True
-        pdfConfig['conditionalTagging'] = True
-        pdfConfig['continuousEstWTag']  = True
         pdfConfig['constrainTagging']   = 'constrain'
-        
         pdfConfig['timeResType']           = 'eventNoMean'
         pdfConfig['numTimeResBins']        = 40
-        pdfConfig['constrainTimeResScale'] = 'constrain'
-        
         pdfConfig['constrainDeltaM'] = 'constrain'
-        
         pdfConfig['lambdaCPParam'] = 'lambPhi'
         
         from P2VV.Imports import extConstraintValues
@@ -793,14 +794,16 @@ class buildBs2JpsiKK2011sFit():
         extConstraintValues.setVal( 'P1SS',    (  1.00,  0.16    ) )
         extConstraintValues.setVal( 'DelP1SS', (  0.00,  0.01    ) )
 
-                
-        # get the sWeightedData
+
+        # read Data.
         from P2VV.Utilities.DataHandling import readData
         dataSet = readData( filePath = self._dataSetPath, dataSetName = self._dataSetName,  NTuple = False )
-        pdfConfig['dataSet'] = dataSet
+        pdfConfig['signalData'] = dataSet
+        pdfConfig['readFromWS'] = True
 
-        # build the PDF
+        # build pdf.
         from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
+        pdfConfig['parNamePrefix'] =  'data' # give the data parameters a prefix.
         self._pdfBuild = PdfBuilder( **pdfConfig )
         self._pdf = self._pdfBuild.pdf()
 
@@ -818,17 +821,15 @@ class buildBs2JpsiKK2011sFit():
         if self._corrSFitErr == 'sumWeight'\
                 or ( type(self._corrSFitErr) != str and hasattr( self._corrSFitErr, '__iter__' ) and hasattr( self._corrSFitErr, '__getitem__' ) ) :
             from P2VV.Utilities.DataHandling import correctSWeights
-            self._fitData = correctSWeights( pdfConfig['dataSet'], 'N_cbkgMass_sw'
-                                       , 'KKMassCat' if pdfConfig['parameterizeKKMass'] == 'simultaneous' else ''
+            self._fitData = correctSWeights( dataSet, 'N_cbkgMass_sw'
+                                       , 'KKMassCat' if KKmassParam  else ''
                                        , CorrectionFactors = None if self._corrSFitErr == 'sumWeight' else self._corrSFitErr )
 
         else :
-            self._fitData = pdfConfig['dataSet']
+            self._fitData = dataSet
 
         self._pdfConfig = pdfConfig
-
-
-
+        
 
     def doFit(self,iterNumb, randomParVals=None):
 
@@ -895,3 +896,10 @@ class buildBs2JpsiKK2011sFit():
             self._pdfConfig.writeParametersToFile( filePath = parFileOut )
 
     def getFitResult(self,number):return self._FitResults['iter_%s'%iterNumb]
+
+
+    def getDataSet(self):   return self._fitData
+    def getPdf(self):       return self._pdf
+    def getAngleFuncs(self) : return 0
+    def getPdfBuilderObject(self) : return self._pdfBuild
+ 
