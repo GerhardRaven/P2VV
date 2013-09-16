@@ -490,7 +490,7 @@ class RealMomentsBuilder ( dict ) :
                 from P2VV.RooFitWrappers import P2VVAngleBasis
                 momIndices = ( kwargs.pop('PIndex'), kwargs.pop('YIndex0'), kwargs.pop('YIndex1') )
                 func = P2VVAngleBasis( Name = 'p2vvab', Angles = kwargs.pop('Angles')
-                                      , Indices = ( momIndices[0], 0, momIndices[1], momIndices[2] ) , Coefficient = 1. )
+                                      , Indices = ( momIndices[0], 0, momIndices[1], momIndices[2] ), FixedCoef = 1. )
 
             if not 'PDF' in kwargs and not 'IntSet' in kwargs and not 'NormSet' in kwargs :
                 # build moment

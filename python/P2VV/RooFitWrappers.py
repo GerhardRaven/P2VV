@@ -569,18 +569,20 @@ class P2VVAngleBasis (RooObject) :
         # get arguments
         __check_req_kw__( 'Name',   kwargs )
         __check_req_kw__( 'Angles', kwargs )
-        name   = kwargs.pop('Name')
-        angles = kwargs.pop('Angles')
-        inds   = kwargs.pop( 'Indices', ( 0, 0, 0, 0 ) )
-        coef   = kwargs.pop( 'Coefficient', 1. )
+        name    = kwargs.pop('Name')
+        angles  = kwargs.pop('Angles')
+        coef    = kwargs.pop( 'Coefficient', None )
+        inds    = kwargs.pop( 'Indices', ( 0, 0, 0, 0 ) )
+        fixCoef = kwargs.pop( 'FixedCoef', 1. )
         name += '_%d%d%d%d' % ( inds[0], inds[1], inds[2], inds[3] )
-        if coef != 1. : name += '_%3.2f' % coef
+        if fixCoef != 1. : name += '_%3.2f' % fixCoef
         name = name.replace( '.', 'd' ).replace( '-', 'm' )
 
         # build RooP2VVAngleBasis
         from P2VV.Load import P2VVLibrary
-        spec = 'RooP2VVAngleBasis::%s(%s,%s,%s,%d,%d,%d,%d,%f)'\
-               % ( ( name, ) + tuple( angles[ang].GetName() for ang in ( 'cpsi', 'ctheta', 'phi' ) ) + tuple(inds) + ( coef, ) )
+        spec = 'RooP2VVAngleBasis::%s(%s,%s,%s,%s%d,%d,%d,%d,%f)'\
+               % ( ( name, ) + tuple( angles[ang].GetName() for ang in ( 'cpsi', 'ctheta', 'phi' ) )\
+                 + ( coef.GetName() + ',' if coef else '', ) + tuple(inds) + ( fixCoef, ) )
         self._declare(spec)
         self._init( name, 'RooP2VVAngleBasis' )
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)

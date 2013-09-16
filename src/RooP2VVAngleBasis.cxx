@@ -38,6 +38,24 @@ RooP2VVAngleBasis::RooP2VVAngleBasis(const char *name, const char *title,
   _cpsi("cpsi", "cos(psi)", this, cpsi),
   _ctheta("ctheta", "cos(theta)", this, ctheta),
   _phi("phi", "phi", this, phi),
+  _coef("coef", "coef", this),
+  _prodCoefs("prodCoefs", "prodCoefs", this),
+  _c(c), _i(i), _j(j), _l(l), _m(m),
+  _isProd(kFALSE)
+{
+  init();
+}
+
+//_____________________________________________________________________________
+RooP2VVAngleBasis::RooP2VVAngleBasis(const char *name, const char *title,
+    RooRealVar& cpsi, RooRealVar& ctheta, RooRealVar& phi, RooAbsReal& coef,
+    Int_t i, Int_t j, Int_t l, Int_t m, Double_t c) :
+  RooAddition(name, title, RooArgList()),
+  _cpsi("cpsi", "cos(psi)", this, cpsi),
+  _ctheta("ctheta", "cos(theta)", this, ctheta),
+  _phi("phi", "phi", this, phi),
+  _coef("coef", "coef", this, coef),
+  _prodCoefs("prodCoefs", "prodCoefs", this),
   _c(c), _i(i), _j(j), _l(l), _m(m),
   _isProd(kFALSE)
 {
@@ -51,7 +69,8 @@ RooP2VVAngleBasis::RooP2VVAngleBasis(const RooP2VVAngleBasis& other,
   _cpsi("cpsi", this, other._cpsi),
   _ctheta("ctheta", this, other._ctheta),
   _phi("phi", this, other._phi),
-  _coefNames(other._coefNames),
+  _coef("coef", this, other._coef),
+  _prodCoefs("coef", this, other._prodCoefs),
   _cProd(other._cProd), _iProd(other._iProd), _jProd(other._jProd),
   _lProd(other._lProd), _mProd(other._mProd),
   _c(other._c), _i(other._i), _j(other._j), _l(other._l), _m(other._m),
@@ -184,9 +203,13 @@ void RooP2VVAngleBasis::printArgs(ostream& os) const
 {
   // print function
   os << "[";
-  if (_c != 1.) os << " " << setprecision(3) << _c;
+  if (!_isProd && _coef.absArg() != 0)
+    os << " " << _coef.absArg()->GetName() << " *";
+  if (_c != 1.)
+    os << " " << setprecision(3) << _c;
   os << " P_" << _i;
-  if (_j != 0) os << "^" << _j;
+  if (_j != 0)
+    os << "^" << _j;
   os << " Y_" << _l << _m;
 
   if (_isProd) {
@@ -194,12 +217,15 @@ void RooP2VVAngleBasis::printArgs(ostream& os) const
     os << " *";
     if (_set.getSize() > 1) os << " (";
     for (Int_t it = 0; it < _set.getSize(); ++it) {
-      os << " " << _coefNames.at(it) << " *";
-      if (_cProd.at(it) != 1.) os << " " << setprecision(3) << _cProd.at(it);
+      os << " " << _prodCoefs.at(it)->GetName() << " *";
+      if (_cProd.at(it) != 1.)
+        os << " " << setprecision(3) << _cProd.at(it);
       os << " P_" << _iProd.at(it);
-      if (_jProd.at(it) != 0) os << "^" << _jProd.at(it);
+      if (_jProd.at(it) != 0)
+        os << "^" << _jProd.at(it);
       os << " Y_" << _lProd.at(it) << _mProd.at(it);
-      if (it < _set.getSize() - 1) os << " +";
+      if (it < _set.getSize() - 1)
+        os << " +";
     }
     if (_set.getSize() > 1) os << " )";
   }
@@ -210,9 +236,9 @@ void RooP2VVAngleBasis::printArgs(ostream& os) const
 void RooP2VVAngleBasis::reset()
 {
   _set.removeAll();
+  _prodCoefs.removeAll();
   _createdObjects.removeAll();
   _cacheMgr.reset();
-  _coefNames.clear();
   _cProd.clear();
   _iProd.clear();
   _jProd.clear();
@@ -241,7 +267,9 @@ Bool_t RooP2VVAngleBasis::createBasisFunc(Int_t i, Int_t j, Int_t l, Int_t m,
   // create overall coefficient
   if (i >= 0) {
     prodList.add(*coef);
-    _coefNames.push_back(coef->GetName());
+    _prodCoefs.add(*coef);
+  } else if (_coef.absArg() != 0) {
+    prodList.add(*_coef.absArg());
   }
 
   // create coefficient

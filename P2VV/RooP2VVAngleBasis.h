@@ -21,6 +21,7 @@
 #include "RooAddition.h"
 #include "RooArgList.h"
 #include "RooRealProxy.h"
+#include "RooListProxy.h"
 
 class RooAbsReal;
 class RooRealVar;
@@ -31,6 +32,9 @@ public:
   RooP2VVAngleBasis() {};
   RooP2VVAngleBasis(const char *name, const char *title,
       RooRealVar& cpsi, RooRealVar& ctheta, RooRealVar& phi,
+      Int_t i, Int_t j, Int_t l, Int_t m, Double_t c = 1.);
+  RooP2VVAngleBasis(const char *name, const char *title,
+      RooRealVar& cpsi, RooRealVar& ctheta, RooRealVar& phi, RooAbsReal& coef,
       Int_t i, Int_t j, Int_t l, Int_t m, Double_t c = 1.);
   RooP2VVAngleBasis(const RooP2VVAngleBasis& other, const char* name = 0);
 
@@ -71,9 +75,10 @@ protected:
   RooRealProxy _cpsi;
   RooRealProxy _ctheta;
   RooRealProxy _phi;
+  RooRealProxy _coef;
+  RooListProxy _prodCoefs;
   RooArgList _createdObjects;
 
-  std::vector<TString> _coefNames;
   std::vector<Double_t> _cProd;
   std::vector<Int_t> _iProd, _jProd, _lProd, _mProd;
   Double_t _c;

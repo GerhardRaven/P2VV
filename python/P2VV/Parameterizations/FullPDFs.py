@@ -384,6 +384,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 if not amp.isFundamental() : continue
                 if any( name in amp.GetName() for name in [ 'AS', 'A_S', 'fS', 'f_S', 'C_SP' ] ) : splitParams[0].append(amp)
 
+            #ws = self['fullPdf'].ws()
+            #splitParams[0].append( ws['Re_ang_A0_A0_0000_4d00_coef'] )
+
             # build simultaneous PDF
             from P2VV.RooFitWrappers import SimultaneousPdf
             self['simulPdf'] = SimultaneousPdf(  self['fullPdf'].GetName() + '_simul'

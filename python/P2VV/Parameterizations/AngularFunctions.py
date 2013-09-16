@@ -63,7 +63,7 @@ class JpsiphiTransversityAmplitudesHelicityAngles( AngularFunctions ) :
         from P2VV.RooFitWrappers import P2VVAngleBasis, Addition
         from math import sqrt
         _ba = lambda name, args :\
-            Addition( name, [ P2VVAngleBasis( Name = name, Angles = angles, Indices = arg[0], Coefficient = arg[1] ) for arg in args ] )
+            Addition( name, [ P2VVAngleBasis( Name = name, Angles = angles, Indices = arg[0], FixedCoef = arg[1] ) for arg in args ] )
         # TODO: generate the following table straight from the physics using PS->(VV,VS) ->ffss  (V=spin 1, f=spin 1/2, PS,S,s = spin 0)
         angFuncs = { ('A0',   'A0')    :  ( _ba('Re_ang_A0_A0',           [ ( ( 0, 0, 0,  0 ),        4.             )
                                                                           , ( ( 0, 0, 2,  0 ),       -sqrt( 16. / 5.))
@@ -95,7 +95,7 @@ class JpsiphiTransversityAmplitudesTransversityAngles( AngularFunctions ) :
         from P2VV.RooFitWrappers import P2VVAngleBasis, Addition
         from math import sqrt
         _ba = lambda name, args :\
-            Addition( name, [ P2VVAngleBasis( Name = name, Angles = angles, Indices = arg[0], Coefficient = arg[1] ) for arg in args ] )
+            Addition( name, [ P2VVAngleBasis( Name = name, Angles = angles, Indices = arg[0], FixedCoef = arg[1] ) for arg in args ] )
         # TODO: generate the following table straight from the physics using PS->(VV,VS) ->ffss  (V=spin 1, f=spin 1/2, PS,S,s = spin 0)
         angFuncs = { ('A0',   'A0')    :  ( _ba('Re_ang_A0_A0',           [ ( ( 0, 0, 0,  0 ),        4.             )
                                                                           , ( ( 0, 0, 2,  0 ),        sqrt(  4. / 5.))

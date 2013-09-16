@@ -106,7 +106,7 @@ class AngleBasis_AngularPdfTerms ( Coefficients_AngularPdfTerms ) :
             keys.append( ( coefName, None ) )
             angCoefs[ ( coefName, None ) ] = ( RealVar( RooFitCoefName, **coefArgs ), None )
             angFuncs[ ( coefName, None ) ] = (  P2VVAngleBasis( Name = 'AB', Angles = self._angles
-                                                               , Indices = ( indices[0], 0, indices[1], indices[2] ) , Coefficient = 1. )
+                                                               , Indices = ( indices[0], 0, indices[1], indices[2] ) , FixedCoef = 1. )
                                               , None
                                              )
 
@@ -118,7 +118,7 @@ class AngleBasis_AngularPdfTerms ( Coefficients_AngularPdfTerms ) :
             from P2VV.RooFitWrappers import ConstVar,P2VVAngleBasis
             keys.insert( 0, ( 'C000', None ) )
             angCoefs[ keys[0] ] = ( ConstVar( Name = 'Cab000', Value = 1. ), None )
-            angFuncs[ keys[0] ] = ( P2VVAngleBasis( Name = 'AB', Angles = self._angles, Indices = (0, 0, 0, 0), Coefficient = 1. ), None )
+            angFuncs[ keys[0] ] = ( P2VVAngleBasis( Name = 'AB', Angles = self._angles, Indices = (0, 0, 0, 0), FixedCoef = 1. ), None )
 
         # check if there are no arguments left
         if kwargs: raise KeyError('AngleBasis_AngularPdfTerms: got unknown keyword%s: %s'\
