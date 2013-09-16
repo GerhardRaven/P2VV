@@ -344,6 +344,71 @@ def readMoments( filePath = 'moments', **kwargs ) :
           % ( numMoments, '' if numMoments == 1 else 's', filePath )
 
 
+def multiplyP2VVAngleBases( angleBasis, **kwargs ) :
+    doReset = kwargs.pop( 'DoReset', True )
+
+    def __dref__(arg) :
+        from ROOT import RooAbsArg
+        if isinstance( arg, RooAbsArg ) : return arg
+        return arg._var
+
+    if 'Functions' in kwargs :
+        funcs = kwargs.pop('Functions')
+        if 'Coefficients' in kwargs :
+            coefs = kwargs.pop('Coefficients')
+            assert len(funcs) == len(coefs)\
+                   , 'P2VV - ERROR: P2VVAngleBasis.createProdSum(): numbers of functions and coefficients are different'
+        else :
+            coefs = [ ConstVar( Name = 'one', Value = 1. ) for it in range( len(funcs) ) ]
+
+        from ROOT import RooArgList
+        funcList = RooArgList( __dref__(func) for func in funcs )
+        coefList = RooArgList( __dref__(coef) for coef in coefs )
+        angleBasis.createProdSum( funcList, coefList, doReset )
+
+    elif all( inds in kwargs for inds in ( 'iIndices', 'jIndices', 'lIndices', 'mIndices' ) ) :
+        iInds = kwargs.pop('iIndices')
+        jInds = kwargs.pop('jIndices')
+        lInds = kwargs.pop('lIndices')
+        mInds = kwargs.pop('mIndices')
+        assert len(iInds) == len(jInds) == len(lInds) == len(mInds)\
+               , 'P2VV - ERROR: P2VVAngleBasis.createProdSum(): different numbers i, j, l and m indices specified'
+
+        if 'FixedCoefs' in kwargs :
+            fixCoefs = kwargs.pop('FixedCoefs')
+            assert len(iInds) == len(fixCoefs)\
+                   , 'P2VV - ERROR: P2VVAngleBasis.createProdSum(): numbers of indices and fixed coefficients are different'
+        else :
+            fixCoefs = [ 1. for it in range( len(iInds) ) ]
+
+        if 'Coefficients' in kwargs :
+            coefs = kwargs.pop('Coefficients')
+            assert len(iInds) == len(coefs)\
+                   , 'P2VV - ERROR: P2VVAngleBasis.createProdSum(): numbers of indices and coefficients are different'
+        else :
+            coefs = [ ConstVar( Name = 'one', Value = 1. ) for it in range( len(iInds) ) ]
+
+        from ROOT import std
+        iIndsVec    = std.vector('Int_t')()
+        jIndsVec    = std.vector('Int_t')()
+        lIndsVec    = std.vector('Int_t')()
+        mIndsVec    = std.vector('Int_t')()
+        fixCoefsVec = std.vector('Double_t')()
+        for ind  in iInds    : iIndsVec.push_back(ind)
+        for ind  in jInds    : jIndsVec.push_back(ind)
+        for ind  in lInds    : lIndsVec.push_back(ind)
+        for ind  in mInds    : mIndsVec.push_back(ind)
+        for coef in fixCoefs : fixCoefsVec.push_back(coef)
+
+        from ROOT import RooArgList
+        coefList = RooArgList( __dref__(coef) for coef in coefs )
+
+        angleBasis.createProdSum( iIndsVec, jIndsVec, lIndsVec, mIndsVec, fixCoefsVec, coefList, doReset )
+
+    else :
+        raise RuntimeError, 'P2VV - ERROR: P2VVAngleBasis.createProdSum(): either functions or indices should be specified'
+
+
 class RealMomentsBuilder ( dict ) :
     # TODO:  implement reduce: clone self, selecting a subset of available moments...
     # TODO:                    support as kw: MinSignificance, Names
@@ -424,7 +489,8 @@ class RealMomentsBuilder ( dict ) :
                 # build basis function
                 from P2VV.RooFitWrappers import P2VVAngleBasis
                 momIndices = ( kwargs.pop('PIndex'), kwargs.pop('YIndex0'), kwargs.pop('YIndex1') )
-                func = P2VVAngleBasis( kwargs.pop('Angles'), ( momIndices[0], 0, momIndices[1], momIndices[2] ) , 1. )
+                func = P2VVAngleBasis( Name = 'p2vvab', Angles = kwargs.pop('Angles')
+                                      , Indices = ( momIndices[0], 0, momIndices[1], momIndices[2] ) , Coefficient = 1. )
 
             if not 'PDF' in kwargs and not 'IntSet' in kwargs and not 'NormSet' in kwargs :
                 # build moment
@@ -605,45 +671,30 @@ class RealMomentsBuilder ( dict ) :
                                                     , Value = c[0]*scale ) for c in coefs )
                          )
 
-    def __mul__( self, pdf ) :
-        from P2VV.RooFitWrappers import Pdf
-        if not isinstance(pdf, Pdf) : raise RuntimeError( 'trying to multiply a %s with %s ... this is not supported!'%(type(pdf),type(self) ) )
-        return self.multiplyPDFWithEff( pdf )
+
+    def __mul__( self, pdf ) : return self.multiplyPDFWithEff(pdf)
 
 
     def multiplyPDFWithEff( self, pdf, **kwargs ) :
-
-        def _createProduct( f1, f2, c, namePF ) :
-            assert not f1.prod()
-            assert not f2.prod()
-            assert f1.c()!=0
-            assert f2.c()!=0
-            assert c!=0
-            d1 = dict( (type(i),i) for i in f1.components() )
-            d2 = dict( (type(i),i) for i in f2.components() )
-            from ROOT import RooLegendre, RooSpHarmonic
-            for i in [ RooLegendre, RooSpHarmonic ] :
-                assert d1[i].getVariables().equals( d2[i].getVariables() )
-            (cpsi,) = d1[RooLegendre].getVariables()
-            (ctheta,phi) = d1[RooSpHarmonic].getVariables()
-            from P2VV.RooFitWrappers import P2VVAngleBasis
-            # WARNING: cpsi,ctheta, phi are barebones PyROOT objects!!!
-            return P2VVAngleBasis( {'cpsi':cpsi,'ctheta':ctheta,'phi':phi}
-                                 , ( f1.i(),f1.j(),f1.l(),f1.m() )
-                                 , f1.c()*f2.c()*c
-                                 , ( f2.i(),f2.j(),f2.l(),f2.m() )
-                                 , NamePostFix = namePF
-                                 ) # build a wrapped object inside workspace
-
         # TODO: check that 'we' contain efficiency moments?
         # TODO: and that we've actually either 'read' or 'compute'-ed them??
-        from ROOT import RooP2VVAngleBasis
-        subst = dict()
         # TODO: do not use type to recognize, but name??
-        from P2VV.RooFitWrappers import Addition,EditPdf
-        effName = kwargs.pop( 'EffName', 'eff' )
-        for comp in filter( lambda x : type(x) is RooP2VVAngleBasis, pdf.getComponents() )  :
-            subst[comp] = Addition( '%s_x_%s' % ( comp.GetName(), effName )
-                                  , [ _createProduct( comp, f, c[0], effName ) for n,c,f in self._iterFuncAndCoef( Names = 'p2vvab.*' )  ]
-                                  )
-        return EditPdf( Name = kwargs.pop( 'Name', '%s_x_Eff' % pdf.GetName() ), Original = pdf, Rules = subst )
+        coefs    = [ ]
+        effFuncs = [ ]
+        coefName = kwargs.pop( 'CoefName', 'effC' )
+        from P2VV.RooFitWrappers import ConstVar
+        for funcName, coef, effFunc in self._iterFuncAndCoef( Names = 'p2vvab.*' ) :
+            name = ( '%s_%d%d%d' % ( ( coefName, ) + tuple( self._basisFuncIndices[funcName] ) ) ).replace( '-', 'm' )
+            coefs.append( ConstVar( Name = name, Value = coef[0] ) )
+            effFuncs.append(effFunc)
+
+        bases = [ ]
+        from ROOT import RooP2VVAngleBasis
+        for comp in filter( lambda x : type(x) is RooP2VVAngleBasis, pdf.getComponents() ) :
+            multiplyP2VVAngleBases( comp, Functions = effFuncs, Coefficients = coefs, DoReset = True )
+            bases.append( comp.GetName() )
+        print 'P2VV - INFO: RealMomentsBuilder.multiplyPDFWithEff(): multiplied the following %s with angular acceptance:'\
+              % ( ( '%d components' % len(bases) ) if len(bases) > 1 else 'component' )
+        print '             [ ' + ', '.join( name for name in bases ) + ' ]'
+
+        return pdf

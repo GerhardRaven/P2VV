@@ -565,31 +565,29 @@ class PolyVar(RooObject) :
         for (k, v) in kwargs.iteritems() : self.__setitem__(k, v)
 
 class P2VVAngleBasis (RooObject) :
-    # TODO: replace use of RooP2VVAngleBasis with an explicit product with
-    #       some attribute set so we can recognize it by attribute instead
-    #       of by type...
-    # TODO: move 'c' out of this class (and into an explicit product),
-    #       which will allow more re-use of existing objects, and hence
-    #       make things faster
-    def __init__(self, angles, ind,c=1,ind2 = None,**kwargs) :
-        assert c!=0
-        namePostFix = kwargs.pop( 'NamePostFix', '')
-        if namePostFix : namePostFix += '_'
-        name = 'p2vvab_%s%d%d%d%d' % ( namePostFix, ind[0], ind[1], ind[2], ind[3] )
-        if ind2 : name += '_%d%d%d%d' % ind2
-        if c!=1 : name += '_%3.2f' % c
-        name = name.replace('.','d').replace('-','m')
-        spec = "RooP2VVAngleBasis::%s(" % name
-        # WARNING: angles may contain barebones PyROOT objects!!!
-        spec += "%s, %s, %s, " % tuple( angles[i].GetName() for i in [ 'cpsi', 'ctheta', 'phi'] )
-        spec += "%d,%d,%d,%d, " % ind
-        if ind2 : spec += "%d,%d,%d,%d, " % ind2
-        spec += " %f)"% c
-        #NOTE: this requires libP2VV.so to be loaded
+    def __init__(self, **kwargs) :
+        # get arguments
+        __check_req_kw__( 'Name',   kwargs )
+        __check_req_kw__( 'Angles', kwargs )
+        name   = kwargs.pop('Name')
+        angles = kwargs.pop('Angles')
+        inds   = kwargs.pop( 'Indices', ( 0, 0, 0, 0 ) )
+        coef   = kwargs.pop( 'Coefficient', 1. )
+        name += '_%d%d%d%d' % ( inds[0], inds[1], inds[2], inds[3] )
+        if coef != 1. : name += '_%3.2f' % coef
+        name = name.replace( '.', 'd' ).replace( '-', 'm' )
+
+        # build RooP2VVAngleBasis
         from P2VV.Load import P2VVLibrary
-        self._declare( spec )
-        self._init(name,'RooP2VVAngleBasis')
+        spec = 'RooP2VVAngleBasis::%s(%s,%s,%s,%d,%d,%d,%d,%f)'\
+               % ( ( name, ) + tuple( angles[ang].GetName() for ang in ( 'cpsi', 'ctheta', 'phi' ) ) + tuple(inds) + ( coef, ) )
+        self._declare(spec)
+        self._init( name, 'RooP2VVAngleBasis' )
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+
+    def createProdSum( self, **kwargs ) :
+        from P2VV.Utilities.DataMoments import multiplyP2VVAngleBases
+        multiplyP2VVAngleBases( self._var, **kwargs )
 
 
 class RealMoment( object ):

@@ -357,12 +357,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         from P2VV.RooFitWrappers import Component
         self['pdfComps'] = [ ]
         self['pdfComps'].append( Component( namePF + 'sig', [ ], Yield = ( self['numEvents'] * self['sigFrac'], 0., self['numEvents'] ) ) )
-
-        sigPdf = buildBs2JpsiphiSignalPdf(self)
-        if self['timeEffType']   : sigPdf = multiplyByTimeAcceptance( sigPdf, self, data = self['signalData'] )
-        if self['anglesEffType'] : sigPdf = multiplyByAngularAcceptance( sigPdf, self )
-        self['pdfComps'][0] += sigPdf
-
+        self['pdfComps'][0] += buildBs2JpsiphiSignalPdf(self)
         if self['tagPdfType'] or not self['condTagging'] : self['pdfComps'][0] += buildTaggingPdf( self, data = self['signalData'] )
 
         if not self['SFit'] : 
@@ -420,6 +415,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             self['simulPdf'] = None
 
         self['pdf'] = self['simulPdf'] if self['simulPdf'] else self['fullPdf']
+
+        # multiply by acceptance functions
+        if self['timeEffType'] :   self['pdf'] = multiplyByTimeAcceptance( self['pdf'], self, data = self['signalData'] )
+        if self['anglesEffType'] : self['pdf'] = multiplyByAngularAcceptance( self['pdf'], self )
 
         # collect python garbage
         import gc
@@ -1306,7 +1305,18 @@ def multiplyByTimeAcceptance( pdf, self, **kwargs ) :
 
     # multiply PDF with time acceptance
     print 'P2VV - INFO: multiplyByTimeAcceptance(): multiplying PDF "%s" with decay-time acceptance function' % pdf.GetName()
-    pdf.changeModel( self['timeResModel']['model']._var )
+    accPdfs = [ ]
+    from ROOT import RooBTagDecay
+    for comp in filter( lambda x : type(x) is RooBTagDecay, pdf.getComponents() ) :
+        change = comp.changeModel( self['timeResModel']['model']._var )
+        if not change :
+            accPdfs.append( comp.GetName() )
+        else :
+            raise AssertionError, 'P2VV - ERROR: multiplyByTimeAcceptance(): failed to multiply "%s" with acceptace' % comp.GetName()
+    print 'P2VV - INFO: multiplyByTimeAcceptance(): multiplied the following %s with the acceptance function:'\
+          % ( ( '%d components' % len(accPdfs) ) if len(accPdfs) > 1 else 'component' )
+    print '             [ ' + ', '.join( name for name in accPdfs ) + ' ]'
+
     pdf['ConditionalObservables'] = pdf['ConditionalObservables'] | self['timeResModel'].ConditionalObservables()
     pdf['ExternalConstraints']    = pdf['ExternalConstraints']    | self['timeResModel'].ExternalConstraints()
 
@@ -1328,6 +1338,6 @@ def multiplyByAngularAcceptance( pdf, self, **kwargs ) :
     moments.appendPYList( angleFuncs.angles, angularMomentIndices( anglesEffType, angleFuncs ) )
     moments.read(angEffMomentsFile)
     moments.Print()
-    pdfAcc = moments * pdf
+    pdf = moments * pdf
 
-    return pdfAcc
+    return pdf

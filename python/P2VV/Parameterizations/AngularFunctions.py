@@ -38,7 +38,7 @@ class JpsiphiHelicityAngles( AngleDefinitions ) :
              , 'phi'    : self._parseArg( 'phi',    kwargs, SingleArgKey = 'Name', Name = 'helphi'
                                          , Title = '#phi_{h}',          MinMax = ( -pi, pi ), Observable = True, Unit = 'rad' )
             }
-        d['functions'] =  JpsiphiTransversityAmplitudesHelicityAngles( **d )
+        d['functions'] =  JpsiphiTransversityAmplitudesHelicityAngles( Angles = d )
         AngleDefinitions.__init__(self, **d )
 
 
@@ -52,16 +52,18 @@ class JpsiphiTransversityAngles( AngleDefinitions ) :
             , 'phi'   :  self._parseArg( 'phi',    kwargs, SingleArgKey = 'Name', Name='trphi'
                                         , Title = '#phi_{tr}',        MinMax=( -pi, pi ), Observable = True )
             }
-        d['functions'] = JpsiphiTransversityAmplitudesTransversityAngles( **d )
+        d['functions'] = JpsiphiTransversityAmplitudesTransversityAngles( Angles = d )
         AngleDefinitions.__init__(self, **d )
 
 
 class JpsiphiTransversityAmplitudesHelicityAngles( AngularFunctions ) :
     def __init__( self, **kwargs ) :
         AngularFunctions.__init__(self)
+        angles = kwargs.pop('Angles')
         from P2VV.RooFitWrappers import P2VVAngleBasis, Addition
         from math import sqrt
-        _ba = lambda  name,args : Addition(name, [ P2VVAngleBasis(kwargs , *a) for a in args ] )
+        _ba = lambda name, args :\
+            Addition( name, [ P2VVAngleBasis( Name = name, Angles = angles, Indices = arg[0], Coefficient = arg[1] ) for arg in args ] )
         # TODO: generate the following table straight from the physics using PS->(VV,VS) ->ffss  (V=spin 1, f=spin 1/2, PS,S,s = spin 0)
         angFuncs = { ('A0',   'A0')    :  ( _ba('Re_ang_A0_A0',           [ ( ( 0, 0, 0,  0 ),        4.             )
                                                                           , ( ( 0, 0, 2,  0 ),       -sqrt( 16. / 5.))
@@ -89,9 +91,11 @@ class JpsiphiTransversityAmplitudesHelicityAngles( AngularFunctions ) :
 class JpsiphiTransversityAmplitudesTransversityAngles( AngularFunctions ) :
     def __init__( self, **kwargs ) :
         AngularFunctions.__init__(self)
+        angles = kwargs.pop('Angles')
         from P2VV.RooFitWrappers import P2VVAngleBasis, Addition
         from math import sqrt
-        _ba = lambda  name,args : Addition(name, [ P2VVAngleBasis(kwargs , *a) for a in args ] )
+        _ba = lambda name, args :\
+            Addition( name, [ P2VVAngleBasis( Name = name, Angles = angles, Indices = arg[0], Coefficient = arg[1] ) for arg in args ] )
         # TODO: generate the following table straight from the physics using PS->(VV,VS) ->ffss  (V=spin 1, f=spin 1/2, PS,S,s = spin 0)
         angFuncs = { ('A0',   'A0')    :  ( _ba('Re_ang_A0_A0',           [ ( ( 0, 0, 0,  0 ),        4.             )
                                                                           , ( ( 0, 0, 2,  0 ),        sqrt(  4. / 5.))

@@ -47,7 +47,7 @@ tResSigma = 0.045
 # plot options
 if transAngles : angleNames = ( 'cos(#psi_{tr})',  'cos(#theta_{tr})',  '#phi_{tr}' )
 else           : angleNames = ( 'cos(#theta_{K})', 'cos(#theta_{#mu})', '#phi_{h}'  )
-numBins         = ( 60, 60, 60, 60 )
+numBins         = ( 60, 60, 60 )
 lineWidth       = 2
 markStyle       = 8
 markSize        = 0.4
@@ -300,19 +300,6 @@ if makePlots and normPdf :
     effFuncCtl = effFunc.createIntegral( ctlSet, RooArgSet() )
     effFuncPhi = effFunc.createIntegral( phiSet, RooArgSet() )
 
-    # multiply PDF with angular efficiency
-    effPdf = basisMoments * pdf
-
-    basisMomentsSignif = RealMomentsBuilder()
-    basisMomentsSignif.appendPYList( angleFuncs.angles, [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 4, 0 ) ] if not transAngles \
-                                                   else [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 )
-                                                         , ( 0, 4, 0 ), ( 0, 4, 2 ), ( 0, 4, 4 )  ]
-                                   )
-    basisMomentsSignif.read(momentsFile + '_Basis')
-    basisMomentsSignif.Print( Scale = 1. / 2. / sqrt(pi) )
-
-    effSignifPdf = basisMomentsSignif.multiplyPDFWithEff( pdf, Name = 'sig_t_angles_tagCat_iTag_x_EffSignif', EffName = 'effSignif' )
-
     # import plotting tools
     from P2VV.Load import LHCbStyle
     from P2VV.Utilities.Plotting import plot
@@ -335,22 +322,29 @@ if makePlots and normPdf :
 
     # plot lifetime and angles
     timeAnglesCanv = TCanvas( 'timeAnglesCanv', 'Lifetime and Decay Angles' )
-    for ( pad, obs, nBins, plotTitle, xTitle, logY )\
+    for ( pad, obs, nBins, plotTitle, xTitle )\
             in zip(  timeAnglesCanv.pads( 2, 2 )
-                   , obsSet[ : 5 ]
+                   , obsSet[ 1 : 5 ]
                    , numBins
-                   , [ var.GetTitle() for var in obsSet[ : 5 ] ]
-                   , ( '', ) + angleNames
-                   , ( True, False, False, False )
+                   , [ var.GetTitle() for var in obsSet[ 1 : 5 ] ]
+                   , angleNames
                   ) :
-        plot(  pad, obs, data, effSignifPdf, addPDFs = [ pdf, effPdf ], xTitle = xTitle, logy = logY
+        plot(  pad, obs, data, pdf, xTitle = xTitle
              , frameOpts   = dict( Bins = nBins, Title = plotTitle                )
              , dataOpts    = dict( MarkerStyle = markStyle, MarkerSize = markSize )
              , pdfOpts     = dict( LineColor = kBlue, LineWidth = lineWidth       )
-             , addPDFsOpts = [  dict( LineColor = kRed,       LineWidth = lineWidth )
-                              , dict( LineColor = kGreen + 2, LineWidth = lineWidth )
-                             ]
             )
+
+    # multiply PDF with angular efficiency
+    basisMoments * pdf
+
+    # plot efficiency PDF
+    from P2VV.Utilities.Plotting import _P2VVPlotStash
+    global _P2VVPlotStash
+    for it in range(3) :
+        pdf.plotOn( _P2VVPlotStash[ -it - 1 ], Name = 'effPdf', LineColor = kRed, LineWidth = lineWidth )
+        timeAnglesCanv.cd( 3 - it )
+        _P2VVPlotStash[ -it - 1 ].Draw()
 
     # print canvases to file
     effCanv.Print( plotsFile + '(' )
