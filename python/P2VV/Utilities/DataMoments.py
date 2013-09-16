@@ -357,7 +357,7 @@ def multiplyP2VVAngleBases( angleBasis, **kwargs ) :
         if 'Coefficients' in kwargs :
             coefs = kwargs.pop('Coefficients')
             assert len(funcs) == len(coefs)\
-                   , 'P2VV - ERROR: P2VVAngleBasis.createProdSum(): numbers of functions and coefficients are different'
+                   , 'P2VV - ERROR: multiplyP2VVAngleBases(): numbers of functions and coefficients are different'
         else :
             coefs = [ ConstVar( Name = 'one', Value = 1. ) for it in range( len(funcs) ) ]
 
@@ -372,19 +372,19 @@ def multiplyP2VVAngleBases( angleBasis, **kwargs ) :
         lInds = kwargs.pop('lIndices')
         mInds = kwargs.pop('mIndices')
         assert len(iInds) == len(jInds) == len(lInds) == len(mInds)\
-               , 'P2VV - ERROR: P2VVAngleBasis.createProdSum(): different numbers i, j, l and m indices specified'
+               , 'P2VV - ERROR: multiplyP2VVAngleBases(): different numbers i, j, l and m indices specified'
 
         if 'FixedCoefs' in kwargs :
             fixCoefs = kwargs.pop('FixedCoefs')
             assert len(iInds) == len(fixCoefs)\
-                   , 'P2VV - ERROR: P2VVAngleBasis.createProdSum(): numbers of indices and fixed coefficients are different'
+                   , 'P2VV - ERROR: multiplyP2VVAngleBases(): numbers of indices and fixed coefficients are different'
         else :
             fixCoefs = [ 1. for it in range( len(iInds) ) ]
 
         if 'Coefficients' in kwargs :
             coefs = kwargs.pop('Coefficients')
             assert len(iInds) == len(coefs)\
-                   , 'P2VV - ERROR: P2VVAngleBasis.createProdSum(): numbers of indices and coefficients are different'
+                   , 'P2VV - ERROR: multiplyP2VVAngleBases(): numbers of indices and coefficients are different'
         else :
             coefs = [ ConstVar( Name = 'one', Value = 1. ) for it in range( len(iInds) ) ]
 
@@ -406,7 +406,7 @@ def multiplyP2VVAngleBases( angleBasis, **kwargs ) :
         angleBasis.createProdSum( iIndsVec, jIndsVec, lIndsVec, mIndsVec, fixCoefsVec, coefList, doReset )
 
     else :
-        raise RuntimeError, 'P2VV - ERROR: P2VVAngleBasis.createProdSum(): either functions or indices should be specified'
+        raise RuntimeError, 'P2VV - ERROR: multiplyP2VVAngleBases(): either functions or indices should be specified'
 
 
 class RealMomentsBuilder ( dict ) :
