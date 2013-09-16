@@ -45,12 +45,13 @@ class TimeResolution ( _util_parse_mixin, _util_extConstraints_mixin, _util_cond
 
 class Truth_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
+        namePF = self.getNamePrefix(kwargs)
         from P2VV.RooFitWrappers import ResolutionModel
         self._parseArg( 'time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
 
         self._check_extraneous_kw( kwargs )
         from ROOT import RooTruthModel as TruthModel
-        TimeResolution.__init__( self, Model = ResolutionModel( Name = 'timeResModelTruth'
+        TimeResolution.__init__( self, Model = ResolutionModel( Name = namePF + 'timeResModelTruth'
                                                                , Type = TruthModel
                                                                , Parameters = [ self._time ]
                                                               )
