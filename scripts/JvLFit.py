@@ -20,6 +20,7 @@ pdfConfig['blind']     = {#  'phiCP'  : ( 'UnblindUniform', 'BsPhis2013EPS',  0.
                          }
 pdfConfig['numEvents'] = 54755
 pdfConfig['sigFrac']   = 0.504
+dataPath               = '/project/bfys/jleerdam/data/Bs2Jpsiphi/'
 
 plotsFile     = 'plots/2011Data_SFit.ps'
 plotsROOTFile = '2011Data_SFit_plots.root'
@@ -31,10 +32,10 @@ if generateData :
     dataSetFile = 'paper2012_SFit.root' if pdfConfig['SFit'] else 'paper2012_CFit.root'
 elif pdfConfig['SFit'] :
     dataSetName = 'JpsiKK_sigSWeight'
-    dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_4KKMassBins_2TagCats.root'
+    dataSetFile = dataPath + 'P2VVDataSets2011Reco12_4KKMassBins_2TagCats.root'
 else :
     dataSetName = 'JpsiKK'
-    dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_4KKMassBins_2TagCats.root'
+    dataSetFile = dataPath + 'P2VVDataSets2011Reco12_4KKMassBins_2TagCats.root'
 
 MinosPars = [#  'phiCP', 'lambdaCP'
              #, 'AparPhase', 'AperpPhase'
@@ -77,14 +78,23 @@ pdfConfig['timeEffType']        = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
 pdfConfig['constrainDeltaM']    = 'constrain'  # 'constrain' # fixed
 
 if pdfConfig['timeEffType'] :
-    pdfConfig['timeEffHistFile']      = '/project/bfys/jleerdam/data/Bs2Jpsiphi/timeAcceptanceStartValues.root'\
-                                        if pdfConfig['timeEffType'] == 'fit' else\
-                                        '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs_HltPropertimeAcceptance_Data-20120816.root'
+    pdfConfig['timeEffHistFile']      = dataPath + 'Bs_HltPropertimeAcceptance_Data-20120816.root'
     pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
     pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
 
 pdfConfig['transAngles']   = False
 pdfConfig['anglesEffType'] = 'weights'  # 'weights' # 'basis012' # 'basisSig4'
+pdfConfig['angEffMomsFiles'] = dataPath + 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
+#pdfConfig['angEffMomsFiles'] = [  ( [ ( 'KKMassCat', ( 0, 3 ) ) ]
+#                                   , dataPath + '_hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
+#                                  )
+#                                , ( [ ( 'KKMassCat', ( 1, 2 ) ) ]
+#                                   , dataPath + '__hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
+#                                  )
+#                                , ( 'default'
+#                                   , dataPath + 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
+#                                  )
+#                               ]
 pdfConfig['angularRanges'] = dict( ctheta = [  ( 'ctlBin0', -1.,   -0.70 )
                                              , ( 'ctlBin1', -0.70, -0.25 )
                                              , ( 'ctlBin2', -0.25, +0.25 )
@@ -93,10 +103,6 @@ pdfConfig['angularRanges'] = dict( ctheta = [  ( 'ctlBin0', -1.,   -0.70 )
                                             ]
                                  )
 if not pdfConfig['SFit'] : pdfConfig['bkgAnglePdfType'] = 'hybrid'
-if pdfConfig['anglesEffType'] :
-    pdfConfig['angEffMomentsFile'] = '/project/bfys/jleerdam/data/Bs2Jpsiphi/trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
-                                     if pdfConfig['transAngles'] else\
-                                     '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
 
 pdfConfig['sigTaggingType']   = 'tagUntag'
 pdfConfig['SSTagging']        = True

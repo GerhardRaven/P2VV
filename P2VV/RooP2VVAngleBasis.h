@@ -52,6 +52,11 @@ public:
   Double_t c() const {return _c;}
   Bool_t isProduct() const {return _isProd;}
 
+  const RooAbsReal* coef() const
+  {
+    return dynamic_cast<RooAbsReal*>(_coef.absArg());
+  }
+
   Bool_t createProduct(Int_t i, Int_t j, Int_t l, Int_t m, Double_t c,
       RooAbsReal& coef, Bool_t doReset = kTRUE);
   Bool_t createProduct(const RooP2VVAngleBasis& func, RooAbsReal& coef,

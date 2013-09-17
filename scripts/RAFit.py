@@ -171,7 +171,7 @@ pdfConfig['timeEffHistFile']      = os.path.join(prefix, 'p2vv/data/start_values
 pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
 #pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
 pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
-pdfConfig['angEffMomentsFile']    = os.path.join(prefix, 'p2vv/data/trans_UB_UT_trueTime_BkgCat050_KK30_Basis')\
+pdfConfig['angEffMomsFiles']    = os.path.join(prefix, 'p2vv/data/trans_UB_UT_trueTime_BkgCat050_KK30_Basis')\
                                     if pdfConfig['transversityAngles'] else\
                                     os.path.join(prefix, 'p2vv/data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights')
 #                                    '/bfys/raaij/p2vv/data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis'

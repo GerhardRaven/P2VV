@@ -48,8 +48,7 @@ if pdfConfig['timeEffType'] :
     pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
 
 pdfConfig['anglesEffType'] = 'weights'
-if pdfConfig['anglesEffType'] :
-    pdfConfig['angEffMomentsFile'] = 'data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
+pdfConfig['angEffMomsFiles'] = 'data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
 
 pdfConfig['SSTagging']        = True
 pdfConfig['condTagging']      = True

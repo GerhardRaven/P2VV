@@ -205,9 +205,10 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
         self['timeEffType']        = 'paper2012'      # 'HLT1Unbiased' / 'HLT1ExclBiased' / 'paper2012' / 'fit'
         self['constrainDeltaM']    = 'constrain'      # '' / 'constrain' / 'fixed'
 
-        self['transAngles']   = False        # use transversity angles?
-        self['anglesEffType'] = 'weights'    # '' / 'weights' / 'basis012' / 'basis012Plus' / 'basis012Thetal' / 'basis0123' / 'basis01234' / 'basisSig3' / 'basisSig4'
-        self['angularRanges'] = dict( cpsi = [ ], ctheta = [ ], phi = [ ] )
+        self['transAngles']     = False        # use transversity angles?
+        self['anglesEffType']   = 'weights'    # '' / 'weights' / 'basis012' / 'basis012Plus' / 'basis012Thetal' / 'basis0123' / 'basis01234' / 'basisSig3' / 'basisSig4'
+        self['angEffMomsFiles'] = 'data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
+        self['angularRanges']   = dict( cpsi = [ ], ctheta = [ ], phi = [ ] )
 
         self['sigTaggingType']   = 'tagUntag'    # 'histPdf' / 'tagUntag' / 'tagCats' / 'tagUntagRelative' / 'tagCatsRelative'
         self['tagPdfType']       = ''
@@ -238,9 +239,6 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
         if key == 'timeEffType' :
             if val : self.addTimeEffParams()
             else   : self.rmTimeEffParams()
-        elif key == 'anglesEffType' :
-            if val : self.addAnglesEffParams()
-            else   : self.rmAnglesEffParams()
         elif key == 'SFit' :
             if not val : self.addBkgParams()
             else       : self.rmBkgParams()
@@ -254,14 +252,8 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
         if not 'timeEffParameters'    in self : self['timeEffParameters']    = { }
 
     def rmTimeEffParams(self) :
-        for key in [ 'timeEffHistFile', 'timeEffHistUBName', 'timeEffHistExclBName', 'angEffMomentsFile', 'timeEffParameters' ] :
+        for key in [ 'timeEffHistFile', 'timeEffHistUBName', 'timeEffHistExclBName', 'timeEffParameters' ] :
             self.pop( key, None )
-
-    def addAnglesEffParams(self) :
-        if not 'angEffMomentsFile' in self : self['angEffMomentsFile'] = 'data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
-
-    def rmAnglesEffParams(self) :
-        for key in [ 'angEffMomentsFile' ] : self.pop( key, None )
 
     def addBkgParams(self) :
         if not 'bkgAnglePdfType' in self : self['bkgAnglePdfType'] = 'hybrid'
@@ -332,7 +324,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         # get some build parameters
         for par in [ 'SFit', 'KKMassBinBounds', 'obsDict', 'CSPValues', 'condTagging', 'contEstWTag', 'SSTagging', 'transAngles'
                     , 'numEvents', 'sigFrac', 'paramKKMass', 'amplitudeParam', 'ASParam', 'signalData', 'fitOptions', 'parNamePrefix'
-                    , 'tagPdfType', 'timeEffType', 'anglesEffType',  'readFromWS', 'splitParams' ] :
+                    , 'tagPdfType', 'timeEffType', 'anglesEffType', 'angEffMomsFiles', 'readFromWS', 'splitParams' ] :
             self[par] = getKWArg( self, { }, par )
 
         from P2VV.Parameterizations.GeneralUtils import setParNamePrefix, getParNamePrefix
@@ -380,8 +372,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         self['pdf'] = self._createSimultaneous()
 
         # multiply by acceptance functions
-        if self['timeEffType'] :   self['pdf'] = multiplyByTimeAcceptance( self['pdf'], self, data = self['signalData'] )
-        if self['anglesEffType'] : self['pdf'] = multiplyByAngularAcceptance( self['pdf'], self )
+        if self['timeEffType'] :   multiplyByTimeAcceptance( self['pdf'], self, data = self['signalData'] )
+        if self['anglesEffType'] : self._multiplyByAngularAcceptance()
 
         # collect python garbage
         import gc
@@ -456,15 +448,16 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
 
     def _createSimultaneous( self, **kwargs ) :
-        observables   = getKWArg( self, kwargs, 'observables' )
-        CSPValues     = getKWArg( self, kwargs, 'CSPValues' )
-        contEstWTag   = getKWArg( self, kwargs, 'contEstWTag' )
-        paramKKMass   = getKWArg( self, kwargs, 'paramKKMass' )
-        ASParam       = getKWArg( self, kwargs, 'ASParam' )
-        timeEffType   = getKWArg( self, kwargs, 'timeEffType' )
-        anglesEffType = getKWArg( self, kwargs, 'anglesEffType' )
-        splitParams   = getKWArg( self, kwargs, 'splitParams' )
-        fullPdf       = getKWArg( self, kwargs, 'fullPdf' )
+        observables     = getKWArg( self, kwargs, 'observables' )
+        CSPValues       = getKWArg( self, kwargs, 'CSPValues' )
+        contEstWTag     = getKWArg( self, kwargs, 'contEstWTag' )
+        paramKKMass     = getKWArg( self, kwargs, 'paramKKMass' )
+        ASParam         = getKWArg( self, kwargs, 'ASParam' )
+        timeEffType     = getKWArg( self, kwargs, 'timeEffType' )
+        anglesEffType   = getKWArg( self, kwargs, 'anglesEffType' )
+        angEffMomsFiles = getKWArg( self, kwargs, 'angEffMomsFiles' )
+        splitParams     = getKWArg( self, kwargs, 'splitParams' )
+        fullPdf         = getKWArg( self, kwargs, 'fullPdf' )
 
         from P2VV.Parameterizations.GeneralUtils import getParNamePrefix
         namePF = getParNamePrefix(True)
@@ -477,6 +470,17 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 if cat != 'KKMassCat' :
                     assert 'C_SP' not in pars\
                            , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: S-P coupling factors are set to be split for category "%s"' % cat
+
+        if anglesEffType and type(angEffMomsFiles) != str :
+            for filePars in angEffMomsFiles :
+                if type( filePars[0] ) == str : continue
+                for catPars in filePars[0] :
+                    assert type( catPars[0] ) == str\
+                           , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: one of category names specified in "angEffMomsFiles" is not a string'
+                    if catPars[0] not in splitParams :
+                        splitParams[ catPars[0] ] = [ 'angEffDummyCoef' ]
+                    elif 'angEffDummyCoef' not in splitParams[ catPars[0] ] :
+                        splitParams[ catPars[0] ].append( 'angEffDummyCoef' )
 
         # split PDF for different data samples
         if splitParams :
@@ -491,8 +495,6 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             for cat, params in splitParams.iteritems() :
                 assert ws.cat(cat), 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: category "%s" not in workspace' % cat
                 for par in params :
-                    if   par == 'AngularAcceptance' : par = 'angEffDummyCoef'
-                    elif par == 'TimeAcceptance'    : continue
                     assert ws.var(par), 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: no variable "%s" in workspace' % par
                     assert vars.find(par), 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: variable "%s" not in PDF' % par
                     if ws[par] not in splitParsDict :
@@ -551,6 +553,42 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         return self['simulPdf'] if self['simulPdf'] else self['fullPdf']
 
 
+    def _multiplyByAngularAcceptance( self, **kwargs ) :
+        angEffMomsFiles = getKWArg( self, kwargs, 'angEffMomsFiles' )
+        pdf             = getKWArg( self, kwargs, 'pdf' )
+        simulPdf        = getKWArg( self, kwargs, 'simulPdf' )
+
+        if type(angEffMomsFiles) == str :
+            multiplyByAngularAcceptance( pdf, self, angEffMomsFile = angEffMomsFiles )
+        else :
+            defFile = ''
+            for filePars in angEffMomsFiles :
+                if filePars[0] == 'default' : defFile = filePars[1]
+            if not simulPdf :
+                assert defFile, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: no simultaneous PDF and no default angular efficiency moments file specified'
+                multiplyByAngularAcceptance( pdf, self, angEffMomsFile = defFile )
+            else :
+                ws            = simulPdf.ws()
+                splitCat      = simulPdf.indexCat()
+                splitCatIter  = splitCat.typeIterator()
+                splitCatState = splitCatIter.Next()
+                while splitCatState :
+                    splitCat.setIndex( splitCatState.getVal() )
+                    effFile = defFile
+                    for filePars in angEffMomsFiles :
+                        if type( filePars[0] ) == str : continue
+                        thisFile = True
+                        for catPars in filePars[0] :
+                            if len( catPars[1] ) != 0 and ws[ catPars[0] ].getIndex() not in catPars[1] : thisFile = False
+                        if thisFile : effFile = filePars[1]
+                    assert effFile, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: angular efficiency moments file for this simultaneous category not found and no default specified'
+
+                    catPdf = simulPdf.getPdf( splitCatState.GetName() )
+                    cNamePF = ( splitCatState.GetName() ).replace( '{', '_' ).replace( '}', '' ).replace( ';', '_' )
+                    multiplyByAngularAcceptance( catPdf, self, angEffMomsFile = effFile, coefNamePF = cNamePF )
+                    splitCatState = splitCatIter.Next()
+
+
 ###########################################################################################################################################
 ## Helper functions ##
 ######################
@@ -582,6 +620,8 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
     constrainDeltaM    = getKWArg( self, kwargs, 'constrainDeltaM' )
     lambdaCPParam      = getKWArg( self, kwargs, 'lambdaCPParam' )
     timeEffType        = getKWArg( self, kwargs, 'timeEffType' )
+    anglesEffType      = getKWArg( self, kwargs, 'anglesEffType' )
+    angEffMomsFiles    = getKWArg( self, kwargs, 'angEffMomsFiles' )
     parNamePrefix      = getKWArg( self, kwargs, 'parNamePrefix', '' )
 
     from P2VV.Parameterizations.GeneralUtils import setParNamePrefix, getParNamePrefix
@@ -594,7 +634,8 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
     # angular functions
     if transAngles : from P2VV.Parameterizations.AngularFunctions import JpsiphiTransversityAngles as AngleFuncs
     else :           from P2VV.Parameterizations.AngularFunctions import JpsiphiHelicityAngles     as AngleFuncs
-    self['angleFuncs'] = AngleFuncs( cpsi = observables['cpsi'], ctheta = observables['ctheta'], phi = observables['phi'] )
+    self['angleFuncs'] = AngleFuncs( cpsi = observables['cpsi'], ctheta = observables['ctheta'], phi = observables['phi']
+                                    , DummyCoef = ( anglesEffType and type(angEffMomsFiles) != str ) )
 
     # transversity amplitudes
     commonArgs = dict( AmbiguityParameters = ambiguityPars )
@@ -1384,19 +1425,20 @@ def multiplyByTimeAcceptance( pdf, self, **kwargs ) :
 
 # function to multiply a PDF by angular acceptance function
 def multiplyByAngularAcceptance( pdf, self, **kwargs ) :
-    anglesEffType     = getKWArg( self, kwargs, 'anglesEffType' )
-    angEffMomentsFile = getKWArg( self, kwargs, 'angEffMomentsFile' )
-    angleFuncs        = getKWArg( self, kwargs, 'angleFuncs' )
+    anglesEffType  = getKWArg( self, kwargs, 'anglesEffType' )
+    angEffMomsFile = getKWArg( self, kwargs, 'angEffMomsFile' )
+    angleFuncs     = getKWArg( self, kwargs, 'angleFuncs' )
+    coefNamePF     = getKWArg( self, kwargs, 'coefNamePF', '' )
 
     print 'P2VV - INFO: multiplyByAngularAcceptance(): multiplying PDF "%s" with angular efficiency moments from file "%s"'\
-          % ( pdf.GetName(), angEffMomentsFile )
+          % ( pdf.GetName(), angEffMomsFile )
 
     # multiply PDF with angular efficiency
     from P2VV.Utilities.DataMoments import RealMomentsBuilder, angularMomentIndices
     moments = RealMomentsBuilder()
     moments.appendPYList( angleFuncs.angles, angularMomentIndices( anglesEffType, angleFuncs ) )
-    moments.read(angEffMomentsFile)
+    moments.read(angEffMomsFile)
     moments.Print()
-    pdf = moments * pdf
+    moments.multiplyPDFWithEff( pdf, CoefName = 'effC' + coefNamePF )
 
     return pdf
