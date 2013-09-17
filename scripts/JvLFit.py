@@ -125,6 +125,8 @@ pdfConfig['obsDict']['KKMass'] = ( KKMassPars[0], KKMassPars[1], KKMassPars[2]
 
 pdfConfig['lambdaCPParam'] = 'lambPhi' # 'lambPhi_CPVDecay_PSWaves'  # 'lambPhi'
 
+pdfConfig['splitParams'] = dict( KKMassCat = [ 'f_S', 'ASOddPhase' ] )
+
 from P2VV.Imports import extConstraintValues
 extConstraintValues.setVal( 'DM',      (  17.63, 0.11 ) )
 #extConstraintValues.setVal( 'DM',      (  17.768, 0.024 ) )

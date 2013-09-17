@@ -229,6 +229,8 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
 
         self['lambdaCPParam'] = 'lambPhi'    # 'ReIm' / 'lambSqPhi' / 'lambPhi' / 'lambPhi_CPVDecay' / 'lambPhiRel_CPVDecay'
 
+        self['splitParams'] = dict( KKMassCat = [ 'f_S', 'ASOddPhase' ] )
+
         # initialize PdfConfiguration object
         PdfConfiguration.__init__( self )
 
@@ -330,7 +332,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         # get some build parameters
         for par in [ 'SFit', 'KKMassBinBounds', 'obsDict', 'CSPValues', 'condTagging', 'contEstWTag', 'SSTagging', 'transAngles'
                     , 'numEvents', 'sigFrac', 'paramKKMass', 'amplitudeParam', 'ASParam', 'signalData', 'fitOptions', 'parNamePrefix'
-                    , 'tagPdfType', 'timeEffType', 'anglesEffType',  'readFromWS' ] :
+                    , 'tagPdfType', 'timeEffType', 'anglesEffType',  'readFromWS', 'splitParams' ] :
             self[par] = getKWArg( self, { }, par )
 
         from P2VV.Parameterizations.GeneralUtils import setParNamePrefix, getParNamePrefix
@@ -374,50 +376,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
               % ( 'signal' if self['SFit'] else 'signal + background', ', '.join( str(obs) for obs in self['obsSetP2VV'] ) )
         self['fullPdf'] = buildPdf( self['pdfComps'], Observables = self['obsSetP2VV'], Name = 'Jpsiphi' )
 
-        # split PDF for different data samples
-        self['amplitudes'] = getKWArg( self, { }, 'amplitudes')
-        if self['paramKKMass'] == 'simultaneous' :
-            # specify parameters that are different in simultaneous categories
-            splitCats   = [ [ self['observables']['KKMassCat'] ] ]
-            splitParams = [ [ ] ]
-            for amp in self['amplitudes'].parameters() :
-                if not amp.isFundamental() : continue
-                if any( name in amp.GetName() for name in [ 'AS', 'A_S', 'fS', 'f_S', 'C_SP' ] ) : splitParams[0].append(amp)
-
-            #ws = self['fullPdf'].ws()
-            #splitParams[0].append( ws['Re_ang_A0_A0_0000_4d00_coef'] )
-
-            # build simultaneous PDF
-            from P2VV.RooFitWrappers import SimultaneousPdf
-            self['simulPdf'] = SimultaneousPdf(  self['fullPdf'].GetName() + '_simul'
-                                               , MasterPdf       = self['fullPdf']
-                                               , SplitCategories = splitCats
-                                               , SplitParameters = splitParams
-                                              )
-
-            if self['ASParam'] != 'Mag2ReIm' :
-                # set values for splitted S-P coupling factors
-                if self['ASParam'] != 'Mag2ReIm' :
-                    print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: using S-P-wave coupling factors:',
-                    for iter, fac in enumerate( self['CSPValues'] ) :
-                        print '%d: %.4f%s' % ( iter, fac, '' if iter == len( self['CSPValues'] ) - 1 else ',' ),
-                    print
-
-                splitCatPars = self['simulPdf'].getVariables()
-                splitCatIter = self['observables']['KKMassCat'].typeIterator()
-                splitCatState = splitCatIter.Next()
-                from P2VV.Utilities.General import getSplitPar
-                while splitCatState :
-                    C_SP = getSplitPar( namePF + 'C_SP', splitCatState.GetName(), splitCatPars )
-                    C_SP.setVal( self['CSPValues'][ splitCatState.getVal() ] )
-                    C_SP.setConstant(True)
-
-                    splitCatState = splitCatIter.Next()
-
-        else :
-            self['simulPdf'] = None
-
-        self['pdf'] = self['simulPdf'] if self['simulPdf'] else self['fullPdf']
+        # build simultaneous PDF by splitting parameters
+        self['pdf'] = self._createSimultaneous()
 
         # multiply by acceptance functions
         if self['timeEffType'] :   self['pdf'] = multiplyByTimeAcceptance( self['pdf'], self, data = self['signalData'] )
@@ -493,6 +453,102 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             if SSTagging : self['obsSetP2VV'].append( observables['iTagSS'] )
         if not SFit :
             self['obsSetP2VV'].append( observables['mass'] )
+
+
+    def _createSimultaneous( self, **kwargs ) :
+        observables   = getKWArg( self, kwargs, 'observables' )
+        CSPValues     = getKWArg( self, kwargs, 'CSPValues' )
+        contEstWTag   = getKWArg( self, kwargs, 'contEstWTag' )
+        paramKKMass   = getKWArg( self, kwargs, 'paramKKMass' )
+        ASParam       = getKWArg( self, kwargs, 'ASParam' )
+        timeEffType   = getKWArg( self, kwargs, 'timeEffType' )
+        anglesEffType = getKWArg( self, kwargs, 'anglesEffType' )
+        splitParams   = getKWArg( self, kwargs, 'splitParams' )
+        fullPdf       = getKWArg( self, kwargs, 'fullPdf' )
+
+        from P2VV.Parameterizations.GeneralUtils import getParNamePrefix
+        namePF = getParNamePrefix(True)
+
+        # check split parameters
+        if paramKKMass == 'simultaneous' :
+            if 'KKMassCat' not in splitParams : splitParams['KKMassCat'] = [ 'C_SP' ]
+            elif 'C_SP' not in splitParams['KKMassCat'] : splitParams['KKMassCat'].append('C_SP')
+            for cat, pars in splitParams.iteritems() :
+                if cat != 'KKMassCat' :
+                    assert 'C_SP' not in pars\
+                           , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: S-P coupling factors are set to be split for category "%s"' % cat
+
+        # split PDF for different data samples
+        if splitParams :
+            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: splitting parameters in PDF "%s"' % fullPdf
+
+            # get workspace and PDF variables
+            ws   = fullPdf.ws()
+            vars = fullPdf.getVariables()
+
+            # get splitting categories and parameters
+            splitParsDict = { }
+            for cat, params in splitParams.iteritems() :
+                assert ws.cat(cat), 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: category "%s" not in workspace' % cat
+                for par in params :
+                    if   par == 'AngularAcceptance' : par = 'angEffDummyCoef'
+                    elif par == 'TimeAcceptance'    : continue
+                    assert ws.var(par), 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: no variable "%s" in workspace' % par
+                    assert vars.find(par), 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: variable "%s" not in PDF' % par
+                    if ws[par] not in splitParsDict :
+                        splitParsDict[ ws[par] ] = set( [ ws[cat] ] )
+                    else :
+                        splitParsDict[ ws[par] ].add( ws[cat] )
+
+            # create lists of split categories and parameters
+            pars = splitParsDict.keys()
+            splitCats = [ ]
+            splitPars = [ ]
+            for par in pars :
+                if par not in splitParsDict : continue
+                splitPars.append( set( [par] ) )
+                splitCats.append( splitParsDict.pop(par) )
+                for par1 in pars :
+                    if par1 not in splitParsDict : continue
+                    if splitParsDict[par1] == splitCats[-1] :
+                        splitPars[-1].add(par1)
+                        splitParsDict.pop(par1)
+
+            # build simultaneous PDF
+            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: building simultaneous PDF "%s":' % ( fullPdf.GetName() + '_simul' )
+            print 13 * ' ' + 'splitting categories: [ %s ]' % ' ], [ '.join(', '.join(cat.GetName() for cat in cats) for cats in splitCats)
+            print 13 * ' ' + 'split parameters:     [ %s ]' % ' ], [ '.join(', '.join(par.GetName() for par in pars) for pars in splitPars)
+            from P2VV.RooFitWrappers import SimultaneousPdf
+            self['simulPdf'] = SimultaneousPdf(  fullPdf.GetName() + '_simul'
+                                               , MasterPdf       = fullPdf
+                                               , SplitCategories = splitCats
+                                               , SplitParameters = splitPars
+                                              )
+
+            if paramKKMass == 'simultaneous' and ASParam != 'Mag2ReIm' :
+                # set values for splitted S-P coupling factors
+                if ASParam != 'Mag2ReIm' :
+                    print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: using S-P-wave coupling factors:',
+                    for iter, fac in enumerate( CSPValues ) :
+                        print '%d: %.4f%s' % ( iter, fac, '' if iter == len( CSPValues ) - 1 else ',' ),
+                    print
+
+                splitCat      = self['simulPdf'].indexCat()
+                splitCatPars  = self['simulPdf'].getVariables()
+                splitCatIter  = splitCat.typeIterator()
+                splitCatState = splitCatIter.Next()
+                from P2VV.Utilities.General import getSplitPar
+                while splitCatState :
+                    splitCat.setIndex( splitCatState.getVal() )
+                    C_SP = getSplitPar( namePF + 'C_SP', observables['KKMassCat'].getLabel(), splitCatPars )
+                    C_SP.setVal( CSPValues[ observables['KKMassCat'].getIndex() ] )
+                    C_SP.setConstant(True)
+                    splitCatState = splitCatIter.Next()
+
+        else :
+            self['simulPdf'] = None
+
+        return self['simulPdf'] if self['simulPdf'] else self['fullPdf']
 
 
 ###########################################################################################################################################
