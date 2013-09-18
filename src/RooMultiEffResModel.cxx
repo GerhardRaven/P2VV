@@ -178,7 +178,11 @@ RooMultiEffResModel::RooMultiEffResModel(const char *name, const char *title,
       entry->select();
       Int_t index = _super->getIndex();
       pair<HistEntries::iterator, bool> r = _entries.insert(make_pair(index, entry));
-      assert(r.second);
+      if (!r.second) {
+         coutE(InputArguments) << "RooMultiEffResModel::ctor(" << GetName()
+             << "): failed to insert MultiHistEntry" << std::endl;
+         assert(r.second);
+      }
    }
    _super->setLabel(current.Data());
 }

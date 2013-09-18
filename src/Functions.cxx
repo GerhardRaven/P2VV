@@ -98,7 +98,11 @@ void addSWeightToTree(const RooDataSet& ds, TTree& tree, const std::string& bran
    TEntryList *cut_list = static_cast<TEntryList*>(gDirectory->Get( "elist" ));
 
    Long64_t nds(ds.numEntries());
-   assert(nds == cut_list->GetN());
+   if (nds != cut_list->GetN()) {
+      std::cout << "addSWeightToTree(): ERROR: number of entries in data set does not match number of selected entries in tree"
+            << std::endl;
+      assert(nds == cut_list->GetN());
+   }
 
    std::vector<Double_t> weights(tree.GetEntries(), 0.);
 
