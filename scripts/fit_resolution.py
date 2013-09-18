@@ -75,7 +75,7 @@ input_data = {'2011' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPresc
                                'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_Mixing_2011_DataSet.root'),
                                'workspace' : 'Bs2JpsiPhiPrescaled_WPV_2011_workspace',
                                'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Reco14_Prescaled.root')},                        
-              '2012' : {'data' :os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2012_ntupleB_2013095.root'),
+              '2012' : {'data' :os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2012_ntupleB_20130905.root'),
                         'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_Mixing_2012_DataSet.root'),
                         'workspace' : 'Bs2JpsiPhiPrescaled_2012_workspace',
                         'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2012_Prescaled.root')},
@@ -87,12 +87,12 @@ input_data = {'2011' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPresc
                                    'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC11a.root'),
                                    'workspace' : 'Bs2JpsiPhiPrescaled_MC11a_workspace',
                                    'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC11a_incl_Jpsi_Prescaled.root')},
-              'MC2012' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC2012_ntupleB_20130709_MagUpDown.root'),
+              'MC2012' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC2012_ntupleB_20130904.root'),
                           'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC2012.root'),
                           'workspace' : 'Bs2JpsiPhiPrescaled_MC2012_workspace',
                           'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC2012_Prescaled.root')},
-              'MC2012_incl_Jpsi' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC2012_incl_Jpsi_ntupleB_20130709_MagUpDown.root'),
-                                    'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC2012.root'),
+              'MC2012_incl_Jpsi' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC2012_incl_Jpsi_ntupleB_20130916.root'),
+                                    'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC2012_DataSet.root'),
                                     'workspace' : 'Bs2JpsiPhiPrescaled_MC2012_workspace',
                                     'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC2012_incl_Jpsi_Prescaled.root')},
               'MC2011_Sim08a' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC2011_Sim08a_ntupleB_20130909.root'),
@@ -178,7 +178,7 @@ if args[1] == 'single':
 elif args[1] == 'double':
     mu = dict(MinMax = (-0.010, 0.010))
     mu['Constant'] = options.simultaneous and not options.split_mean
-    mu_values = {'MC11a_incl_Jpsi' : -0.000408, '2011_Reco14' :-0.00468,  
+    mu_values = {'MC11a_incl_Jpsi' : -0.000408, '2011_Reco14' : -0.00298,  
                  '2011' : -0.00407301, '2012' : -0.00365}
     mu['Value'] = mu_values.get(args[0], 0)
     from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
@@ -432,8 +432,9 @@ if fit_mass:
               , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack, Binning = 50)
               , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
               , plotResidHist = 'BX'
-              , xTitle = '#mu^+#mu^- invariant mass [MeV/c^2]'
-              , yTitle = 'Candidates / (%f MeV/c^2)' % ((mass_obs.getMax() - mass_obs.getMin()) / float(50))
+              , xTitle = '#mu^{+}#mu^{-} invariant mass [MeV/c^{2}]'
+              , yTitle = 'Candidates / (%5.2f MeV/c^{2})' % ((mass_obs.getMax() - mass_obs.getMin()) / float(50))
+              , yTitleOffset = 0.9
               , components = { 'sig_*'     : dict( LineColor = kOrange,   LineStyle = kDashed )
                                , 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed )
                                , 'bkg_*'  : dict( LineColor = kRed, LineStyle = kDashed )
@@ -596,7 +597,7 @@ elif options.wpv and options.wpv_type == 'Gauss':
     ##     wpv_mean = sig_tres._timeResMu
     ## else:
     def make_wpv_pdf(prefix):
-        wpv_mean = RealVar('%swpv_mean' % prefix, Value = 0, MinMax = (-1, 1))
+        wpv_mean = RealVar('%swpv_mean' % prefix, Value = 0, MinMax = (-1, 1), Constant = True)
         if options.wpv_gauss_width != 0:
             wpv_sigma = RealVar('%swpv_sigma' % prefix, Value = options.wpv_gauss_width, MinMax = (0.01, 1000), Constant = True)
         else:
@@ -797,6 +798,7 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
                       , pdfOpts  = dict(LineWidth = 4, **pdfOpts)
                       , xTitle = 'decay time [ps]'
                       , yTitle = 'Candidates / (XX ps)'
+                      , yTitleOffset = 0.9
                       , logy = pl
                       , plotResidHist = 'BX'
                       ## , components = { 'wpv_*'     : dict( LineColor = kRed,   LineStyle = kDashed )
@@ -822,6 +824,7 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
                   , pdfOpts  = dict(LineWidth = 4, **pdfOpts)
                   , xTitle = 'decay time [ps]'
                   , yTitle = 'Candidates / (XX ps)'
+                  , yTitleOffset = 0.9
                   , logy = pl
                   , plotResidHist = 'BX')
         

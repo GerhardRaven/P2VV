@@ -170,4 +170,5 @@ parNames = {'N_prompt'      : ('#prompt', '\\# prompt \jpsi'),
             'timeResMu'     : ('mean of Gaussians', 'common mean of Gaussians'),
             'timeResComb'   : ('sf comb', '$\\text{sf}_{\\text{comb}}$'),
             'timeResFrac2'  : ('frac G2', 'fraction 2nd Gauss'),
-            'timeResSigmaSF_2' : ('sf G2', '$\\text{sf}_{\\text{2}}$')}
+            'timeResSigmaSF_2' : ('sf G2', '$\\text{sf}_{2}$')}
+            'timeResSigmaSF_1' : ('sf G1', '$\\text{sf}_{1}$')}
