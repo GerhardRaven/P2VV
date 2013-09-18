@@ -47,8 +47,6 @@
 
 using namespace std;
 
-ClassImp(RooCubicSplineFun);
-
 //_____________________________________________________________________________
 void RooCubicSplineFun::init(const char* name,
                              const vector<double>& heights,

@@ -2,7 +2,6 @@
 #include "RooMath.h"
 #include "TMath.h"
 
-ClassImp(RooAbsGaussModelEfficiency);
 RooAbsGaussModelEfficiency::~RooAbsGaussModelEfficiency()  {};
 
 namespace {

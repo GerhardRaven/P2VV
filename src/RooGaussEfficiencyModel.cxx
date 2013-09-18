@@ -39,9 +39,6 @@
 
 using namespace std;
 
-ClassImp(RooGaussEfficiencyModel)
-;
-
 namespace {
     enum basisType { noBasis=0  ,  expBasis= 3
                    , sinBasis=13,  cosBasis=23

@@ -36,8 +36,6 @@
 
 using namespace std;
 
-ClassImp(RooBinnedFun);
-
 //_____________________________________________________________________________
 RooBinnedFun::RooBinnedFun()
 {
