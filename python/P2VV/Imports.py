@@ -244,6 +244,7 @@ class ExtConstrValsDict( dict ) :
         return self[key]
 
 constrVals = dict(  DM      = (  17.768, 0.024  )
+                  , beta    = ( -8.3e-3, 4.0e-3 )
                   , P0OS    = (  0.392,  0.008, 0.392 )
                   , P0SS    = (  0.350,  0.017, 0.350 )
                   , P1OS    = (  1.000,  0.023  )

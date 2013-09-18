@@ -204,6 +204,7 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
         self['constrainTResScale'] = 'constrain'      # '' / 'constrain' / 'fixed'
         self['timeEffType']        = 'paper2012'      # 'HLT1Unbiased' / 'HLT1ExclBiased' / 'paper2012' / 'fit'
         self['constrainDeltaM']    = 'constrain'      # '' / 'constrain' / 'fixed'
+        self['constrainBeta']      = 'noBeta'         # '' / 'constrain' / 'fixed' / 'noBeta'
 
         self['timeEffHistFiles']     = (  'data/Bs_HltPropertimeAcceptance_Data-20120816.root'
                                         , 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
@@ -662,6 +663,7 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
     ASParam            = getKWArg( self, kwargs, 'ASParam' )
     AparParam          = getKWArg( self, kwargs, 'AparParam' )
     constrainDeltaM    = getKWArg( self, kwargs, 'constrainDeltaM' )
+    constrainBeta      = getKWArg( self, kwargs, 'constrainBeta' )
     lambdaCPParam      = getKWArg( self, kwargs, 'lambdaCPParam' )
     timeEffType        = getKWArg( self, kwargs, 'timeEffType' )
     anglesEffType      = getKWArg( self, kwargs, 'anglesEffType' )
@@ -712,7 +714,7 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
     if blind and 'dGamma' in blind :
         if blind['dGamma'] : dGammaVar['Blind'] = blind['dGamma']
         else :               dGammaVar['Blind'] = ( 'UnblindUniform', 'BsDGs2013EPS', 0.02 )
-    self['lifetimeParams'] = LifetimeParams( dGamma = dGammaVar, dMConstraint = constrainDeltaM )
+    self['lifetimeParams'] = LifetimeParams( dGamma = dGammaVar, dMConstraint = constrainDeltaM, betaConstraint = constrainBeta )
     if ambiguityPars : self['lifetimeParams']['dGamma'].setVal( -self['lifetimeParams']['dGamma'].getVal() )
 
     if timeResType.startswith('event') :

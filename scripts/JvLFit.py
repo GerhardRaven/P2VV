@@ -76,6 +76,7 @@ pdfConfig['timeResType']        = 'eventNoMean' # 'eventDoubleGaussConstantFixed
 pdfConfig['constrainTResScale'] = 'constrain' # 'fixed'  # 'constrain'
 pdfConfig['timeEffType']        = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
 pdfConfig['constrainDeltaM']    = 'constrain'  # 'constrain' # fixed
+pdfConfig['constrainBeta']      = 'noBeta'      # '' / 'constrain' / 'fixed' / 'noBeta'
 
 pdfConfig['timeEffHistFiles'] = dict(  file      = dataPath + 'Bs_HltPropertimeAcceptance_Data-20120816.root'
                                      , hlt1UB    ='Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
