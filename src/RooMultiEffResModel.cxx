@@ -150,10 +150,10 @@ RooMultiEffResModel::RooMultiEffResModel(const char *name, const char *title,
           end = entries.end(); it != end; ++it) {
       MultiHistEntry* entry = *it;
       if (observables.getSize() == 0) {
-         observables.add(entry->efficiency()->observables());
+         observables.add(*entry->efficiency()->observables());
          entry->addCategories(categories);
       } else {
-         assert(observables.equals(entry->efficiency()->observables()));
+         assert(observables.equals(*entry->efficiency()->observables()));
          RooArgSet tmp;
          entry->addCategories(tmp);
          assert(categories.equals(tmp));
@@ -589,16 +589,16 @@ std::vector<const RooAbsReal*> RooMultiEffResModel::efficiencies() const {
 }
 
 //_____________________________________________________________________________
-RooArgSet RooMultiEffResModel::observables() const { 
-   RooArgSet observables;
+RooArgSet* RooMultiEffResModel::observables() const {
+   RooArgSet* observables = new RooArgSet;
    for(HistEntries::const_iterator it = _entries.begin(),
           end = _entries.end(); it != end; ++it) {
       MultiHistEntry* entry = it->second;
-      RooArgSet obs(entry->efficiency()->observables());
-      if (observables.getSize() == 0) {
-         observables.add(obs);
+      RooArgSet obs(*entry->efficiency()->observables());
+      if (observables->getSize() == 0) {
+         observables->add(obs);
       } else {
-         assert(observables.equals(obs));
+         assert(observables->equals(obs));
       }
    }
    return observables;

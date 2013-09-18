@@ -75,7 +75,7 @@ const RooAbsReal* RooEffResAddModel::efficiency() const
 }
 
 //_____________________________________________________________________________
-RooArgSet RooEffResAddModel::observables() const { 
+RooArgSet* RooEffResAddModel::observables() const {
    // Return pointer to pdf in product
-   return RooArgSet(RooAddModel::convVar());
+   return new RooArgSet(RooAddModel::convVar());
 }

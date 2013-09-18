@@ -150,10 +150,10 @@ const RooAbsReal* RooGaussEfficiencyModel::efficiency() const
 }
 
 //_____________________________________________________________________________
-RooArgSet RooGaussEfficiencyModel::observables() const {
+RooArgSet* RooGaussEfficiencyModel::observables() const {
    // Return pointer to pdf in product
    // verify whether efficiency depends on additional observables!!!
-   return RooArgSet(convVar());
+   return new RooArgSet(convVar());
 }
 
 //_____________________________________________________________________________

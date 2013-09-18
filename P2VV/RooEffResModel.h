@@ -55,9 +55,10 @@ public:
 
    const RooArgList& getIntegralRanges(const RooArgSet& iset, const char* rangeName = 0) const;
 
-   virtual RooArgSet observables() const { 
+   virtual RooArgSet* observables() const {
       // Return pointer to pdf in product
-      return RooArgSet(_observables);
+      // (pointer because genreflex dictionaries can't handle value)
+      return new RooArgSet(_observables);
    }
 
 protected:
