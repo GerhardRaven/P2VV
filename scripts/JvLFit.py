@@ -77,19 +77,32 @@ pdfConfig['constrainTResScale'] = 'constrain' # 'fixed'  # 'constrain'
 pdfConfig['timeEffType']        = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
 pdfConfig['constrainDeltaM']    = 'constrain'  # 'constrain' # fixed
 
-if pdfConfig['timeEffType'] :
-    pdfConfig['timeEffHistFile']      = dataPath + 'Bs_HltPropertimeAcceptance_Data-20120816.root'
-    pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
-    pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+pdfConfig['timeEffHistFiles'] = dict(  file      = dataPath + 'Bs_HltPropertimeAcceptance_Data-20120816.root'
+                                     , hlt1UB    ='Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+                                     , hlt1ExclB = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+                                    )
+#pdfConfig['timeEffHistFiles'] = [  (  [ ( 'KKMassCat', ( 1, 2 ) ) ]
+#                                    , dict(  file      = dataPath + 'Bs_HltPropertimeAcceptance_Data-20120816.root'
+#                                           , hlt1UB    ='Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+#                                           , hlt1ExclB = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+#                                          )
+#                                   )
+#                                 , (  [ ( 'KKMassCat', ( 0, 3 ) ) ]
+#                                    , dict(  file      = dataPath + '_Bs_HltPropertimeAcceptance_Data-20120816.root'
+#                                           , hlt1UB    ='Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+#                                           , hlt1ExclB = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+#                                          )
+#                                   )
+#                                ]
 
 pdfConfig['transAngles']   = False
 pdfConfig['anglesEffType'] = 'weights'  # 'weights' # 'basis012' # 'basisSig4'
 pdfConfig['angEffMomsFiles'] = dataPath + 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
 #pdfConfig['angEffMomsFiles'] = [  ( [ ( 'KKMassCat', ( 0, 3 ) ) ]
-#                                   , dataPath + '_hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
+#                                   , dataPath + 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
 #                                  )
 #                                , ( [ ( 'KKMassCat', ( 1, 2 ) ) ]
-#                                   , dataPath + '__hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
+#                                   , dataPath + 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
 #                                  )
 #                                , ( 'default'
 #                                   , dataPath + 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'

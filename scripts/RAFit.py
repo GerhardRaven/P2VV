@@ -162,15 +162,16 @@ if not readData or manualTagCatBins :
     #                          , ( 'TagCat2',   2, 0.30     )
     #                         ]
 
-pdfConfig['timeEffHistFile']      = os.path.join(prefix, 'p2vv/data/start_values.root') \
-                                    if pdfConfig['timeEffType'] == 'fit' else \
-                                    os.path.join(prefix, 'p2vv/data/Bs_HltPropertimeAcceptance_Data-20120816.root')
+pdfConfig['timeEffHistFiles'] = dict(  file      = os.path.join(prefix, 'p2vv/data/start_values.root') \
+                                                   if pdfConfig['timeEffType'] == 'fit' else \
+                                                   os.path.join(prefix, 'p2vv/data/Bs_HltPropertimeAcceptance_Data-20120816.root')
+                                     , hlt1UB    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+                                     , hlt1ExclB = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+                                    )
 #                                    '/bfys/raaij/p2vv/data/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504.root'
 #                                    '/bfys/raaij/p2vv/data/BuBdBdJPsiKsBsLambdab0_HltPropertimeAcceptance_20120504_unitAcceptance.root'
 #pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
-pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
 #pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
-pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
 pdfConfig['angEffMomsFiles']    = os.path.join(prefix, 'p2vv/data/trans_UB_UT_trueTime_BkgCat050_KK30_Basis')\
                                     if pdfConfig['transversityAngles'] else\
                                     os.path.join(prefix, 'p2vv/data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights')
