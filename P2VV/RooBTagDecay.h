@@ -137,6 +137,11 @@ public:
   RooArgList* avgCOdds(Int_t tagCat0 = 0) const;
   RooArgList* tagCatCoefs(Int_t tagCat0 = 0) const;
 
+  Bool_t changeModel(const RooResolutionModel& newModel)
+  {
+    return RooAbsAnaConvPdf::changeModel(newModel);
+  }
+
 protected:
   void initTaggingCats(const TObjArray& tagCatCoefs,
       const RooArgList& dilutions0, const RooArgList& dilutions1,

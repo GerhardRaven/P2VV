@@ -42,15 +42,14 @@ class Binned_MassPdf( MassPdf ) :
                 
 
         # create bin coefficients
-        from P2VV.RooFitWrappers import RealVar
-        self._coefs = [ RealVar(  '%s_coef%d' % ( self._name, bin )
-                                , Title    = '%s bin coefficient %d' % ( self._name, bin )
-                                , Value    = self._numEventsBins[bin] / self._numEvents if self._data else 1. / self._numBins
-                                , MinMax   = ( 0., 1. )
-                                , Constant = False
-                               ) if bin != 0 else None for bin in range( self._numBins )
-                      ]
-        del self._coefs[0]
+        self._coefs = [ ]
+        for bin in range( 1, self._numBins ) :
+            self._parseArg(  '%s_coef%d' % ( self._name, bin ), kwargs
+                           , Title    = '%s bin coefficient %d' % ( self._name, bin )
+                           , Value    = self._numEventsBins[bin] / self._numEvents if self._data else 1. / self._numBins
+                           , MinMax   = ( 0., 1. )
+                           , ContainerList = self._coefs
+                          )
 
         # create a BinnedPdf
         from P2VV.RooFitWrappers import BinnedPdf
@@ -96,20 +95,13 @@ class DoubleGauss_Signal_Mass ( MassPdf ) :
             self._parseArg( 'm_sig_widthPar1', kwargs, Title = 'B mass width parameter 1', Value = -59., Error = 1., MinMax = (-100., 0.) )
             self._parseArg( 'm_sig_widthPar2', kwargs, Title = 'B mass width parameter 2', Value = 47.,  Error = 1., MinMax = (0., 100.)  )
 
-            from P2VV.RooFitWrappers import FormulaVar
             for name in ( 'm_sig_frac', 'm_sig_sigma_1', 'm_sig_sigma_2' ) :
-                setattr( self, '_%s' % name
-                        , FormulaVar(  '%s_%s' % ( namePF, name )
-                                     , '%.10e*@0+%.10e*@1+%.10e*@2' % (  self._transWidthPars[name][0]
-                                                                       , self._transWidthPars[name][1]
-                                                                       , self._transWidthPars[name][2]
-                                                                      )
-                                     , (  getattr( self, '_m_sig_widthPar0' )
-                                        , getattr( self, '_m_sig_widthPar1' )
-                                        , getattr( self, '_m_sig_widthPar2' )
-                                       )
-                                    )
-                       )
+                self._parseArg( name, kwargs
+                               , Formula = '%.10e*@0+%.10e*@1+%.10e*@2' % ( self._transWidthPars[name][0], self._transWidthPars[name][1]
+                                                                           , self._transWidthPars[name][2] )
+                               , Arguments = ( self._m_sig_widthPar0, self._m_sig_widthPar1, self._m_sig_widthPar2 )
+                               , ObjectType = 'FormulaVar'
+                              )
 
         else :
             # use fraction of first Gaussian and widths directly
@@ -148,16 +140,23 @@ class LP2011_Signal_Mass ( MassPdf ) :
         self._parseArg( 'm_sig_frac', kwargs, Title = 'B mass fraction first Gaussian', Value = 0.8, Error = 0.03, MinMax = ( 0., 1. ) )
 
         from ROOT import RooGaussian as Gaussian
-        from P2VV.RooFitWrappers import Pdf, FormulaVar, SumPdf
+        from P2VV.RooFitWrappers import Pdf, SumPdf
         g1 = Pdf(  Name = '%sm_sig_1' % namePF
                  , Type = Gaussian
-                 , Parameters = (mass, self._m_sig_mean, self._m_sig_sigma_1))
+                 , Parameters = ( mass, self._m_sig_mean, self._m_sig_sigma_1 )
+                )
         g2 = Pdf(  Name = '%sm_sig_2' % namePF
                  , Type = Gaussian
-                 , Parameters = (mass, self._m_sig_mean, FormulaVar('_%sm_sig_sigma_2' % namePF, '@0*@1',
-                                                                    (self._m_sig_sigma_sf, self._m_sig_sigma_1))))
+                 , Parameters = ( mass, self._m_sig_mean
+                                 , self._parseArg( 'm_sig_sigma_2', kwargs, Formula = '@0*@1'
+                                                  , Arguments = ( self._m_sig_sigma_sf, self._m_sig_sigma_1 )
+                                                  , ObjectType = 'FormulaVar'
+                                                 )
+                                )
+                )
         MassPdf.__init__( self, pdf = SumPdf( Name = kwargs.pop( 'Name', 'LP2011_Signal_Mass' ), PDFs = ( g1, g2 )
-                                             , Yields = { g1.GetName() : self._m_sig_frac })
+                                             , Yields = { g1.GetName() : self._m_sig_frac }
+                                            )
                         )
         self._check_extraneous_kw( kwargs )
 
@@ -198,27 +197,23 @@ class DoubleCB_Signal_Mass ( MassPdf ) :
         self._parseArg( 'm_sig_frac', kwargs, Title = 'B mass fraction first CB', Value = 0.8, Error = 0.03, MinMax = ( 0., 1. ) )
 
         from ROOT import RooCBShape as CrystalBall
-        from P2VV.RooFitWrappers import Pdf, FormulaVar, SumPdf
+        from P2VV.RooFitWrappers import Pdf, SumPdf
         CB1 = Pdf(  Name ='%sm_sig_1' % namePF
                   , Type = CrystalBall
-                  , Parameters = (  mass, getattr( self, '_m_sig_mean' ), getattr( self, '_m_sig_sigma_1' )
-                                  , getattr( self, '_m_sig_alpha_1' ), getattr( self, '_m_sig_n_1' )
-                                 )
+                  , Parameters = ( mass, self._m_sig_mean, self._m_sig_sigma_1, self._m_sig_alpha_1, self._m_sig_n_1 )
                  )
         CB2 = Pdf( Name = '%sm_sig_2' % namePF
                   , Type = CrystalBall
-                  , Parameters = (  mass, getattr( self, '_m_sig_mean' )
-                                  , FormulaVar( '_%sm_sig_sigma_2' % namePF, '@0*@1'
-                                               , (  getattr( self, '_m_sig_sigma_sf' ), getattr( self, '_m_sig_sigma_1' ) )
-                                              )
-                                  , FormulaVar( '_%sm_sig_alpha_2' % namePF, '@0*@1'
-                                               , (  getattr( self, '_m_sig_alpha_sf' ), getattr( self, '_m_sig_alpha_1' ) )
-                                              )
-                                  , getattr( self, '_m_sig_n_2' )
+                  , Parameters = (  mass, self._m_sig_mean
+                                  , self._parseArg( '_m_sig_sigma_2', kwargs, Formula = '@0*@1'
+                                                   , Arguments = ( self._m_sig_sigma_sf, self._m_sig_sigma_1 ), ObjectType = 'FormulaVar' )
+                                  , self._parseArg( '_m_sig_alpha_2', kwargs, Formula = '@0*@1'
+                                                   , Arguments = ( self._m_sig_alpha_sf, self._m_sig_alpha_1 ), ObjectType = 'FormulaVar' )
+                                  , self._m_sig_n_2
                                  )
-                )
+                 )
         MassPdf.__init__( self, pdf = SumPdf( Name = kwargs.pop( 'Name', 'DoubleCB_Signal_Mass' ), PDFs = ( CB1, CB2 )
-                         , Yields = { CB1.GetName() : getattr( self, '_m_sig_frac' ) } ) )
+                         , Yields = { CB1.GetName() : self._m_sig_frac } ) )
         self._check_extraneous_kw( kwargs )
 
 
@@ -303,16 +298,22 @@ class DoubleCB_Psi_Mass ( MassPdf ) :
         self._parseArg( 'mpsi_frac', kwargs, Title = 'psi mass fraction first CB', Value = 0.8, Error = 0.03, MinMax = ( 0., 1. ) )
 
         from ROOT import RooCBShape as CrystalBall
-        from P2VV.RooFitWrappers import Pdf, FormulaVar, SumPdf
+        from P2VV.RooFitWrappers import Pdf, SumPdf
         CB1 = Pdf( Name = '%smpsi_1' % namePF, Type = CrystalBall
-                  , Parameters = ( mass, self._mpsi_mean, self._mpsi_sigma_1, self._mpsi_alpha_1, self._mpsi_n_1))
+                  , Parameters = ( mass, self._mpsi_mean, self._mpsi_sigma_1, self._mpsi_alpha_1, self._mpsi_n_1 )
+                 )
         CB2 = Pdf( Name = '%smpsi_2' % namePF, Type = CrystalBall
-                  , Parameters = ( mass, self._mpsi_mean
-                                  , FormulaVar('_%smpsi_sigma_2' % namePF, '@0*@1', (self._mpsi_sigma_sf, self._mpsi_sigma_1))
-                                  , FormulaVar('_%smpsi_alpha_2' % namePF, '@0*@1', (self._mpsi_alpha_sf, self._mpsi_alpha_1))
-                                  , self._mpsi_n_2))
-        MassPdf.__init__(self, pdf = SumPdf(Name = kwargs.pop('Name', 'DoubleCB_Psi_Mass'), PDFs = (CB1, CB2),
-                                            Yields = {CB1.GetName() : self._mpsi_frac}))
+                  , Parameters = (  mass, self._mpsi_mean
+                                  , self._parseArg( 'mpsi_sigma_2', kwargs, Formula = '@0*@1'
+                                                   , Arguments = ( self._mpsi_sigma_sf, self._mpsi_sigma_1 ), ObjectType = 'FormulaVar' )
+                                  , self._parseArg( 'mpsi_alpha_2', kwargs, Formula = '@0*@1'
+                                                   , Arguments = ( self._mpsi_alpha_sf, self._mpsi_alpha_1 ), ObjectType = 'FormulaVar' )
+                                  , self._mpsi_n_2
+                                 )
+                 )
+        MassPdf.__init__( self, pdf = SumPdf( Name = kwargs.pop( 'Name', 'DoubleCB_Psi_Mass' ), PDFs = (CB1, CB2)
+                                             , Yields = { CB1.GetName() : self._mpsi_frac } )
+                        )
         self._check_extraneous_kw( kwargs )
 
 class Background_PsiMass ( MassPdf ) :

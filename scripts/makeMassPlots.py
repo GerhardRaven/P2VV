@@ -1,130 +1,44 @@
 ###########################################################################################################################################
-## set script parameters ##
-###########################
+## Script options ##
+####################
 
-from math import pi
-from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_2011Analysis as PdfConfig
-pdfConfig = PdfConfig()
-
-# job parameters
-doFit                   = False
-pdfConfig['selection']  = 'paper2012'
+dataSetName = 'JpsiKK_sigSWeight'
+dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_4KKMassBins_2TagCats.root'
 
 mumuPlotsFilePath = 'mumuMass2011.ps'
 KKPlotsFilePath   = 'KKMass2011.ps'
 
-parFileIn  = ''
-parFileOut = ''
+fitOpts = dict( NumCPU = 8, Optimize = 2, Timer = True, Minimizer = 'Minuit2', Strategy = 1, Offset = True )
 
-pdfConfig['nTupleName']     = 'DecayTree'
-#pdfConfig['nTupleFile']     = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_2012_20130425_tupleB.root'
-pdfConfig['nTupleFile']     = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
-pdfConfig['nominalDataSet'] = True
-
-pdfConfig['timeEffHistFile']      = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs_HltPropertimeAcceptance_Data-20120816.root'
-pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
-pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
-pdfConfig['angEffMomentsFile']    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
-
-# fit options
-fitOpts = dict(  NumCPU    = 2
-               , Optimize  = 2
-               , Minimizer = 'Minuit2'
-               , Offset    = True
-#               , Hesse     = False
-               , Timer     = True
-#               , Verbose   = True
-              )
-pdfConfig['fitOptions'] = fitOpts
-
-fitRange      = ''
-corrSFitErr   = 'sumWeight' # '' / 'sumWeight' / ( 0.887, [ 0.566, 0.863, 0.956, 0.948, 0.855, 0.662 ] ) / 'matrix'
-randomParVals = ( ) # ( 1., 12345 )
-MinosPars     = [#  'AparPhase'
-                 #, 'f_S_bin0',        'f_S_bin1',        'f_S_bin2',        'f_S_bin3',        'f_S_bin4',        'f_S_bin5'
-                 #, 'ASOddPhase_bin0', 'ASOddPhase_bin1', 'ASOddPhase_bin2', 'ASOddPhase_bin3', 'ASOddPhase_bin4', 'ASOddPhase_bin5'
-                ]
-
-# PDF options
-pdfConfig['multiplyByTimeEff']    = 'signal'
-pdfConfig['timeEffType']          = 'paper2012'
-pdfConfig['multiplyByAngEff']     = 'weights'
-pdfConfig['parameterizeKKMass']   = 'simultaneous'
-pdfConfig['SWeightsType']         = 'simultaneousFreeBkg'
-pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ]
-pdfConfig['SWaveAmplitudeValues'] = (  [ ( 0.46, 0.07 ), ( 0.03, 0.01 ), (  0.03, 0.01 ), (  0.22, 0.03 ) ]
-                                     , [ ( 0.8,  0.2  ), ( 2.6,  0.2  ), ( -2.7,  0.1  ), ( -1.9,  0.3  ) ] )
-pdfConfig['CSPValues']            = [ 0.959, 0.770, 0.824, 0.968 ]
-
-pdfConfig['sameSideTagging']    = True
-pdfConfig['conditionalTagging'] = True
-pdfConfig['continuousEstWTag']  = True
-pdfConfig['constrainTagging']   = 'constrain'
-
-pdfConfig['timeResType']           = 'eventNoMean'
-pdfConfig['numTimeResBins']        = 40
-pdfConfig['constrainTimeResScale'] = 'fixed'
-
-pdfConfig['constrainDeltaM'] = 'constrain'
-
-pdfConfig['lambdaCPParam'] = 'lambPhi'
-
-pdfConfig['makePlots'] = False
-
-from ROOT import gStyle, kSolid, kFullCircle, kBlue, kRed, kGreen, kMagenta
+from ROOT import gStyle, kFullCircle, kSolid, kBlue, kRed, kMagenta
+gStyle.SetLineStyleString( 5, ' 40 20 10 20'  )
+gStyle.SetLineStyleString( 7, ' 40 20'        )
+gStyle.SetLineStyleString( 9, ' 100 20'       )
 
 
 ###########################################################################################################################################
-## read data and build PDF ##
-#############################
+## Read data and get observables ##
+###################################
 
 # workspace
 from P2VV.RooFitWrappers import RooObject
-worksp = RooObject( workspace = 'JpsiphiWorkspace' ).ws()
+ws = RooObject( workspace = 'JpsiphiWorkspace' ).ws()
 
-from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
-pdfBuild = PdfBuilder( **pdfConfig )
-pdf = pdfBuild.pdf()
+# read data set from file
+from P2VV.Utilities.DataHandling import readData
+sigData = readData( filePath = dataSetFile, dataSetName = dataSetName,  NTuple = False )
 
-if not 'Optimize' in fitOpts or fitOpts['Optimize'] < 2 :
-    # unset cache-and-track
-    for par in pdfBuild['taggingParams'].parameters() : par.setAttribute( 'CacheAndTrack', False )
-
-if parFileIn :
-    # read parameters from file
-    pdfConfig.readParametersFromFile( filePath = parFileIn )
-    pdfConfig.setParametersInPdf(pdf)
-
-# signal and background data sets
-sigData = pdfBuild['sigSWeightData']
-bkgData = pdfBuild['bkgSWeightData']
-data    = pdfBuild['data']
-
-# data set with weights corrected for background dilution: for phi_s fit only!
-if corrSFitErr == 'sumWeight'\
-        or ( type(corrSFitErr) != str and hasattr( corrSFitErr, '__iter__' ) and hasattr( corrSFitErr, '__getitem__' ) ) :
-    from P2VV.Utilities.DataHandling import correctSWeights
-    fitData = correctSWeights( pdfBuild['sigSWeightData'], 'N_bkgMass_sw'
-                              , 'KKMassCat' if pdfConfig['parameterizeKKMass'] == 'simultaneous' else ''
-                              , CorrectionFactors = None if corrSFitErr == 'sumWeight' else corrSFitErr )
-
-else :
-    fitData = pdfBuild['sigSWeightData']
-
-# get observables and parameters in PDF
-pdfObs  = pdf.getObservables(fitData)
-pdfPars = pdf.getParameters(fitData)
+# get observables
+from P2VV.RooFitWrappers import RealVar
+mumuMass = RealVar('mdau1')
+KKMass   = RealVar('mdau2')
 
 
-KKMass     = pdfBuild['observables']['KKMass']
-mumuMass   = pdfBuild['observables']['mumuMass']
+###########################################################################################################################################
+## Make mumu mass plots ##
+##########################
 
-
-####################################################################################################
-## Make the mumu mass plots
-##################################################
-
-from P2VV.Load import LHCbStyle
+from P2VV.Load import P2VVLibrary, LHCbStyle
 
 from P2VV.Parameterizations.MassPDFs import CB_Signal_Mass, DoubleCB_Signal_Mass, Linear_Background_Mass
 #mumuSig = CB_Signal_Mass(  Name             = 'sig_mumu'
@@ -135,18 +49,17 @@ from P2VV.Parameterizations.MassPDFs import CB_Signal_Mass, DoubleCB_Signal_Mass
 #                         , mumu_m_sig_alpha = dict( Value = 1.7,   MinMax = ( 1.0,   2.0   ) )
 #                         , mumu_m_sig_n     = dict( Value = 2. )
 #                        )
-mumuSig = DoubleCB_Signal_Mass(  Name                = 'sig_mumu'
-                               , ParNamePrefix       = 'mumu'
-                               , mass                = mumuMass
-                               , mumu_m_sig_frac     = dict( Value = 0.81,   Error = 0.03, MinMax = ( 0.,    1.    ) )
-                               , mumu_m_sig_mean     = dict( Value = 3099.7, Error = 0.1,  MinMax = ( 3050., 3150. ) )
-                               , mumu_m_sig_sigma_1  = dict( Value = 12.5,   Error = 0.2,  MinMax = ( 8.,    15.   ) )
-                               , mumu_m_sig_sigma_sf = dict( Value = 1.7,    Error = 0.1,  MinMax = ( 0.1,   5.0   ) )
-                               , mumu_m_sig_alpha_1  = dict( Value = 1.90,   Error = 0.04, MinMax = ( 1.0,   3.0   ) )
-                               , mumu_m_sig_alpha_sf = dict( Value = 1.4,    Error = 0.3,  MinMax = ( 0.1,   5.0   )
-                                                            , ObjectType = 'RealVar' )
-                               , mumu_m_sig_n_1      = dict( Value = 2. )
-                               , mumu_m_sig_n_2      = dict( Value = 2. )
+mumuSig = DoubleCB_Signal_Mass(  Name           = 'sig_mumu'
+                               , ParNamePrefix  = 'mumu'
+                               , mass           = mumuMass
+                               , m_sig_frac     = dict( Value = 0.81,   Error = 0.03, MinMax = ( 0.,    1.    ) )
+                               , m_sig_mean     = dict( Value = 3099.7, Error = 0.1,  MinMax = ( 3050., 3150. ) )
+                               , m_sig_sigma_1  = dict( Value = 12.5,   Error = 0.2,  MinMax = ( 8.,    15.   ) )
+                               , m_sig_sigma_sf = dict( Value = 1.7,    Error = 0.1,  MinMax = ( 0.1,   5.0   ) )
+                               , m_sig_alpha_1  = dict( Value = 1.90,   Error = 0.04, MinMax = ( 1.0,   3.0   ) )
+                               , m_sig_alpha_sf = dict( Value = 1.4,    Error = 0.3,  MinMax = ( 0.1,   5.0   ), ObjectType = 'RealVar' )
+                               , m_sig_n_1      = dict( Value = 2. )
+                               , m_sig_n_2      = dict( Value = 2. )
                               )
 #mumuBkg = Linear_Background_Mass( Name = 'bkg_mumu', mass = mumuMass, Constant = True )
 
@@ -215,9 +128,10 @@ mumuMassPlot.Draw()
 mumuMassCanvLog.Print( mumuPlotsFilePath + ')' )
 
 
-##################################################
-## Make the KK mass plots
-##################################################
+###########################################################################################################################################
+## Make KK mass plots ##
+########################
+
 #Build KK mas pdf
 from ROOT import RooRealVar, RooRelBreitWigner, RooConstVar, RooFFTConvPdf, RooGaussModel
 
@@ -265,10 +179,6 @@ fitResult.PrintSpecial( text = True )
 
 #Plot
 KKMassPlot = KKMassVar.frame(60)
-
-gStyle.SetLineStyleString( 5, ' 40 20 10 20'  )
-gStyle.SetLineStyleString( 7, ' 40 20'        )
-gStyle.SetLineStyleString( 9, ' 100 20'       )
 
 sigData.plotOn( KKMassPlot, MarkerStyle = kFullCircle, MarkerSize = 0.7, LineWidth = 3 )
 KKMassPdf.plotOn( KKMassPlot, LineStyle = kSolid, LineWidth = 3, LineColor = kBlue                                   )

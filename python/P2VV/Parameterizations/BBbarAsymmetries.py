@@ -30,8 +30,6 @@ class Trivial_CEvenOdd( CEvenOdd ) :
 
 class Coefficients_CEvenOdd( CEvenOdd ) :
     def __init__( self, **kwargs ) :
-        from P2VV.RooFitWrappers import ConstVar
-
         self._parseArg( 'avgCEven', kwargs, Title = 'CP average even coefficients', Value = 1., MinMax = (  0.8, 1.2 ) )
         self._parseArg( 'avgCOdd',  kwargs, Title = 'CP average odd coefficients',  Value = 0., MinMax = ( -1.,  1.  ) )
 
@@ -41,7 +39,7 @@ class Coefficients_CEvenOdd( CEvenOdd ) :
 
 class ProdTagNorm_CEvenOdd( CEvenOdd ) :
     def __init__( self, **kwargs ) :
-        from P2VV.RooFitWrappers import ConstVar, FormulaVar, Product
+        from P2VV.RooFitWrappers import ConstVar
 
         self._parseArg( 'AProd',   kwargs, Title = 'production asymmetry',         Value = 0., MinMax = ( -1., 1. ) )
         self._parseArg( 'ATagEff', kwargs, Title = 'tagging efficiency asymmetry', Value = 0., MinMax = ( -1., 1. ) )
@@ -53,15 +51,17 @@ class ProdTagNorm_CEvenOdd( CEvenOdd ) :
           else :
             CPParam = kwargs.pop('CPParam')
             self._C = CPParam['C']
-          self._ANorm   = Product( 'ANorm', [ self._minus, self._C ], Title = 'normalization asymmetry' )
+          self._ANorm = self._parseArg( 'ANorm', kwargs, Arguments = [ self._minus, self._C ], Title = 'normalization asymmetry'
+                                       , ObjectType = 'Product' )
           self._params += [ self._minus, self._C ]
         else   :
           self._parseArg( 'ANorm', kwargs, Title = 'normalization asymmetry', Value = 0., MinMax = ( -1., 1. ) )
 
         self._check_extraneous_kw( kwargs ) 
-        CEvenOdd.__init__(self, avgCEven = FormulaVar( 'avgCEven', '1. + @0*@1 + @0*@2 + @1*@2',
-                                                       [self._AProd, self._ANorm, self._ATagEff], Title = 'CP average even coefficients')
-                              , avgCOdd  = FormulaVar( 'avgCOdd',  '@0 + @1 + @2 + @0*@1*@2',
-                                                       [self._AProd, self._ANorm, self._ATagEff], Title = 'CP average odd coefficients') 
+        CEvenOdd.__init__( self, avgCEven = self._parseArg( 'avgCEven', kwargs, Formula = '1. + @0*@1 + @0*@2 + @1*@2'
+                                                           , Arguments =  [ self._AProd, self._ANorm, self._ATagEff ]
+                                                           , ObjectType = 'FormulaVar', Title = 'CP average even coefficients' )
+                              , avgCOdd   = self._parseArg( 'avgCOdd', kwargs, Formula = '@0 + @1 + @2 + @0*@1*@2'
+                                                           , Arguments = [ self._AProd, self._ANorm, self._ATagEff ]
+                                                           , ObjectType = 'FormulaVar', Title = 'CP average odd coefficients' )
                          )
-

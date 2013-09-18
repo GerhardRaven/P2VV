@@ -7,19 +7,13 @@ from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_2011Analysis as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
-doFit                   = True
-pdfConfig['selection']  = 'paper2012'
+doFit = True
 
 parFileIn  = ''
 parFileOut = ''
 
 dataSetName = 'JpsiKK_sigSWeight'
 dataSetFile = 'data/P2VVDataSets2011Reco12_6KKMassBins_2TagCats.root'
-
-pdfConfig['timeEffHistFile']      = 'data/Bs_HltPropertimeAcceptance_Data-20120816.root'
-pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
-pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
-pdfConfig['angEffMomentsFile']    = 'data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
 
 # fit options
 fitOpts = dict(  NumCPU    = 2
@@ -41,29 +35,31 @@ MinosPars     = [#  'AparPhase'
                 ]
 
 # PDF options
-pdfConfig['multiplyByTimeEff']    = 'signal'
-pdfConfig['timeEffType']          = 'paper2012'
-pdfConfig['multiplyByAngEff']     = 'weights'
-pdfConfig['parameterizeKKMass']   = 'simultaneous'
-pdfConfig['KKMassBinBounds']      = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ]
-pdfConfig['SWaveAmplitudeValues'] = (  [ (0.23, 0.08), (0.067, 0.029), (0.008, 0.011), (0.016, 0.011), (0.055, 0.026), (0.17,  0.04) ]
-                                     , [ (1.3,  0.7 ), (0.77,  0.28 ), (0.50,  0.47 ), (-0.51, 0.25 ), (-0.46, 0.21 ), (-0.65, 0.20) ] )
-pdfConfig['CSPValues']            = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
+pdfConfig['numTimeResBins']     = 40
+pdfConfig['timeResType']        = 'eventNoMean'
+pdfConfig['constrainTResScale'] = 'constrain'
+pdfConfig['timeEffType']        = 'paper2012'
+pdfConfig['constrainDeltaM']    = 'constrain'
 
+pdfConfig['timeEffHistFiles'] = dict(  file      = 'data/Bs_HltPropertimeAcceptance_Data-20120816.root'
+                                     , hlt1UB    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+                                     , hlt1ExclB = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+                                    )
+
+pdfConfig['anglesEffType'] = 'weights'
+pdfConfig['angEffMomsFiles'] = 'data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
+
+pdfConfig['SSTagging']        = True
+pdfConfig['condTagging']      = True
+pdfConfig['contEstWTag']      = True
+pdfConfig['constrainTagging'] = 'constrain'
+
+pdfConfig['paramKKMass']     = 'simultaneous'
+pdfConfig['KKMassBinBounds'] = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ]
+pdfConfig['CSPValues']       = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
 KKMassPars = pdfConfig['obsDict']['KKMass']
 pdfConfig['obsDict']['KKMass'] = ( KKMassPars[0], KKMassPars[1], KKMassPars[2]
                                   , 1020., pdfConfig['KKMassBinBounds'][0], pdfConfig['KKMassBinBounds'][-1] )
-
-pdfConfig['sameSideTagging']    = True
-pdfConfig['conditionalTagging'] = True
-pdfConfig['continuousEstWTag']  = True
-pdfConfig['constrainTagging']   = 'constrain'
-
-pdfConfig['timeResType']           = 'eventNoMean'
-pdfConfig['numTimeResBins']        = 40
-pdfConfig['constrainTimeResScale'] = 'constrain'
-
-pdfConfig['constrainDeltaM'] = 'constrain'
 
 pdfConfig['lambdaCPParam'] = 'lambPhi'
 
@@ -90,7 +86,8 @@ worksp = RooObject( workspace = 'JpsiphiWorkspace' ).ws()
 # read data set from file
 from P2VV.Utilities.DataHandling import readData
 dataSet = readData( filePath = dataSetFile, dataSetName = dataSetName,  NTuple = False )
-pdfConfig['dataSet'] = dataSet
+pdfConfig['signalData'] = dataSet
+pdfConfig['readFromWS'] = True
 
 # build the PDF
 from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
@@ -111,7 +108,7 @@ if corrSFitErr == 'sumWeight'\
         or ( type(corrSFitErr) != str and hasattr( corrSFitErr, '__iter__' ) and hasattr( corrSFitErr, '__getitem__' ) ) :
     from P2VV.Utilities.DataHandling import correctSWeights
     fitData = correctSWeights( dataSet, 'N_cbkgMass_sw'
-                              , 'KKMassCat' if pdfConfig['parameterizeKKMass'] == 'simultaneous' else ''
+                              , 'KKMassCat' if pdfConfig['paramKKMass'] == 'simultaneous' else ''
                               , CorrectionFactors = None if corrSFitErr == 'sumWeight' else corrSFitErr )
 
 else :
@@ -128,7 +125,7 @@ pdfPars = pdf.getParameters(fitData)
 
 # float/fix values of some parameters
 for CEvenOdds in pdfBuild['taggingParams']['CEvenOdds'] :
-    if not pdfConfig['sameSideTagging'] :
+    if not pdfConfig['SSTagging'] :
         CEvenOdds.setConstant('avgCEven.*')
         CEvenOdds.setConstant( 'avgCOdd.*', True )
     else :

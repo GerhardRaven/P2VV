@@ -116,10 +116,11 @@ if not readData or manualTagCatBins :
                               , ( 'TagCat2',   2, 0.30     )
                              ]
 
-pdfConfig['timeEffHistFile']      = '/bfys/raaij/p2vv/data/Bs_HltPropertimeAcceptance_Data-20120816.root'
-pdfConfig['timeEffHistUBName']    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
-pdfConfig['timeEffHistExclBName'] = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
-pdfConfig['angEffMomentsFile']    = '/bfys/raaij/p2vv/data/trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
+pdfConfig['timeEffHistFiles'] = dict(  file      = '/bfys/raaij/p2vv/data/Bs_HltPropertimeAcceptance_Data-20120816.root'
+                                     , hlt1UB    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+                                     , hlt1ExclB = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+                                    )
+pdfConfig['angEffMomsFiles']    = '/bfys/raaij/p2vv/data/trans_UB_UT_trueTime_BkgCat050_KK30_Basis'\
                                     if pdfConfig['transversityAngles'] else\
                                     '/bfys/raaij/p2vv/data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis'
 

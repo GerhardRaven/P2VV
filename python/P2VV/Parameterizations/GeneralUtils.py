@@ -6,6 +6,19 @@
 ##                                                                                                                                       ##
 ###########################################################################################################################################
 
+_parNamePrefix = ''
+
+def setParNamePrefix(prefix) :
+    global _parNamePrefix
+    if prefix : _parNamePrefix = prefix
+    else      : _parNamePrefix = ''
+
+def getParNamePrefix( fullPrefix = False ) :
+    global _parNamePrefix
+    if not _parNamePrefix : return ''
+    if fullPrefix : return _parNamePrefix + '_'
+    return _parNamePrefix
+
 class _util_parse_mixin( object ) :
     def parameters( self ) :
         return self._params
@@ -23,7 +36,7 @@ class _util_parse_mixin( object ) :
             self._namePF = kwargs.pop( 'ParNamePrefix', None )
 
         if self._namePF : return self._namePF + '_'
-        else :            return ''
+        else :            return getParNamePrefix(True)
 
     def _parseArg( self, argName, kwargs, **parsDict ) :
         def _create( argName, kwargs, **parsDict ) :
@@ -44,7 +57,9 @@ class _util_parse_mixin( object ) :
             # construct variable name
             if 'Name' not in parsDict : parsDict['Name'] = argName
             namePF = self.getNamePrefix(kwargs)
-            namePF = ( parsDict.pop('NamePrefix') + '_' ) if 'NamePrefix' in parsDict else namePF
+            if 'NamePrefix' in parsDict :
+                namePF = parsDict.pop('NamePrefix')
+                if namePF : namePF += '_'
             if not parsDict.get( 'Observable', False ) and namePF : parsDict['Name'] = namePF + parsDict['Name']
 
             # create variable

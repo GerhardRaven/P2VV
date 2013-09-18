@@ -445,16 +445,16 @@ class MappedCategory( Category ) :
 ##         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class Product(RooObject) :
-    def __init__(self,Name,fargs,**kwargs) :
+    def __init__(self,Name,Arguments,**kwargs) :
         __check_name_syntax__(Name)
-        spec =  "prod::%s(%s)"%(Name,','.join(i.GetName() for i in fargs))
+        spec =  "prod::%s(%s)"%(Name,','.join(i.GetName() for i in Arguments))
         self._declare( spec )
         self._init(Name,'RooProduct')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 
 class Addition(RooObject) :
-    def __init__(self,Name,fargs,**kwargs) :
+    def __init__(self,Name,Arguments,**kwargs) :
         # construct factory string on the fly...
         __check_name_syntax__(Name)
         def cn( x ) :
@@ -463,7 +463,7 @@ class Addition(RooObject) :
             except :
                 (a,b) = x
                 return '%s*%s' % ( a.GetName(),b.GetName() )
-        self._declare( "sum::%s(%s)" % ( Name,','.join( cn(i) for i in fargs ) ) )
+        self._declare( "sum::%s(%s)" % ( Name,','.join( cn(i) for i in Arguments ) ) )
         self._init(Name,'RooAddition')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
@@ -472,17 +472,17 @@ class FormulaVar (RooObject) :
                ,'Dependents' : lambda s : s.dependents()
                ,'Value'      : lambda s : s.getVal()
                }
-    def __init__(self, Name, formula, fargs, **kwargs):
+    def __init__(self, Name, Formula, Arguments, **kwargs):
         # construct factory string on the fly...
         __check_name_syntax__(Name)
         data = kwargs.pop('data', None)
         if not data:
-            spec = "expr::%s('%s',{%s})" % (Name, formula, ','.join(i.GetName() for i in fargs))
+            spec = "expr::%s('%s',{%s})" % (Name, Formula, ','.join(i.GetName() for i in Arguments))
             self._declare(spec)
             self._init(Name, 'RooFormulaVar')
         else:
             from ROOT import RooFormulaVar, RooArgList
-            form = RooFormulaVar(Name, Name, formula, RooArgList( fargs ) )
+            form = RooFormulaVar(Name, Name, Formula, RooArgList(Arguments) )
             form = data.addColumn(form)
             form = self._addObject(form)
             self._init(Name, 'RooRealVar')
@@ -518,15 +518,15 @@ class LinearVar(RooObject) :
     def __init__(self, **kwargs):
         # construct factory string on the fly...
         __check_req_kw__('Name', kwargs)
-        __check_req_kw__('Observable', kwargs )
+        __check_req_kw__('ObsVar', kwargs )
         __check_req_kw__('Slope', kwargs)
         __check_req_kw__('Offset', kwargs)
         __check_name_syntax__(kwargs['Name'])
         args = {}
-        for k in ['Name', 'Observable', 'Slope', 'Offset']:
+        for k in ['Name', 'ObsVar', 'Slope', 'Offset']:
             v = kwargs.pop(k)
             args[k] = v if type(v) == str else v.GetName()
-        self._declare("LinearVar::%(Name)s(%(Observable)s,%(Slope)s,%(Offset)s )" % args )
+        self._declare("LinearVar::%(Name)s(%(ObsVar)s,%(Slope)s,%(Offset)s )" % args )
         self._init(args['Name'], 'RooLinearVar')
         for (k, v) in kwargs.iteritems() : self.__setitem__(k, v)
 
@@ -551,45 +551,45 @@ class PolyVar(RooObject) :
     def __init__(self,**kwargs):
         # construct factory string on the fly...
         __check_req_kw__('Name', kwargs)
-        __check_req_kw__('Observable', kwargs )
+        __check_req_kw__('ObsVar', kwargs )
         __check_req_kw__('Coefficients', kwargs)
         __check_name_syntax__(kwargs['Name'])
         args = {}
-        for k in ['Name', 'Observable']:
+        for k in ['Name', 'ObsVar']:
             v = kwargs.pop(k)
             args[k] = v if type(v) == str else v.GetName()
         args['Coefficients'] = '{%s}' % ','.join([v if type(v) == str else v.GetName()
                                                   for v in kwargs.pop('Coefficients')])
-        self._declare("PolyVar::%(Name)s(%(Observable)s,%(Coefficients)s)" % args )
+        self._declare("PolyVar::%(Name)s(%(ObsVar)s,%(Coefficients)s)" % args )
         self._init(args['Name'], 'RooPolyVar')
         for (k, v) in kwargs.iteritems() : self.__setitem__(k, v)
 
 class P2VVAngleBasis (RooObject) :
-    # TODO: replace use of RooP2VVAngleBasis with an explicit product with
-    #       some attribute set so we can recognize it by attribute instead
-    #       of by type...
-    # TODO: move 'c' out of this class (and into an explicit product),
-    #       which will allow more re-use of existing objects, and hence
-    #       make things faster
-    def __init__(self, angles, ind,c=1,ind2 = None,**kwargs) :
-        assert c!=0
-        namePostFix = kwargs.pop( 'NamePostFix', '')
-        if namePostFix : namePostFix += '_'
-        name = 'p2vvab_%s%d%d%d%d' % ( namePostFix, ind[0], ind[1], ind[2], ind[3] )
-        if ind2 : name += '_%d%d%d%d' % ind2
-        if c!=1 : name += '_%3.2f' % c
-        name = name.replace('.','d').replace('-','m')
-        spec = "RooP2VVAngleBasis::%s(" % name
-        # WARNING: angles may contain barebones PyROOT objects!!!
-        spec += "%s, %s, %s, " % tuple( angles[i].GetName() for i in [ 'cpsi', 'ctheta', 'phi'] )
-        spec += "%d,%d,%d,%d, " % ind
-        if ind2 : spec += "%d,%d,%d,%d, " % ind2
-        spec += " %f)"% c
-        #NOTE: this requires libP2VV.so to be loaded
+    def __init__(self, **kwargs) :
+        # get arguments
+        __check_req_kw__( 'Name',   kwargs )
+        __check_req_kw__( 'Angles', kwargs )
+        name    = kwargs.pop('Name')
+        angles  = kwargs.pop('Angles')
+        coef    = kwargs.pop( 'Coefficient', None )
+        inds    = kwargs.pop( 'Indices', ( 0, 0, 0, 0 ) )
+        fixCoef = kwargs.pop( 'FixedCoef', 1. )
+        name += '_%d%d%d%d' % ( inds[0], inds[1], inds[2], inds[3] )
+        if fixCoef != 1. : name += '_%3.2f' % fixCoef
+        name = name.replace( '.', 'd' ).replace( '-', 'm' )
+
+        # build RooP2VVAngleBasis
         from P2VV.Load import P2VVLibrary
-        self._declare( spec )
-        self._init(name,'RooP2VVAngleBasis')
+        spec = 'RooP2VVAngleBasis::%s(%s,%s,%s,%s%d,%d,%d,%d,%f)'\
+               % ( ( name, ) + tuple( angles[ang].GetName() for ang in ( 'cpsi', 'ctheta', 'phi' ) )\
+                 + ( coef.GetName() + ',' if coef else '', ) + tuple(inds) + ( fixCoef, ) )
+        self._declare(spec)
+        self._init( name, 'RooP2VVAngleBasis' )
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+
+    def createProdSum( self, **kwargs ) :
+        from P2VV.Utilities.DataMoments import multiplyP2VVAngleBases
+        multiplyP2VVAngleBases( self._var, **kwargs )
 
 
 class RealMoment( object ):
@@ -697,6 +697,7 @@ class ComplementCoef( RooObject ) :
         name = kwargs.pop('Name')
         __check_name_syntax__(name)
 
+        from P2VV.Load import P2VVLibrary
 	coefs = kwargs.pop('Coefficients')  
 	try :
 		spec = 'RooComplementCoef::%s({%s})'%(name,','.join( i.GetName() for i in coefs ))
@@ -1827,7 +1828,7 @@ class BinnedFun(RooObject):
         #       the right coefficient
         __check_mutually_exclusive_kw__(kwargs,('Histogram'),('Binning'))
         name = kwargs.pop('Name')
-        observable = kwargs.pop('Observable')
+        observable = kwargs.pop('ObsVar')
         hist = kwargs.pop('Histogram', None)
         histograms = kwargs.pop('Histograms', None)
         if hist:
