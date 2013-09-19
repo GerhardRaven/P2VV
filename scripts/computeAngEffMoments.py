@@ -5,7 +5,7 @@
 from math import pi, sin, cos, sqrt
 
 # job parameters
-MCProd      = 'MC11'
+MCProd      = 'Sim08_2012'
 readMoments = False
 makePlots   = True
 transAngles = False
@@ -20,27 +20,27 @@ plotsFile   = '%s_%s_UB_UT_trueTime_BkgCat050_KK30' % ( MCProd, 'trans' if trans
 dataSetFile = '%s_%s_UB_UT_trueTime_BkgCat050_KK30' % ( MCProd, 'trans' if transAngles else 'hel' ) + '.root'
 
 nTupleName = 'DecayTree'
-#nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_MC2012_NoSmear_ntupleB_20130709_MagUpDown.root'
-nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20121010.root'
+nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_MC2012_ntupleB_20130904.root'
+#nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20121010.root'
 #nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_DGs0_MC11a_ntupleB_for_fitting_20121119.root'
 #nTupleFile = '/data/bfys/jleerdam/Bs2Jpsiphi/Bs2JpsiPhi_PHSP_MC11a_ntupleB_for_fitting_20121031.root'
 #nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/angRes/angRes.root'
 
 # transversity amplitudes
-A0Mag2Val    = 0.722**2 / ( 0.722**2 + 0.480**2 + 0.499**2 ) if MCProd == 'MC12' else 0.775**2 / ( 0.775**2 + 0.490**2 + 0.400**2 )
-AperpMag2Val = 0.499**2 / ( 0.722**2 + 0.480**2 + 0.499**2 ) if MCProd == 'MC12' else 0.400**2 / ( 0.775**2 + 0.490**2 + 0.400**2 )
-AparMag2Val  = 0.480**2 / ( 0.722**2 + 0.480**2 + 0.499**2 ) if MCProd == 'MC12' else 0.490**2 / ( 0.775**2 + 0.490**2 + 0.400**2 )
+A0Mag2Val    = 0.722**2 / ( 0.722**2 + 0.480**2 + 0.499**2 ) if MCProd == 'Sim08_2012' else 0.775**2 / ( 0.775**2 + 0.490**2 + 0.400**2 )
+AperpMag2Val = 0.499**2 / ( 0.722**2 + 0.480**2 + 0.499**2 ) if MCProd == 'Sim08_2012' else 0.400**2 / ( 0.775**2 + 0.490**2 + 0.400**2 )
+AparMag2Val  = 0.480**2 / ( 0.722**2 + 0.480**2 + 0.499**2 ) if MCProd == 'Sim08_2012' else 0.490**2 / ( 0.775**2 + 0.490**2 + 0.400**2 )
 
 A0PhVal      = 0.
-AperpPhVal   = 3.07 if MCProd == 'MC12' else -0.17
-AparPhVal    = 3.30 if MCProd == 'MC12' else  2.50
+AperpPhVal   = 3.07 if MCProd == 'Sim08_2012' else -0.17
+AparPhVal    = 3.30 if MCProd == 'Sim08_2012' else  2.50
 
 # CP violation parameters
-phiCPVal      = +0.07 if MCProd == 'MC12' else -0.04
+phiCPVal      = +0.07 if MCProd == 'Sim08_2012' else -0.04
 
 # B lifetime parameters
-GammaVal  = 1. / 1.503 if MCProd == 'MC12' else 0.679
-dGammaVal = 1. / 1.406 - 1. / 1.614 if MCProd == 'MC12' else 0.060
+GammaVal  = 1. / 1.503 if MCProd == 'Sim08_2012' else 0.679
+dGammaVal = 1. / 1.406 - 1. / 1.614 if MCProd == 'Sim08_2012' else 0.060
 dMVal     = 17.8
 tResSigma = 0.045
 
@@ -94,15 +94,15 @@ from P2VV.Utilities.DataHandling import readData
 cuts = bkgcatCut + ' && ' + trackChiSqCuts + ' && ' + massCuts + ' && ' + timeCuts + ' && ' + tagCuts
 #cuts = trackChiSqCuts + ' && ' + massCuts + ' && ' + timeCuts + ' && ' + tagCuts
 if trigger == 'ExclBiased' :
-    cuts  = 'sel == 1 && hlt1_excl_biased_dec == 1 && hlt2_biased == 1 && ' + cuts
+    cuts  = 'sel == 1 && sel_cleantail==1 && hlt1_excl_biased_dec == 1 && hlt2_biased == 1 && ' + cuts
     data = readData(  nTupleFile, dataSetName = nTupleName, NTuple = True, observables = obsSet, ntupleCuts = cuts )
 
 elif trigger == 'Unbiased' :
-    cuts = 'sel == 1 && hlt1_unbiased_dec == 1 && hlt2_biased == 1 && ' + cuts
+    cuts = 'sel == 1 && sel_cleantail==1 && hlt1_unbiased_dec == 1 && hlt2_biased == 1 && ' + cuts
     data = readData(  nTupleFile, dataSetName = nTupleName, NTuple = True, observables = obsSet, ntupleCuts = cuts )
 
 else :
-    cuts = 'sel == 1 && (hlt1_unbiased_dec == 1 || hlt1_biased == 1) && hlt2_biased == 1 && ' + cuts
+    cuts = 'sel == 1 && sel_cleantail==1 && (hlt1_unbiased_dec == 1 || hlt1_biased == 1) && hlt2_biased == 1 && ' + cuts
     data = readData(  nTupleFile, dataSetName = nTupleName, NTuple = True, observables = obsSet, ntupleCuts = cuts )
 
 
