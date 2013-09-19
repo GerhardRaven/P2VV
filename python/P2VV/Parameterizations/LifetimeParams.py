@@ -42,7 +42,7 @@ class Gamma_LifetimeParams( LifetimeParams ) :
         self._parseArg( 'dM', kwargs, Title = 'delta m', Unit = 'ps^{-1}', Value = DMVal, Error = DMErr, MinMax = ( -RooInf, +RooInf ) )
         
         dMConstr   = kwargs.pop( 'dMConstraint',   None )
-        betaConstr = kwargs.pop( 'betaConstraint', None )
+        betaConstr = kwargs.pop( 'betaConstraint', 'noBeta' )
         if betaConstr == 'noBeta' :
             self._timeEffGamma = self._Gamma
         else :
