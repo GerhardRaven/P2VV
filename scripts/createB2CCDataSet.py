@@ -18,7 +18,7 @@ addTaggingObs    = ( 2, 2 ) # ( 0, 0 )
 createRangeData  = False
 createNTuple     = False
 splitDataSet     = [ ] #[ 'tagCatP2VVOS', 'tagCatP2VVSS' ]
-KKMassBinBounds  = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ]
+KKMassBinBounds  = [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ]  # [ 1008., 1020., 1032. ] # [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] 
 
 eventFracs       = [  dict( N_sigMass = 0.504, N_cbkgMass = None )
                     #, dict( N_sigMass = 0.11,  N_cbkgMass = None )
@@ -56,7 +56,7 @@ obsKeys = [  'mass', 'KKMass', 'mumuMass'
            , 'wTagSS'#, 'tagDecSS'
            #, 'sel', 'selA', 'selB'
            , 'hlt1ExclB', 'hlt2B', 'hlt2UB'#, 'hlt1B', 'hlt1UB'
-          ]
+             ]
 if simulation :
     obsKeys += [ 'truetime', 'bkgcat' ]
 
@@ -112,6 +112,7 @@ obsDict = dict(  mass      = ( 'mass',                 'm(J/#psi K^{+}K^{-})',  
                , Kminus_PY                  = ( 'Kminus_PY',                  'Kminus_PY',      0.,   -RooInf, +RooInf )
                , Kminus_PZ                  = ( 'Kminus_PZ',                  'Kminus_PZ',      0.,   -RooInf, +RooInf )
                , B_Pt                       = ( 'B_Pt',                       'B_Pt',           0.,    0.,      RooInf )
+               , B_P                        = ( 'B_P ',                       'B_P ',           0.,    0.,      RooInf )
                , phi_1020_pt                = ( 'phi_1020_pt',                'phi_1020_pt',    500.,  500.,    RooInf )
                , B_s0_LOKI_CosPolAngle_Dau1 = ( 'B_s0_LOKI_CosPolAngle_Dau1', 'mumu cos(th)',   0.,   -1.,     +1.     )
                , B_s0_IP_OWNPV              = ( 'B_s0_IP_OWNPV',              'B_s0_IP_OWNPV',  0.,   -RooInf, +RooInf )
@@ -167,6 +168,10 @@ from P2VV.Load import RooFitOutput, LHCbStyle
 # create list of required observables
 reqObsList = [ 'index', 'mass', 'KKMass', 'tagDecOS', 'tagDecSS', 'wTagOS', 'wTagSS' ]
 reqObsList += ['hlt1ExclB'] if triggerSel == 'paper2012' else [ 'hlt1ExclB', 'hlt2B' ] if triggerSel == 'timeEffFit' else [ ]
+reqObsList += ['Kplus_PX','Kplus_PY', 'Kplus_PZ', 'Kminus_PX','Kminus_PY', 'Kminus_PZ' 
+               , 'muplus_PX','muplus_PY', 'muplus_PZ', 'muminus_PX','muminus_PY', 'muminus_PZ' 
+               , 'B_P', 'B_Pt'
+               ]
 
 # create workspace
 from P2VV.RooFitWrappers import RooObject
@@ -184,6 +189,7 @@ for obs in obsKeys + reqObsList :
     if type( obsDict[obs][2] ) == dict or type( obsDict[obs][2] ) == list :
         observables[obs] = Category( obsDict[obs][0], Title = obsDict[obs][1], Observable = True, States = obsDict[obs][2] )
     else :
+        print obs
         observables[obs] = RealVar( obsDict[obs][0], Title = obsDict[obs][1], Unit = obsDict[obs][2], Observable = True
                                    , Value = obsDict[obs][3], MinMax = ( obsDict[obs][4], obsDict[obs][5] ) )
 

@@ -16,7 +16,7 @@ plotsFile   = 'hel_UB_UT_trueTime_BkgCat050_KK30.ps'
 dataSetFile = 'hel_UB_UT_trueTime_BkgCat050_KK30.root'
 
 nTupleName = 'DecayTree'
-nTupleFile = 'data/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20121010.root'
+nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20130628.root' # 'data/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20121010.root'
 
 # transversity amplitudes
 A0Mag2Val    = 0.60
@@ -83,15 +83,15 @@ tagCuts        = '(tagdecision == 0 || tagdecision == -1 || tagdecision == +1)'
 from P2VV.Utilities.DataHandling import readData
 cuts = bkgcatCut + ' && ' + trackChiSqCuts + ' && ' + massCuts + ' && ' + timeCuts + ' && ' + tagCuts
 if trigger == 'ExclBiased' :
-    cuts  = 'sel == 1 && hlt1_excl_biased_dec == 1 && hlt2_biased == 1 && ' + cuts
+    cuts  = 'sel == 1 && sel_cleantail==1 && hlt1_excl_biased_dec == 1 && hlt2_biased == 1 && ' + cuts
     data = readData(  nTupleFile, dataSetName = nTupleName, NTuple = True, observables = obsSet, ntupleCuts = cuts )
 
 elif trigger == 'Unbiased' :
-    cuts = 'sel == 1 && hlt1_unbiased_dec == 1 && hlt2_biased == 1 && ' + cuts
+    cuts = 'sel == 1 && sel_cleantail==1 && hlt1_unbiased_dec == 1 && hlt2_biased == 1 && ' + cuts
     data = readData(  nTupleFile, dataSetName = nTupleName, NTuple = True, observables = obsSet, ntupleCuts = cuts )
 
 else :
-    cuts = 'sel == 1 && (hlt1_unbiased_dec == 1 || hlt1_biased == 1) && hlt2_biased == 1 && ' + cuts
+    cuts = 'sel == 1 && sel_cleantail==1 && (hlt1_unbiased_dec == 1 || hlt1_biased == 1) && hlt2_biased == 1 && ' + cuts
     data = readData(  nTupleFile, dataSetName = nTupleName, NTuple = True, observables = obsSet, ntupleCuts = cuts )
 
 

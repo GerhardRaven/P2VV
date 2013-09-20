@@ -486,7 +486,7 @@ class RealMomentsBuilder ( dict ) :
                     corrs[func2] = self[func2].correlation( it1 - it2 ) if it2 < it1 else self[func1].correlation( it2 - it1)
                 self._correlations[func1] = corrs
 
-    def convertPhysicsMomentsToBasisMoments(self,outFile,scale=1):
+    def convertPhysMomsToEffWeights(self,outFile,Scale=1):
         # This method is ONLY intended to transform the angular function weights to the equivalent weights in the orthogonal base.
         if not ( self._basisFuncNames[0].startswith('Re') or self._basisFuncNames[0].startswith('Im') ):
             print 'P2VV - ERROR: Method convertPhysicsToBasisMoments() of class RealMomentsBuilder is intended only for angular function weights conversion.:'
@@ -494,7 +494,7 @@ class RealMomentsBuilder ( dict ) :
             from math import sqrt, pi
             physMoments = self._coefficients
             orthBaseEquivMoms = { }
-            s = scale #Apply a scale factor to the converted moments
+            s = Scale #Apply a scale factor to the converted moments
             orthBaseEquivMoms['p2vvab_0000']  = (  physMoments['Re_ang_A0_A0'][0]             \
                                                  + physMoments['Re_ang_Apar_Apar'][0]         \
                                                  + physMoments['Re_ang_Aperp_Aperp'] [0]      \
