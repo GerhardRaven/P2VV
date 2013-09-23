@@ -201,9 +201,9 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
         self['numTimeBins']        = 30               # number of bins for the decay time observable
         self['numTimeResBins']     = 40               # number of bins for the decay-time resolution observable (used for caching)
         self['timeResType']        = 'eventNoMean'    # '' / 'event' / 'eventNoMean' / 'eventConstMean' / '3Gauss'
-        self['constrainTResScale'] = 'constrain'      # '' / 'constrain' / 'fixed'
+        self['constrainTResScale'] = ''      # '' / 'constrain' / 'fixed'
         self['timeEffType']        = 'paper2012'      # 'HLT1Unbiased' / 'HLT1ExclBiased' / 'paper2012' / 'fit'
-        self['constrainDeltaM']    = 'constrain'      # '' / 'constrain' / 'fixed'
+        self['constrainDeltaM']    = ''      # '' / 'constrain' / 'fixed'
         self['constrainBeta']      = 'noBeta'         # '' / 'constrain' / 'fixed' / 'noBeta'
 
         self['timeEffHistFiles']     = (  'data/Bs_HltPropertimeAcceptance_Data-20120816.root'
@@ -222,7 +222,7 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
         self['SSTagging']        = True           # use same-side Kaon tagging?
         self['condTagging']      = True           # make tagging categories and B/Bbar tags conditional observables?
         self['contEstWTag']      = True           # use a continuous estimated wrong-tag probability instead of tagging categories?
-        self['constrainTagging'] = 'constrain'    # '' / 'constrain' / 'fixed'
+        self['constrainTagging'] = ''    # '' / 'constrain' / 'fixed'
         self['tagCatsOS']        = [ ]            # [ ( 'Untagged', 0, 0.5000001, 0.5,   0.5,   0.0, 0.669, 0.0 ), ( 'Tagged',   1, 0.4999999, 0.392, 0.392, 0.0, 0.331, 0.0 ) ]
         self['tagCatsSS']        = [ ]            # [ ( 'Untagged', 0, 0.5000001, 0.5,   0.5,   0.0, 0.896, 0.0 ), ('Tagged',    1, 0.4999999, 0.359, 0.359, 0.0, 0.104, 0.0 ) ]
 
@@ -238,6 +238,18 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
         self['lambdaCPParam'] = 'lambPhi'    # 'ReIm' / 'lambSqPhi' / 'lambPhi' / 'lambPhi_CPVDecay' / 'lambPhiRel_CPVDecay'
 
         self['splitParams'] = dict( KKMassCat = [ 'f_S', 'ASOddPhase' ] )
+
+        self['externalConstr'] = dict(  dM             = (  17.768, 0.024  )
+                                      , wTagP0OS       = (  0.392,  0.008  )
+                                      , wTagP1OS       = (  1.000,  0.023  )
+                                      , wTagDelP0OS    = (  0.0110, 0.0034 )
+                                      , wTagDelP1OS    = (  0.000,  0.001  )
+                                      , wTagP0SS       = (  0.350,  0.017  )
+                                      , wTagP1SS       = (  1.00,   0.16   )
+                                      , wTagDelP0SS    = ( -0.019,  0.005  )
+                                      , wTagDelP1SS    = (  0.00,   0.01   )
+                                      , timeResSigmaSF = (  1.45,   0.06   )
+                                     )
 
         # initialize PdfConfiguration object
         PdfConfiguration.__init__( self )
@@ -265,6 +277,10 @@ class SimulCatSettings(list) :
 
     def categories(self) :
         return self._cats
+
+    def default(self) :
+        assert self._default, 'P2VV - ERROR: SimulCatSettings.default(%s): no default settings defined' % self._name
+        return self._default
 
     def addSettings( self, Categories, Labels, Settings ) :
         if not type(Categories) == str :
@@ -360,7 +376,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         for par in [ 'SFit', 'KKMassBinBounds', 'obsDict', 'CSPValues', 'condTagging', 'contEstWTag', 'SSTagging', 'transAngles'
                     , 'numEvents', 'sigFrac', 'paramKKMass', 'amplitudeParam', 'ASParam', 'signalData', 'fitOptions', 'parNamePrefix'
                     , 'tagPdfType', 'timeEffType', 'timeEffHistFiles', 'timeEffParameters', 'anglesEffType', 'angEffMomsFiles'
-                    , 'readFromWS', 'splitParams' ] :
+                    , 'readFromWS', 'splitParams', 'externalConstr' ] :
             self[par] = getKWArg( self, { }, par )
 
         from P2VV.Parameterizations.GeneralUtils import setParNamePrefix, getParNamePrefix
@@ -410,6 +426,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         # multiply by acceptance functions
         if self['timeEffType'] :   self._multiplyByTimeAcceptance()
         if self['anglesEffType'] : self._multiplyByAngularAcceptance()
+
+        # create external constraints
+        if self['externalConstr'] : self._createExternalConstraints()
 
         # collect python garbage
         import gc
@@ -650,7 +669,6 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             multiplyByTimeAcceptance( pdf, self, data = signalData, histFile = timeEffHistFiles['file']
                                      , histUBName = timeEffHistFiles['hlt1UB'], histExclBName = timeEffHistFiles['hlt1ExclB'] )
         else :
-            ws            = simulPdf.ws()
             splitCat      = simulPdf.indexCat()
             splitCatIter  = splitCat.typeIterator()
             splitCatState = splitCatIter.Next()
@@ -677,7 +695,6 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         if type(angEffMomsFiles) == str :
             multiplyByAngularAcceptance( pdf, self, angEffMomsFile = angEffMomsFiles )
         else :
-            ws            = simulPdf.ws()
             splitCat      = simulPdf.indexCat()
             splitCatIter  = splitCat.typeIterator()
             splitCatState = splitCatIter.Next()
@@ -689,6 +706,75 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 cNamePF = ( splitCatState.GetName() ).replace( '{', '' ).replace( '}', '' ).replace( ';', '_' )
                 multiplyByAngularAcceptance( catPdf, self, angEffMomsFile = effFile, coefNamePF = cNamePF )
                 splitCatState = splitCatIter.Next()
+
+
+    def _createExternalConstraints( self, **kwargs ) :
+        externalConstr = getKWArg( self, kwargs, 'externalConstr' )
+        splitParsDict  = getKWArg( self, kwargs, 'splitParsDict' )
+        pdf            = getKWArg( self, kwargs, 'pdf' )
+        simulPdf       = getKWArg( self, kwargs, 'simulPdf' )
+
+        from P2VV.Parameterizations.GeneralUtils import getParNamePrefix
+        namePF = getParNamePrefix(True)
+
+        constraints = set()
+        def buildConstraint( par, constrVals ) :
+            from P2VV.RooFitWrappers import Pdf, ConstVar
+            from ROOT import RooGaussian as Gaussian
+            constrName = par.GetName().replace( '{', '' ).replace( '}', '' ).replace( ';', '_' )
+            constraints.add( Pdf(  Name = constrName + '_constraint', Type = Gaussian
+                                 , Parameters = [  par
+                                                 , ConstVar( Name = constrName + '_mean',  Value = constrVals[0] )
+                                                 , ConstVar( Name = constrName + '_sigma', Value = constrVals[1] )
+                                                ]
+                                )
+                           )
+
+        ws = pdf.ws()
+        pdfVars = pdf.getVariables()
+        if simulPdf :
+            splitCat      = simulPdf.indexCat()
+            splitCatIter  = splitCat.typeIterator()
+            inputCats     = [ splitCat ] if splitCat.isFundamental() else splitCat.inputCatList()
+
+        for par, constrVals in externalConstr.iteritems() :
+            parVar = ws[ namePF + par ]
+            assert parVar, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: parameter "%s" is set to be constrained, but it is not found in workspace'\
+                           % ( namePF + par )
+            splitCats = splitParsDict.get( parVar, set() )
+            if not splitCats :
+                if type(constrVals) == SimulCatSettings : constrVals = constrVals.default()
+                buildConstraint( parVar, constrVals )
+
+            else :
+                assert simulPdf\
+                      , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: found splitting categories for parameter "%s", but no simultaneous PDF' % par
+
+                splitCatIter.Reset()
+                splitCatState = splitCatIter.Next()
+                catsStrings = [ ]
+                while splitCatState :
+                    splitCat.setIndex( splitCatState.getVal() )
+                    splitCatState = splitCatIter.Next()
+
+                    catLabels = [ ( cat.GetName(), cat.getLabel() ) for cat in inputCats if cat in splitCats ]
+                    catsStr = ';'.join( lab[1] for lab in catLabels )
+                    if len(catLabels) > 1 : catsStr = '{' + catsStr + '}'
+                    if catsStr in catsStrings : continue
+
+                    catsStrings.append(catsStr)
+                    from P2VV.Utilities.General import getSplitPar
+                    parVar = getSplitPar( namePF + par, catsStr, pdfVars )
+                    assert parVar, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: parameter "%s" is set to be constrained, but it is not found in PDF'\
+                                   % ( namePF + par )
+
+                    if type(constrVals) == SimulCatSettings :
+                        constrValsTuple = constrVals.getSettings(catLabels)
+                    else :
+                        constrValsTuple = constrVals
+                    buildConstraint( parVar, constrValsTuple )
+
+        pdf['ExternalConstraints'] = pdf['ExternalConstraints'] | constraints
 
 
 ###########################################################################################################################################

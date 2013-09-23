@@ -74,9 +74,9 @@ equalAbsLambdaCPs = False
 pdfConfig['numTimeBins'] = 30
 pdfConfig['numTimeResBins']     = 40
 pdfConfig['timeResType']        = 'eventNoMean' # 'eventDoubleGaussConstantFixedMean' # 'event' # 'eventNoMean'
-pdfConfig['constrainTResScale'] = 'constrain' # 'fixed'  # 'constrain'
+pdfConfig['constrainTResScale'] = '' # 'fixed'  # 'constrain'
 pdfConfig['timeEffType']        = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
-pdfConfig['constrainDeltaM']    = 'constrain'  # 'constrain' # fixed
+pdfConfig['constrainDeltaM']    = ''  # 'constrain' # fixed
 pdfConfig['constrainBeta']      = 'noBeta'      # '' / 'constrain' / 'fixed' / 'noBeta'
 
 pdfConfig['timeEffHistFiles'] = dict(  file      = dataPath + 'Bs_HltPropertimeAcceptance_Data-20120816.root'
@@ -107,7 +107,7 @@ pdfConfig['timeEffHistFiles'] = dict(  file      = dataPath + 'Bs_HltPropertimeA
 pdfConfig['transAngles']   = False
 pdfConfig['anglesEffType'] = 'weights'  # 'weights' # 'basis012' # 'basisSig4'
 pdfConfig['angEffMomsFiles'] = dataPath + 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
-#angEffMomsFiles = SimulCatSettings('timeEffHistFiles')
+#angEffMomsFiles = SimulCatSettings('angEffMomsFiles')
 #angEffMomsFiles.addSettings( 'default', [ ], dataPath + 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights' )
 #angEffMomsFiles.addSettings( [ 'KKMassCat' ], [ [ 'bin0', 'bin3' ] ]
 #                            , dataPath + 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights' )
@@ -128,7 +128,7 @@ pdfConfig['sigTaggingType']   = 'tagUntag'
 pdfConfig['SSTagging']        = True
 pdfConfig['condTagging']      = True
 pdfConfig['contEstWTag']      = True
-pdfConfig['constrainTagging'] = 'constrain'  # 'constrain'
+pdfConfig['constrainTagging'] = ''  # 'constrain'
 if generateData or manualTagCatBins :
     pdfConfig['tagCatsOS'] = [  ( 'Untagged', 0, 0.5000001, 0.5,   0.5,   0.0, 0.669, 0.0 )
                               , ( 'Tagged',   1, 0.4999999, 0.392, 0.392, 0.0, 0.331, 0.0 )
@@ -153,13 +153,10 @@ pdfConfig['lambdaCPParam'] = 'lambPhi' # 'lambPhi_CPVDecay_PSWaves'  # 'lambPhi'
 
 pdfConfig['splitParams'] = dict( KKMassCat = [ 'f_S', 'ASOddPhase' ] )
 
+pdfConfig['externalConstr']['dM'] = ( 17.63, 0.11 )
+
 from P2VV.Imports import extConstraintValues
-extConstraintValues.setVal( 'DM',      (  17.63, 0.11 ) )
-#extConstraintValues.setVal( 'DM',      (  17.768, 0.024 ) )
-#extConstraintValues.setVal( 'P0OS',    (  0.381,  0.003, 0.383 ) )
-#extConstraintValues.setVal( 'DelP0OS', (  0.015,  0.003  ) )
-#extConstraintValues.setVal( 'P1OS',    (  0.978,  0.026  ) )
-#extConstraintValues.setVal( 'DelP1OS', (  0.07,   0.030  ) )
+extConstraintValues.setVal( 'DM', ( 17.63, 0.11 ) )
 
 dGammaVal = 0.108
 dMVal     = 17.647
