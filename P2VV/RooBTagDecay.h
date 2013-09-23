@@ -114,6 +114,7 @@ public:
   Double_t tagCatCoef() const;
   Double_t tagCatCoef(Int_t& cat0, Int_t&cat1) const;
   RooArgSet* coefVars(Int_t coefIdx) const;
+  RooResolutionModel& resolutionModel() const {return (RooResolutionModel&)_model.arg();}  // TODO: move this method to RooAbsAnaConvPdf
 
   const char *pruneRangeName(const char* rangeName, const RooArgSet& vars) const;
   Int_t getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVars,
@@ -139,6 +140,7 @@ public:
 
   Bool_t changeModel(const RooResolutionModel& newModel)
   {
+    // TODO: remove this function and make RooAbsAnaConvPdf::changeModel(const RooResolutionModel& newModel) public
     return RooAbsAnaConvPdf::changeModel(newModel);
   }
 

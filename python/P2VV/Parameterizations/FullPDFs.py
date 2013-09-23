@@ -484,20 +484,23 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
 
     def _createSimultaneous( self, **kwargs ) :
-        observables      = getKWArg( self, kwargs, 'observables' )
-        CSPValues        = getKWArg( self, kwargs, 'CSPValues' )
-        contEstWTag      = getKWArg( self, kwargs, 'contEstWTag' )
-        paramKKMass      = getKWArg( self, kwargs, 'paramKKMass' )
-        ASParam          = getKWArg( self, kwargs, 'ASParam' )
-        timeEffType      = getKWArg( self, kwargs, 'timeEffType' )
-        timeEffHistFiles = getKWArg( self, kwargs, 'timeEffHistFiles' )
-        anglesEffType    = getKWArg( self, kwargs, 'anglesEffType' )
-        angEffMomsFiles  = getKWArg( self, kwargs, 'angEffMomsFiles' )
-        splitParams      = getKWArg( self, kwargs, 'splitParams' )
-        fullPdf          = getKWArg( self, kwargs, 'fullPdf' )
+        observables       = getKWArg( self, kwargs, 'observables' )
+        CSPValues         = getKWArg( self, kwargs, 'CSPValues' )
+        contEstWTag       = getKWArg( self, kwargs, 'contEstWTag' )
+        paramKKMass       = getKWArg( self, kwargs, 'paramKKMass' )
+        ASParam           = getKWArg( self, kwargs, 'ASParam' )
+        timeEffType       = getKWArg( self, kwargs, 'timeEffType' )
+        timeEffHistFiles  = getKWArg( self, kwargs, 'timeEffHistFiles' )
+        anglesEffType     = getKWArg( self, kwargs, 'anglesEffType' )
+        angEffMomsFiles   = getKWArg( self, kwargs, 'angEffMomsFiles' )
+        splitParams       = getKWArg( self, kwargs, 'splitParams' )
+        fullPdf           = getKWArg( self, kwargs, 'fullPdf' )
+        timeResModelsOrig = getKWArg( self, kwargs, 'timeResModelsOrig' )
 
         from P2VV.Parameterizations.GeneralUtils import getParNamePrefix
         namePF = getParNamePrefix(True)
+
+        self['splitParsDict'] = { }
 
         # check split parameters
         if paramKKMass == 'simultaneous' :
@@ -537,12 +540,14 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             for cat, params in splitParams.iteritems() :
                 assert ws.cat(cat), 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: category "%s" not in workspace' % cat
                 for par in params :
+                    par = namePF + par
                     assert ws.var(par), 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: no variable "%s" in workspace' % par
                     assert vars.find(par), 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: variable "%s" not in PDF' % par
                     if ws[par] not in splitParsDict :
                         splitParsDict[ ws[par] ] = set( [ ws[cat] ] )
                     else :
                         splitParsDict[ ws[par] ].add( ws[cat] )
+            self['splitParsDict'] = splitParsDict.copy()
 
             # create lists of split categories and parameters
             pars = splitParsDict.keys()
@@ -569,6 +574,49 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                , SplitParameters = splitPars
                                               )
 
+            # set time resolution models
+            splitCat      = self['simulPdf'].indexCat()
+            splitCatPars  = self['simulPdf'].getVariables()
+            splitCatIter  = splitCat.typeIterator()
+            splitCatState = splitCatIter.Next()
+            inputCats     = [ splitCat ] if splitCat.isFundamental() else splitCat.inputCatList()
+            origResParams = timeResModelsOrig['prototype']['model']._target_()._parameters
+            from P2VV.Utilities.General import getSplitPar
+            while splitCatState :
+                splitCat.setIndex( splitCatState.getVal() )
+                catPdf = self['simulPdf'].getPdf( splitCatState.GetName() )
+                resModelCount = 0
+                from ROOT import RooBTagDecay
+                for comp in filter( lambda x : isinstance( x, RooBTagDecay ), catPdf.getComponents() ) :
+                    # TODO: don't do this with RooBTagDecay, but move RooBTagDecay::resModel() to RooAbsAnaConvPdf
+                    assert resModelCount < 1, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: multiple resolution models found for simultaneous category "%s"'\
+                                              % splitCatState.GetName()
+                    params = [ ]
+                    for var in origResParams :
+                        splitCats = self['splitParsDict'].get( ws[ var.GetName() ], set() )
+                        if not splitCats :
+                            params.append(var)
+                        else :
+                            catLabels = [ ( cat.GetName(), cat.getLabel() ) for cat in inputCats if cat in splitCats ]
+                            catsStr = ';'.join( lab[1] for lab in catLabels )
+                            if len(catLabels) > 1 : catsStr = '{' + catsStr + '}'
+                            splitVar = getSplitPar( var.GetName(), catsStr, splitCatPars )
+                            assert splitVar, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: parameter "%s" is set to be constrainedi for category "%s", but it is not found in PDF'\
+                                   % ( var.GetName(), catsStr )
+                            from P2VV.RooFitWrappers import RealVar
+                            params.append( RealVar( Name = splitVar.GetName() ) )
+
+                    from P2VV.RooFitWrappers import ResolutionModel
+                    from P2VV.Parameterizations.TimeResolution import TimeResolution
+                    timeResModelsOrig[ splitCatState.GetName() ]\
+                        = TimeResolution( Model = ResolutionModel( Name = comp.resolutionModel().GetName() ), Parameters = params )
+                    resModelCount += 1
+
+                assert resModelCount > 0, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: no resolution model found for simultaneous category "%s"'\
+                                          % splitCatState.GetName()
+
+                splitCatState = splitCatIter.Next()
+
             if paramKKMass == 'simultaneous' and ASParam != 'Mag2ReIm' :
                 # set values for splitted S-P coupling factors
                 if ASParam != 'Mag2ReIm' :
@@ -577,11 +625,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         print '%d: %.4f%s' % ( iter, fac, '' if iter == len( CSPValues ) - 1 else ',' ),
                     print
 
-                splitCat      = self['simulPdf'].indexCat()
-                splitCatPars  = self['simulPdf'].getVariables()
-                splitCatIter  = splitCat.typeIterator()
+                splitCatIter.Reset()
                 splitCatState = splitCatIter.Next()
-                from P2VV.Utilities.General import getSplitPar
                 while splitCatState :
                     splitCat.setIndex( splitCatState.getVal() )
                     C_SP = getSplitPar( namePF + 'C_SP', observables['KKMassCat'].getLabel(), splitCatPars )
@@ -601,7 +646,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         simulPdf         = getKWArg( self, kwargs, 'simulPdf' )
         signalData       = getKWArg( self, kwargs, 'signalData' )
 
-        if type(timeEffHistFiles) == dict :
+        if not simulPdf :
             multiplyByTimeAcceptance( pdf, self, data = signalData, histFile = timeEffHistFiles['file']
                                      , histUBName = timeEffHistFiles['hlt1UB'], histExclBName = timeEffHistFiles['hlt1ExclB'] )
         else :
@@ -612,11 +657,15 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             inputCats     = [ splitCat ] if splitCat.isFundamental() else splitCat.inputCatList()
             while splitCatState :
                 splitCat.setIndex( splitCatState.getVal() )
-                effFile = timeEffHistFiles.getSettings( [ ( cat.GetName(), cat.getLabel() ) for cat in inputCats ] )
+                if type(timeEffHistFiles) == dict :
+                    effFile = timeEffHistFiles
+                else :
+                    effFile = timeEffHistFiles.getSettings( [ ( cat.GetName(), cat.getLabel() ) for cat in inputCats ] )
                 catPdf = simulPdf.getPdf( splitCatState.GetName() )
                 cNamePF = ( splitCatState.GetName() ).replace( '{', '' ).replace( '}', '' ).replace( ';', '_' )
                 multiplyByTimeAcceptance( catPdf, self, data = signalData, histFile = effFile['file'], histUBName = effFile['hlt1UB']
-                                         , histExclBName = effFile['hlt1ExclB'], coefNamePF = cNamePF, motherPdf = simulPdf )
+                                         , histExclBName = effFile['hlt1ExclB'], coefNamePF = cNamePF, motherPdf = simulPdf
+                                         , resModelKey = splitCatState.GetName() )
                 splitCatState = splitCatIter.Next()
 
 
@@ -788,21 +837,22 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
             timeResArgs['timeResSFConstraint'] = constrainTResScale
 
         from P2VV.Parameterizations.TimeResolution import Paper2012_TimeResolution as TimeResolution
-        self['timeResModel'] = TimeResolution( **timeResArgs )
+        resModel = TimeResolution( **timeResArgs )
 
     else :
         from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
-        self['timeResModel'] = TimeResolution(  time          = observables['time']
-                                              , timeResMu     = dict( Value = 0.,    Constant = True )
-                                              , timeResSigma  = dict( Value = 0.045, Constant = True )
-                                              , PerEventError = False
-                                              , Cache         = False if timeEffType else True
-                                             )
+        resModel = TimeResolution(  time          = observables['time']
+                                  , timeResMu     = dict( Value = 0.,    Constant = True )
+                                  , timeResSigma  = dict( Value = 0.045, Constant = True )
+                                  , PerEventError = False
+                                  , Cache         = False if timeEffType else True
+                                 )
 
     print 'P2VV - INFO: buildBs2JpsiphiSignalPdf(): decay time resolution model:'
-    self['timeResModel']['model'].Print()
-    for par in self['timeResModel'].parameters() : par.Print()
-    self['timeResModelOriginal'] = self['timeResModel']
+    resModel['model'].Print()
+    for par in resModel.parameters() : par.Print()
+    self['timeResModels']     = dict( prototype = resModel )
+    self['timeResModelsOrig'] = dict( prototype = resModel )
 
     # CP violation parameters
     if lambdaCPParam == 'ReIm' : 
@@ -1005,12 +1055,12 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
                 , sinhCoef               = timeBasisCoefs['sinh']
                 , cosCoef                = timeBasisCoefs['cos']
                 , sinCoef                = timeBasisCoefs['sin']
-                , resolutionModel        = self['timeResModel']['model']
+                , resolutionModel        = self['timeResModels']['prototype']['model']
                 , ConditionalObservables = self['amplitudes'].ConditionalObservables()\
-                                           | self['timeResModel'].ConditionalObservables()\
+                                           | self['timeResModels']['prototype'].ConditionalObservables()\
                                            | self['taggingParams'].ConditionalObservables()
                 , ExternalConstraints    = self['lifetimeParams'].ExternalConstraints()\
-                                           | self['timeResModel'].ExternalConstraints()\
+                                           | self['timeResModels']['prototype'].ExternalConstraints()\
                                            | self['taggingParams'].ExternalConstraints()
                )
 
@@ -1028,14 +1078,15 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
 # function to build B_s^0 -> J/psi phi background decay time PDF
 def buildBs2JpsiphiCombBkgTimePdf( self, **kwargs ) :
     observables    = getKWArg( self, kwargs, 'observables' )
-    timeResModel   = getKWArg( self, kwargs, 'timeResModel' )
+    timeResModels  = getKWArg( self, kwargs, 'timeResModels' )
     parNamePrefix  = getKWArg( self, kwargs, 'parNamePrefix', '' )
 
     from P2VV.Parameterizations.GeneralUtils import setParNamePrefix
     setParNamePrefix(parNamePrefix)
 
     from P2VV.Parameterizations.TimePDFs import LP2011_Background_Time as BackgroundTime
-    self['backgroundTime'] = BackgroundTime( Name = namePF + 'bkg_t', time = observables['time'], resolutionModel = timeResModel['model'] )
+    self['backgroundTime'] = BackgroundTime( Name = namePF + 'bkg_t', time = observables['time']
+                                            , resolutionModel = timeResModels['prototype']['model'] )
     self['bkgTimePdf'] = self['backgroundTime'].pdf()
     return self['bkgTimePdf']
 
@@ -1378,16 +1429,19 @@ def buildTaggingCategories( self, **kwargs ) :
 
 # function to multiply a PDF by decay time acceptance function
 def multiplyByTimeAcceptance( pdf, self, **kwargs ) :
-    histFile                     = getKWArg( self, kwargs, 'histFile' )
-    histExclBName                = getKWArg( self, kwargs, 'histExclBName' )
-    histUBName                   = getKWArg( self, kwargs, 'histUBName' )
-    data                         = getKWArg( self, kwargs, 'data' )
-    motherPdf                    = getKWArg( self, kwargs, 'motherPdf', pdf )
-    observables                  = getKWArg( self, kwargs, 'observables' )
-    timeEffParameters            = getKWArg( self, kwargs, 'timeEffParameters' )
-    timeEffType                  = getKWArg( self, kwargs, 'timeEffType' )
-    parNamePrefix                = getKWArg( self, kwargs, 'parNamePrefix', '' )
-    coefNamePF                   = getKWArg( self, kwargs, 'coefNamePF', '' )
+    histFile          = getKWArg( self, kwargs, 'histFile' )
+    histExclBName     = getKWArg( self, kwargs, 'histExclBName' )
+    histUBName        = getKWArg( self, kwargs, 'histUBName' )
+    data              = getKWArg( self, kwargs, 'data' )
+    motherPdf         = getKWArg( self, kwargs, 'motherPdf', pdf )
+    observables       = getKWArg( self, kwargs, 'observables' )
+    timeEffParameters = getKWArg( self, kwargs, 'timeEffParameters' )
+    timeEffType       = getKWArg( self, kwargs, 'timeEffType' )
+    parNamePrefix     = getKWArg( self, kwargs, 'parNamePrefix', '' )
+    coefNamePF        = getKWArg( self, kwargs, 'coefNamePF', '' )
+    timeResModels     = getKWArg( self, kwargs, 'timeResModels' )
+    timeResModelsOrig = getKWArg( self, kwargs, 'timeResModelsOrig' )
+    resModelKey       = getKWArg( self, kwargs, 'resModelKey', 'prototype' )
 
     from P2VV.Parameterizations.GeneralUtils import setParNamePrefix
     setParNamePrefix( parNamePrefix + ( '_' if parNamePrefix else '' ) + coefNamePF )
@@ -1408,15 +1462,15 @@ def multiplyByTimeAcceptance( pdf, self, **kwargs ) :
                 }
 
         from P2VV.Parameterizations.TimeAcceptance import Paper2012_mer_TimeAcceptance as TimeAcceptance
-        self['timeResModel'] = TimeAcceptance(  time = time
-                                              , ResolutionModel = self['timeResModelOriginal']
-                                              , Input = histFile
-                                              , Histograms = hists
-                                              , Data = data
-                                              , Fit = True
-                                              , Original = motherPdf
-                                              , **timeEffParameters
-                                             )
+        timeResModels[resModelKey] = TimeAcceptance(  time = time
+                                                    , ResolutionModel = timeResModelsOrig[resModelKey]
+                                                    , Input = histFile
+                                                    , Histograms = hists
+                                                    , Data = data
+                                                    , Fit = True
+                                                    , Original = motherPdf
+                                                    , **timeEffParameters
+                                                   )
 
     elif timeEffType == 'paper2012_multi' :
         hists = { hlt1ExclB : {  'exclB'    : { 'histogram' : histExclBName }
@@ -1424,16 +1478,16 @@ def multiplyByTimeAcceptance( pdf, self, **kwargs ) :
                               }
                 }
         from P2VV.Parameterizations.TimeAcceptance import Paper2012_mer_TimeAcceptance as TimeAcceptance
-        self['timeResModel'] = TimeAcceptance(  time = time
-                                              , ResolutionModel = self['timeResModelOriginal']
-                                              , Input = histFile
-                                              , Histograms = hists
-                                              , Data = data
-                                              , Fit = False
-                                              , Original = motherPdf
-                                              , BinHeightMinMax = ( -RooInf, RooInf )
-                                              , **timeEffParameters
-                                             )
+        timeResModels[resModelKey] = TimeAcceptance(  time = time
+                                                    , ResolutionModel = timeResModelsOrig[resModelKey]
+                                                    , Input = histFile
+                                                    , Histograms = hists
+                                                    , Data = data
+                                                    , Fit = False
+                                                    , Original = motherPdf
+                                                    , BinHeightMinMax = ( -RooInf, RooInf )
+                                                    , **timeEffParameters
+                                                   )
 
     elif timeEffType == 'paper2012' :
         hists = { hlt1ExclB : {  'exclB'    : { 'histogram' : histExclBName }
@@ -1441,30 +1495,34 @@ def multiplyByTimeAcceptance( pdf, self, **kwargs ) :
                               }
                 }
         from P2VV.Parameterizations.TimeAcceptance import Paper2012_csg_TimeAcceptance as TimeAcceptance
-        self['timeResModel'] = TimeAcceptance(  time = time
-                                              , ResolutionModel = self['timeResModelOriginal']
-                                              , Input = histFile
-                                              , Histograms = hists
-                                              , **timeEffParameters )
+        timeResModels[resModelKey] = TimeAcceptance(  time = time
+                                                    , ResolutionModel = timeResModelsOrig[resModelKey]
+                                                    , Input = histFile
+                                                    , Histograms = hists
+                                                    , **timeEffParameters
+                                                   )
 
 
     elif timeEffType == 'HLT1Unbiased' or timeEffType == 'HLT1ExclBiased' :
         from P2VV.Parameterizations.TimeAcceptance import Moriond2012_TimeAcceptance as TimeAcceptance
-        self['timeResModel'] = TimeAcceptance(  time = time
-                                              , ResolutionModel = self['timeResModelOriginal']
-                                              , Input = histFile
-                                              , Histogram = histExclBName if timeEffType == 'HLT1ExclBiased'\
-                                                            else histUBName
-                                              , **timeEffParameters
-                                             )
+        timeResModels[resModelKey] = TimeAcceptance(  time = time
+                                                    , ResolutionModel = timeResModelsOrig[resModelKey]
+                                                    , Input = histFile
+                                                    , Histogram = histExclBName if timeEffType == 'HLT1ExclBiased'\
+                                                                  else histUBName
+                                                    , **timeEffParameters
+                                                   )
     else:
         raise ValueError( 'P2VV - ERROR: multiplyByTimeAcceptance(): unknown time efficiency type: "%s"' % timeEffType )
+
+    setParNamePrefix(parNamePrefix)
 
     # multiply PDF with time acceptance
     accPdfs = [ ]
     from ROOT import RooBTagDecay
     for comp in filter( lambda x : type(x) is RooBTagDecay, pdf.getComponents() ) :
-        change = comp.changeModel( self['timeResModel']['model']._var )
+        # TODO: don't do this with RooBTagDecay, but make RooAbsAnaConvPdf::changeModel(const RooResolutionModel& newModel) public
+        change = comp.changeModel( timeResModels[resModelKey]['model']._target_() )
         if not change :
             accPdfs.append( comp.GetName() )
         else :
@@ -1473,8 +1531,8 @@ def multiplyByTimeAcceptance( pdf, self, **kwargs ) :
           % ( ( '%d components' % len(accPdfs) ) if len(accPdfs) > 1 else 'component' )
     print '             [ ' + ', '.join( name for name in accPdfs ) + ' ]'
 
-    motherPdf['ConditionalObservables'] = motherPdf['ConditionalObservables'] | self['timeResModel'].ConditionalObservables()
-    motherPdf['ExternalConstraints']    = motherPdf['ExternalConstraints']    | self['timeResModel'].ExternalConstraints()
+    motherPdf['ConditionalObservables'] = motherPdf['ConditionalObservables'] | timeResModels[resModelKey].ConditionalObservables()
+    motherPdf['ExternalConstraints']    = motherPdf['ExternalConstraints']    | timeResModels[resModelKey].ExternalConstraints()
 
     return pdf
 
