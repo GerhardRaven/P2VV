@@ -50,7 +50,7 @@ Double_t RooBoxPdf::evaluate() const
 }
 
 Int_t RooBoxPdf::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars,
-    const char* rangeName) const
+    const char* /*rangeName*/) const
 {
   if (matchArgs(allVars, analVars, _var)) return 1;
   return 0;

@@ -204,6 +204,7 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
         self['constrainTResScale'] = 'constrain'      # '' / 'constrain' / 'fixed'
         self['timeEffType']        = 'paper2012'      # 'HLT1Unbiased' / 'HLT1ExclBiased' / 'paper2012' / 'fit'
         self['constrainDeltaM']    = 'constrain'      # '' / 'constrain' / 'fixed'
+        self['constrainBeta']      = 'noBeta'         # '' / 'constrain' / 'fixed' / 'noBeta'
 
         self['timeEffHistFiles']     = (  'data/Bs_HltPropertimeAcceptance_Data-20120816.root'
                                         , 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
@@ -254,6 +255,47 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
 
     def rmBkgParams(self) :
         for key in [ 'bkgAnglePdfType', 'numAngleBins' ] : self.pop( key, None )
+
+
+class SimulCatSettings(list) :
+    def __init__( self, Name ) :
+        self._name = Name
+        self._cats = set()
+        self._default = None
+
+    def categories(self) :
+        return self._cats
+
+    def addSettings( self, Categories, Labels, Settings ) :
+        if not type(Categories) == str :
+            self.append( ( dict( [ ( cat, [ lab for lab in labs ] ) for cat, labs in zip( Categories, Labels ) ] ), Settings ) )
+            for cat, labs in zip( Categories, Labels ) :
+                if len(labs) > 0 : self._cats.add(cat)
+
+        else :
+            self._default = Settings
+
+    def getSettings( self, CatLabels ) :
+        retSetts = self._default
+        settCount = 0
+        for settings in self :
+            thisSett = True
+            for cat, lab in CatLabels :
+                if cat in settings[0] and len( settings[0][cat] ) > 0 and lab not in settings[0][cat] :
+                    thisSett = False
+                    break
+            if thisSett :
+                retSetts = settings[1]
+                settCount += 1
+
+        assert settCount < 2\
+               , 'P2VV - ERROR: SimulCatSettings.getSettings(%s): multiple settings found that match criteria'\
+                 % self._name
+        assert retSetts\
+               , 'P2VV - ERROR: SimulCatSettings.getSettings(%s): no settings found that match criteria and no default specified'\
+                 % self._name
+
+        return retSetts
 
 
 ###########################################################################################################################################
@@ -466,25 +508,21 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     assert 'C_SP' not in pars\
                            , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: S-P coupling factors are set to be split for category "%s"' % cat
 
-        if timeEffType and type(timeEffHistFiles) != str :
-            for filePars in timeEffHistFiles :
-                if type( filePars[0] ) == str : continue
-                for catPars in filePars[0] :
-                    assert type( catPars[0] ) == str\
-                           , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: one of category names specified in "timeEffHistFiles" is not a string'
-                    assert catPars[0] in splitParams\
-                           , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: PDF is not set to be split for category "%s" (required by "timeEffHistFiles")' % catPars[0]
-
         if anglesEffType and type(angEffMomsFiles) != str :
-            for filePars in angEffMomsFiles :
-                if type( filePars[0] ) == str : continue
-                for catPars in filePars[0] :
-                    assert type( catPars[0] ) == str\
-                           , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: one of category names specified in "angEffMomsFiles" is not a string'
-                    if catPars[0] not in splitParams :
-                        splitParams[ catPars[0] ] = [ 'angEffDummyCoef' ]
-                    elif 'angEffDummyCoef' not in splitParams[ catPars[0] ] :
-                        splitParams[ catPars[0] ].append( 'angEffDummyCoef' )
+            for cat in angEffMomsFiles.categories() :
+                assert type(cat) == str\
+                       , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: one of category names specified in "angEffMomsFiles" is not a string'
+                if cat not in splitParams :
+                    splitParams[cat] = [ 'angEffDummyCoef' ]
+                elif 'angEffDummyCoef' not in splitParams[cat] :
+                    splitParams[cat].append('angEffDummyCoef')
+
+        if timeEffType and type(timeEffHistFiles) != dict :
+            for cat in timeEffHistFiles.categories() :
+                assert type(cat) == str\
+                       , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: one of category names specified in "timeEffHistFiles" is not a string'
+                assert cat in splitParams\
+                       , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: PDF is not set to be split for category "%s" (required by "timeEffHistFiles")' % cat
 
         # split PDF for different data samples
         if splitParams :
@@ -567,34 +605,19 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             multiplyByTimeAcceptance( pdf, self, data = signalData, histFile = timeEffHistFiles['file']
                                      , histUBName = timeEffHistFiles['hlt1UB'], histExclBName = timeEffHistFiles['hlt1ExclB'] )
         else :
-            defFile = ''
-            for filePars in timeEffHistFiles :
-                if filePars[0] == 'default' : defFile = filePars[1]
-            if not simulPdf :
-                assert defFile, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: no simultaneous PDF and no default time efficiency histogram file specified'
-                multiplyByTimeAcceptance( pdf, self, data = signalData, histFile = defFile['file'], histUBName = defFile['hlt1UB']
-                                         , histExclBName = defFile['hlt1ExclB'] )
-            else :
-                ws            = simulPdf.ws()
-                splitCat      = simulPdf.indexCat()
-                splitCatIter  = splitCat.typeIterator()
+            ws            = simulPdf.ws()
+            splitCat      = simulPdf.indexCat()
+            splitCatIter  = splitCat.typeIterator()
+            splitCatState = splitCatIter.Next()
+            inputCats     = [ splitCat ] if splitCat.isFundamental() else splitCat.inputCatList()
+            while splitCatState :
+                splitCat.setIndex( splitCatState.getVal() )
+                effFile = timeEffHistFiles.getSettings( [ ( cat.GetName(), cat.getLabel() ) for cat in inputCats ] )
+                catPdf = simulPdf.getPdf( splitCatState.GetName() )
+                cNamePF = ( splitCatState.GetName() ).replace( '{', '' ).replace( '}', '' ).replace( ';', '_' )
+                multiplyByTimeAcceptance( catPdf, self, data = signalData, histFile = effFile['file'], histUBName = effFile['hlt1UB']
+                                         , histExclBName = effFile['hlt1ExclB'], coefNamePF = cNamePF, motherPdf = simulPdf )
                 splitCatState = splitCatIter.Next()
-                while splitCatState :
-                    splitCat.setIndex( splitCatState.getVal() )
-                    effFile = defFile
-                    for filePars in timeEffHistFiles :
-                        if type( filePars[0] ) == str : continue
-                        thisFile = True
-                        for catPars in filePars[0] :
-                            if len( catPars[1] ) != 0 and ws[ catPars[0] ].getIndex() not in catPars[1] : thisFile = False
-                        if thisFile : effFile = filePars[1]
-                    assert effFile, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: time efficiency histograms file for category "%s" not found and no default specified' % splitCatState.GetName()
-
-                    catPdf = simulPdf.getPdf( splitCatState.GetName() )
-                    cNamePF = ( splitCatState.GetName() ).replace( '{', '_' ).replace( '}', '' ).replace( ';', '_' )
-                    multiplyByTimeAcceptance( catPdf, self, data = signalData, histFile = effFile['file'], histUBName = effFile['hlt1UB']
-                                             , histExclBName = effFile['hlt1ExclB'], coefNamePF = cNamePF, motherPdf = simulPdf )
-                    splitCatState = splitCatIter.Next()
 
 
     def _multiplyByAngularAcceptance( self, **kwargs ) :
@@ -605,32 +628,18 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         if type(angEffMomsFiles) == str :
             multiplyByAngularAcceptance( pdf, self, angEffMomsFile = angEffMomsFiles )
         else :
-            defFile = ''
-            for filePars in angEffMomsFiles :
-                if filePars[0] == 'default' : defFile = filePars[1]
-            if not simulPdf :
-                assert defFile, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: no simultaneous PDF and no default angular efficiency moments file specified'
-                multiplyByAngularAcceptance( pdf, self, angEffMomsFile = defFile )
-            else :
-                ws            = simulPdf.ws()
-                splitCat      = simulPdf.indexCat()
-                splitCatIter  = splitCat.typeIterator()
+            ws            = simulPdf.ws()
+            splitCat      = simulPdf.indexCat()
+            splitCatIter  = splitCat.typeIterator()
+            splitCatState = splitCatIter.Next()
+            inputCats     = [ splitCat ] if splitCat.isFundamental() else splitCat.inputCatList()
+            while splitCatState :
+                splitCat.setIndex( splitCatState.getVal() )
+                effFile = angEffMomsFiles.getSettings( [ ( cat.GetName(), cat.getLabel() ) for cat in inputCats ] )
+                catPdf = simulPdf.getPdf( splitCatState.GetName() )
+                cNamePF = ( splitCatState.GetName() ).replace( '{', '' ).replace( '}', '' ).replace( ';', '_' )
+                multiplyByAngularAcceptance( catPdf, self, angEffMomsFile = effFile, coefNamePF = cNamePF )
                 splitCatState = splitCatIter.Next()
-                while splitCatState :
-                    splitCat.setIndex( splitCatState.getVal() )
-                    effFile = defFile
-                    for filePars in angEffMomsFiles :
-                        if type( filePars[0] ) == str : continue
-                        thisFile = True
-                        for catPars in filePars[0] :
-                            if len( catPars[1] ) != 0 and ws[ catPars[0] ].getIndex() not in catPars[1] : thisFile = False
-                        if thisFile : effFile = filePars[1]
-                    assert effFile, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: angular efficiency moments file for category "%s" not found and no default specified' % splitCatState.GetName()
-
-                    catPdf = simulPdf.getPdf( splitCatState.GetName() )
-                    cNamePF = ( splitCatState.GetName() ).replace( '{', '_' ).replace( '}', '' ).replace( ';', '_' )
-                    multiplyByAngularAcceptance( catPdf, self, angEffMomsFile = effFile, coefNamePF = cNamePF )
-                    splitCatState = splitCatIter.Next()
 
 
 ###########################################################################################################################################
@@ -662,6 +671,7 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
     ASParam            = getKWArg( self, kwargs, 'ASParam' )
     AparParam          = getKWArg( self, kwargs, 'AparParam' )
     constrainDeltaM    = getKWArg( self, kwargs, 'constrainDeltaM' )
+    constrainBeta      = getKWArg( self, kwargs, 'constrainBeta' )
     lambdaCPParam      = getKWArg( self, kwargs, 'lambdaCPParam' )
     timeEffType        = getKWArg( self, kwargs, 'timeEffType' )
     anglesEffType      = getKWArg( self, kwargs, 'anglesEffType' )
@@ -712,7 +722,7 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
     if blind and 'dGamma' in blind :
         if blind['dGamma'] : dGammaVar['Blind'] = blind['dGamma']
         else :               dGammaVar['Blind'] = ( 'UnblindUniform', 'BsDGs2013EPS', 0.02 )
-    self['lifetimeParams'] = LifetimeParams( dGamma = dGammaVar, dMConstraint = constrainDeltaM )
+    self['lifetimeParams'] = LifetimeParams( dGamma = dGammaVar, dMConstraint = constrainDeltaM, betaConstraint = constrainBeta )
     if ambiguityPars : self['lifetimeParams']['dGamma'].setVal( -self['lifetimeParams']['dGamma'].getVal() )
 
     if timeResType.startswith('event') :

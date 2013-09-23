@@ -12,6 +12,7 @@
         <class name = "RooBTagDecay" />
         <class name = "RooTrivialTagDecay" />
         <class name = "RooMultiCatGenerator" />
+        <class name = "RooBinnedFun" />
         <class name = "RooBinnedPdf" />
         <class name = "RooP2VVAngleBasis" />
         <class name = "RooThresholdPdf" />
@@ -39,6 +40,7 @@
         <class name = "RooCubicSplineKnot" />
         <class name = "RooCubicSplineFun" />
         <class name = "RooGaussEfficiencyModel" />
+        <class name = "RooAbsGaussModelEfficiency" />
         <class name = "RooEffResAddModel" />
         <class name = "RooCategoryVar" />
         <class name = "RooConvertPolAmp" />

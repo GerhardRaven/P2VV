@@ -60,7 +60,8 @@ public:
       return _super;
    }
 
-   virtual RooArgSet observables() const;
+   // return pointer to observables because genreflex dictionaries can't handle value
+   virtual RooArgSet* observables() const;
 
 protected:
 

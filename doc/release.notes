@@ -4,6 +4,11 @@
 ! Purpose     : keeping Tristan's crazy RooFit stuff.
 !-----------------------------------------------------------------------------
 
+!============================== v3r3 2013-09-18 ==============================
+
+! 2013-09-18 - Jeroen van Leerdam
+ - Copy contents of Nikhef P2VV Git repository to LHCb P2VV SVN repository
+
 !============================== v3r2 2013-08-06 ==============================
 
 ! 2013-08-06 - Jeroen van Leerdam

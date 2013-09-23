@@ -1,6 +1,8 @@
 #include <set>
 #include <vector>
 
+#include "Riostream.h"
+#include "RooMsgService.h"
 #include <RooAddModel.h>
 
 #include <P2VV/RooAbsEffResModel.h>
@@ -25,7 +27,12 @@ RooEffResAddModel::RooEffResAddModel(const char *name, const char *title, const 
    while(RooAbsArg* model = iter.next()) {
       //TODO: verify all models share the same efficiency 
       RooAbsEffResModel* effModel = dynamic_cast<RooAbsEffResModel*>(model);
-      assert(effModel);
+      if (effModel == 0) {
+        coutE(InputArguments) << "RooEffResAddModel(" << GetName()
+            << "): \"" << model->GetName() << "\" is not RooAbsEffResModel"
+            << std::endl;
+        assert(effModel);
+      }
    }
 }
  
@@ -75,7 +82,7 @@ const RooAbsReal* RooEffResAddModel::efficiency() const
 }
 
 //_____________________________________________________________________________
-RooArgSet RooEffResAddModel::observables() const { 
+RooArgSet* RooEffResAddModel::observables() const {
    // Return pointer to pdf in product
-   return RooArgSet(RooAddModel::convVar());
+   return new RooArgSet(RooAddModel::convVar());
 }

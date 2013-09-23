@@ -7,6 +7,7 @@ from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_2011Analysis as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
+from P2VV.Parameterizations.FullPDFs import SimulCatSettings
 generateData           = False
 doFit                  = True #'NLL'
 makeObservablePlots    = False
@@ -76,38 +77,44 @@ pdfConfig['timeResType']        = 'eventNoMean' # 'eventDoubleGaussConstantFixed
 pdfConfig['constrainTResScale'] = 'constrain' # 'fixed'  # 'constrain'
 pdfConfig['timeEffType']        = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
 pdfConfig['constrainDeltaM']    = 'constrain'  # 'constrain' # fixed
+pdfConfig['constrainBeta']      = 'noBeta'      # '' / 'constrain' / 'fixed' / 'noBeta'
 
 pdfConfig['timeEffHistFiles'] = dict(  file      = dataPath + 'Bs_HltPropertimeAcceptance_Data-20120816.root'
                                      , hlt1UB    ='Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
                                      , hlt1ExclB = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
                                     )
-#pdfConfig['timeEffHistFiles'] = [  (  [ ( 'KKMassCat', ( 1, 2 ) ) ]
-#                                    , dict(  file      = dataPath + 'Bs_HltPropertimeAcceptance_Data-20120816.root'
-#                                           , hlt1UB    ='Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
-#                                           , hlt1ExclB = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
-#                                          )
+#timeEffHistFiles = SimulCatSettings('timeEffHistFiles')
+#timeEffHistFiles.addSettings( 'default', [ ]
+#                             , dict(  file      = dataPath + 'Bs_HltPropertimeAcceptance_Data-20120816.root'
+#                                    , hlt1UB    ='Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+#                                    , hlt1ExclB = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
 #                                   )
-#                                 , (  [ ( 'KKMassCat', ( 0, 3 ) ) ]
-#                                    , dict(  file      = dataPath + '_Bs_HltPropertimeAcceptance_Data-20120816.root'
-#                                           , hlt1UB    ='Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
-#                                           , hlt1ExclB = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
-#                                          )
+#                            )
+#timeEffHistFiles.addSettings( [ 'KKMassCat' ], [ [ 'bin0', 'bin3' ] ]
+#                             , dict(  file      = dataPath + 'Bs_HltPropertimeAcceptance_Data-20120816.root'
+#                                    , hlt1UB    ='Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+#                                    , hlt1ExclB = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
 #                                   )
-#                                ]
+#                            )
+#timeEffHistFiles.addSettings( [ 'KKMassCat' ], [ [ 'bin1', 'bin2' ] ]
+#                             , dict(  file      = dataPath + 'Bs_HltPropertimeAcceptance_Data-20120816.root'
+#                                    , hlt1UB    ='Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+#                                    , hlt1ExclB = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+#                                   )
+#                            )
+#pdfConfig['timeEffHistFiles'] = timeEffHistFiles
 
 pdfConfig['transAngles']   = False
 pdfConfig['anglesEffType'] = 'weights'  # 'weights' # 'basis012' # 'basisSig4'
 pdfConfig['angEffMomsFiles'] = dataPath + 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
-#pdfConfig['angEffMomsFiles'] = [  ( [ ( 'KKMassCat', ( 0, 3 ) ) ]
-#                                   , dataPath + 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
-#                                  )
-#                                , ( [ ( 'KKMassCat', ( 1, 2 ) ) ]
-#                                   , dataPath + 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
-#                                  )
-#                                , ( 'default'
-#                                   , dataPath + 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
-#                                  )
-#                               ]
+#angEffMomsFiles = SimulCatSettings('timeEffHistFiles')
+#angEffMomsFiles.addSettings( 'default', [ ], dataPath + 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights' )
+#angEffMomsFiles.addSettings( [ 'KKMassCat' ], [ [ 'bin0', 'bin3' ] ]
+#                            , dataPath + 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights' )
+#angEffMomsFiles.addSettings( [ 'KKMassCat' ], [ [ 'bin1', 'bin2' ] ]
+#                            , dataPath + 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights' )
+#pdfConfig['angEffMomsFiles'] = angEffMomsFiles
+
 pdfConfig['angularRanges'] = dict( ctheta = [  ( 'ctlBin0', -1.,   -0.70 )
                                              , ( 'ctlBin1', -0.70, -0.25 )
                                              , ( 'ctlBin2', -0.25, +0.25 )
