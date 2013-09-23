@@ -14,11 +14,12 @@ simulation       = False
 triggerSel       = 'paper2012' # 'HLT1Unbiased' # 'paper2012'
 dataCuts         = 'nominal2011'
 dataSample       = '(bkgcat==0 || bkgcat==50)' if simulation else ''
+reweightVars     = False
 addTaggingObs    = ( 2, 2 ) # ( 0, 0 )
 createRangeData  = False
 createNTuple     = False
 splitDataSet     = [ ] #[ 'tagCatP2VVOS', 'tagCatP2VVSS' ]
-KKMassBinBounds  = [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ]  # [ 1008., 1020., 1032. ] # [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] 
+KKMassBinBounds  = [ 990.,  1050. ]  #  [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ]  # [ 1008., 1020., 1032. ] # [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] 
 
 eventFracs       = [  dict( N_sigMass = 0.504, N_cbkgMass = None )
                     #, dict( N_sigMass = 0.11,  N_cbkgMass = None )
@@ -57,6 +58,7 @@ obsKeys = [  'mass', 'KKMass', 'mumuMass'
            #, 'sel', 'selA', 'selB'
            , 'hlt1ExclB', 'hlt2B', 'hlt2UB'#, 'hlt1B', 'hlt1UB'
              ]
+
 if simulation :
     obsKeys += [ 'truetime', 'bkgcat' ]
 
@@ -99,20 +101,20 @@ obsDict = dict(  mass      = ( 'mass',                 'm(J/#psi K^{+}K^{-})',  
                , muminus_PIDmu              = ( 'muminus_PIDmu',              'muminus_PIDmu',  0.,   -RooInf, +RooInf )
                , Kplus_pidK                 = ( 'Kplus_pidK',                 'Kplus_pidK',     0.,    0.,     +RooInf )
                , Kminus_pidK                = ( 'Kminus_pidK',                'Kminus_pidK',    0.,    0.,     +RooInf )
-               , muplus_PX                  = ( 'muplus_PX',                  'muplus_PX',      0.,   -RooInf, +RooInf )
-               , muplus_PY                  = ( 'muplus_PY',                  'muplus_PY',      0.,   -RooInf, +RooInf )
-               , muplus_PZ                  = ( 'muplus_PZ',                  'muplus_PZ',      0.,   -RooInf, +RooInf )
-               , muminus_PX                 = ( 'muminus_PX',                 'muminus_PX',     0.,   -RooInf, +RooInf )
-               , muminus_PY                 = ( 'muminus_PY',                 'muminus_PY',     0.,   -RooInf, +RooInf )
-               , muminus_PZ                 = ( 'muminus_PZ',                 'muminus_PZ',     0.,   -RooInf, +RooInf )
-               , Kplus_PX                   = ( 'Kplus_PX',                   'Kplus_PX',       0.,   -RooInf, +RooInf )
-               , Kplus_PY                   = ( 'Kplus_PY',                   'Kplus_PY',       0.,   -RooInf, +RooInf )
-               , Kplus_PZ                   = ( 'Kplus_PZ',                   'Kplus_PZ',       0.,   -RooInf, +RooInf )
-               , Kminus_PX                  = ( 'Kminus_PX',                  'Kminus_PX',      0.,   -RooInf, +RooInf )
-               , Kminus_PY                  = ( 'Kminus_PY',                  'Kminus_PY',      0.,   -RooInf, +RooInf )
-               , Kminus_PZ                  = ( 'Kminus_PZ',                  'Kminus_PZ',      0.,   -RooInf, +RooInf )
-               , B_Pt                       = ( 'B_Pt',                       'B_Pt',           0.,    0.,      RooInf )
-               , B_P                        = ( 'B_P ',                       'B_P ',           0.,    0.,      RooInf )
+               , muplus_PX                  = ( 'muplus_PX',                  'muplus_PX',     'MeV/c', 0.,   -RooInf, +RooInf )
+               , muplus_PY                  = ( 'muplus_PY',                  'muplus_PY',      'MeV/c', 0.,   -RooInf, +RooInf )
+               , muplus_PZ                  = ( 'muplus_PZ',                  'muplus_PZ',      'MeV/c', 0.,   -RooInf, +RooInf )
+               , muminus_PX                 = ( 'muminus_PX',                 'muminus_PX',     'MeV/c', 0.,   -RooInf, +RooInf )
+               , muminus_PY                 = ( 'muminus_PY',                 'muminus_PY',     'MeV/c', 0.,   -RooInf, +RooInf )
+               , muminus_PZ                 = ( 'muminus_PZ',                 'muminus_PZ',     'MeV/c', 0.,   -RooInf, +RooInf )
+               , Kplus_PX                   = ( 'Kplus_PX',                   'Kplus_PX',       'MeV/c', 0.,   -RooInf, +RooInf )
+               , Kplus_PY                   = ( 'Kplus_PY',                   'Kplus_PY',       'MeV/c', 0.,   -RooInf, +RooInf )
+               , Kplus_PZ                   = ( 'Kplus_PZ',                   'Kplus_PZ',       'MeV/c', 0.,   -RooInf, +RooInf )
+               , Kminus_PX                  = ( 'Kminus_PX',                  'Kminus_PX',      'MeV/c', 0.,   -RooInf, +RooInf )
+               , Kminus_PY                  = ( 'Kminus_PY',                  'Kminus_PY',      'MeV/c', 0.,   -RooInf, +RooInf )
+               , Kminus_PZ                  = ( 'Kminus_PZ',                  'Kminus_PZ',      'MeV/c', 0.,   -RooInf, +RooInf )
+               , B_Pt                       = ( 'B_Pt',                       'B_Pt',           'MeV/c', 0.,    0.,      RooInf )
+               , B_P                        = ( 'B_P',                        'B_P',            'MeV/c', 0.,    0.,      RooInf )
                , phi_1020_pt                = ( 'phi_1020_pt',                'phi_1020_pt',    500.,  500.,    RooInf )
                , B_s0_LOKI_CosPolAngle_Dau1 = ( 'B_s0_LOKI_CosPolAngle_Dau1', 'mumu cos(th)',   0.,   -1.,     +1.     )
                , B_s0_IP_OWNPV              = ( 'B_s0_IP_OWNPV',              'B_s0_IP_OWNPV',  0.,   -RooInf, +RooInf )
@@ -168,10 +170,10 @@ from P2VV.Load import RooFitOutput, LHCbStyle
 # create list of required observables
 reqObsList = [ 'index', 'mass', 'KKMass', 'tagDecOS', 'tagDecSS', 'wTagOS', 'wTagSS' ]
 reqObsList += ['hlt1ExclB'] if triggerSel == 'paper2012' else [ 'hlt1ExclB', 'hlt2B' ] if triggerSel == 'timeEffFit' else [ ]
-reqObsList += ['Kplus_PX','Kplus_PY', 'Kplus_PZ', 'Kminus_PX','Kminus_PY', 'Kminus_PZ' 
-               , 'muplus_PX','muplus_PY', 'muplus_PZ', 'muminus_PX','muminus_PY', 'muminus_PZ' 
+reqObsList += [ 'Kplus_PX',  'Kplus_PY',  'Kplus_PZ',  'Kminus_PX',  'Kminus_PY',  'Kminus_PZ' 
+               ,'muplus_PX', 'muplus_PY', 'muplus_PZ', 'muminus_PX', 'muminus_PY', 'muminus_PZ' 
                , 'B_P', 'B_Pt'
-               ]
+               ]  if reweightVars else []
 
 # create workspace
 from P2VV.RooFitWrappers import RooObject
@@ -189,7 +191,6 @@ for obs in obsKeys + reqObsList :
     if type( obsDict[obs][2] ) == dict or type( obsDict[obs][2] ) == list :
         observables[obs] = Category( obsDict[obs][0], Title = obsDict[obs][1], Observable = True, States = obsDict[obs][2] )
     else :
-        print obs
         observables[obs] = RealVar( obsDict[obs][0], Title = obsDict[obs][1], Unit = obsDict[obs][2], Observable = True
                                    , Value = obsDict[obs][3], MinMax = ( obsDict[obs][4], obsDict[obs][5] ) )
 
@@ -522,6 +523,26 @@ if addTaggingObs :
     observables['tagCatP2VVSS'] = Category( ws.put( dataSets['preS'][0].get().find('tagCatP2VVSS') ).GetName() )
     obsSetNTuple += [ observables['iTagOS'], observables['iTagSS'], observables['tagCatP2VVOS'], observables['tagCatP2VVSS'] ]
 
+
+###################################################################################################################################
+## add track and B momenta in dataSet. ##
+##########################################
+if reweightVars: 
+    from P2VV.Utilities.DataHandling import addTrackMomenta
+
+    # add Kplus_P, Kminus_P, mumplus_P, muminus_P to dataSet
+    addTrackMomenta( dataSets['preS'][0] )
+
+    observables['Kplus_P']   = RealVar( ws.put( dataSets['preS'][0].get().find('Kplus_P')   ).GetName() ) 
+    observables['Kminus_P']  = RealVar( ws.put( dataSets['preS'][0].get().find('Kminus_P')  ).GetName() ) 
+    observables['muplus_P']  = RealVar( ws.put( dataSets['preS'][0].get().find('muplus_P')  ).GetName() ) 
+    observables['muminus_P'] = RealVar( ws.put( dataSets['preS'][0].get().find('muminus_P') ).GetName() ) 
+    obsSetNTuple += [ observables['Kplus_P'], observables['Kminus_P'], observables['muplus_P'], observables['muminus_P'] ]
+
+    # add B_P and B_Pt to dataSet
+    observables['B_P']  = RealVar( ws.put( dataSets['preS'][0].get().find('B_P')   ).GetName() ) 
+    observables['B_Pt'] = RealVar( ws.put( dataSets['preS'][0].get().find('B_Pt')   ).GetName() ) 
+    obsSetNTuple += [ observables['B_P'], observables['B_Pt'] ]
 
 ###########################################################################################################################################
 ## create signal and background data sets and print event yields ##
