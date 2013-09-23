@@ -110,10 +110,10 @@ def __createRooIterator( create_iterator ) :
             yield obj
     return __iter
 
-def __RooDataSetToTree( self, Name = '', Title = '', BranchList = '', RooFitFormat = True ) :
+def __RooDataSetToTree( self, Name = '', Title = '', WeightName = '', BranchList = '', RooFitFormat = True ) :
     from P2VV.Load import P2VVLibrary
     from ROOT import RooDataSetToTree
-    return RooDataSetToTree( self, Name, Title, BranchList, RooFitFormat )
+    return RooDataSetToTree( self, Name, Title, WeightName, BranchList, RooFitFormat )
 RooDataSet.buildTree = __RooDataSetToTree
 
 def __TreeToRooDataSet( self, Observables = [ ], Name = '', Title = '', Cuts = '', IndexName = '', OrigDataSet = None ) :

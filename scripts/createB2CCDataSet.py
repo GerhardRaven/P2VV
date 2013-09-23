@@ -5,20 +5,24 @@
 nTupleFilePath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
 #nTupleFilePath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_2012_20130425_tupleB.root'
 #nTupleFilePath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20130628.root'
+#nTupleFilePath   = 'P2VVDataSets_4KKBins.root'
 nTupleName       = 'DecayTree'
-dataSetsFilePath = 'P2VVDataSets_temp.root'
+dataSetsFilePath = 'P2VVDataSets_4KKBins.root'
 appendToFile     = False
 plotsFilePath    = 'plots/P2VVMassPlots.ps'
 
 simulation       = False
-triggerSel       = 'paper2012' # 'HLT1Unbiased' # 'paper2012'
-dataCuts         = 'nominal2011'
+triggerSel       = 'paper2012' # 'noSelection' # 'paper2012' # 'HLT1Unbiased' # 'paper2012'
+dataCuts         = 'nominal2011' # 'noSelection' # 'nominal2011'
 dataSample       = '(bkgcat==0 || bkgcat==50)' if simulation else ''
+sWeightName      = 'sigWeight_4KKBins'
+addSWeights      = True
+addKKMassCat     = True
 addTaggingObs    = ( 2, 2 ) # ( 0, 0 )
 createRangeData  = False
 createNTuple     = False
 splitDataSet     = [ ] #[ 'tagCatP2VVOS', 'tagCatP2VVSS' ]
-KKMassBinBounds  = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ]
+KKMassBinBounds  = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ]
 
 eventFracs       = [  dict( N_sigMass = 0.504, N_cbkgMass = None )
                     #, dict( N_sigMass = 0.11,  N_cbkgMass = None )
@@ -47,16 +51,18 @@ from ROOT import RooNumber
 RooInf  = RooNumber.infinity()
 KKMMin  = KKMassBinBounds[0]
 KKMMax  = KKMassBinBounds[-1]
-obsKeys = [  'mass', 'KKMass', 'mumuMass'
-           , 'time', 'timeRes'
-           , 'ctk', 'ctl', 'phih'
-           #, 'cpsi', 'cttr', 'phitr'
-           #, 'wTag', 'tagDec'
-           , 'wTagOS'#, 'tagDecOS', 'tagCatOS'
-           , 'wTagSS'#, 'tagDecSS'
-           #, 'sel', 'selA', 'selB'
-           , 'hlt1ExclB', 'hlt2B', 'hlt2UB'#, 'hlt1B', 'hlt1UB'
-          ]
+
+obsKeys = [ ] # [ 'sigWeight_4KKBins' ]
+obsKeys += [  'mass', 'KKMass', 'mumuMass'
+            , 'time', 'timeRes'
+            , 'ctk', 'ctl', 'phih'
+            #, 'cpsi', 'cttr', 'phitr'
+            #, 'wTag', 'tagDec'
+            , 'wTagOS'#, 'tagDecOS'
+            , 'wTagSS'#, 'tagDecSS'
+            #, 'sel', 'selA', 'selB'
+            , 'hlt1ExclB', 'hlt2B', 'hlt2UB'#, 'hlt1B', 'hlt1UB'
+           ]
 if simulation :
     obsKeys += [ 'truetime', 'bkgcat' ]
 
@@ -181,8 +187,12 @@ obsSetNTuple = [ ]
 for obs in obsKeys + reqObsList :
     if obs in observables : continue
 
-    if type( obsDict[obs][2] ) == dict or type( obsDict[obs][2] ) == list :
+    if obs.startswith('sigWeight') :
+        observables[obs] = RealVar( obs, Title = 'signal sWeight', Observable = True, Value = 1. )
+
+    elif type( obsDict[obs][2] ) == dict or type( obsDict[obs][2] ) == list :
         observables[obs] = Category( obsDict[obs][0], Title = obsDict[obs][1], Observable = True, States = obsDict[obs][2] )
+
     else :
         observables[obs] = RealVar( obsDict[obs][0], Title = obsDict[obs][1], Unit = obsDict[obs][2], Observable = True
                                    , Value = obsDict[obs][3], MinMax = ( obsDict[obs][4], obsDict[obs][5] ) )
@@ -236,7 +246,7 @@ observables['KKMassCat'] = BinningCategory( 'KKMassCat'
                                            , Data = [ dataSets['pre'][0] ]
                                            , CatTypeName = 'bin'
                                           )
-obsSetNTuple.append( observables['KKMassCat'] )
+if addKKMassCat : obsSetNTuple.append( observables['KKMassCat'] )
 
 
 ###########################################################################################################################################
@@ -478,7 +488,6 @@ if not simulation :
     for wName in [ 'N_sigMass_sw', 'N_cbkgMass_sw' ] :
         ws.put( dataSets['preS'][0].get().find(wName) )
         weightVars.append( RealVar(wName) )
-        obsSetNTuple.append( weightVars[-1] )
 
 else :
     dataSets['preS'] = ( dataSets['pre'][0], [ ] )
@@ -527,6 +536,7 @@ print 'P2VV - INFO: createB2CCDataSet: creating data set'
 # create data sets with final columns
 mainDSList = [ ]
 samples = [ ]
+obsSetMain = obsSetNTuple + [ var for var in weightVars ]
 if splitDataSet :
     # get category states for splitting data set
     states = tuple( [ [ ( cat, observables[cat].GetName(), state.getVal() ) for state in observables[cat] ] for cat in splitDataSet ] )
@@ -538,18 +548,18 @@ if splitDataSet :
 
     # create splitted data sets
     from ROOT import RooDataSet, RooArgSet
-    obsSet = RooArgSet( obs._var for obs in obsSetNTuple )
+    obsSet = RooArgSet( obs._var for obs in obsSetMain )
     mainDS = RooDataSet( 'JpsiKK', 'JpsiKK', obsSet )
     for sample in samples :
         preDS = dataSets['preS'][0].reduce( Cut = sample[1] )
-        mainDSList.append( chain.buildDataSet( Observables = obsSetNTuple, Name = 'JpsiKK_' + sample[0], Title = 'JpsiKK'
+        mainDSList.append( chain.buildDataSet( Observables = obsSetMain, Name = 'JpsiKK_' + sample[0], Title = 'JpsiKK'
                                               , IndexName = 'index', OrigDataSet = preDS ) )
         preDS.IsA().Destructor(preDS)
         mainDS.append( mainDSList[-1] )
 
 else :
     # create data set without splitting
-    mainDS = chain.buildDataSet( Observables = obsSetNTuple, Name = 'JpsiKK', Title = 'JpsiKK', IndexName = 'index'
+    mainDS = chain.buildDataSet( Observables = obsSetMain, Name = 'JpsiKK', Title = 'JpsiKK', IndexName = 'index'
                                 , OrigDataSet = dataSets['preS'][0] )
 
 dataSets['main'] = ( mainDS, mainDSList )
@@ -566,16 +576,24 @@ print
 
 if not simulation :
     # create weighted data sets
+    from ROOT import RooArgSet
+    obsSets = dict( [ ( var.GetName(), RooArgSet( dataSets['main'][0].get() ) ) for var in weightVars ] )
+    if not addSWeights :
+        for varName, obsSet in obsSets.iteritems() :
+            for var in weightVars :
+                if var.GetName() == varName : continue
+                obsSet.remove( obsSet.find( var.GetName() ) )
+
     from ROOT import RooDataSet
-    dataSets['sigSWeight']  = ( RooDataSet( 'JpsiKK_sigSWeight',  'JpsiKK_sigSWeight',  dataSets['main'][0].get()
+    dataSets['sigSWeight']  = ( RooDataSet( 'JpsiKK_sigSWeight',  'JpsiKK_sigSWeight', obsSets['N_sigMass_sw']
                                            , Import = dataSets['main'][0], WeightVar = ( weightVars[0].GetName(), True ) ), [ ] )
-    dataSets['cbkgSWeight'] = ( RooDataSet( 'JpsiKK_cbkgSWeight', 'JpsiKK_cbkgSWeight', dataSets['main'][0].get()
+    dataSets['cbkgSWeight'] = ( RooDataSet( 'JpsiKK_cbkgSWeight', 'JpsiKK_cbkgSWeight', obsSets['N_cbkgMass_sw']
                                            , Import = dataSets['main'][0], WeightVar = ( weightVars[1].GetName(), True ) ), [ ] )
     for sample, data in zip( samples, dataSets['main'][1] ) :
-        dataSets['sigSWeight'][1].append(  RooDataSet( 'JpsiKK_sigSWeight_'  + sample[0], 'JpsiKK_sigSWeight',  data.get(), Import = data
-                                                      , WeightVar = ( weightVars[0].GetName(), True ) ) )
-        dataSets['cbkgSWeight'][1].append( RooDataSet( 'JpsiKK_cbkgSWeight_' + sample[0], 'JpsiKK_cbkgSWeight', data.get(), Import = data
-                                                      , WeightVar = ( weightVars[1].GetName(), True ) ) )
+        dataSets['sigSWeight'][1].append(  RooDataSet( 'JpsiKK_sigSWeight_'  + sample[0], 'JpsiKK_sigSWeight', obsSets['N_sigMass_sw']
+                                                      , Import = data, WeightVar = ( weightVars[0].GetName(), True ) ) )
+        dataSets['cbkgSWeight'][1].append( RooDataSet( 'JpsiKK_cbkgSWeight_' + sample[0], 'JpsiKK_cbkgSWeight', obsSets['N_cbkgMass_sw']
+                                                      , Import = data, WeightVar = ( weightVars[1].GetName(), True ) ) )
 
     print 'P2VV - INFO: createB2CCDataSet: signal data set:\n' + ' ' * 13,
     dataSets['sigSWeight'][0].Print()
@@ -852,7 +870,8 @@ if createRangeData :
 
 if createNTuple :
     # create n-tuple containing signal and background weights
-    dataSets['mainTree'] = dataSets['main'][0].buildTree( Name = 'DecayTree', Title = 'DecayTree', RooFitFormat = False )
+    dataSets['sigTree'] = dataSets['sigSWeight'][0].buildTree( Name = nTupleName, Title = nTupleName, WeightName = sWeightName
+                                                              , RooFitFormat = False )
 
 # save data sets to file
 print 120 * '='

@@ -22,8 +22,8 @@ void addSWeightToTree(const RooDataSet& ds, TTree& tree, const std::string& bran
 void addVertexErrors(TTree* tree, const std::list<RooDataSet*>& dss, const std::string& cut);
 
 TTree* RooDataSetToTree(const RooDataSet& dataSet, const char* name = 0,
-      const char* title = 0, const char* branchList = 0,
-      Bool_t RooFitFormat = kTRUE);
+      const char* title = 0, const char* weightName = 0,
+      const char* branchList = 0, Bool_t RooFitFormat = kTRUE);
 
 RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
       const char* name = 0, const char* title = 0, const char* cuts = 0,

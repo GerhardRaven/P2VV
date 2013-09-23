@@ -213,7 +213,8 @@ void addVertexErrors(TTree* tree, const std::list<RooDataSet*>& dss, const std::
 }
 
 TTree* RooDataSetToTree(const RooDataSet& dataSet, const char* name,
-      const char* title, const char* branchList, Bool_t RooFitFormat)
+      const char* title, const char* weightName, const char* branchList,
+      Bool_t RooFitFormat)
 {
   // get branch names
   std::set<TString> branches;
@@ -233,8 +234,18 @@ TTree* RooDataSetToTree(const RooDataSet& dataSet, const char* name,
   if (treeName.Length() < 1) treeName = dataSet.GetName();
   if (treeTitle.Length() < 1) treeTitle = dataSet.GetTitle();
 
-  // build tree
+  // create tree
   TTree* tree = new TTree(treeName, treeTitle);
+
+  // create branch in tree for event weights
+  TString weightNameStr(weightName);
+  Double_t* weightVarAdd = 0;
+  if (weightNameStr.Length() > 0) {
+    weightVarAdd = new Double_t(0.);
+    tree->Branch(weightNameStr, weightVarAdd, weightNameStr + "/D");
+  }
+
+  // create branches in tree for data set columns
   std::vector<RooRealVar*>  realVars;
   std::vector<RooCategory*> categories;
   std::vector<Double_t*>    realVarAdds;
@@ -274,8 +285,14 @@ TTree* RooDataSetToTree(const RooDataSet& dataSet, const char* name,
     }
   }
 
+  // loop over events in data set
   for (Int_t event = 0; event < dataSet.numEntries(); ++event) {
     dataSet.get(event);
+
+    // set weight
+    if (weightVarAdd != 0) {
+      *weightVarAdd = dataSet.weight();
+    }
 
     // set RooRealVar values
     for (Int_t realVarIter = 0; realVarIter < (Int_t)realVars.size();
