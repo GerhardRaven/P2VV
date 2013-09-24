@@ -116,6 +116,13 @@ void addSWeightToTree(const RooDataSet& ds, TTree& tree, const std::string& bran
    addSWeightToTree(weights, tree, branch_name);
 }
 
+void addRunPeriodToTree(TTree& tree, Int_t period, const char* branchName) {
+  TString branchNameStr(branchName);
+  TBranch* branch = tree.Branch(branchNameStr, &period, branchNameStr + "/I");
+  for (Long64_t it = 0; it < tree.GetEntries(); ++it) branch->Fill();
+  tree.FlushBaskets();
+}
+
 void addVertexErrors(TTree* tree, const std::list<RooDataSet*>& dss, const std::string& cut) {
 
    cout << "Reading tree " << tree->GetName() << " to get vertex errors." << endl;

@@ -18,6 +18,7 @@ void addSWeightToTree(const std::vector<double>& weights, TTree& tree, const std
 void addSWeightToTree(double* weights, size_t n, TTree& tree, const std::string& branch_name);
 void addSWeightToTree(const RooDataSet& ds, TTree& tree, const std::string& branchname,
                       const std::string& cut = std::string("1"));
+void addRunPeriodToTree(TTree& tree, Int_t period, const char* branchName);
 
 void addVertexErrors(TTree* tree, const std::list<RooDataSet*>& dss, const std::string& cut);
 
