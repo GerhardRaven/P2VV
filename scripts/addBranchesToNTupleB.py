@@ -5,7 +5,7 @@ nTupleFilePathOut = '/data/bfys/jleerdam/Bs2Jpsiphi/2011_dv33r6p1_s20r1p1_201309
 nTupleName = 'DecayTree'
 runPeriod = 2011
 
-from ROOT import gROOT, TFile
+from ROOT import TFile
 print 'reading file "%s" and cloning n-tuple "%s"' % ( nTupleFilePathIn, nTupleName )
 nTupleFileIn = TFile.Open(nTupleFilePathIn)
 nTupleIn = nTupleFileIn.Get(nTupleName)

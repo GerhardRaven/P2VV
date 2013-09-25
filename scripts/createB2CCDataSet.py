@@ -2,16 +2,18 @@
 ## script settings ##
 #####################
 
-nTupleFilePath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
-#nTupleFilePath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_2012_20130425_tupleB.root'
-#nTupleFilePath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20130628.root'
-#nTupleFilePath   = 'P2VVDataSets_4KKBins.root'
+nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/2011_2012_dv33r6p1_s20_20130919_tupleB_add.root'
+#nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/2011_dv33r6p1_s20r1p1_20130919_tupleB.root'
+#nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/2012_dv33r6p1_s20r0p1_20130919_tupleB.root'
+#nTupleFilePath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco12/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
 nTupleName       = 'DecayTree'
-dataSetsFilePath = 'P2VVDataSets_4KKBins.root'
+dataSetsFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_4KKMassBins_2TagCats_.root'
 appendToFile     = False
-plotsFilePath    = 'plots/P2VVMassPlots.ps'
+savedObjects     = [ 'sigSWeight' ]
+plotsFilePath    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_4KKMassBins_2TagCats.ps'
 
 simulation       = False
+runPeriods       = [ 2011, 2012 ]
 triggerSel       = 'paper2012' # 'noSelection' # 'paper2012' # 'HLT1Unbiased' # 'paper2012'
 dataCuts         = 'nominal2011' # 'noSelection' # 'nominal2011'
 dataSample       = '(bkgcat==0 || bkgcat==50)' if simulation else ''
@@ -52,21 +54,22 @@ RooInf  = RooNumber.infinity()
 KKMMin  = KKMassBinBounds[0]
 KKMMax  = KKMassBinBounds[-1]
 
-obsKeys = [ ] # [ 'sigWeight_4KKBins' ]
-obsKeys += [  'mass', 'KKMass', 'mumuMass'
-            , 'time', 'timeRes'
-            , 'ctk', 'ctl', 'phih'
-            #, 'cpsi', 'cttr', 'phitr'
-            #, 'wTag', 'tagDec'
-            , 'wTagOS'#, 'tagDecOS'
-            , 'wTagSS'#, 'tagDecSS'
-            #, 'sel', 'selA', 'selB'
-            , 'hlt1ExclB', 'hlt2B', 'hlt2UB'#, 'hlt1B', 'hlt1UB'
-           ]
+obsKeys = [  'runPeriod'
+           , 'mass', 'KKMass', 'mumuMass'
+           , 'time', 'timeRes'
+           , 'ctk', 'ctl', 'phih'
+           #, 'cpsi', 'cttr', 'phitr'
+           #, 'wTag', 'tagDec'
+           , 'wTagOS'#, 'tagDecOS'
+           , 'wTagSS'#, 'tagDecSS'
+           #, 'sel', 'selA', 'selB'
+           , 'hlt1ExclB', 'hlt2B', 'hlt2UB'#, 'hlt1B', 'hlt1UB'
+          ]
 if simulation :
     obsKeys += [ 'truetime', 'bkgcat' ]
 
-obsDict = dict(  mass      = ( 'mass',                 'm(J/#psi K^{+}K^{-})',    'MeV/c^{2}', 5368.,  5200.,   5550.       )
+obsDict = dict(  runPeriod = ( 'runPeriod',            'run period', dict( [ ( 'p%d' % period, period ) for period in runPeriods ] ) )
+               , mass      = ( 'mass',                 'm(J/#psi K^{+}K^{-})',    'MeV/c^{2}', 5368.,  5200.,   5550.       )
                , mumuMass  = ( 'mdau1',                'm(#mu^{+}#mu^{-})',       'MeV/c^{2}', 3096.,  3030.,   3150.       )
                , KKMass    = ( 'mdau2',                'm(K^{+}K^{-})',           'MeV/c^{2}', 1020.,  KKMMin,  KKMMax      )
                , time      = ( 'time',                 'Decay time',              'ps',        1.5,    0.3,     14.         )
@@ -172,6 +175,7 @@ from P2VV.Load import RooFitOutput, LHCbStyle
 
 # create list of required observables
 reqObsList = [ 'index', 'mass', 'KKMass', 'tagDecOS', 'tagDecSS', 'wTagOS', 'wTagSS' ]
+reqObsList += ['runPeriod'] if runPeriods else [ ]
 reqObsList += ['hlt1ExclB'] if triggerSel == 'paper2012' else [ 'hlt1ExclB', 'hlt2B' ] if triggerSel == 'timeEffFit' else [ ]
 
 # create workspace
@@ -214,17 +218,17 @@ from P2VV.Imports import triggerSelStrings
 ntupleCuts += ( ' && ' if ntupleCuts else '' ) + triggerSelStrings[triggerSel]
 
 # read n-tuple file(s)
-print 'P2VV - INFO: createB2CCDataSet: reading n-tuple(s) "%s" from file(s) "%s"' % ( nTupleName, nTupleFilePath )
+print 'P2VV - INFO: createB2CCDataSet: reading n-tuple "%s" from file "%s"' % ( nTupleName, nTupleFilePath )
 print 'P2VV - INFO: createB2CCDataSet: selection cuts:\n    %s' % ntupleCuts
-from ROOT import TChain
-chain = TChain(nTupleName)
-status = chain.Add( nTupleFilePath, -1 )
-if status == 0 :
-    raise RuntimeError( 'P2VV - ERROR: createB2CCDataSet: could not locate tree "%s" in file "%s"' % ( nTupleName, nTupleFilePath ) )
+from ROOT import TFile, TTree
+dataTreeFile = TFile.Open(nTupleFilePath)
+assert dataTreeFile, 'P2VV - ERROR: createB2CCDataSet: could not open file "%s"' % nTupleFilePath
+dataTree = dataTreeFile.Get(nTupleName)
+assert dataTree, 'P2VV - ERROR: createB2CCDataSet: could not locate tree "%s" in file "%s"' % ( nTupleName, nTupleFilePath )
 
 # create data set from n-tuple
-dataSets = dict( pre = ( chain.buildDataSet( Observables = obsSetPreDS, Name = 'JpsiKK', Title = 'JpsiKK', Cuts = ntupleCuts
-                , IndexName = 'index' ), [ ] ) )
+dataSets = dict( pre = ( dataTree.buildDataSet( Observables = obsSetPreDS, Name = 'JpsiKK', Title = 'JpsiKK', Cuts = ntupleCuts
+                        , IndexName = 'index' ), [ ] ) )
 print 'P2VV - INFO: createB2CCDataSet: data set from n-tuple:\n' + ' ' * 13,
 dataSets['pre'][0].Print()
 print
@@ -331,25 +335,57 @@ if not simulation :
     massFitResult.covarianceMatrix().Print()
     massFitResult.correlationMatrix().Print()
 
-    splitCats = [ [ ] ]
-    if SWeightsType.startswith('simultaneous') and ( triggerSel in ['paper2012', 'timeEffFit'] or len(KKMassBinBounds) > 2 ) :
-        # categories for splitting the PDF
-        splitCats[0] += [ observables['hlt1ExclB'] ] if triggerSel == 'paper2012'\
-                         else [ observables['hlt1ExclB'], observables['hlt2B'] ] if triggerSel == 'timeEffFit' else [ ]
-        splitCats[0] += [ observables['KKMassCat'] ] if len(KKMassBinBounds) > 2 else [ ]
+    if SWeightsType.startswith('simultaneous') and (runPeriods or triggerSel in ['paper2012', 'timeEffFit'] or len(KKMassBinBounds) > 2) :
+        # get splitting categories and parameters
+        splitCats = { }
+        yieldNames = [ par.GetName() for par in massPdf.Parameters() if par.getAttribute('Yield') ]
+        if runPeriods :
+            splitCats[observables['runPeriod'].GetName()] = set([ par.GetName() for par in massPdf.Parameters() if not par.isConstant() ])
+        if len(KKMassBinBounds) > 2 :
+            splitCats[ observables['KKMassCat'].GetName() ] = set(yieldNames)
+            if 'FreeCBkg' in SWeightsType :
+                for par in backgroundBMass.parameters() :
+                    if not par.isConstant() : splitCats[ observables['KKMassCat'].GetName() ].add( par.GetName() )
+        if triggerSel == 'paper2012' or triggerSel == 'timeEffFit' :
+            splitCats[ observables['hlt1ExclB'].GetName() ] = set(yieldNames)
+        if triggerSel == 'timeEffFit' :
+            splitCats[ observables['hlt2B'].GetName() ] = set(yieldNames)
 
-        # get mass parameters that are split
-        splitParams = [ [ par for par in massPdf.Parameters() if par.getAttribute('Yield') ] ]
-        if 'FreeCBkg' in SWeightsType and len(KKMassBinBounds) > 2 :
-            splitCats.append( [ observables['KKMassCat'] ] )
-            splitParams.append( [ par for par in backgroundBMass.parameters() if not par.isConstant() ] )
+        splitParsDict = { }
+        pdfVars = massPdf.getVariables()
+        for cat, params in splitCats.iteritems() :
+            assert ws.cat(cat), 'P2VV - ERROR: createB2CCDataSet: category "%s" not in workspace' % cat
+            for par in params :
+                assert ws.var(par), 'P2VV - ERROR: createB2CCDataSet: no variable "%s" in workspace' % par
+                assert pdfVars.find(par), 'P2VV - ERROR: createB2CCDataSet: variable "%s" not in PDF' % par
+                if ws[par] not in splitParsDict :
+                    splitParsDict[ ws[par] ] = set( [ ws[cat] ] )
+                else :
+                    splitParsDict[ ws[par] ].add( ws[cat] )
+
+        # create lists of split categories and parameters
+        pars = splitParsDict.keys()
+        splitCats = [ ]
+        splitPars = [ ]
+        for par in pars :
+            if par not in splitParsDict : continue
+            splitPars.append( set( [par] ) )
+            splitCats.append( splitParsDict.pop(par) )
+            for par1 in pars :
+                if par1 not in splitParsDict : continue
+                if splitParsDict[par1] == splitCats[-1] :
+                    splitPars[-1].add(par1)
+                    splitParsDict.pop(par1)
 
         # build simultaneous mass PDF
+        print 'P2VV - INFO: createB2CCDataSet: building simultaneous PDF "%s":' % ( massPdf.GetName() + '_simul' )
+        print 13 * ' ' + 'splitting categories: [ %s ]' % ' ], [ '.join(', '.join(cat.GetName() for cat in cats) for cats in splitCats)
+        print 13 * ' ' + 'split parameters:     [ %s ]' % ' ], [ '.join(', '.join(par.GetName() for par in pars) for pars in splitPars)
         from P2VV.RooFitWrappers import SimultaneousPdf
         sWeightMassPdf = SimultaneousPdf(  massPdf.GetName() + '_simul'
                                          , MasterPdf       = massPdf
                                          , SplitCategories = splitCats
-                                         , SplitParameters = splitParams
+                                         , SplitParameters = splitPars
                                         )
 
         # set yields for categories
@@ -552,21 +588,21 @@ if splitDataSet :
     mainDS = RooDataSet( 'JpsiKK', 'JpsiKK', obsSet )
     for sample in samples :
         preDS = dataSets['preS'][0].reduce( Cut = sample[1] )
-        mainDSList.append( chain.buildDataSet( Observables = obsSetMain, Name = 'JpsiKK_' + sample[0], Title = 'JpsiKK'
-                                              , IndexName = 'index', OrigDataSet = preDS ) )
+        mainDSList.append( dataTree.buildDataSet( Observables = obsSetMain, Name = 'JpsiKK_' + sample[0], Title = 'JpsiKK'
+                                                 , IndexName = 'index', OrigDataSet = preDS ) )
         preDS.IsA().Destructor(preDS)
         mainDS.append( mainDSList[-1] )
 
 else :
     # create data set without splitting
-    mainDS = chain.buildDataSet( Observables = obsSetMain, Name = 'JpsiKK', Title = 'JpsiKK', IndexName = 'index'
+    mainDS = dataTree.buildDataSet( Observables = obsSetMain, Name = 'JpsiKK', Title = 'JpsiKK', IndexName = 'index'
                                 , OrigDataSet = dataSets['preS'][0] )
 
 dataSets['main'] = ( mainDS, mainDSList )
 
 if dataSets['preS'][0] : dataSets['preS'][0].IsA().Destructor(dataSets['preS'][0])
 if dataSets['pre'][0]  : dataSets['pre'][0].IsA().Destructor(dataSets['pre'][0])
-if chain               : chain.IsA().Destructor(chain)
+if dataTree            : dataTree.IsA().Destructor(dataTree)
 dataSets.pop('pre')
 dataSets.pop('preS')
 
@@ -605,9 +641,10 @@ if not simulation :
 
     # print yields
     print 'P2VV - INFO: createB2CCDataSet: event yields:'
-    allCats = [  dataSets['main'][0].get().find( obsDict['hlt1ExclB'][0] )
-               , dataSets['main'][0].get().find( obsDict['hlt2B'][0] )
-              ]
+    allCats = [ dataSets['main'][0].get().find( obsDict['runPeriod'][0] ) ] if runPeriods else [ ]
+    allCats += [  dataSets['main'][0].get().find( obsDict['hlt1ExclB'][0] )
+                , dataSets['main'][0].get().find( obsDict['hlt2B'][0] )
+               ]
     if len(KKMassBinBounds) > 2 : allCats.append( dataSets['main'][0].get().find( observables['KKMassCat'].GetName() ) )
     allCats = [ cat for cat in allCats if cat ]
 
@@ -628,12 +665,12 @@ if addTaggingObs :
     from P2VV.RooFitWrappers import ArgSet
     print 'P2VV - INFO: createB2CCDataSet: distribution in opposite side tagging category for signal:'
     dataSets[sigDataName][0].table(  ArgSet( 'sigOSTagSet',  [ observables['tagCatP2VVOS'], observables['iTagOS'] ] ) ).Print('v')
-    if not simulation :
+    if not simulation and 'cbkgSWeight' in savedObjects :
         print 'P2VV - INFO: createB2CCDataSet: distribution in opposite side tagging category for combinatorial background:'
         dataSets['cbkgSWeight'][0].table( ArgSet( 'cbkgOSTagSet', [ observables['tagCatP2VVOS'], observables['iTagOS'] ] ) ).Print('v')
     print 'P2VV - INFO: createB2CCDataSet: distribution in same side tagging category for signal:'
     dataSets[sigDataName][0].table(  ArgSet( 'sigSSTagSet',  [ observables['tagCatP2VVSS'], observables['iTagSS'] ] ) ).Print('v')
-    if not simulation :
+    if not simulation and 'cbkgSWeight' in savedObjects :
         print 'P2VV - INFO: createB2CCDataSet: distribution in same side tagging category for combinatorial background:'
         dataSets['cbkgSWeight'][0].table( ArgSet( 'cbkgSSTagSet', [ observables['tagCatP2VVSS'], observables['iTagSS'] ] ) ).Print('v')
 
@@ -867,11 +904,13 @@ if createRangeData :
     dataSets['sigRange']  = dataSets['main'][0].reduce( Name = 'JpsiKK_sigRange',  Title = 'JpsiKK_sigRange',  CutRange = 'Signal'       )
     dataSets['cbkgRange'] = dataSets['main'][0].reduce( Name = 'JpsiKK_cbkgRange', Title = 'JpsiKK_cbkgRange', CutRange = 'LeftSideBand' )
     dataSets['cbkgRange'].append( dataSets['main'][0].reduce( CutRange = 'RightSideBand' ) )
+    savedObjects += [ 'sigRange', 'cbkgRange' ]
 
 if createNTuple :
     # create n-tuple containing signal and background weights
     dataSets['sigTree'] = dataSets['sigSWeight'][0].buildTree( Name = nTupleName, Title = nTupleName, WeightName = sWeightName
                                                               , RooFitFormat = False )
+    savedObjects += [ 'sigTree' ]
 
 # save data sets to file
 print 120 * '='
@@ -879,29 +918,31 @@ print 'P2VV - INFO: createB2CCDataSet: saving data sets to ROOT file %s:' % data
 from ROOT import TFile
 dataSetsFile = TFile.Open( dataSetsFilePath, 'UPDATE' if appendToFile else 'RECREATE' )
 
-for data in dataSets.itervalues() :
+for dataKey, data in dataSets.iteritems() :
     print
     if hasattr( data, 'ClassName' ) and data.ClassName() == 'TTree' :
         # data in TTree
         print 'TTree::%s[%s] = %d entries'\
               % (  data.GetName(), ','.join( br.GetName() for br in data.GetListOfBranches() ), data.GetEntries() )
-        dataSetsFile.Append(data)
+        if dataKey in savedObjects : dataSetsFile.Append(data)
 
     else :
         # data in RooDataSet(s)
         if not data[1] :
             data[0].Print()
-            if data[0].numEntries() > 0 :
-                dataSetsFile.Append(data[0])
-            else :
-                print 'P2VV - INFO: createB2CCDataSet: no entries in "%s", not saving data set' % data[0].GetName()
+            if dataKey in savedObjects :
+                if data[0].numEntries() > 0 :
+                    dataSetsFile.Append(data[0])
+                else :
+                    print 'P2VV - INFO: createB2CCDataSet: no entries in "%s", not saving data set' % data[0].GetName()
         for subData in data[1] :
             print
             subData.Print()
-            if subData.numEntries() > 0 :
-                dataSetsFile.Append(subData)
-            else :
-                print 'P2VV - INFO: createB2CCDataSet: no entries in "%s", not saving data set' % subData.GetName()
+            if dataKey in savedObjects :
+                if subData.numEntries() > 0 :
+                    dataSetsFile.Append(subData)
+                else :
+                    print 'P2VV - INFO: createB2CCDataSet: no entries in "%s", not saving data set' % subData.GetName()
 
 dataSetsFile.Write()
 dataSetsFile.Close()

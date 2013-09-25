@@ -487,14 +487,14 @@ def printEventYieldsData( **kwargs ) :
     signif = [ num / sqrt(nEvTot) if nEvTot > 0. else 0. for num in nEv ]
 
     print
-    print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 31 ] + [ '-' * 30 for dataSet in weightDataSets ] )
-    print ' ' * 35 + '|' + '|'.join( ' {0:^28} '.format(name) for name in dataSetNames )
-    print ' ' * 27 + '  total |' + '|'.join( ' {0:^9s}   {1:^6s}   {2:^9s} '\
+    print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 41 ] + [ '-' * 30 for dataSet in weightDataSets ] )
+    print ' ' * 45 + '|' + '|'.join( ' {0:^28} '.format(name) for name in dataSetNames )
+    print ' ' * 37 + '  total |' + '|'.join( ' {0:^9s}   {1:^6s}   {2:^9s} '\
           .format( 'N_%d' % it, 'f_%d' % it, u'N_%d/\u221AN'.encode('utf-8') % it ) for it, dataSet in enumerate(weightDataSets) )
-    print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 31 ] + [ '-' * 30 for dataSet in weightDataSets ] )
-    print ' ' *  4 + ' {0:>20s}   {1:>6.0f} |'.format( 'total', nEvTot ) + '|'.join( ' {0:>9.2f}   {1:>6.4f}   {2:>7.3f} '\
+    print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 41 ] + [ '-' * 30 for dataSet in weightDataSets ] )
+    print ' ' *  4 + ' {0:>30s}   {1:>6.0f} |'.format( 'total', nEvTot ) + '|'.join( ' {0:>9.2f}   {1:>6.4f}   {2:>7.3f} '\
           .format( num, fr, sig ) for ( num, fr, sig ) in zip( nEv, frac, signif ) )
-    print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 31 ] + [ '-' * 30 for dataSet in weightDataSets ] )
+    print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 41 ] + [ '-' * 30 for dataSet in weightDataSets ] )
 
     if not splitCats :
         print
@@ -519,12 +519,12 @@ def printEventYieldsData( **kwargs ) :
             nEv    = [ dataSet.sumEntries(cut) for dataSet in weightDataSets ]
             frac   = [ num / nEvTot       if nEvTot > 0. else 0. for num in nEv ]
             signif = [ num / sqrt(nEvTot) if nEvTot > 0. else 0. for num in nEv ]
-            print ' ' *  4 + ' {0:>20s}   {1:>6.0f} |'.format( labs[cat][-1], nEvTot ) + '|'.join( ' {0:>9.2f}   {1:>6.4f}   {2:>7.3f} '\
+            print ' ' *  4 + ' {0:>30s}   {1:>6.0f} |'.format( labs[cat][-1], nEvTot ) + '|'.join( ' {0:>9.2f}   {1:>6.4f}   {2:>7.3f} '\
                   .format( num, fr, sig ) for ( num, fr, sig ) in zip( nEv, frac, signif ) )
 
             catState = catIter.Next()
 
-        print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 31 ] + [ '-' * 30 for dataSet in weightDataSets ] )
+        print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 41 ] + [ '-' * 30 for dataSet in weightDataSets ] )
 
     if len(splitCats) < 2 :
         print
@@ -539,7 +539,7 @@ def printEventYieldsData( **kwargs ) :
         nEv       = [ dataSet.sumEntries(cut) for dataSet in weightDataSets ]
         frac      = [ num / nEvTot       if nEvTot > 0. else 0. for num in nEv ]
         signif    = [ num / sqrt(nEvTot) if nEvTot > 0. else 0. for num in nEv ]
-        print ' ' *  4 + ' {0:>20s}   {1:>6.0f} |'.format( stateName, nEvTot ) + '|'.join( ' {0:>9.2f}   {1:>6.4f}   {2:>7.3f} '\
+        print ' ' *  4 + ' {0:>30s}   {1:>6.0f} |'.format( stateName, nEvTot ) + '|'.join( ' {0:>9.2f}   {1:>6.4f}   {2:>7.3f} '\
               .format( num, fr, sig ) for ( num, fr, sig ) in zip( nEv, frac, signif ) )
 
         iters[ splitCats[-1] ] += 1
@@ -553,5 +553,5 @@ def printEventYieldsData( **kwargs ) :
             else :
                 continue
 
-    print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 31 ] + [ '-' * 30 for dataSet in weightDataSets ] )
+    print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 41 ] + [ '-' * 30 for dataSet in weightDataSets ] )
     print
