@@ -1,7 +1,7 @@
 nTupleFilePathIn  = '/data/bfys/jleerdam/Bs2Jpsiphi/2011_dv33r6p1_s20r1p1_20130919_tupleB.root'
 nTupleFilePathOut = '/data/bfys/jleerdam/Bs2Jpsiphi/2011_dv33r6p1_s20r1p1_20130919_tupleB_add.root'
-#nTupleFilePathIn  = '/data/bfys/jleerdam/Bs2Jpsiphi/2012_dv33r6p1_s20r0p1_20130919_tupleB.root'
-#nTupleFilePathOut = '/data/bfys/jleerdam/Bs2Jpsiphi/2012_dv33r6p1_s20r0p1_20130919_tupleB_add.root'
+#nTupleFilePathIn  = '/data/bfys/jleerdam/Bs2Jpsiphi/2012_dv33r6p1_s20r0p1_20130922_tupleB.root'
+#nTupleFilePathOut = '/data/bfys/jleerdam/Bs2Jpsiphi/2012_dv33r6p1_s20r0p1_20130922_tupleB_add.root'
 nTupleName = 'DecayTree'
 runPeriod = 2011
 
