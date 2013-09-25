@@ -166,13 +166,15 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
         from math import pi
 
         # job parameters
-        self['SFit']          = True     # fit only signal?
-        self['blind']         = { }      # { 'phiCP' : ( 'UnblindUniform', 'myString', 0.2 ) }
-        self['numEvents']     = 60000    # sum of event yields
-        self['sigFrac']       = 0.5      # fraction of signal events
-        self['parNamePrefix'] = ''       # prefix for parameter names
+        self['SFit']          = True            # fit only signal?
+        self['blind']         = { }             # { 'phiCP' : ( 'UnblindUniform', 'myString', 0.2 ) }
+        self['numEvents']     = 60000           # sum of event yields
+        self['sigFrac']       = 0.5             # fraction of signal events
+        self['parNamePrefix'] = ''              # prefix for parameter names
+        self['runPeriods']    = [ 2011, 2012 ]  # run periods
 
-        self['obsDict'] = dict(  mass      = ( 'mass',                 'm(J/#psi K^{+}K^{-})',    'MeV/c^{2}', 5368.,  5200.,   5550.   )
+        self['obsDict'] = dict(  runPeriod = ( 'runPeriod',            'run period',              { }                                   )
+                               , mass      = ( 'mass',                 'm(J/#psi K^{+}K^{-})',    'MeV/c^{2}', 5368.,  5200.,   5550.   )
                                , mumuMass  = ( 'mdau1',                'm(#mu^{+}#mu^{-})',       'MeV/c^{2}', 3096.,  3030.,   3150.   )
                                , KKMass    = ( 'mdau2',                'm(K^{+}K^{-})',           'MeV/c^{2}', 1020.,   990.,   1050.   )
                                , KKMassCat = ( 'KKMassCat',            'KK mass category',        { }                                   )
@@ -249,6 +251,7 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
                                       , wTagDelP0SS    = ( -0.019,  0.005  )
                                       , wTagDelP1SS    = (  0.00,   0.01   )
                                       , timeResSigmaSF = (  1.45,   0.06   )
+                                      , betaTimeEff    = ( -0.0083, 0.004  )
                                      )
 
         # initialize PdfConfiguration object
@@ -376,7 +379,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         for par in [ 'SFit', 'KKMassBinBounds', 'obsDict', 'CSPValues', 'condTagging', 'contEstWTag', 'SSTagging', 'transAngles'
                     , 'numEvents', 'sigFrac', 'paramKKMass', 'amplitudeParam', 'ASParam', 'signalData', 'fitOptions', 'parNamePrefix'
                     , 'tagPdfType', 'timeEffType', 'timeEffHistFiles', 'timeEffParameters', 'anglesEffType', 'angEffMomsFiles'
-                    , 'readFromWS', 'splitParams', 'externalConstr' ] :
+                    , 'readFromWS', 'splitParams', 'externalConstr', 'runPeriods' ] :
             self[par] = getKWArg( self, { }, par )
 
         from P2VV.Parameterizations.GeneralUtils import setParNamePrefix, getParNamePrefix
@@ -386,8 +389,15 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         self['condTagging'] = True if self['contEstWTag'] else self['condTagging']
 
         # create observables
-        KKMassStates = dict( [ ( 'bin%d' % it, it ) for it in range( len( self['KKMassBinBounds'] ) - 1 ) ] )
-        self['obsDict']['KKMassCat'] = ( [ comp if it != 2 else KKMassStates for it, comp in enumerate( self['obsDict']['KKMassCat'] ) ] )
+        if self['runPeriods'] :
+            states = dict( [ ( 'p%d' % per, per ) for per in self['runPeriods'] ] )
+            self['obsDict']['runPeriod'] = tuple( [ comp if it != 2 else states for it, comp in enumerate(self['obsDict']['runPeriod']) ] )
+        else :
+            self['obsDict'].pop('runPeriod')
+
+        states = dict( [ ( 'bin%d' % it, it ) for it in range( len( self['KKMassBinBounds'] ) - 1 ) ] )
+        self['obsDict']['KKMassCat'] = tuple( [ comp if it != 2 else states for it, comp in enumerate( self['obsDict']['KKMassCat'] ) ] )
+
         self._createObservables()
         self._setObsProperties()
         self['obsSetP2VV']  = getKWArg( self, { }, 'obsSetP2VV' )
