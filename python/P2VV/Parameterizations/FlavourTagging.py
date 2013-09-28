@@ -19,7 +19,7 @@ P1OSErr     =  0.02
 DelP1OSVal  =  0.000
 DelP1OSErr  =  0.001
 
-P0SSVal     =  0.35
+P0SSVal     =  0.44 #0.35
 P0SSErr     =  0.02
 DelP0SSVal  = -0.02
 DelP0SSErr  =  0.01
