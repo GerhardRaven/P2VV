@@ -7,10 +7,10 @@ nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/2011_2012_dv33r
 #nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/2012_dv33r6p1_s20r0p1_20130922_tupleB.root'
 #nTupleFilePath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco12/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
 nTupleName       = 'DecayTree'
-dataSetsFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_4KKMassBins_2TagCats.root'
+dataSetsFilePath = 'temp.root' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_4KKMassBins_2TagCats.root'
 appendToFile     = False
 savedObjects     = [ 'sigSWeight' ]
-plotsFilePath    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_4KKMassBins_2TagCats.ps'
+plotsFilePath    = 'temp.ps' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_4KKMassBins_2TagCats.ps'
 
 simulation       = False
 runPeriods       = [ 2011, 2012 ]
@@ -20,6 +20,7 @@ dataSample       = '(bkgcat==0 || bkgcat==50)' if simulation else ''
 sWeightName      = 'sigWeight_4KKBins'
 addSWeights      = True
 addKKMassCat     = True
+addTrackMomenta  = False
 addTaggingObs    = ( 2, 2 ) # ( 0, 0 )
 createRangeData  = False
 createNTuple     = False
@@ -65,9 +66,12 @@ obsKeys = [  'runPeriod'
            #, 'sel', 'selA', 'selB'
            , 'hlt1ExclB', 'hlt2B', 'hlt2UB'#, 'hlt1B', 'hlt1UB'
            #, 'trigDecUnb', 'trigDecExclB'
+           #, 'B_P', 'B_Pt'
           ]
 if simulation :
     obsKeys += [ 'truetime', 'bkgcat' ]
+if addTrackMomenta :
+    obsKeys += [ '%s_P%s' % ( part, comp ) for part in [ 'Kplus', 'Kminus', 'muplus', 'muminus' ] for comp in ( 'X', 'Y', 'Z' ) ]
 
 obsDict = dict(  runPeriod = ( 'runPeriod',            'run period', dict( [ ( 'p%d' % period, period ) for period in runPeriods ] ) )
                , mass      = ( 'mass',                 'm(J/#psi K^{+}K^{-})',    'MeV/c^{2}', 5368.,  5200.,   5550.       )
@@ -111,19 +115,20 @@ obsDict = dict(  runPeriod = ( 'runPeriod',            'run period', dict( [ ( '
                , muminus_PIDmu              = ( 'muminus_PIDmu',              'muminus_PIDmu',  0.,   -RooInf, +RooInf )
                , Kplus_pidK                 = ( 'Kplus_pidK',                 'Kplus_pidK',     0.,    0.,     +RooInf )
                , Kminus_pidK                = ( 'Kminus_pidK',                'Kminus_pidK',    0.,    0.,     +RooInf )
-               , muplus_PX                  = ( 'muplus_PX',                  'muplus_PX',      0.,   -RooInf, +RooInf )
-               , muplus_PY                  = ( 'muplus_PY',                  'muplus_PY',      0.,   -RooInf, +RooInf )
-               , muplus_PZ                  = ( 'muplus_PZ',                  'muplus_PZ',      0.,   -RooInf, +RooInf )
-               , muminus_PX                 = ( 'muminus_PX',                 'muminus_PX',     0.,   -RooInf, +RooInf )
-               , muminus_PY                 = ( 'muminus_PY',                 'muminus_PY',     0.,   -RooInf, +RooInf )
-               , muminus_PZ                 = ( 'muminus_PZ',                 'muminus_PZ',     0.,   -RooInf, +RooInf )
-               , Kplus_PX                   = ( 'Kplus_PX',                   'Kplus_PX',       0.,   -RooInf, +RooInf )
-               , Kplus_PY                   = ( 'Kplus_PY',                   'Kplus_PY',       0.,   -RooInf, +RooInf )
-               , Kplus_PZ                   = ( 'Kplus_PZ',                   'Kplus_PZ',       0.,   -RooInf, +RooInf )
-               , Kminus_PX                  = ( 'Kminus_PX',                  'Kminus_PX',      0.,   -RooInf, +RooInf )
-               , Kminus_PY                  = ( 'Kminus_PY',                  'Kminus_PY',      0.,   -RooInf, +RooInf )
-               , Kminus_PZ                  = ( 'Kminus_PZ',                  'Kminus_PZ',      0.,   -RooInf, +RooInf )
-               , B_Pt                       = ( 'B_Pt',                       'B_Pt',           0.,    0.,      RooInf )
+               , muplus_PX                  = ( 'muplus_PX',                  'muplus_PX',     'MeV/c', 0.,   -RooInf, +RooInf )
+               , muplus_PY                  = ( 'muplus_PY',                  'muplus_PY',      'MeV/c', 0.,   -RooInf, +RooInf )
+               , muplus_PZ                  = ( 'muplus_PZ',                  'muplus_PZ',      'MeV/c', 0.,   -RooInf, +RooInf )
+               , muminus_PX                 = ( 'muminus_PX',                 'muminus_PX',     'MeV/c', 0.,   -RooInf, +RooInf )
+               , muminus_PY                 = ( 'muminus_PY',                 'muminus_PY',     'MeV/c', 0.,   -RooInf, +RooInf )
+               , muminus_PZ                 = ( 'muminus_PZ',                 'muminus_PZ',     'MeV/c', 0.,   -RooInf, +RooInf )
+               , Kplus_PX                   = ( 'Kplus_PX',                   'Kplus_PX',       'MeV/c', 0.,   -RooInf, +RooInf )
+               , Kplus_PY                   = ( 'Kplus_PY',                   'Kplus_PY',       'MeV/c', 0.,   -RooInf, +RooInf )
+               , Kplus_PZ                   = ( 'Kplus_PZ',                   'Kplus_PZ',       'MeV/c', 0.,   -RooInf, +RooInf )
+               , Kminus_PX                  = ( 'Kminus_PX',                  'Kminus_PX',      'MeV/c', 0.,   -RooInf, +RooInf )
+               , Kminus_PY                  = ( 'Kminus_PY',                  'Kminus_PY',      'MeV/c', 0.,   -RooInf, +RooInf )
+               , Kminus_PZ                  = ( 'Kminus_PZ',                  'Kminus_PZ',      'MeV/c', 0.,   -RooInf, +RooInf )
+               , B_Pt                       = ( 'B_Pt',                       'B_Pt',           'MeV/c', 0.,    0.,      RooInf )
+               , B_P                        = ( 'B_P',                        'B_P',            'MeV/c', 0.,    0.,      RooInf )
                , phi_1020_pt                = ( 'phi_1020_pt',                'phi_1020_pt',    500.,  500.,    RooInf )
                , B_s0_LOKI_CosPolAngle_Dau1 = ( 'B_s0_LOKI_CosPolAngle_Dau1', 'mumu cos(th)',   0.,   -1.,     +1.     )
                , B_s0_IP_OWNPV              = ( 'B_s0_IP_OWNPV',              'B_s0_IP_OWNPV',  0.,   -RooInf, +RooInf )
@@ -180,6 +185,8 @@ from P2VV.Load import RooFitOutput, LHCbStyle
 reqObsList = [ 'index', 'mass', 'KKMass', 'tagDecOS', 'tagDecSS', 'wTagOS', 'wTagSS' ]
 reqObsList += ['runPeriod'] if runPeriods else [ ]
 reqObsList += ['hlt1ExclB'] if triggerSel == 'paper2012' else [ 'hlt1ExclB', 'hlt2B' ] if triggerSel == 'timeEffFit' else [ ]
+reqObsList += [ '%s_P%s' % ( part, comp ) for part in [ 'Kplus', 'Kminus', 'muplus', 'muminus' ] for comp in ( 'X', 'Y', 'Z' ) ]\
+              if addTrackMomenta else [ ]
 
 # create workspace
 from P2VV.RooFitWrappers import RooObject
@@ -563,6 +570,22 @@ if addTaggingObs :
     observables['tagCatP2VVOS'] = Category( ws.put( dataSets['preS'][0].get().find('tagCatP2VVOS') ).GetName() )
     observables['tagCatP2VVSS'] = Category( ws.put( dataSets['preS'][0].get().find('tagCatP2VVSS') ).GetName() )
     obsSetNTuple += [ observables['iTagOS'], observables['iTagSS'], observables['tagCatP2VVOS'], observables['tagCatP2VVSS'] ]
+
+
+###################################################################################################################################
+## add track and B momenta to data set ##
+#########################################
+
+if addTrackMomenta :
+    # add K+, K-, mu+ and mu- momentum magnitudes to data set
+    from P2VV.Utilities.DataHandling import addTrackMomenta
+    addTrackMomenta( dataSets['preS'][0] )
+
+    observables['Kplus_P']   = RealVar( ws.put( dataSets['preS'][0].get().find('Kplus_P')   ).GetName() )
+    observables['Kminus_P']  = RealVar( ws.put( dataSets['preS'][0].get().find('Kminus_P')  ).GetName() )
+    observables['muplus_P']  = RealVar( ws.put( dataSets['preS'][0].get().find('muplus_P')  ).GetName() )
+    observables['muminus_P'] = RealVar( ws.put( dataSets['preS'][0].get().find('muminus_P') ).GetName() )
+    obsSetNTuple += [ observables['Kplus_P'], observables['Kminus_P'], observables['muplus_P'], observables['muminus_P'] ]
 
 
 ###########################################################################################################################################

@@ -398,6 +398,36 @@ def addTransversityAngles( dataSet, cpsiName, cthetaTrName, phiTrName, cthetaKNa
     dataSet.addColumn(phiTr)
 
 
+def addTrackMomenta( dataSet ):
+    """ add K+, K-, mu+ and mu- momentum magnitudes to data set
+    """
+
+    # get observables from data set
+    from ROOT import RooArgList, RooFormulaVar
+    KplusList   = RooArgList('KplusList')
+    KminusList  = RooArgList('KminusList')
+    muplusList  = RooArgList('muplusList')
+    muminusList = RooArgList('muminusList')
+
+    for suf in [ 'X','Y','Z' ] :
+        KplusList.add( dataSet.get().find('Kplus_P'  + suf) )
+        KminusList.add( dataSet.get().find('Kminus_P'  + suf) )
+        muplusList.add( dataSet.get().find('muplus_P' + suf) )
+        muminusList.add( dataSet.get().find('muminus_P' + suf) )
+
+    #  create formulas
+    KplusMomFunc   = RooFormulaVar( 'Kplus_P',  'Kplus_P',   'TMath::Sqrt(Kplus_PX**2 + Kplus_PY**2 + Kplus_PZ**2)',       KplusList   )
+    KminusMomFunc  = RooFormulaVar( 'Kminus_P', 'Kminus_P',  'TMath::Sqrt(Kminus_PX**2 + Kminus_PY**2 + Kminus_PZ**2)',    KminusList  )
+    muplusMomFunc  = RooFormulaVar( 'muplus_P', 'muplus_P',  'TMath::Sqrt(muplus_PX**2 + muplus_PY**2 + muplus_PZ**2)',    muplusList  )
+    muminusMomFunc = RooFormulaVar( 'muminus_P','muminus_P', 'TMath::Sqrt(muminus_PX**2 + muminus_PY**2 + muminus_PZ**2)', muminusList )
+
+    # create new columns in data set
+    dataSet.addColumn(KplusMomFunc)
+    dataSet.addColumn(KminusMomFunc)
+    dataSet.addColumn(muplusMomFunc)
+    dataSet.addColumn(muminusMomFunc)
+
+
 def printEventYields( **kwargs ) :
     # get arguments
     parSet     = kwargs.pop( 'ParameterSet',        [ ] )
