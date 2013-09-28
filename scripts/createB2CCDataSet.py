@@ -36,7 +36,7 @@ sigMassModel     = ''
 cbkgMassModel    = ''
 SWeightsType     = 'simultaneousFreeCBkg'
 numMassBins      = [ 70, 40, 20, 20, 20 ]
-massLogPlotRange = ( 1.9e2, 1.2e4 ) # ( 1.9e2, 1.2e4 ) # ( 8.e2, 2.5e4 )
+massLogPlotRange = ( 1.e3, 3.8e4 ) # ( 1.9e2, 1.2e4 ) # ( 8.e2, 2.5e4 )
 
 fitOpts = dict(  NumCPU    = 6
                , Optimize  = 2
@@ -64,6 +64,7 @@ obsKeys = [  'runPeriod'
            , 'wTagSS'#, 'tagDecSS'
            #, 'sel', 'selA', 'selB'
            , 'hlt1ExclB', 'hlt2B', 'hlt2UB'#, 'hlt1B', 'hlt1UB'
+           #, 'trigDecUnb', 'trigDecExclB'
           ]
 if simulation :
     obsKeys += [ 'truetime', 'bkgcat' ]
@@ -97,6 +98,8 @@ obsDict = dict(  runPeriod = ( 'runPeriod',            'run period', dict( [ ( '
                , hlt1UB    = ( 'hlt1_unbiased_dec',    'HLT1 UB.',         { 'UB'    : 1, 'notUB'    : 0 }                  )
                , hlt2B     = ( 'hlt2_biased',          'HLT2 B.',          { 'B'     : 1, 'notB'     : 0 }                  )
                , hlt2UB    = ( 'hlt2_unbiased',        'HLT2 UB.',         { 'UB'    : 1, 'notUB'    : 0 }                  )
+               , trigDecUnb                 = ( 'triggerDecisionUnbiased',   'trigDecUnb',   { 'UB'    : 1, 'notUB'    : 0 } )
+               , trigDecExclB               = ( 'triggerDecisionBiasedExcl', 'trigDecExclB', { 'exclB' : 1, 'notExclB' : 0 } )
                , sel_onecand                = ( 'sel_onecand',                { 'sel' : 1, 'notSel' : 0 }              )
                , sel_one_gl                 = ( 'sel_one_gl',                 { 'sel' : 1, 'notSel' : 0 }              )
                , muPTrChi2                  = ( 'muplus_track_chi2ndof',      'mu+ chi^2/#dof', 1.,    0.,      4.     )
@@ -605,6 +608,9 @@ if dataSets['pre'][0]  : dataSets['pre'][0].IsA().Destructor(dataSets['pre'][0])
 if dataTree            : dataTree.IsA().Destructor(dataTree)
 dataSets.pop('pre')
 dataSets.pop('preS')
+dataTreeFile.Close()
+from ROOT import gROOT
+gROOT.cd('PyROOT:/')
 
 print 'P2VV - INFO: createB2CCDataSet: produced data set:\n' + ' ' * 13,
 dataSets['main'][0].Print()
@@ -696,7 +702,7 @@ if not simulation and plotsFilePath :
     LHCbLabel.SetBorderSize(0)
     _P2VVPlotStash.append(LHCbLabel)
 
-    if SWeightsType.startswith('simultaneous') and ( triggerSel in ['paper2012', 'timeEffFit'] or len(KKMassBinBounds) > 2 ) :
+    if SWeightsType.startswith('simultaneous') and (runPeriods or triggerSel in ['paper2012', 'timeEffFit'] or len(KKMassBinBounds) > 2) :
         # create projection data set
         indexCat = sWeightMassPdf.indexCat()
         if indexCat.isFundamental() :
