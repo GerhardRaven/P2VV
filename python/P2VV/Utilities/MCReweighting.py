@@ -1040,12 +1040,15 @@ class BuildBs2JpsiKK2011sFit():
         pdfConfig['obsDict']['KKMass'] = ( KKMassPars[0], KKMassPars[1], KKMassPars[2]
                                          , 1020., pdfConfig['KKMassBinBounds'][0], pdfConfig['KKMassBinBounds'][-1] )
         
-        pdfConfig['constrainTagging']   = 'constrain'
+        # pdfConfig['constrainTagging']   = 'constrain'
         pdfConfig['timeResType']           = 'eventNoMean'
         pdfConfig['numTimeResBins']        = 40
-        pdfConfig['constrainDeltaM'] = 'constrain'
+        # pdfConfig['constrainDeltaM'] = 'constrain'
         pdfConfig['lambdaCPParam'] = 'lambPhi'
         
+        pdfConfig['externalConstr']['dM'] = ( 17.63, 0.11 )
+        pdfConfig['externalConstr'].pop('betaTimeEff')
+
         from P2VV.Imports import extConstraintValues
         extConstraintValues.setVal( 'DM',      ( 17.63, 0.11 ) )
         extConstraintValues.setVal( 'P0OS',    (  0.392, 0.008, 0.392 ) )
@@ -1062,6 +1065,7 @@ class BuildBs2JpsiKK2011sFit():
         from P2VV.Utilities.DataHandling import readData
         dataSet = readData( filePath = self._dataSetPath, dataSetName = self._dataSetName,  NTuple = False )
         pdfConfig['signalData'] = dataSet
+        pdfConfig['runPeriods'] = []
         pdfConfig['readFromWS'] = True
 
         # build pdf.
