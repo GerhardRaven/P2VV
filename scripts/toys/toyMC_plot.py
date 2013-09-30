@@ -15,7 +15,9 @@ from ROOT import (RooPullVar, RooConstVar,
                   RooFormulaVar, TFile,
                   TCanvas, RooArgList,
                   RooErrorVar, RooFit,
-                  RooArgSet)
+                  RooArgSet, RooCategory,
+                  RooAddPdf)
+from P2VV.RooFitDecorators import *
 
 param_file = TFile.Open(options.param_file)
 if not param_file:
@@ -33,15 +35,16 @@ values = {}
 data = root_file.Get('result_data')
 result_params = data.get()
 pull_vars = []
-it = gen_params.createIterator()
-gp = it.Next()
-while gp:
+for gp in gen_params:
     rp = result_params.find(gp.GetName())
-    if not gp:
+    if not rp:
         print 'Warning: cannot find result parameter for %s' % gp.GetName()
+        continue
+    if isinstance(gp, RooCategory):
         continue
     # Make error var
     name = gp.GetName() + '_error'
+    print name
     _error = RooErrorVar(name, name, rp)
     error = data.addColumn(_error)
 
@@ -51,17 +54,18 @@ while gp:
     _pull = RooFormulaVar(name, name, '(@0 - %f) / @1' % gp.getVal(), RooArgList(rp, error))
     pull = data.addColumn(_pull)
     pull_vars.append(pull)
-    gp = it.Next()
 
 plot_vars = []
-for pv in pull_vars:
-    mean = data.mean(pv)
+for gp, pv in zip([p for p in gen_params if result_params.find(p.GetName())], pull_vars):
     plot = True
-    if mean < -5. or mean > 5.:
+    rp = result_params.find(gp.GetName())
+    if rp.isConstant():
         plot = False
-    sigma = data.sigma(pv)
-    if sigma < 0.1 or sigma > 5.:
-        plot = False
+    ## if mean < -5. or mean > 5.:
+    ##     plot = False
+    ## sigma = data.sigma(pv)
+    ## if sigma < 0.1 or sigma > 5.:
+    ##     plot = False
     if plot:
         print "Plotting %s" % pv.GetName()
         plot_vars.append(pv)
@@ -80,14 +84,16 @@ from ROOT import (RooRealVar, RooGaussian,
 def make_gaus(pv):
     name = pv.GetName()
     mean = RooRealVar('mean', '#mu', 0., -5, 5)
-    sigma = RooRealVar('sigma', '#sigma', 1., 0.1, 3)
-
-    values[pv.GetName()] = (mean, sigma)
-
-    pull_pdf = RooGaussian(name + '_gaus', name + '_gaus', pv, mean, sigma)
-    SetOwnership(mean, False)
-    SetOwnership(sigma, False)
-    SetOwnership(pull_pdf, False)
+    sigma1 = RooRealVar('sigma1', '#sigma_{1}', 1., 0.1, 3)
+    sigma2 = RooRealVar('sigma2', '#sigma_{2}', 4., 0.1, 20)
+    frac = RooRealVar('frac_g2', '#frac_g2', 0.1, 0.001, 0.999)
+    
+    values[pv.GetName()] = (mean, sigma1, sigma2)
+    g1 = RooGaussian(name + '_gaus_1', name + '_gaus_1', pv, mean, sigma1)
+    g2 = RooGaussian(name + '_gaus_2', name + '_gaus_2', pv, mean, sigma2)
+    pull_pdf = RooAddPdf(name + '_pull_pdf', name + '_pull_pdf', g2, g1, frac)
+    for ro in [mean, sigma1, sigma2, frac, g1, g2, pull_pdf]:
+        SetOwnership(ro, False)
     return pull_pdf
 
 from ROOT import gStyle
@@ -120,11 +126,11 @@ from collections import defaultdict
 means = defaultdict(dict)
 sigmas = defaultdict(dict)
 
-for k, (m, s) in values.iteritems():
+for k, (m, s1, s2) in values.iteritems():
     if k.find('hlt') == -1:
         continue
     means[k[:4]][k[-12:-5]] = m
-    sigmas[k[:4]][k[-12:-5]] = s
+    sigmas[k[:4]][k[-12:-5]] = s1
 
 from array import array
 from operator import itemgetter

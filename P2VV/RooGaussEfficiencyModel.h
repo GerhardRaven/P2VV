@@ -54,7 +54,7 @@ public:
   void advertiseFlatScaleFactorIntegral(Bool_t flag) { _flatSFInt = flag ; }
 
   virtual const RooAbsReal* efficiency() const;
-  virtual RooArgSet observables() const;
+  virtual RooArgSet* observables() const;
 
 private:
 

@@ -77,7 +77,7 @@ public:
   ~RooConvertPolAmp();
 
   RooArgList arguments() const {return RooArgList(_args, "arguments");}
-  const EvalType type() const {return _type;}
+  EvalType type() const {return _type;}
 
   void printArgs(std::ostream& os) const ;
 

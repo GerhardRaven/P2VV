@@ -110,10 +110,10 @@ def __createRooIterator( create_iterator ) :
             yield obj
     return __iter
 
-def __RooDataSetToTree( self, Name = '', Title = '', BranchList = '', RooFitFormat = True ) :
+def __RooDataSetToTree( self, Name = '', Title = '', WeightName = '', BranchList = '', RooFitFormat = True ) :
     from P2VV.Load import P2VVLibrary
     from ROOT import RooDataSetToTree
-    return RooDataSetToTree( self, Name, Title, BranchList, RooFitFormat )
+    return RooDataSetToTree( self, Name, Title, WeightName, BranchList, RooFitFormat )
 RooDataSet.buildTree = __RooDataSetToTree
 
 def __TreeToRooDataSet( self, Observables = [ ], Name = '', Title = '', Cuts = '', IndexName = '', OrigDataSet = None ) :
@@ -477,10 +477,10 @@ def _RooFitResultPrint( self, **kwargs ) :
         for par in fitPars :
             vals = getTextVals(par)
             if vals[1][2] :
-                print '  {0:<30s} {1} {2} {3}{4}'.format( vals[0][0], vals[1][0], vals[1][2], vals[1][1]\
+                print '  {0:<35s} {1} {2} {3}{4}'.format( vals[0][0], vals[1][0], vals[1][2], vals[1][1]\
                                                          , ( ' %s (%s sigma)' % ( vals[3][0], vals[3][1] ) ) if vals[3] else '' )
             else :
-                print '  {0:<30s} {1} +/- {2} {3}'.format( vals[0][0], vals[1][0], vals[1][1]\
+                print '  {0:<35s} {1} +/- {2} {3}'.format( vals[0][0], vals[1][0], vals[1][1]\
                                                           , ( '       %s (%s sigma)' % ( vals[3][0], vals[3][1] ) ) if vals[3] else '' )
         print
 

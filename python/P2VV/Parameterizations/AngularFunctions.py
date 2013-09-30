@@ -38,7 +38,9 @@ class JpsiphiHelicityAngles( AngleDefinitions ) :
              , 'phi'    : self._parseArg( 'phi',    kwargs, SingleArgKey = 'Name', Name = 'helphi'
                                          , Title = '#phi_{h}',          MinMax = ( -pi, pi ), Observable = True, Unit = 'rad' )
             }
-        d['functions'] =  JpsiphiTransversityAmplitudesHelicityAngles( **d )
+        coef = kwargs.pop( 'DummyCoef', False )
+        self._check_extraneous_kw(kwargs)
+        d['functions'] = JpsiphiTransversityAmplitudesHelicityAngles( Angles = d, DummyCoef = coef )
         AngleDefinitions.__init__(self, **d )
 
 
@@ -52,17 +54,27 @@ class JpsiphiTransversityAngles( AngleDefinitions ) :
             , 'phi'   :  self._parseArg( 'phi',    kwargs, SingleArgKey = 'Name', Name='trphi'
                                         , Title = '#phi_{tr}',        MinMax=( -pi, pi ), Observable = True )
             }
-        d['functions'] = JpsiphiTransversityAmplitudesTransversityAngles( **d )
+        coef = kwargs.pop( 'DummyCoef', False )
+        d['functions'] = JpsiphiTransversityAmplitudesTransversityAngles( Angles = d, DummyCoef = coef )
+        self._check_extraneous_kw(kwargs)
         AngleDefinitions.__init__(self, **d )
 
 
 class JpsiphiTransversityAmplitudesHelicityAngles( AngularFunctions ) :
     def __init__( self, **kwargs ) :
         AngularFunctions.__init__(self)
-        from P2VV.RooFitWrappers import P2VVAngleBasis, Addition
-        from math import sqrt
-        _ba = lambda  name,args : Addition(name, [ P2VVAngleBasis(kwargs , *a) for a in args ] )
+        angles = kwargs.pop('Angles')
+        coef   = kwargs.pop( 'DummyCoef', False )
+
+        # define function to build angular function; create dummy coefficient if we need to split the angular efficiency functions later
+        from P2VV.RooFitWrappers import P2VVAngleBasis, Addition, RealVar
+        dummy = RealVar( Name = 'angEffDummyCoef', Value = 1. ) if coef else None
+        _ba = lambda name, args :\
+            Addition( name, [ P2VVAngleBasis( Name = name, Angles = angles, Indices = arg[0], FixedCoef = arg[1], Coefficient = dummy )\
+                              for arg in args ] )
+
         # TODO: generate the following table straight from the physics using PS->(VV,VS) ->ffss  (V=spin 1, f=spin 1/2, PS,S,s = spin 0)
+        from math import sqrt
         angFuncs = { ('A0',   'A0')    :  ( _ba('Re_ang_A0_A0',           [ ( ( 0, 0, 0,  0 ),        4.             )
                                                                           , ( ( 0, 0, 2,  0 ),       -sqrt( 16. / 5.))
                                                                           , ( ( 2, 0, 0,  0 ),        8.             )
@@ -89,10 +101,18 @@ class JpsiphiTransversityAmplitudesHelicityAngles( AngularFunctions ) :
 class JpsiphiTransversityAmplitudesTransversityAngles( AngularFunctions ) :
     def __init__( self, **kwargs ) :
         AngularFunctions.__init__(self)
-        from P2VV.RooFitWrappers import P2VVAngleBasis, Addition
-        from math import sqrt
-        _ba = lambda  name,args : Addition(name, [ P2VVAngleBasis(kwargs , *a) for a in args ] )
+        angles = kwargs.pop('Angles')
+        coef   = kwargs.pop( 'DummyCoef', False )
+
+        # define function to build angular function; create dummy coefficient if we need to split the angular efficiency functions later
+        from P2VV.RooFitWrappers import P2VVAngleBasis, Addition, RealVar
+        dummy = RealVar( Name = 'angEffDummyCoef', Value = 1. ) if coef else None
+        _ba = lambda name, args :\
+            Addition( name, [ P2VVAngleBasis( Name = name, Angles = angles, Indices = arg[0], FixedCoef = arg[1], Coefficient = dummy )\
+                              for arg in args ] )
+
         # TODO: generate the following table straight from the physics using PS->(VV,VS) ->ffss  (V=spin 1, f=spin 1/2, PS,S,s = spin 0)
+        from math import sqrt
         angFuncs = { ('A0',   'A0')    :  ( _ba('Re_ang_A0_A0',           [ ( ( 0, 0, 0,  0 ),        4.             )
                                                                           , ( ( 0, 0, 2,  0 ),        sqrt(  4. / 5.))
                                                                           , ( ( 0, 0, 2,  2 ),       -sqrt( 12. / 5.))

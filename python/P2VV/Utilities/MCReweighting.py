@@ -995,9 +995,10 @@ class BuildBs2JpsiKK2011sFit():
         from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_2011Analysis as PdfConfig
         pdfConfig = PdfConfig()
 
-        pdfConfig['timeEffHistFile']      = kwargs.pop('timeEffHistFile')
-        pdfConfig['timeEffHistUBName']    = kwargs.pop('timeEffHistUBName')
-        pdfConfig['timeEffHistExclBName'] = kwargs.pop('timeEffHistExclBName')
+        pdfConfig['timeEffHistFiles'] = dict(  file   = kwargs.pop('timeEffHistFile')
+                                             , hlt1UB = kwargs.pop('timeEffHistUBName')
+                                             , hlt1ExclB = kwargs.pop('timeEffHistExclBName')
+                                            )
     
         self._dataSetPath = kwargs.pop('dataSetPath', None)
         self._dataSetName = kwargs.pop('dataSetName', None)

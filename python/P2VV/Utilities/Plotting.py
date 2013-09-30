@@ -139,6 +139,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
     if plotResidHist and data and pdf :
         residHist = obsFrame.residHist( 'data', 'pdf', normalize )
         residHist.GetXaxis().SetLimits( xAxis.GetXmin(), xAxis.GetXmax() )
+
         _P2VVPlotStash.append(residHist)
 
         xAxis.SetLabelOffset(0.1)
@@ -150,6 +151,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         residFrame = obsFrame.emptyClone( obsFrame.GetName() + '_resid' )
         #if 'Title' in frameOpts: residFrame.SetTitle(frameOpts['Title'])
         #residFrame.SetTitle('')
+        # set axis titles
         xAxis = residFrame.GetXaxis()
         xAxis.SetLabelSize(0.15)
         xAxis.SetTitleSize(0.15)
@@ -161,6 +163,10 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         yAxis.SetLabelOffset(0.01)
         _P2VVPlotStash.append(residFrame)
         frames.append(residFrame)
+
+        if xTitle:
+            xAxis.SetTitle(obsFrame.GetXaxis().GetTitle())
+
         # set minimum for observable's frame if there is a log scale for y
         #if logy : obsFrame.SetMinimum(0.1)
 
@@ -179,10 +185,10 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
 
         # residFrame.addPlotable( residHist, 'p' if not usebar else 'b' )
         # zz.plotOn(f,RooFit.DrawOption('B0'), RooFit.DataError( RooAbsData.None ) )
-        #residFrame.SetBarWidth(1.0)
-        #residHist.SetDrawOption("B HIST")
-        residFrame.addPlotable( residHist, 'P' if not type(plotResidHist) == str else plotResidHist )
-        #residFrame.setDrawOptions(residHist.GetName(),'B')
+        ## Draw residuals as a histogram, set the bar width a bit wider than one so they look nice.
+        ## Now to fix the root bug to make it work properly with a variable binning.
+        residFrame.SetBarWidth(1.02)
+        residFrame.addPlotable( residHist, 'BX' if not type(plotResidHist) == str else plotResidHist )
 
         if symmetrize :
             # symmetrize y-axis residuals histogram

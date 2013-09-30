@@ -99,8 +99,8 @@ public:
 
   const RooAbsPdf& pdf() const {return _pdf;}
   RooAbsReal* pdfInt() const {return _pdfInt;}
-  RooArgSet intSet() const {return RooArgSet(_intSet);}
-  RooArgSet normSet() const {return RooArgSet(_normSet);}
+  RooArgSet* intSet() const {return new RooArgSet(_intSet);}
+  RooArgSet* normSet() const {return new RooArgSet(_normSet);}
 
   Double_t evaluate() const {return _basisFunc.getVal() / _pdfInt->getVal();}
   virtual RooArgSet* getObservables(const RooArgSet* set) const

@@ -565,31 +565,31 @@ class PolyVar(RooObject) :
         for (k, v) in kwargs.iteritems() : self.__setitem__(k, v)
 
 class P2VVAngleBasis (RooObject) :
-    # TODO: replace use of RooP2VVAngleBasis with an explicit product with
-    #       some attribute set so we can recognize it by attribute instead
-    #       of by type...
-    # TODO: move 'c' out of this class (and into an explicit product),
-    #       which will allow more re-use of existing objects, and hence
-    #       make things faster
-    def __init__(self, angles, ind,c=1,ind2 = None,**kwargs) :
-        assert c!=0
-        namePostFix = kwargs.pop( 'NamePostFix', '')
-        if namePostFix : namePostFix += '_'
-        name = 'p2vvab_%s%d%d%d%d' % ( namePostFix, ind[0], ind[1], ind[2], ind[3] )
-        if ind2 : name += '_%d%d%d%d' % ind2
-        if c!=1 : name += '_%3.2f' % c
-        name = name.replace('.','d').replace('-','m')
-        spec = "RooP2VVAngleBasis::%s(" % name
-        # WARNING: angles may contain barebones PyROOT objects!!!
-        spec += "%s, %s, %s, " % tuple( angles[i].GetName() for i in [ 'cpsi', 'ctheta', 'phi'] )
-        spec += "%d,%d,%d,%d, " % ind
-        if ind2 : spec += "%d,%d,%d,%d, " % ind2
-        spec += " %f)"% c
-        #NOTE: this requires libP2VV.so to be loaded
+    def __init__(self, **kwargs) :
+        # get arguments
+        __check_req_kw__( 'Name',   kwargs )
+        __check_req_kw__( 'Angles', kwargs )
+        name    = kwargs.pop('Name')
+        angles  = kwargs.pop('Angles')
+        coef    = kwargs.pop( 'Coefficient', None )
+        inds    = kwargs.pop( 'Indices', ( 0, 0, 0, 0 ) )
+        fixCoef = kwargs.pop( 'FixedCoef', 1. )
+        name += '_%d%d%d%d' % ( inds[0], inds[1], inds[2], inds[3] )
+        if fixCoef != 1. : name += '_%3.2f' % fixCoef
+        name = name.replace( '.', 'd' ).replace( '-', 'm' )
+
+        # build RooP2VVAngleBasis
         from P2VV.Load import P2VVLibrary
-        self._declare( spec )
-        self._init(name,'RooP2VVAngleBasis')
+        spec = 'RooP2VVAngleBasis::%s(%s,%s,%s,%s%d,%d,%d,%d,%f)'\
+               % ( ( name, ) + tuple( angles[ang].GetName() for ang in ( 'cpsi', 'ctheta', 'phi' ) )\
+                 + ( coef.GetName() + ',' if coef else '', ) + tuple(inds) + ( fixCoef, ) )
+        self._declare(spec)
+        self._init( name, 'RooP2VVAngleBasis' )
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+
+    def createProdSum( self, **kwargs ) :
+        from P2VV.Utilities.DataMoments import multiplyP2VVAngleBases
+        multiplyP2VVAngleBases( self._var, **kwargs )
 
 
 class RealMoment( object ):
@@ -910,7 +910,6 @@ class Pdf(RooObject):
 
     ## TODO: define operators
     def __init__(self, **kwargs):
-        __check_req_kw__( 'Type', kwargs )
         __check_req_kw__( 'Name', kwargs )
         __check_name_syntax__( kwargs['Name'] )
 
@@ -934,6 +933,7 @@ class Pdf(RooObject):
 
     def _make_pdf(self):
         if self._dict['Name'] not in self.ws():
+            __check_req_kw__( 'Type', self._dict )
             v = list(self._dict['Parameters'])
             deps = ','.join([i.GetName() if type(i) != str else i for i in v])
             if type(self._dict['Type']) != str:
@@ -950,7 +950,7 @@ class Pdf(RooObject):
                 setattr(self._target_(), attr, v)
             del self._dict # no longer needed
         else:
-            self._init(self._dict['Name'], 'RooAbsPdf')
+            self._init( self._dict.pop('Name'), 'RooAbsPdf' )
             # Make sure we are the same as last time
             for k, v in self._dict.iteritems():
                 if v != self._get(k) : print k, v, self._get(k)
@@ -1711,7 +1711,7 @@ class Customizer(Pdf) :
 
 class ResolutionModel(Pdf):
     def __init__(self, **kwargs):
-        if type(kwargs['Type']) != str : kwargs['Type'] = kwargs['Type'].__name__
+        if 'Type' in kwargs and type( kwargs['Type'] ) != str : kwargs['Type'] = kwargs['Type'].__name__
         Pdf.__init__(self,**kwargs)
 
 class AddModel(ResolutionModel) :
@@ -1957,7 +1957,7 @@ class CubicSplineGaussModel(ResolutionModel) :
 
     def __from_gauss(self, name, gauss_model, spline_fun):
         params = gauss_model['Parameters']
-        name = name + '_' + gauss_model.GetName() + '_spline'
+        name = name + '_' + gauss_model.GetName().replace( '{', '' ).replace( '}', '' ).replace( ';', '_' ) + '_spline'
         from ROOT import RooGaussEfficiencyModel
         model = 'RooGaussEfficiencyModel::{0}({1},{2},{3})'.format(name, params[0].GetName(), spline_fun.GetName(), ','.join([p.GetName() for p in params[1:]]))
         return model, 'RooGaussEfficiencyModel', name
@@ -1967,7 +1967,7 @@ class CubicSplineGaussModel(ResolutionModel) :
         for model in add_model.models():
             spline_models.append(CubicSplineGaussModel(Name = name, ResolutionModel = model, SplineFunction = spline_fun))
         fractions = add_model.fractions()
-        name = name + '_' + add_model.GetName() + '_spline'
+        name = name + '_' + add_model.GetName().replace( '{', '' ).replace( '}', '' ).replace( ';', '_' ) + '_spline'
         model = EffResAddModel(Name = name, Models = spline_models, Fractions = fractions)
         return model, 'RooEffResAddModel', name
 

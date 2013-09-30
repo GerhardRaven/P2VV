@@ -160,9 +160,11 @@ class ShapeBuilder(object):
         for (p,o) in zip(self.__canvas.pads(len(obs)), obs):
             from P2VV.Utilities.Plotting import plot
             plot(p, o, pdf = self.__pdf, data = self._data
-                 , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
+                 , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack, Binning = 50)
                  , pdfOpts  = dict(LineWidth = 2)
-                 , plotResidHist = True
+                 , plotResidHist = 'BX'
+                 , xTitle = '#mu^+#mu^- invariant mass [MeV/c^2]'
+                 , yTitle = 'Candidates / (%f MeV/c^2)' % ((o.getMax() - o.getMin()) / float(50))
                  , components = { 'wpv_bkg_*'   : dict( LineColor = kRed,   LineStyle = kDashed )
                                   , 'wpv_psi_*' : dict( LineColor = kGreen, LineStyle = kDashed )
                                   , 'wpv_sig_*' : dict( LineColor = kBlue,  LineStyle = kDashed )
@@ -177,19 +179,22 @@ class ShapeBuilder(object):
     def __draw_time(self):
         from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
         from ROOT import TCanvas
-        self.__time_canvas = TCanvas('wpv_time_canvas', 'wpv_time_canvas', len(self.__shapes) * 500, 500)
+        self.__time_canvases  = [TCanvas('wpv_time_%s' % c.GetName(), 'wpv_time_%s' % c.GetName(), 600, 400) for c in self.__shapes.keys()]
         t = self.__time
         st = self.__st
         from ROOT import RooArgSet
-        for (p, (c, shape)) in zip(self.__time_canvas.pads(len(self.__shapes)), self.__shapes.items()):
+        for (p, (c, shape)) in zip(self.__time_canvases, self.__shapes.items()):
             from P2VV.Utilities.Plotting import plot
             pdfOpts  = dict(ProjWData = (RooArgSet(st), self.__sdatas[c], True))
-            plot(p, t, pdf = shape, data = self.__sdatas[c]
-                 , frameOpts = dict(Title = c.GetName())
-                 , dataOpts = dict(MarkerSize = 0.8, Binning = 80, MarkerColor = kBlack)
-                 , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
-                 , logy = False
-                 , plotResidHist = False)
+            nBins = 80
+            frame = plot(p, t, pdf = shape, data = self.__sdatas[c]
+                         , frameOpts = dict(Title = c.GetName())
+                         , dataOpts = dict(MarkerSize = 0.8, Binning = nBins, MarkerColor = kBlack)
+                         , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
+                         , logy = False
+                         , plotResidHist = False)[0]
+            frame.GetXaxis().SetTitle('decay time [ps]')
+            frame.GetYaxis().SetTitle('Candidates / (%3.2f ps)' % ((t.getMax() - t.getMin()) / float(nBins)))
 
     def __draw_t_diff(self):
         from ROOT import kDashed, kRed, kGreen, kBlue, kBlack

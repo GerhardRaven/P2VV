@@ -155,7 +155,7 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
             histograms = dict( (s.GetName(), v[s.GetName()]['histogram'] ) for s in cat )
             for (s,h) in histograms.iteritems() :
                     hist = acceptance_file.Get(h)
-                    if not hist : raise ValueError, 'Failed to get histrogram %s from file %s' % (histogram, input_file)
+                    if not hist : raise ValueError, 'Failed to get histrogram %s from file %s' % (h, input_file)
                     hist.SetDirectory(0) # disconnect self._hist from file... otherwise it is deleted when file is closed
                     histograms[s] = hist
 

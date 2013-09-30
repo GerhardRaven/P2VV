@@ -405,7 +405,7 @@ def signal_dilution(data, sigmat, calibration = None):
 def signal_dilution_dg(data, sigmat, sf1, frac, sf2):
     res_var = data.get().find(sigmat.GetName())
     weighted = data.isWeighted()
-
+    
     values = []
     total = 0
     for i in range(data.numEntries()):
@@ -437,6 +437,7 @@ class SolveSF(object):
         self.__D = 1
     
     def setData(self, data, sigmat):
+        from ROOT import RooDataSet
         if isinstance(data, RooDataSet):
             self.__data = []
             st = data.get().find(sigmat.GetName())

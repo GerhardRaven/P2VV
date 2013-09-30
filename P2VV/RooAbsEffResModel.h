@@ -21,9 +21,10 @@ public:
   
    /** 
     * Get a RooArgSet of all observables
+    * (pointer because genreflex dictionaries can't handle value)
     * @return RooArgSet of observables
     */
-   virtual RooArgSet observables() const = 0;
+   virtual RooArgSet* observables() const = 0;
 
    virtual const RooAbsReal* efficiency() const = 0;
 

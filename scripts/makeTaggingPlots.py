@@ -1,9 +1,9 @@
 # script paramters
-plotsFilePath   = 'plots/taggingPlots.ps'
-dataSetFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets_4KKMassBins_noTagCats.root'
-fullDataSetName = 'JpsiKK_splotdata'
-sigDataSetName  = 'JpsiKK_splotdata_weighted_sigMass'
-cbkgDataSetName = 'JpsiKK_splotdata_weighted_cbkgMass'
+plotsFilePath   = 'plots/Reco14/20112012Reco14_tagging.ps'
+dataSetFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_4KKMassBins_2TagCats.root'
+fullDataSetName = 'JpsiKK'
+sigDataSetName  = 'JpsiKK_sigSWeight'
+cbkgDataSetName = 'JpsiKK_cbkgSWeight'
 numEstWTagBins  = 50
 
 # workspace

@@ -399,7 +399,7 @@ def addTransversityAngles( dataSet, cpsiName, cthetaTrName, phiTrName, cthetaKNa
 
 
 def addTrackMomenta( dataSet ):
-    """add Kplus_P, Kminus_P, mumplus_P, muminus_P to dataSet 
+    """ add K+, K-, mu+ and mu- momentum magnitudes to data set
     """
 
     # get observables from data set
@@ -409,17 +409,17 @@ def addTrackMomenta( dataSet ):
     muplusList  = RooArgList('muplusList')
     muminusList = RooArgList('muminusList')
 
-    for suf in ['X','Y','Z']: 
+    for suf in [ 'X','Y','Z' ] :
         KplusList.add( dataSet.get().find('Kplus_P'  + suf) )
         KminusList.add( dataSet.get().find('Kminus_P'  + suf) )
         muplusList.add( dataSet.get().find('muplus_P' + suf) )
         muminusList.add( dataSet.get().find('muminus_P' + suf) )
 
     #  create formulas
-    KplusMomFunc   = RooFormulaVar( 'Kplus_P',  'Kplus_P',   'TMath::Sqrt(Kplus_PX**2   + Kplus_PY**2   + Kplus_PZ**2   )', KplusList )
-    KminusMomFunc  = RooFormulaVar( 'Kminus_P', 'Kminus_P',  'TMath::Sqrt(Kminus_PX**2  + Kminus_PY**2  + Kminus_PZ**2  )', KminusList )
-    muplusMomFunc  = RooFormulaVar( 'muplus_P', 'muplus_P',  'TMath::Sqrt(muplus_PX**2  + muplus_PY**2  + muplus_PZ**2  )', muplusList )
-    muminusMomFunc = RooFormulaVar( 'muminus_P','muminus_P', 'TMath::Sqrt(muminus_PX**2 + muminus_PY**2 + muminus_PZ**2 )', muminusList )
+    KplusMomFunc   = RooFormulaVar( 'Kplus_P',  'Kplus_P',   'TMath::Sqrt(Kplus_PX**2 + Kplus_PY**2 + Kplus_PZ**2)',       KplusList   )
+    KminusMomFunc  = RooFormulaVar( 'Kminus_P', 'Kminus_P',  'TMath::Sqrt(Kminus_PX**2 + Kminus_PY**2 + Kminus_PZ**2)',    KminusList  )
+    muplusMomFunc  = RooFormulaVar( 'muplus_P', 'muplus_P',  'TMath::Sqrt(muplus_PX**2 + muplus_PY**2 + muplus_PZ**2)',    muplusList  )
+    muminusMomFunc = RooFormulaVar( 'muminus_P','muminus_P', 'TMath::Sqrt(muminus_PX**2 + muminus_PY**2 + muminus_PZ**2)', muminusList )
 
     # create new columns in data set
     dataSet.addColumn(KplusMomFunc)
@@ -517,14 +517,14 @@ def printEventYieldsData( **kwargs ) :
     signif = [ num / sqrt(nEvTot) if nEvTot > 0. else 0. for num in nEv ]
 
     print
-    print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 31 ] + [ '-' * 30 for dataSet in weightDataSets ] )
-    print ' ' * 35 + '|' + '|'.join( ' {0:^28} '.format(name) for name in dataSetNames )
-    print ' ' * 27 + '  total |' + '|'.join( ' {0:^9s}   {1:^6s}   {2:^9s} '\
+    print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 41 ] + [ '-' * 30 for dataSet in weightDataSets ] )
+    print ' ' * 45 + '|' + '|'.join( ' {0:^28} '.format(name) for name in dataSetNames )
+    print ' ' * 37 + '  total |' + '|'.join( ' {0:^9s}   {1:^6s}   {2:^9s} '\
           .format( 'N_%d' % it, 'f_%d' % it, u'N_%d/\u221AN'.encode('utf-8') % it ) for it, dataSet in enumerate(weightDataSets) )
-    print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 31 ] + [ '-' * 30 for dataSet in weightDataSets ] )
-    print ' ' *  4 + ' {0:>20s}   {1:>6.0f} |'.format( 'total', nEvTot ) + '|'.join( ' {0:>9.2f}   {1:>6.4f}   {2:>7.3f} '\
+    print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 41 ] + [ '-' * 30 for dataSet in weightDataSets ] )
+    print ' ' *  4 + ' {0:>30s}   {1:>6.0f} |'.format( 'total', nEvTot ) + '|'.join( ' {0:>9.2f}   {1:>6.4f}   {2:>7.3f} '\
           .format( num, fr, sig ) for ( num, fr, sig ) in zip( nEv, frac, signif ) )
-    print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 31 ] + [ '-' * 30 for dataSet in weightDataSets ] )
+    print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 41 ] + [ '-' * 30 for dataSet in weightDataSets ] )
 
     if not splitCats :
         print
@@ -549,12 +549,12 @@ def printEventYieldsData( **kwargs ) :
             nEv    = [ dataSet.sumEntries(cut) for dataSet in weightDataSets ]
             frac   = [ num / nEvTot       if nEvTot > 0. else 0. for num in nEv ]
             signif = [ num / sqrt(nEvTot) if nEvTot > 0. else 0. for num in nEv ]
-            print ' ' *  4 + ' {0:>20s}   {1:>6.0f} |'.format( labs[cat][-1], nEvTot ) + '|'.join( ' {0:>9.2f}   {1:>6.4f}   {2:>7.3f} '\
+            print ' ' *  4 + ' {0:>30s}   {1:>6.0f} |'.format( labs[cat][-1], nEvTot ) + '|'.join( ' {0:>9.2f}   {1:>6.4f}   {2:>7.3f} '\
                   .format( num, fr, sig ) for ( num, fr, sig ) in zip( nEv, frac, signif ) )
 
             catState = catIter.Next()
 
-        print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 31 ] + [ '-' * 30 for dataSet in weightDataSets ] )
+        print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 41 ] + [ '-' * 30 for dataSet in weightDataSets ] )
 
     if len(splitCats) < 2 :
         print
@@ -569,7 +569,7 @@ def printEventYieldsData( **kwargs ) :
         nEv       = [ dataSet.sumEntries(cut) for dataSet in weightDataSets ]
         frac      = [ num / nEvTot       if nEvTot > 0. else 0. for num in nEv ]
         signif    = [ num / sqrt(nEvTot) if nEvTot > 0. else 0. for num in nEv ]
-        print ' ' *  4 + ' {0:>20s}   {1:>6.0f} |'.format( stateName, nEvTot ) + '|'.join( ' {0:>9.2f}   {1:>6.4f}   {2:>7.3f} '\
+        print ' ' *  4 + ' {0:>30s}   {1:>6.0f} |'.format( stateName, nEvTot ) + '|'.join( ' {0:>9.2f}   {1:>6.4f}   {2:>7.3f} '\
               .format( num, fr, sig ) for ( num, fr, sig ) in zip( nEv, frac, signif ) )
 
         iters[ splitCats[-1] ] += 1
@@ -583,5 +583,5 @@ def printEventYieldsData( **kwargs ) :
             else :
                 continue
 
-    print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 31 ] + [ '-' * 30 for dataSet in weightDataSets ] )
+    print ' ' *  4 + '|'.join( dashes for dashes in [ '-' * 41 ] + [ '-' * 30 for dataSet in weightDataSets ] )
     print
