@@ -50,7 +50,6 @@ from P2VV.Utilities.MCReweighting import MatchMCphysics2Data, MatchWeightedDistr
 from P2VV.Utilities.DataMoments import RealMomentsBuilder
 from P2VV.Utilities.Plotting import plot
 from P2VV.RooFitWrappers import RooObject, RealEffMoment
-#from P2VV.Load import LHCbStyle
 from ROOT import RooArgSet, TFile, TCanvas
 from math import pi, sqrt
 
@@ -110,9 +109,9 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
     MatchPhysics.writeWeights( weightsName=physWeightName) # mcData is internally updated with the weights.
     
     if makePlots: # check the effect of physics reweighting. 
-        MatchPhysics.compareAngles()        # save by default to anglesComparision_?.pdf'
-        MatchPhysics.compareTrackMomenta()  # save by default to KaonComparision_?.pdf' and muonComparision_?.pdf
-   
+         MatchPhysics.compareAngles(sData=sWeightedData if iterNumb==1 else '' )        # save by default to anglesComparision_?.pdf'
+         MatchPhysics.compareTrackMomenta(sData=sWeightedData if iterNumb==1 else '')   # save by default to KaonComparision_?.pdf' and muonComparision_?.pdf
+
  ############################################################################################################
  ## Reweight Kaon momenta of the previously reweighted MC to match the Kaon momenta of sData.##
  ##############################################################################################
@@ -130,11 +129,19 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
     matchMC2Data.reweight()
     reweightedData = matchMC2Data.getDataSet()
     
+
+    if iterNumb == 1: 
+        fil = TFile.Open('/project/bfys/vsyropou/PhD/macros/iterativeAngAcc/temp_reweightedData_1stIter.root', 'recreate')
+        fil.cd()
+        reweightedData.Write()
+        fil.Close()
+
+
     if makePlots:
-        #matchMC2Data._recalculatedData = reweightedData
+        matchMC2Data._recalculatedData = reweightedData
         matchMC2Data.compareAngles()
         matchMC2Data.compareTrackMomenta()
-    #assert False  
+    
 ##############################################################################################################
 ## Compute angular efficiency moments for the new reweighted MC sample.##
 #########################################################################
