@@ -195,6 +195,111 @@ class ErrorCDG(object):
         r.Mult(self.__J, tmp)
         return 1 / self.__sw * sqrt(r[0][0])
 
+class ErrorSFS(object):
+    '''
+    Class to calculate errors on D^2 for a fit of a Double Gauss to the prompt sample.
+    The Double Gauss has been parameterised using the average and "error" of the scale-
+    factors.
+    '''
+    def __init__(self, dms, sfc, frac, sfs, cv):
+        self.__dms = dms
+        self.__sfc = sfc
+        self.__frac = frac
+        self.__sfs = sfs
+        
+        # Covariance matrix from the fit, add a column and row for dms
+        from ROOT import TMatrixT
+        self.__C = TMatrixT('double')(4, 4)
+        self.__C[0][0] = dms.error() ** 2
+        for i in range(3):
+            for j in range(3):
+                self.__C[i + 1][j + 1] = cv[i][j]
+            self.__C[0][i + 1] = 0.
+            self.__C[i + 1][0] = 0.
+        
+        # Derivatives of D^2 wrt dms, sfc, frac and sfs; the derivative
+        # functions have been obtained and converted to C-functions with sympy.
+        import dilution
+        self.__d = [dilution.dDs2_ddms_c, dilution.dDs2_dsfc_c, dilution.dDs2_df_c, dilution.dDs2_dsfs_c]
+        # Jacobian matrix to propagate from dms, sfc, frac and sf2 do D^2
+        self.__J = TMatrixT('double')(1, 4)
+        self.__JT = TMatrixT('double')(4, 1)
+        self.__sw = 0
+        
+    def reset(self):
+        self.__J = TMatrixT('double')(1, 4)
+        self.__JT = TMatrixT('double')(4, 1)
+        self.__sw = 0        
+    
+    def __call__(self, w, st):
+        # Calculate derivatives for this event and add to the sum stored in the
+        # Jacobian matrix (since the covariance does not depend on sigma_t).
+        for i in range(4):
+            d = self.__d[i](st, self.__dms.value(), self.__sfc.value(),
+                            self.__frac.value(), self.__sfs.value())
+            self.__J[0][i] += w * d
+            self.__JT[i][0] += w * d
+        self.__sw += w
+    
+    def error(self):
+        # Calculate error on D^2
+        tmp = TMatrixT('double')(4, 1)
+        tmp.Mult(self.__C, self.__JT)
+        r = TMatrixT('double')(1, 1)
+        r.Mult(self.__J, tmp)
+        return 1 / self.__sw * sqrt(r[0][0])
+
+class ErrorCSFS(object):
+    def __init__(self, st_mean, dms, sfc_offset, sfc_slope,
+                 frac, sfs_offset, sfs_slope, cv):
+        self.__sfc_offset = sfc_offset.value()
+        self.__sfc_slope = sfc_slope.value()
+        self.__sfs_offset = sfs_offset.value()
+        self.__sfs_slope = sfs_slope.value()
+        self.__dms = dms.value()
+        self.__st_mean = st_mean
+        self.__frac = frac.value()
+
+        # Covariance matrix, add row and column for dms
+        from ROOT import TMatrixT
+        self.__C = TMatrixT('double')(6, 6)
+        self.__C[0][0] = dms.error() ** 2
+        for i in range(5):
+            for j in range(5):
+                self.__C[i + 1][j + 1] = cv[i][j]
+            self.__C[0][i + 1] = 0.
+            self.__C[i + 1][0] = 0.
+
+        # Derivatives of D^2 wrt dms, sfc, frac and sf2
+        import dilution
+        self.__d = [dilution.dDsc2_ddms_c, dilution.dDsc2_dsfco_c, dilution.dDsc2_dsfcs_c,
+                    dilution.dDsc2_df_c, dilution.dDsc2_dsfso_c, dilution.dDsc2_dsfss_c]
+        self.reset()
+        
+    def reset(self):
+        # Jacobian matrix
+        self.__J = TMatrixT('double')(1, 6)
+        self.__JT = TMatrixT('double')(6, 1)
+        # Temporary matrices to perform multiplication and contrain D^2 error^2
+        self.__sw = 0
+        
+    def __call__(self, w, st):
+        for i in range(6):
+            d = self.__d[i](st, self.__st_mean, self.__dms, self.__sfc_offset, self.__sfc_slope,
+                            self.__frac, self.__sfs_offset, self.__sfs_slope)
+            self.__J[0][i] += w * d
+            self.__JT[i][0] += w * d
+        # Add contribution of this event to the sum
+        self.__sw += w
+        
+    def error(self):
+        # Calculate error on D^2
+        tmp = TMatrixT('double')(6, 1)
+        tmp.Mult(self.__C, self.__JT)
+        r = TMatrixT('double')(1, 1)
+        r.Mult(self.__J, tmp)
+        return 1 / self.__sw * sqrt(r[0][0])
+
 class ErrorSG(object):
     def __init__(self, dms, sf):
         self.__dms = dms

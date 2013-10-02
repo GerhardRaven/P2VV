@@ -87,6 +87,9 @@ class DoubleGauss_Signal_Mass ( MassPdf ) :
     def __init__( self, mass, **kwargs ) :
         namePF = self.getNamePrefix(kwargs)
         self._transWidthPars = kwargs.pop( 'TransformWidthPars', ( ) )
+        self._paramAvSig = kwargs.pop('AvSigParameterisation', False)
+        assert(not (self._transWidthPars and self._paramAvSig))
+
         self._parseArg( 'm_sig_mean', kwargs, Title = 'B Mass', Unit = 'MeV/c^2', Value = 5368., Error = 0.05, MinMax = ( 5000., 5700. ) )
 
         if self._transWidthPars :
@@ -103,6 +106,15 @@ class DoubleGauss_Signal_Mass ( MassPdf ) :
                                , ObjectType = 'FormulaVar'
                               )
 
+        elif self._paramAvSig:
+            self._parseArg( 'm_sig_frac', kwargs, Title = 'B mass fraction first Gaussian', Value = 0.8, Error = 0.03
+                           , MinMax = ( 0., 1. ) )
+            self._parseArg('m_sig_av', kwargs, Title = 'Average Sigma', Value = 8, Error = 0.2, MinMax = (0.1, 20.))
+            self._parseArg('m_sig_sigma', kwargs, Title = 'Sigma of Sigmas', Value = 2, Error = 0.2, MinMax = (0.1, 20.))
+            self._parseArg('m_sig_sigma_1', kwargs, Formula = '- sqrt((1-@0) / @0) * @1 + @2',
+                           Arguments = (self._m_sig_frac, self._m_sig_sigma, self._m_sig_av), ObjectType = 'FormulaVar')
+            self._parseArg( 'm_sig_sigma_2', kwargs, Formula = 'sqrt(@0 /(1 - @0)) * @1 + @2',
+                           Arguments = (self._m_sig_frac, self._m_sig_sigma, self._m_sig_av), ObjectType = 'FormulaVar')
         else :
             # use fraction of first Gaussian and widths directly
             self._parseArg( 'm_sig_frac', kwargs, Title = 'B mass fraction first Gaussian', Value = 0.8, Error = 0.03

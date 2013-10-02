@@ -1,7 +1,7 @@
 from P2VV.RooFitWrappers import *
 
 from P2VV.Parameterizations.MassPDFs import DoubleCB_Psi_Mass as PsiMassPdf
-from P2VV.Parameterizations.MassPDFs import LP2011_Signal_Mass as BMassPdf
+from P2VV.Parameterizations.MassPDFs import DoubleGauss_Signal_Mass as BMassPdf
 from P2VV.Parameterizations.MassPDFs import LP2011_Background_Mass as BBkgPdf
 from P2VV.Parameterizations.MassPDFs import Background_PsiMass as PsiBkgPdf
 
@@ -31,14 +31,16 @@ class ShapeBuilder(object):
         self._bkg = Component('wpv_bkg',    [], Yield = (5000, 10, 50000))
 
         if 'B' in masses:
-            m_sig_mean  = RealVar('wpv_m_sig_mean',   Unit = 'MeV', Value = 5365, MinMax = (5363, 5372))
-            m_sig_sigma = RealVar('wpv_m_sig_sigma',  Unit = 'MeV', Value = 10, MinMax = (1, 20))
-            from ROOT import RooGaussian as Gaussian
-            self._sig_mass = Pdf(Name = 'wpv_sig_m', Type = Gaussian, Parameters = (masses['B'], m_sig_mean, m_sig_sigma ))
-            ## self._sig_mass = BMassPdf(masses['B'], Name = 'wpv_sig_mass', ParNamePrefix = "wpv")
+            ## m_sig_mean  = RealVar('wpv_m_sig_mean',   Unit = 'MeV', Value = 5365, MinMax = (5363, 5372))
+            ## m_sig_sigma = RealVar('wpv_m_sig_sigma',  Unit = 'MeV', Value = 10, MinMax = (1, 20))
+            ## from ROOT import RooGaussian as Gaussian
+            ## self._sig_mass = Pdf(Name = 'wpv_sig_m', Type = Gaussian, Parameters = (masses['B'], m_sig_mean, m_sig_sigma ))
+            self._sig_mass = BMassPdf(masses['B'], Name = 'wpv_sig_mass', ParNamePrefix = "wpv",
+                                      AvSigParameterisation = True)
             self._bkg_mass = BBkgPdf(masses['B'],  Name = 'wpv_bkg_mass', ParNamePrefix = "wpv",
-                                     wpv_m_bkg_exp = dict(Name = 'wpv_m_bkg_exp', Value = -0.0017, MinMax = (-0.01, -0.00001)))
-            self._sig[masses['B']] = self._sig_mass
+                                     m_bkg_exp = dict(Name = 'm_bkg_exp', Value = -0.0017,
+                                                      MinMax = (-0.01, -0.00001)))
+            self._sig[masses['B']] = self._sig_mass.pdf()
             self._psi[masses['B']] = self._bkg_mass.pdf()
             self._bkg[masses['B']] = self._bkg_mass.pdf()
         if 'jpsi' in masses:
@@ -77,9 +79,11 @@ class ShapeBuilder(object):
         if Workspace:
             self.__input_ws = input_file.Get(Workspace)
             if not self.__input_ws:
+                print 'Cannot find workspace %s in mixing file.' % Workspace
                 raise RuntimeError
             self._data = self.__input_ws.data(Data)
             if not self._data:
+                print 'Cannot find data in workspace %s.' % Workspace
                 raise RuntimeError
         else:
             self._data = input_file.Get(Data)

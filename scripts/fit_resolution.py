@@ -66,44 +66,7 @@ elif args[1] not in ['single', 'double', 'triple']:
 signal_MC = args[0] in ['MC11a', 'MC2012', 'MC2011_Sim08a']
 prompt_MC = args[0] in ['MC11a_incl_Jpsi', 'MC2011_Sim08a_incl_Jpsi', 'MC2012_incl_Jpsi']
 
-prefix = '/stuff/PhD' if os.path.exists('/stuff') else '/bfys/raaij'
-input_data = {'2011' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2011_ntupleB_20130722.root'),
-                        'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_Mixing_2011_DataSet.root'),
-                        'workspace' : 'Bs2JpsiPhiPrescaled_2011_workspace',
-                        'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Prescaled.root')},
-              '2011_Reco14' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2011_Reco14_ntupleB_20130906.root'),
-                               'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_Mixing_2011_DataSet.root'),
-                               'workspace' : 'Bs2JpsiPhiPrescaled_WPV_2011_workspace',
-                               'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Reco14_Prescaled.root')},                        
-              '2012' : {'data' :os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2012_ntupleB_20130905.root'),
-                        'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_Mixing_2012_DataSet.root'),
-                        'workspace' : 'Bs2JpsiPhiPrescaled_2012_workspace',
-                        'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2012_Prescaled.root')},
-              'MC11a' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20130613.root'),
-                         'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC11a.root'),
-                         'workspace' : 'Bs2JpsiPhiPrescaled_MC11a_workspace',
-                         'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC11a_Prescaled.root')},
-              'MC11a_incl_Jpsi' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC11a_incl_Jpsi_ntupleB_20130801.root'),
-                                   'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC11a.root'),
-                                   'workspace' : 'Bs2JpsiPhiPrescaled_MC11a_workspace',
-                                   'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC11a_incl_Jpsi_Prescaled.root')},
-              'MC2012' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC2012_ntupleB_20130904.root'),
-                          'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC2012.root'),
-                          'workspace' : 'Bs2JpsiPhiPrescaled_MC2012_workspace',
-                          'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC2012_Prescaled.root')},
-              'MC2012_incl_Jpsi' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC2012_incl_Jpsi_ntupleB_20130916.root'),
-                                    'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC2012_DataSet.root'),
-                                    'workspace' : 'Bs2JpsiPhiPrescaled_MC2012_workspace',
-                                    'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC2012_incl_Jpsi_Prescaled.root')},
-              'MC2011_Sim08a' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC2011_Sim08a_ntupleB_20130909.root'),
-                                 'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC2011_Sim08a.root'),
-                                 'workspace' : 'Bs2JpsiPhiPrescaled_MC2011_Sim08a_workspace',
-                                 'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC2011_Sim08a_Prescaled.root')},
-              'MC2011_Sim08a_incl_Jpsi' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC2011_Sim08a_incl_Jpsi_ntupleB_20130909.root'),
-                                           'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC2011_Sim08a.root'),
-                                           'workspace' : 'Bs2JpsiPhiPrescaled_MC2011_Sim08a_workspace',
-                                           'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC2011_Sim08a_incl_Jpsi_Prescaled.root')}
-              }
+from P2VV.Utilities.Resolution import input_data
 
 if args[0] not in input_data.keys():
     print parser.print_usage()
@@ -200,7 +163,7 @@ elif args[1] == 'triple':
 
 # J/psi mass pdf
 from P2VV.Parameterizations.MassPDFs import DoubleCB_Psi_Mass as PsiMassPdf
-psi_m = PsiMassPdf(mpsi, Name = 'psi_m')
+psi_m = PsiMassPdf(mpsi, Name = 'psi_m', )
 psi_m = psi_m.pdf()
     
 # J/psi background
@@ -421,7 +384,6 @@ if fit_mass:
     from ROOT import TCanvas
 
     mass_canvas = TCanvas('mass_canvas', 'mass_canvas', 600, 530)
-    from P2VV.Utilities.SWeights import SData
     from P2VV.Utilities.Plotting import plot
     pdfOpts  = dict()
     if signal_MC:
