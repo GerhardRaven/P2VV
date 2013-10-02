@@ -24,6 +24,7 @@
         <class name = "RooCalibratedDilution" />
         <function name = "RooDataSetToTree" />
         <function name = "TreeToRooDataSet" />
+        <function name = "addRunPeriodToTree" />
         <class name = "RooTransAngle" />
         <class name = "RooCruijff" />
         <class name = "RooEfficiencyBin" />

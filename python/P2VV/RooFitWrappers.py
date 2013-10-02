@@ -910,7 +910,6 @@ class Pdf(RooObject):
 
     ## TODO: define operators
     def __init__(self, **kwargs):
-        __check_req_kw__( 'Type', kwargs )
         __check_req_kw__( 'Name', kwargs )
         __check_name_syntax__( kwargs['Name'] )
 
@@ -934,6 +933,7 @@ class Pdf(RooObject):
 
     def _make_pdf(self):
         if self._dict['Name'] not in self.ws():
+            __check_req_kw__( 'Type', self._dict )
             v = list(self._dict['Parameters'])
             deps = ','.join([i.GetName() if type(i) != str else i for i in v])
             if type(self._dict['Type']) != str:
@@ -950,7 +950,7 @@ class Pdf(RooObject):
                 setattr(self._target_(), attr, v)
             del self._dict # no longer needed
         else:
-            self._init(self._dict['Name'], 'RooAbsPdf')
+            self._init( self._dict.pop('Name'), 'RooAbsPdf' )
             # Make sure we are the same as last time
             for k, v in self._dict.iteritems():
                 if v != self._get(k) : print k, v, self._get(k)
@@ -1711,7 +1711,7 @@ class Customizer(Pdf) :
 
 class ResolutionModel(Pdf):
     def __init__(self, **kwargs):
-        if type(kwargs['Type']) != str : kwargs['Type'] = kwargs['Type'].__name__
+        if 'Type' in kwargs and type( kwargs['Type'] ) != str : kwargs['Type'] = kwargs['Type'].__name__
         Pdf.__init__(self,**kwargs)
 
 class AddModel(ResolutionModel) :
@@ -1957,7 +1957,7 @@ class CubicSplineGaussModel(ResolutionModel) :
 
     def __from_gauss(self, name, gauss_model, spline_fun):
         params = gauss_model['Parameters']
-        name = name + '_' + gauss_model.GetName() + '_spline'
+        name = name + '_' + gauss_model.GetName().replace( '{', '' ).replace( '}', '' ).replace( ';', '_' ) + '_spline'
         from ROOT import RooGaussEfficiencyModel
         model = 'RooGaussEfficiencyModel::{0}({1},{2},{3})'.format(name, params[0].GetName(), spline_fun.GetName(), ','.join([p.GetName() for p in params[1:]]))
         return model, 'RooGaussEfficiencyModel', name
@@ -1967,7 +1967,7 @@ class CubicSplineGaussModel(ResolutionModel) :
         for model in add_model.models():
             spline_models.append(CubicSplineGaussModel(Name = name, ResolutionModel = model, SplineFunction = spline_fun))
         fractions = add_model.fractions()
-        name = name + '_' + add_model.GetName() + '_spline'
+        name = name + '_' + add_model.GetName().replace( '{', '' ).replace( '}', '' ).replace( ';', '_' ) + '_spline'
         model = EffResAddModel(Name = name, Models = spline_models, Fractions = fractions)
         return model, 'RooEffResAddModel', name
 

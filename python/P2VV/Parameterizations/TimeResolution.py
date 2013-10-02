@@ -21,6 +21,15 @@ class TimeResolution ( _util_parse_mixin, _util_extConstraints_mixin, _util_cond
         self._model = kwargs.pop( 'Model' )
         if 'Name'  in kwargs : self._Name  = kwargs.pop('Name')
 
+        if not hasattr( self, '_time' ) :
+            from P2VV.RooFitWrappers import RealVar
+            self._time = RealVar( Name = self._model.convVar().GetName() )
+
+        params = kwargs.pop( 'Parameters', None )
+        if params != None :
+            self._params = [ var for var in params ]
+            self._model._target_()._parameters = [ var for var in params ]
+
         # cache integrals as a function of observables
         from ROOT import RooArgSet, RooAbsCategory
         obs = RooArgSet( o for o in self._model.Observables() if o != self._time   )
