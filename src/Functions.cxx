@@ -17,6 +17,8 @@
 #include <TBranch.h>
 #include <TLeaf.h>
 #include <TObjArray.h>
+#include <TLorentzVector.h>
+#include <TVector3.h>
 
 // RooFit
 #include <RooFit.h>
@@ -25,6 +27,8 @@
 #include <RooDataSet.h>
 #include <RooArgSet.h>
 #include <RooLinkedListIter.h>
+
+#include "P2VV/Functions.h"
 
 namespace {
    using std::cout;
@@ -645,4 +649,62 @@ RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
 
   // return data set
   return dataSet;
+}
+
+
+std::vector<double> HelicityAngles(TLorentzVector Kplus_P, TLorentzVector Kminus_P, TLorentzVector muplus_P, TLorentzVector muminus_P )
+{ // Calculation based on the ANA-2012-067-v3
+  
+  // Bs, KK, mm momenta 4 vectors 
+  TLorentzVector KK_P   = Kplus_P + Kminus_P;
+  TLorentzVector mm_P   = muplus_P + muminus_P;
+  TLorentzVector KKmm_P = KK_P + mm_P;
+
+  // Unit vector along mumu direction in the KK mass r.f.
+  muplus_P.Boost( - KK_P.BoostVector() );
+  muminus_P.Boost( - KK_P.BoostVector() );
+  TVector3 e_KK = - (muplus_P + muminus_P).Vect().Unit();
+
+  // Boost the muons back to lab frame
+  muplus_P.Boost( KK_P.BoostVector() );
+  muminus_P.Boost( KK_P.BoostVector() );
+
+  // Unit vector along KK direction in the mm mass r.f.
+  Kplus_P.Boost( - mm_P.BoostVector() );
+  Kminus_P.Boost( - mm_P.BoostVector() );
+  TVector3 e_mm = - (Kplus_P+Kminus_P).Vect().Unit();
+  // Boost the Kaons back to lab frame
+  Kplus_P.Boost( mm_P.BoostVector() );
+  Kminus_P.Boost( mm_P.BoostVector() );
+
+  // Unit vector along KK direction in the mm mass r.f.
+  Kplus_P.Boost( - KKmm_P.BoostVector() );
+  Kminus_P.Boost( - KKmm_P.BoostVector() );
+  muplus_P.Boost( - KKmm_P.BoostVector() );
+  muminus_P.Boost( - KKmm_P.BoostVector() );
+  TVector3  e_KKmm = (muplus_P + muminus_P).Vect().Unit();
+
+  // Perpenticular vectors to KK and mm planes in the KKmmm r.f.
+  TVector3 eta_KK = ( Kplus_P.Vect().Cross( Kminus_P.Vect()) ).Unit();
+  TVector3 eta_mm = ( muplus_P.Vect().Cross( muminus_P.Vect()) ).Unit();
+  
+  Kplus_P.Boost( KKmm_P.BoostVector() );
+  Kminus_P.Boost( KKmm_P.BoostVector() );
+  muplus_P.Boost( KKmm_P.BoostVector() );
+  muminus_P.Boost( KKmm_P.BoostVector() );
+
+  // Helicity angles. 
+  Kplus_P.Boost( - KK_P.BoostVector() );
+  muplus_P.Boost( - mm_P.BoostVector() );
+
+  std::vector<double> angles(3);
+  angles[0] = ( Kplus_P.Vect().Unit()  ).Dot(e_KK);
+  angles[1] = ( muplus_P.Vect().Unit() ).Dot(e_mm);
+      
+  if ( eta_KK.Cross(eta_mm).Dot(e_KKmm) > 0 ) {         // sinphi = eta_KK.Cross(eta_mm).Dot(e_KKmm); 
+    angles[2] = + TMath::ACos( eta_KK.Dot(eta_mm) ) ;}  // cosphi = eta_KK.Dot(eta_mm);
+  else                                        { 
+    angles[2] = - TMath::ACos( eta_KK.Dot(eta_mm) ) ;}
+
+  return angles;
 }
