@@ -28,11 +28,11 @@ def CompareWeightedDistributions(tree, sTree, var, **kwargs):
     from ROOT import RooDataSet, gROOT
     if type(tree)  == RooDataSet and tree not in _TreeStash:
         gROOT.cd('PyROOT:/')
-        tree = tree.buildTree()
+        tree = tree.buildTree( WeightName = weight ) if weight else tree.buildTree()
         _TreeStash.append(tree)
     if type(sTree) == RooDataSet and sTree not in _TreeStash: 
         gROOT.cd('PyROOT:/')
-        sTree = sTree.buildTree()
+        sTree = sTree.buildTree( WeightName = sWeight ) if sWeight else sTree.buildTree()
         _TreeStash.append(sTree)
 
     if rangeX:
@@ -122,66 +122,6 @@ def CompareWeightedDistributions(tree, sTree, var, **kwargs):
         return c_distr
 
 
-def HelicityAngles(**kwargs):
-    # Calculation based on the ANA-2012-067-v3
-    k1_P = kwargs.pop('Kpl_P')
-    k2_P = kwargs.pop('Kmi_P')
-    m1_P = kwargs.pop('mPl_P')
-    m2_P = kwargs.pop('mMi_P')
-
-    # Bs, KK, mm momenta 4 vectors 
-    KK_P   = k1_P + k2_P 
-    mm_P   = m1_P + m2_P
-    KKmm_P = KK_P + mm_P
-
-    # Unit vector along mumu direction in the KK mass r.f.
-    m1_P.Boost( - KK_P.BoostVector() )
-    m2_P.Boost( - KK_P.BoostVector() )
-    e_KK = - (m1_P + m2_P).Vect().Unit()
-    # Boost the muons back to lab frame
-    m1_P.Boost( KK_P.BoostVector() )
-    m2_P.Boost( KK_P.BoostVector() )
-
-    # Unit vector along KK direction in the mm mass r.f.
-    k1_P.Boost( - mm_P.BoostVector() )
-    k2_P.Boost( - mm_P.BoostVector() )
-    e_mm = - (k1_P+k2_P).Vect().Unit()
-    # Boost the Kaons back to lab frame
-    k1_P.Boost( mm_P.BoostVector() )
-    k2_P.Boost( mm_P.BoostVector() )
-
-    # Unit vector along KK direction in the mm mass r.f.
-    k1_P.Boost( - KKmm_P.BoostVector() )
-    k2_P.Boost( - KKmm_P.BoostVector() )
-    m1_P.Boost( - KKmm_P.BoostVector() )
-    m2_P.Boost( - KKmm_P.BoostVector() )
-    e_KKmm = (m1_P + m2_P).Vect().Unit()
-
-    # Perpenticular vectors to KK and mm planes in the KKmmm r.f.
-    eta_KK = ( k1_P.Vect().Cross( k2_P.Vect()) ).Unit()
-    eta_mm = ( m1_P.Vect().Cross( m2_P.Vect()) ).Unit()
-
-    k1_P.Boost( KKmm_P.BoostVector() )
-    k2_P.Boost( KKmm_P.BoostVector() )
-    m1_P.Boost( KKmm_P.BoostVector() )
-    m2_P.Boost( KKmm_P.BoostVector() )
-
-    # Helicity angles. 
-    from math import asin, acos, pi    
-    k1_P.Boost( - KK_P.BoostVector() )
-    m1_P.Boost( - mm_P.BoostVector() )
-
-    costhetaK = ( k1_P.Vect().Unit() ).Dot(e_KK)
-    costhetaL = ( m1_P.Vect().Unit() ).Dot(e_mm)
-    
-    cosphi = eta_KK.Dot(eta_mm)
-    sinphi = eta_KK.Cross(eta_mm).Dot(e_KKmm)
-    if sinphi>0: Phi = + acos( eta_KK.Dot(eta_mm) )
-    else       : Phi = - acos( eta_KK.Dot(eta_mm) )
-
-    return costhetaK, costhetaL, Phi
-
-
 class UniFunc(object):
     """ Diego's Uniform Function: A function that transform a variable into a flat distribution
     """
@@ -266,7 +206,6 @@ class MatchMCphysics2Data():
         self._selectData       = kwargs.pop('selectData', False)
 
         self._allWeights     = {} # collect all the weights throughout the loop
-        self._dataParameters = {} # collect all dataParamers 
         self._pref           = 'mc' # prefix for objects created by this instance
         
         # set the  prefix
@@ -340,7 +279,7 @@ class MatchMCphysics2Data():
         #####################################################################
         ## build the B_s -> J/psi phi signal time, angular and tagging PDF ##
         #####################################################################
-
+        
         # helicity  amplitudes
         from P2VV.Parameterizations.DecayAmplitudes import JpsiVCarthesian_AmplitudeSet as Amplitudes
         amplitudes = Amplitudes(    ReApar  = sqrt(AparMag2Val  / A0Mag2Val) * cos(AparPhVal)
@@ -489,71 +428,52 @@ class MatchMCphysics2Data():
         from math import sqrt,sin, cos
         if not KKmassCat:
             AparMag2 = 1. - dataPars['A0Mag2'] - dataPars['AperpMag2']
-            ASMag2   = dataPars['f_S'] / (1 - dataPars['f_S'])
+            ASMag2   = dataPars['f_S_bin0'] / (1 - dataPars['f_S_bin0'])
             for par in self._pdf.Parameters():
                 name = par.GetName()
                 if name.__contains__('Re'):
                     if   name.__contains__('Aperp'): par.setVal(  sqrt(dataPars['AperpMag2']/dataPars['A0Mag2']) * cos(dataPars['AperpPhase'])  )
                     elif name.__contains__('Apar'):  par.setVal(  sqrt(     AparMag2 / dataPars['A0Mag2']      ) * cos(dataPars['AparPhase'] )  )
-                    elif name.__contains__('AS'):    par.setVal(  sqrt(       ASMag2 / dataPars['A0Mag2']      ) * cos(dataPars['ASOddPhase'])  )
+                    elif name.__contains__('AS'):    par.setVal(  sqrt(       ASMag2 / dataPars['A0Mag2']      ) * cos(dataPars['ASOddPhase_bin0'])  )
                     elif name.__contains__('A0'):    par.setVal(  cos(dataPars['A0Phase'])                                                      )                   
                 elif name.__contains__('Im'):
                     if   name.__contains__('Aperp'): par.setVal( sqrt(dataPars['AperpMag2']/dataPars['A0Mag2']) * sin(dataPars['AperpPhase'])  )
                     elif name.__contains__('Apar'):  par.setVal( sqrt(     AparMag2/dataPars['A0Mag2']        ) * sin(dataPars['AparPhase'] )  )
-                    elif name.__contains__('AS'):    par.setVal( sqrt(       ASMag2 / dataPars['A0Mag2']      ) * sin(dataPars['ASOddPhase'])  )
+                    elif name.__contains__('AS'):    par.setVal( sqrt(       ASMag2 / dataPars['A0Mag2']      ) * sin(dataPars['ASOddPhase_bin0'])  )
                     elif name.__contains__('A0'):    par.setVal( sin(dataPars['A0Phase'])                                                      )
                 else: par.setVal( dataPars[ name.partition('_')[2] ] ) # remove prefix from the key.
         else: print ' ' # TODO: LoopOver the KKbins and set f_S_i and ASOddPhase_i
 
 
-    def calculateWeights(self, iterNumb, dataParameters, data):
-        self._iterNumb       = iterNumb
-        self._currentDataSet = data
-        self._dataParameters['dataPars_%s'%iterNumb] = dataParameters
+    def calculateWeights(self, iterNumb, dataParameters):
+        self._iterNumb = iterNumb
 
         from ROOT import RooArgSet
         normVars =  RooArgSet(obs._target_() for obs in self._mcObsSet)
         
         # Reweights MC verticaly to match the Physics of data.
-        nominators, denominators,weights = [], [], []
+        nominators, denominators, self._weights = [], [], []
             
-        self._pdf.attachDataSet( data ) # make the pdf dependant directly on data
+        self._pdf.attachDataSet( self._initData ) # make the pdf dependant directly on data
         print 'P2VV - INFO: Calculating denominators for phyisics matching weights'    
-        if iterNumb==1: 
-            self.setMonteCarloParameters()
-            for var in self._pdf.Parameters(): var.Print()
-        else          : 
-            self.setDataFitParameters( self._dataParameters['dataPars_%s'%iterNumb - 1] )
-            for var in self._pdf.Parameters(): var.Print() 
+        if iterNumb==1: self.setMonteCarloParameters()
+        else: pass          
+        #for var in self._pdf.Parameters(): var.Print() 
 
-        for nev in xrange(data.numEntries()):
-            data.get(nev)
+        for nev in xrange(self._initData.numEntries()):
+            self._initData.get(nev)
             denominators.append( self._pdf.getVal(normVars) )
         
         print 'P2VV - INFO: Calculating nominators for phyisics matching weights'
         self.setDataFitParameters(dataParameters)
-        for var in self._pdf.Parameters(): var.Print()
-        for nev in xrange(data.numEntries()):
-            data.get(nev)
+        #for var in self._pdf.Parameters(): var.Print()
+        for nev in xrange(self._initData.numEntries()):
+            self._initData.get(nev)
             nominators.append( self._pdf.getVal(normVars) )
         
         print 'P2VV - INFO: Calculating phyisics matching weights'
-        for n,d in zip(nominators,denominators): weights += [n/d]
-        self._allWeights['weightsSet_%s'%iterNumb] = weights
-
-  
-    def combineWeights(self):  
-        currentWeights = self._allWeights['weightsSet_%s'%(self._iterNumb)]
-        if self._iterNumb==1:
-            self._combWeights = self._allWeights['weightsSet_1']
-        else:
-            print 'P2VV - INFO: Combining phyisics matching weights'
-            assert len(self._combWeights)==len(currentWeights)
-            prod = []
-            for w1, w2 in zip(self._combWeights,currentWeights): prod.append(w1*w2)
-            self._combWeights = prod
-        self._allWeights['combWeights'] = self._combWeights
-
+        for n,d in zip(nominators,denominators): self._weights += [n/d]
+        
 
     def writeWeights(self, weightsName='weightPhys'):
         from ROOT import RooArgSet,RooRealVar,RooDataSet,RooNumber
@@ -563,24 +483,31 @@ class MatchMCphysics2Data():
         weightsArgSet  = RooArgSet( weightsVar )
         weightsDataSet = RooDataSet( 'weightsSet', 'weightsSet', weightsArgSet )
         
-        for weight in self._combWeights:
+        for weight in self._weights:
             weightsVar.setVal( weight )
             weightsDataSet.add( weightsArgSet )
         
-        self._currentDataSet.merge( weightsDataSet )
-        self._currentDataSet.SetName('MC_physicsReweighted_%s_iteration'%self._iterNumb )
+        # remove previous weights column
+        if self._initData.get().find(weightsName): 
+            self._initData.get().remove( self._initData.get().find(weightsName) )
+            self._initData = self._initData.reduce( self._initData.get() )
+
+        self._initData.merge( weightsDataSet )
+        self._initData.SetName('MC_physicsReweighted_%s_iteration'%self._iterNumb )
         print 'P2VV - INFO: Phyisics matching weights added to dataset: '+'MC_physicsReweighted_%s_iteration'%self._iterNumb
 
         self._weightsName = weightsName
+        del self._weights
+        del weightsDataSet
     
 
     def compareAngles(self, save=True, sData=''):
         # NOTE: It is not necessary to scale the distributions, scale factor is 1.006 .
         from ROOT import gROOT, gPad
         gROOT.cd('PyROOT:/')       
-        data  = self._currentDataSet.buildTree()    
-        sData = sData.buildTree()
-  
+        data  = self._initData.buildTree()
+        if sData: sData = sData.buildTree( WeightName='N_sigMass_sw' )
+ 
         time = 'truetime' if self._trueTime else 'time'
         observables = [ 'helcosthetaK', 'helcosthetaL', 'helphi', time]
 
@@ -593,16 +520,15 @@ class MatchMCphysics2Data():
         
         for i, obs in zip(range(1,5), observables):
             canvPhysRew.cd(i)
-            data.Draw( obs )
+            data.Draw( obs + '>>%sPhysRew_cross=After%s()'%(self._iterNumb,i) )
             data.Draw( obs , self._weightsName, 'same err' )
-            
             if sData: 
                 canvInitMC.cd(i)
-                if not obs.__contains__('time'): sData.Draw(  obs  , 'N_sigMass_sw' )
-                else:                            sData.Draw( 'time', 'N_sigMass_sw' )
-                data.Draw( obs + '>>hAngInitMC()', self._weightsName, 'same err')
-                gPad.GetPrimitive('hAngInitMC').Scale(0.060269794462034676)
-                gPad.GetPrimitive('hAngInitMC').SetName( obs + '_AngInitMC')
+                if not obs.__contains__('time'): sData.Draw(   obs  + '>>%sPhysRew_cross=InitData%s()'%(self._iterNumb,i), 'N_sigMass_sw' )
+                else:                            sData.Draw( 'time' + '>>%sPhysRew_cross=InitData%s()'%(self._iterNumb,i), 'N_sigMass_sw' )
+                data.Draw( obs + '>>AngInitMC()', self._weightsName, 'same err')
+                gPad.GetPrimitive('AngInitMC').Scale(0.060269794462034676)
+                gPad.GetPrimitive('AngInitMC').SetName( obs + '_AngInitMC_%s' %self._iterNumb )
                 _PlotStash.append(canvInitMC)
 
         _PlotStash.append(canvPhysRew)
@@ -611,12 +537,14 @@ class MatchMCphysics2Data():
             canvPhysRew.Print('anglesBeforeAfterPhysReweight_%s.pdf'%self._iterNumb)
             if sData: canvInitMC.Print('anglesInitMcVSsData.pdf')
         
+        del data, sData
+
     def compareTrackMomenta(self, save=True, sData=''):
         # NOTE: It is not necessary to scale the distributions, scale factor is 1.006 .
         from ROOT import gROOT, gPad
         gROOT.cd('PyROOT:/')        
-        data = self._currentDataSet.buildTree() 
-        sData = sData.buildTree()
+        data = self._initData.buildTree()
+        if sData: sData = sData.buildTree( WeightName='N_sigMass_sw' )
 
         kaons = ['Kplus_PX',  'Kplus_PY',  'Kplus_PZ',  'Kminus_PX',  'Kminus_PY',  'Kminus_PZ',  'Kplus_P',  'Kminus_P' ]
         muons = ['muplus_PX', 'muplus_PY', 'muplus_PZ', 'muminus_PX', 'muminus_PY', 'muminus_PZ', 'muplus_P', 'muminus_P' ]
@@ -635,30 +563,30 @@ class MatchMCphysics2Data():
         
         for i, K, mu in zip(range(1,9), kaons, muons):
             canvKaon.cd(i)
-            data.Draw( K )
+            data.Draw( K +'>>%sKphysRew_cross=after%s()' %(self._iterNumb,i))
             data.Draw( K , self._weightsName, 'same err' )
         
             canvmuon.cd(i)
-            data.Draw( mu )
+            data.Draw( mu +'>>%smuPhysRew_cross=after%s()' %(self._iterNumb,i))
             data.Draw( mu , self._weightsName, 'same err' )
         
             if sData: 
                 canvInitK.cd(i)
-                data.Draw(  K + '>>hKaonMomInitMVSsData()'   )
+                data.Draw(  K + '>>%sKmomRew_cross=sData%s()'%(self._iterNumb,i  ))
                 sData.Draw( K , 'N_sigMass_sw', 'same err' )
-                gPad.GetPrimitive('hKaonMomInitMVSsData').Scale(0.060269794462034676)
-                gPad.GetPrimitive('hKaonMomInitMVSsData').SetName(K +'MomInitMVSsData')
+                gPad.GetPrimitive('%sKmomRew_cross=sData%s'%(self._iterNumb,i)).Scale(0.060269794462034676)
+                #gPad.GetPrimitive('McVSsData').SetName(K +'MomInitMVSsData')
 
                 canvInitmu.cd(i)
-                data.Draw(  mu + '>>hmuonMomInitMVSsData()'  )
+                data.Draw(  mu +'>>%smuMomRew_cross=sData%s()'%(self._iterNumb,i))
                 sData.Draw( mu, 'N_sigMass_sw', 'same err' )
-                gPad.GetPrimitive('hmuonMomInitMVSsData').Scale(0.060269794462034676)
-                gPad.GetPrimitive('hmuonMomInitMVSsData').SetName(mu +'MomInitMVSsData')
+                gPad.GetPrimitive('%smuMomRew_cross=sData%s'%(self._iterNumb,i)).Scale(0.060269794462034676)
+                #gPad.GetPrimitive('hmuonMomInitMcVSsData').SetName(mu +'MomInitMVSsData')
                 
                 _PlotStash.append(canvInitK)
                 _PlotStash.append(canvInitmu)
 
-
+   
         _PlotStash.append(canvKaon)
         _PlotStash.append(canvmuon)
 
@@ -669,10 +597,13 @@ class MatchMCphysics2Data():
                 canvInitK.Print('KaonMomentaInitMcVSsData.pdf')
                 canvInitmu.Print('MuonMomentaInitMcVSsData.pdf')
 
+        del data, sData
+
+
     def getPdf(self):               return self._pdf
     def getNtupleVars(self):        return self._ntupleVars
     def getAngleFunctions(self):    return self._angleFuncs
-    def getInitialMCafterSel(self): return self._initData
+    def getDataset(self): return self._initData
     def getAllWeights(self):        return self._allWeights
     def getMcObsSet(self)  :
         return  [o for o in self._mcObsSet if o.GetName().startswith('hel') or o.GetName().__contains__('time')]
@@ -683,36 +614,25 @@ class MatchMCphysics2Data():
 class MatchWeightedDistributions():
     def __init__( self,  **kwargs ):
         print 'P2VV - INFO: Initialised kinematic reweighting class: matchWeightedDistributions().'
-        self._inTree          = kwargs.pop('inTree')
-        self._outTree         = kwargs.pop('outTree')
+        self._inTree          = kwargs.pop('inTree', '')  # distribution to be modified.
+        self._outTree         = kwargs.pop('outTree')     # distribution to be matched with.
         self._inWeightName    = kwargs.pop('inWeightName')
         self._outWeightName   = kwargs.pop('outWeightName')
         self._mcObsSet        = kwargs.pop('observables')
         self._copyVars        = kwargs.pop('spectatorVars', None)
-        self._physWeightsVar  = self._inTree.get().find( self._inWeightName )
-        
-        self._nBins = kwargs.pop('nBins', '1000')
-        self._vars  = kwargs.pop('whichVars','Kminus_P')
-        self._itNum = kwargs.pop('itNum')
+               
+        self._nBins = kwargs.pop('nBins',    '1000'     )
+        self._vars  = kwargs.pop('whichVars', 'Kminus_P')
+        self._itNum = kwargs.pop('itNum',         0     )
        
         from ROOT import RooDataSet, gROOT
-        if type(self._inTree)  == RooDataSet:
+        if self._inTree and type(self._inTree)  == RooDataSet:
             gROOT.cd('PyROOT:/')
             self._inTree  = self._inTree.buildTree()
         if type(self._outTree) == RooDataSet:
             gROOT.cd('PyROOT:/')
-            self._outTree = self._outTree.buildTree()
-
-        def getSumOfWeights(t,pref):
-            sumW=0
-            for e in t:sumW+=getattr(e,pref)
-            return sumW
-
-        self._dataSetsScale = getSumOfWeights(self._outTree, self._outWeightName) / getSumOfWeights(self._inTree,self._inWeightName)
-      
-        self._physRewScale = getSumOfWeights(self._inTree,self._inWeightName) / self._inTree.GetEntries()
-        assert self._physRewScale<1.01, 'P2VV - WARNING: Scale between original MC and physics reweighted MC is %s, need to propagate the errors in the momentum reweighting.' %self._physRewScale 
-        
+            self._outTree = self._outTree.buildTree( WeightName=self._outWeightName )
+                 
         # make some usefull sets.
         if self._copyVars:
             self._muonSet, self._KaonSet, self._BmomSet = [], [],[]
@@ -786,10 +706,29 @@ class MatchWeightedDistributions():
         return newDistribution
 
 
-    def reweight( self ):
+    def reweight( self, itNum, data ):
+        self._itNum = itNum
+        self._physWeightsVar = data.get().find( self._inWeightName ) # get physics weights var   
+
+        def getSumOfWeights(t,pref):
+            sumW=0
+            for e in t:sumW+=getattr(e,pref)
+            return sumW
+        
+        if self._inTree: del self._inTree # get rid of the previous tree     
+        from ROOT import gROOT, RooDataSet
+        gROOT.cd('PyROOT:/')
+        self._inTree  = data.buildTree() # conver dataset to tree
+
+        # get scales between datasets
+        self._dataSetsScale = getSumOfWeights(self._outTree, self._outWeightName) / getSumOfWeights(self._inTree, self._inWeightName)
+        self._physRewScale = getSumOfWeights(self._inTree,self._inWeightName) / self._inTree.GetEntries()
+        assert self._physRewScale<1.01, 'P2VV - WARNING: Scale between original MC and physics reweighted MC is %s, need remove the weights and thenperform the  momentum reweighting.' %self._physRewScale 
+
         # mimic the weights 
         self.mimicWeights()
 
+        # reweight and recalculate angles
         self.ReweightAndTransformAngles(self._inTree, self._mimicedVars['inDistr'][self._vars[0]],
                                                       self._mimicedVars['outDistr'][self._vars[0]],)
 
@@ -824,7 +763,7 @@ class MatchWeightedDistributions():
         Mmu = PDG.GetParticle('mu-').Mass()*MeV
         Mk  = PDG.GetParticle('K-').Mass()*MeV
         
-        from ROOT import TVector3, TLorentzVector
+        from ROOT import TVector3, TLorentzVector, HelicityAngles 
         from math import sqrt
         _VM2LV  = lambda v,m : TLorentzVector( v, sqrt( m*m + v.Mag2() ) ) # TVector3,mass to TLorentzVector 
         _E2V    = lambda entry, label : TVector3( getattr(entry,label+'_PX'),getattr(entry,label+'_PY'),getattr(entry,label+'_PZ')) # entry to TVenctor3
@@ -846,7 +785,10 @@ class MatchWeightedDistributions():
 
         assert(self._BmomSet[0].GetName()=='B_P' and self._BmomSet[1].GetName()=='B_Pt')# important check
         BP, BPt = self._BmomSet[0], self._BmomSet[1]
-
+        
+        # from datetime import datetime
+        # startTime = datetime.now()
+        
         print 'P2VV - INFO: Recalculating decay angles after kinematic distributions matching.'
         for entry in t:
             k1_3P = _E2V(entry,'Kplus')
@@ -857,16 +799,14 @@ class MatchWeightedDistributions():
             mu1_3P = _E2V( entry , 'muplus' )
             mu2_3P = _E2V( entry , 'muminus')
            
-            cThK, cThL, phi = HelicityAngles( Kpl_P = _VM2LV( k1_3P,  Mk  ),
-                                              Kmi_P = _VM2LV( k2_3P,  Mk  ),
-                                              mPl_P = _VM2LV( mu1_3P, Mmu ),
-                                              mMi_P = _VM2LV( mu2_3P, Mmu )
-                                               )
-
+            helangles = HelicityAngles( _VM2LV( k1_3P,  Mk  ), _VM2LV( k2_3P,  Mk  ),
+                                        _VM2LV( mu1_3P, Mmu ), _VM2LV( mu2_3P, Mmu )
+                                        )
+           
             # fill the new dataset.
-            helcosthetaK.setVal( cThK )
-            helcosthetaL.setVal( cThL )
-            helphi.setVal( phi )
+            helcosthetaK.setVal( helangles[0] )
+            helcosthetaL.setVal( helangles[1] )
+            helphi.setVal(       helangles[2] )
             
             KPX.setVal( k1_3P.x() )
             KPY.setVal( k1_3P.y() )
@@ -883,6 +823,9 @@ class MatchWeightedDistributions():
 
             recalculatedData.addFast( recalculatedVars )
      
+        #print 'Recalculating loop took that much to complete  ', (datetime.now()-startTime)
+        #assert False
+        
         recalculatedData.merge( copiedData )
         self._recalculatedData = RooDataSet(recalculatedData.GetName(), recalculatedData.GetTitle(), 
                                             RooArgSet(recalculatedVars, copiedVars), 
@@ -896,7 +839,7 @@ class MatchWeightedDistributions():
         gROOT.cd('PyROOT:/') 
 
         physRewData = self._inTree
-        momRewData  = self._recalculatedData.buildTree()
+        momRewData  = self._recalculatedData.buildTree( WeightName=self._inWeightName )
         sWeightData = self._outTree
 
         for o in self._mcObsSet:
@@ -911,15 +854,14 @@ class MatchWeightedDistributions():
 
         for i, obs in zip(range(1,5), observables):
             canvsMomRewData.cd(i)
-            physRewData.Draw( obs, self._inWeightName  )
+            physRewData.Draw( obs +'>>%sMomRew_cross=after%s()' %(self._itNum,i), self._inWeightName  )
             momRewData.Draw( obs , self._inWeightName, 'same err' )
             
             canvsRewVSData.cd(i)
-            momRewData.Draw(  obs + '>>hMomAngles()', self._inWeightName )
+            momRewData.Draw(  obs + '>>%sMomRew_cross=sData%s()' %(self._itNum,i), self._inWeightName )
             if obs.endswith('time'): sWeightData.Draw( 'time', self._outWeightName, 'same err' )
             else:                    sWeightData.Draw( obs,    self._outWeightName, 'same err' )
-            gPad.GetPrimitive('hMomAngles').Scale(self._dataSetsScale)
-            gPad.GetPrimitive('hMomAngles').SetName( obs + 'MomRew_%s' %self._itNum)
+            gPad.GetPrimitive( '%sMomRew_cross=sData%s'%(self._itNum,i) ).Scale(self._dataSetsScale)
 
         _PlotStash.append(canvsMomRewData)
         _PlotStash.append(canvsRewVSData)
@@ -928,13 +870,14 @@ class MatchWeightedDistributions():
             canvsMomRewData.Print('anglesMomBeforeAfterReweight_%s.pdf'%self._itNum)
             canvsMomRewData.Print('anglesRewVSsData_%s.pdf'%self._itNum )
 
-        
+        del momRewData
+
     def compareTrackMomenta(self, save=True):
         from ROOT import gROOT
         gROOT.cd('PyROOT:/') 
 
         physRewData = self._inTree
-        momRewData  = self._recalculatedData.buildTree()
+        momRewData  = self._recalculatedData.buildTree( WeightName=self._inWeightName )
         sWeightData = self._outTree
 
         kaons = ['Kplus_PX',  'Kplus_PY',  'Kplus_PZ',  'Kminus_PX',  'Kminus_PY',  'Kminus_PZ',  'Kplus_P',  'Kminus_P' ]
@@ -949,21 +892,21 @@ class MatchWeightedDistributions():
         for can in [canvKaon, canvmuon, canvKaonRewVsData, canvmuonRewVsData]: can.Divide(4,2)
         for i, K, mu in zip(range(1,9), kaons, muons):
             canvKaon.cd(i)
-            physRewData.Draw( K, self._inWeightName             )
+            physRewData.Draw( K +'>>%sKmomRew_cross=After%s()' %(self._itNum,i), self._inWeightName             )
             momRewData.Draw(  K, self._inWeightName, 'same err' )
             
             canvKaonRewVsData.cd(i)
-            sWeightData.Draw( K , self._outWeightName            )
+            sWeightData.Draw( K +'>>%sMomRew_cross=RewData%s()' %(self._itNum,i), self._outWeightName            )
             momRewData.Draw(  K + '>>hMomKaon()' , self._inWeightName, 'same err' )
             gPad.GetPrimitive('hMomKaon').Scale(self._dataSetsScale)
             gPad.GetPrimitive('hMomKaon').SetName( K + 'MomRew_%s' %self._itNum)
 
             canvmuon.cd(i)
-            physRewData.Draw( mu, self._inWeightName              )
+            physRewData.Draw( mu + '>>%smuMomRew_cross=After%s()' %(self._itNum,i), self._inWeightName              )
             momRewData.Draw(  mu, self._inWeightName , 'same err' )
 
             canvmuonRewVsData.cd(i)
-            sWeightData.Draw( mu , self._outWeightName            )
+            sWeightData.Draw( mu +'>>%smuMomRew_cross=RewData%s()' %(self._itNum,i), self._outWeightName            )
             momRewData.Draw(  mu + '>>hMomMuon()' , self._inWeightName, 'same err' )
             gPad.GetPrimitive('hMomMuon').Scale(self._dataSetsScale)
             gPad.GetPrimitive('hMomMuon').SetName( mu + 'MomRew_%s' %self._itNum)
@@ -979,6 +922,8 @@ class MatchWeightedDistributions():
             canvKaonRewVsData.Print('KaonMomentaRewVSsData_%s.pdf'%self._itNum)
             canvmuonRewVsData.Print('muonMomentaRewVSsData_%s.pdf'%self._itNum) 
         
+        del momRewData
+
 
     def getDataSet(self, tree=False): 
         if tree:
@@ -1096,30 +1041,17 @@ class BuildBs2JpsiKK2011sFit():
             self._fitData = dataSet
 
         self._pdfConfig = pdfConfig
-        
-
-    def _setWeightsToDataset(self):
-        # reconstruct the RooDataSet object to set the weights. 
-        if not self._fitData.isWeighted():
-            from ROOT import RooDataSet, RooFit
-            self._fitData = RooDataSet( self._dataSetName, self._dataSetName, self._fitData.get(), \
-                                            RooFit.Import(self._fitData),  RooFit.WeightVar(self._weightsName)
-                                        )
 
 
-    def doFit(self,iterNumb, pdf=None, randomParVals=None):
+    def doFit(self,iterNumb, angAccFile=None,  randomParVals=None):
         pref = self._pdfConfig['parNamePrefix'] + '_'
-        
-        if not pdf: self._currentPdf = self._pdf
-        else: self._currentPdf = pdf
-        self._PDFS['%s_iteration'%iterNumb] = self._currentPdf
-    
-        # set weights to the RooDataSet object
-        self._setWeightsToDataset()         
+
+        # multiply by angular acceptance
+        if angAccFile: self._pdf = self._multiplyPdfWithAcc( angAccFile, iterNumb = iterNumb )
 
         # get observables and parameters in PDF
-        pdfObs  = self._currentPdf.getObservables(self._fitData)
-        pdfPars = self._currentPdf.getParameters(self._fitData)
+        pdfObs  = self._pdf.getObservables(self._fitData)
+        pdfPars = self._pdf.getParameters(self._fitData)
 
         # float/fix values of some parameters
         for CEvenOdds in self._pdfBuild['taggingParams']['CEvenOdds'] :
@@ -1155,7 +1087,7 @@ class BuildBs2JpsiKK2011sFit():
                 print '"%s"' % RooMinPars[-1],
             print
 
-        fitResult = self._currentPdf.fitTo( self._fitData, SumW2Error = True if self._corrSFitErr == 'matrix' else False
+        fitResult = self._pdf.fitTo( self._fitData, SumW2Error = True if self._corrSFitErr == 'matrix' else False
                                      , Minos = RooMinPars, Save = True,  **self._pdfConfig['fitOptions']
                                      )
 
@@ -1166,13 +1098,28 @@ class BuildBs2JpsiKK2011sFit():
         fitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames, ParValues = parValues )
         fitResult.covarianceMatrix().Print()
         fitResult.correlationMatrix().Print()
+        from ROOT import TFile
+        resultFile = TFile.Open('fitResult_iterativeProcedure_%s.root'%iterNumb,'recreate')
+        resultFile.cd()
+        fitResult.Write()
+        resultFile.Close()
         self._FitResults['iter_%s'%iterNumb] = fitResult 
     
         print 120 * '=' + '\n'        
 
+
+    def updateDataParameters(self, iterNumb, oldPars):
+        fitResult = self._FitResults['iter_%s'%iterNumb]
+        parkeys = oldPars.keys()
+        parkeys.remove('A0Phase')
+        for par in parkeys:
+            oldPars[par] = fitResult.floatParsFinal().find( self._pdfConfig['parNamePrefix'] + '_' + par).getVal()
+
         
-    def multiplyPdfWithAcc( self, effFile, iterNumb=None ):
+    def _multiplyPdfWithAcc( self, effFile, iterNumb=None ):
         # read moments file and multiply pure pdf with angular acceptance
+        print 'P2VV - INFO:multiplyPdfWithAcc(): multiplying PDF "%s" with angular efficiency moments from file "%s"'\
+          % ( self._pdf.GetName(), effFile )
         from P2VV.Utilities.DataMoments import angularMomentIndices, RealMomentsBuilder
         moments = RealMomentsBuilder()
         moments.appendPYList( self._pdfBuild['angleFuncs'].angles, angularMomentIndices( 'weights', self._pdfBuild['angleFuncs'] ) )
@@ -1183,7 +1130,6 @@ class BuildBs2JpsiKK2011sFit():
         
 
     def plotPdfs( self, Save=True ):
-        self._setWeightsToDataset() # in case it is not set to weighteed.         
         from ROOT import TCanvas
         from P2VV.Utilities.Plotting import plot
 
@@ -1285,14 +1231,6 @@ class BuildBs2JpsiKK2011sFit():
         for result in self._FitResults.keys():
             self._FitResults[result].Print() # Try Jeroen's printSpecial.
           
-
-    def setFitParameters(self, iterNumb, oldPars):
-        fitResult = self._FitResults['iter_%s'%iterNumb]
-        parkeys = oldPars.keys()
-        parkeys.remove('A0Phase')
-        for par in parkeys:
-            oldPars[par] = fitResult.floatParsFinal().find( self._pdfConfig['parNamePrefix'] + '_' + par).getVal()
-
     def getDataSet(self):           return self._fitData
     def getPdf(self):               return self._pdf
     def getPdfBuilderObject(self) : return self._pdfBuild
