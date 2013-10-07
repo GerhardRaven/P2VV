@@ -2,7 +2,7 @@
 ## script settings ##
 #####################
 
-nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/2011_2012_dv33r6p1_s20_201309_tupleB_add.root'
+nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/2011_2012_dv33r6p1_s20_20130927_tupleB_add.root'
 #nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/2011_dv33r6p1_s20r1p1_20130919_tupleB.root'
 #nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/2012_dv33r6p1_s20r0p1_20130922_tupleB.root'
 #nTupleFilePath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco12/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
@@ -11,13 +11,15 @@ dataSetsFilePath = 'temp.root' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P
 appendToFile     = False
 savedObjects     = [ 'sigSWeight' ]
 plotsFilePath    = 'temp.ps' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_4KKMassBins_2TagCats.ps'
+parFileIn        = 'eventYields4KKBins.par'
+parFileOut       = ''
 
 simulation       = False
 runPeriods       = [ 2011, 2012 ]
 triggerSel       = 'paper2012' # 'noSelection' # 'paper2012' # 'HLT1Unbiased' # 'paper2012'
 dataCuts         = 'nominal2011' # 'noSelection' # 'nominal2011'
 dataSample       = '(bkgcat==0 || bkgcat==50)' if simulation else ''
-sWeightName      = 'sigWeight_4KKBins'
+sWeightName      = 'sigWeight_DG_4KKBins'
 addSWeights      = True
 addKKMassCat     = True
 addTrackMomenta  = False
@@ -27,20 +29,40 @@ createNTuple     = False
 splitDataSet     = [ ] #[ 'tagCatP2VVOS', 'tagCatP2VVSS' ]
 KKMassBinBounds  = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ]
 
-eventFracs       = [  dict( N_sigMass = 0.504, N_cbkgMass = None )
+sigMassModel     = ''
+cbkgMassModel    = ''
+SWeightsType     = 'simultaneousFreeCBkg'
+
+eventFracs       = [  dict( N_sigMass = 0.44, N_cbkgMass = None )
                     #, dict( N_sigMass = 0.11,  N_cbkgMass = None )
                     #, dict( N_sigMass = 0.70,  N_cbkgMass = None )
                     #, dict( N_sigMass = 0.64,  N_cbkgMass = None )
                     #, dict( N_sigMass = 0.18,  N_cbkgMass = None )
                    ]
-sigMassModel     = ''
-cbkgMassModel    = ''
-SWeightsType     = 'simultaneousFreeCBkg'
+
+constSplitPars = [ ]
+constSplitCats = [ ]
+constSplitVals = { }
+if sigMassModel == 'Ipatia2' :
+    constSplitCats = [ 'hlt1ExclB', 'KKMassCat' ]
+    constSplitPars = [ 'm_sig_alpha_1', 'm_sig_alpha_2', 'm_sig_n_1', 'm_sig_n_2', 'm_sig_lambda', 'm_sig_zeta' ]
+
+    # smeared MC, no truth requirement, 4 KK-mass bins
+    constSplitVals = {  ( 'notExclB', 'bin0' ) : [ 3.090242001004567, 2.448740313493132, 7.865481777002969e-07, 0.3772603020305554, -1.8028256514259358, 0.0032161538679723045 ]
+                      , ( 'notExclB', 'bin1' ) : [ 2.7357926724807715, 2.5325078527657405, 1.410324206500183, 2.1356073743749593, -2.7476260304874316, 3.6501861834237204e-05  ]
+                      , ( 'notExclB', 'bin2' ) : [ 3.0203918214648766, 2.3616839764894775, 1.3457820727430088, 1.7328167019210972, -2.7338157946318313, 0.0005618710817781314  ]
+                      , ( 'notExclB', 'bin3' ) : [ 2.9828710959611295, 3.023748092386514, 0.3922908133091868, 0.4080097456480669, -2.2104022388970668, 0.0071672915683015925   ]
+                      , ( 'exclB',    'bin0' ) : [ 3.0587485511296966, 2.484099316157297, 0.057889921045197745, 0.5528670977674432, -3.007467407061461, 0.1095519817428861     ]
+                      , ( 'exclB',    'bin1' ) : [ 2.5950094079868706, 2.540489018460561, 1.5945389901143097, 2.050949882410599, -2.730273102035722, 0.0004971111831370001     ]
+                      , ( 'exclB',    'bin2' ) : [ 3.0552471411002733, 2.152609753853441, 1.329325140262283, 2.019935753077858, -2.484855452835132, 0.7630080085121052         ]
+                      , ( 'exclB',    'bin3' ) : [ 3.075124852599962, 2.877808057134126, 0.3713565137662156, 0.5448414118880873, -2.316218692561214, 0.0010592756615862564     ]
+                     }
+
 numMassBins      = [ 70, 40, 20, 20, 20 ]
 massLogPlotRange = ( 1.e3, 3.8e4 ) # ( 1.9e2, 1.2e4 ) # ( 8.e2, 2.5e4 )
 
-fitOpts = dict(  NumCPU    = 6
-               , Optimize  = 2
+fitOpts = dict(  NumCPU    = 8
+               , Optimize  = 1
                , Timer     = True
 #               , Verbose   = True
 #               , Minos     = True
@@ -64,9 +86,13 @@ obsKeys = [  'runPeriod'
            , 'wTagOS'#, 'tagDecOS'
            , 'wTagSS'#, 'tagDecSS'
            #, 'sel', 'selA', 'selB'
-           , 'hlt1ExclB', 'hlt2B', 'hlt2UB'#, 'hlt1B', 'hlt1UB'
+           , 'hlt1ExclB'#, 'hlt2B', 'hlt2UB', 'hlt1B', 'hlt1UB'
            #, 'trigDecUnb', 'trigDecExclB'
            #, 'B_P', 'B_Pt'
+           #, 'Kplus_PX', 'Kplus_PY', 'Kplus_PZ', 'Kplus_LOKI_ETA'
+           #, 'Kminus_PX', 'Kminus_PY', 'Kminus_PZ', 'Kminus_LOKI_ETA'
+           #, 'muplus_PX', 'muplus_PY', 'muplus_PZ', 'muplus_LOKI_ETA'
+           #, 'muminus_PX', 'muminus_PY', 'muminus_PZ', 'muminus_LOKI_ETA'
           ]
 if simulation :
     obsKeys += [ 'truetime', 'bkgcat' ]
@@ -115,20 +141,24 @@ obsDict = dict(  runPeriod = ( 'runPeriod',            'run period', dict( [ ( '
                , muminus_PIDmu              = ( 'muminus_PIDmu',              'muminus_PIDmu',  0.,   -RooInf, +RooInf )
                , Kplus_pidK                 = ( 'Kplus_pidK',                 'Kplus_pidK',     0.,    0.,     +RooInf )
                , Kminus_pidK                = ( 'Kminus_pidK',                'Kminus_pidK',    0.,    0.,     +RooInf )
-               , muplus_PX                  = ( 'muplus_PX',                  'muplus_PX',     'MeV/c', 0.,   -RooInf, +RooInf )
-               , muplus_PY                  = ( 'muplus_PY',                  'muplus_PY',      'MeV/c', 0.,   -RooInf, +RooInf )
-               , muplus_PZ                  = ( 'muplus_PZ',                  'muplus_PZ',      'MeV/c', 0.,   -RooInf, +RooInf )
-               , muminus_PX                 = ( 'muminus_PX',                 'muminus_PX',     'MeV/c', 0.,   -RooInf, +RooInf )
-               , muminus_PY                 = ( 'muminus_PY',                 'muminus_PY',     'MeV/c', 0.,   -RooInf, +RooInf )
-               , muminus_PZ                 = ( 'muminus_PZ',                 'muminus_PZ',     'MeV/c', 0.,   -RooInf, +RooInf )
-               , Kplus_PX                   = ( 'Kplus_PX',                   'Kplus_PX',       'MeV/c', 0.,   -RooInf, +RooInf )
-               , Kplus_PY                   = ( 'Kplus_PY',                   'Kplus_PY',       'MeV/c', 0.,   -RooInf, +RooInf )
-               , Kplus_PZ                   = ( 'Kplus_PZ',                   'Kplus_PZ',       'MeV/c', 0.,   -RooInf, +RooInf )
-               , Kminus_PX                  = ( 'Kminus_PX',                  'Kminus_PX',      'MeV/c', 0.,   -RooInf, +RooInf )
-               , Kminus_PY                  = ( 'Kminus_PY',                  'Kminus_PY',      'MeV/c', 0.,   -RooInf, +RooInf )
-               , Kminus_PZ                  = ( 'Kminus_PZ',                  'Kminus_PZ',      'MeV/c', 0.,   -RooInf, +RooInf )
-               , B_Pt                       = ( 'B_Pt',                       'B_Pt',           'MeV/c', 0.,    0.,      RooInf )
-               , B_P                        = ( 'B_P',                        'B_P',            'MeV/c', 0.,    0.,      RooInf )
+               , muplus_PX                  = ( 'muplus_PX',                  'muplus_PX',        'MeV/c', 0.,   -RooInf, +RooInf )
+               , muplus_PY                  = ( 'muplus_PY',                  'muplus_PY',        'MeV/c', 0.,   -RooInf, +RooInf )
+               , muplus_PZ                  = ( 'muplus_PZ',                  'muplus_PZ',        'MeV/c', 0.,   -RooInf, +RooInf )
+               , muplus_LOKI_ETA            = ( 'muplus_LOKI_ETA',            'muplus_LOKI_ETA',  '',      0.,   -RooInf, +RooInf )
+               , muminus_PX                 = ( 'muminus_PX',                 'muminus_PX',       'MeV/c', 0.,   -RooInf, +RooInf )
+               , muminus_PY                 = ( 'muminus_PY',                 'muminus_PY',       'MeV/c', 0.,   -RooInf, +RooInf )
+               , muminus_PZ                 = ( 'muminus_PZ',                 'muminus_PZ',       'MeV/c', 0.,   -RooInf, +RooInf )
+               , muminus_LOKI_ETA           = ( 'muminus_LOKI_ETA',           'muminus_LOKI_ETA', '',      0.,   -RooInf, +RooInf )
+               , Kplus_PX                   = ( 'Kplus_PX',                   'Kplus_PX',         'MeV/c', 0.,   -RooInf, +RooInf )
+               , Kplus_PY                   = ( 'Kplus_PY',                   'Kplus_PY',         'MeV/c', 0.,   -RooInf, +RooInf )
+               , Kplus_PZ                   = ( 'Kplus_PZ',                   'Kplus_PZ',         'MeV/c', 0.,   -RooInf, +RooInf )
+               , Kplus_LOKI_ETA             = ( 'Kplus_LOKI_ETA',             'Kplus_LOKI_ETA',   '',      0.,   -RooInf, +RooInf )
+               , Kminus_PX                  = ( 'Kminus_PX',                  'Kminus_PX',        'MeV/c', 0.,   -RooInf, +RooInf )
+               , Kminus_PY                  = ( 'Kminus_PY',                  'Kminus_PY',        'MeV/c', 0.,   -RooInf, +RooInf )
+               , Kminus_PZ                  = ( 'Kminus_PZ',                  'Kminus_PZ',        'MeV/c', 0.,   -RooInf, +RooInf )
+               , Kminus_LOKI_ETA            = ( 'Kminus_LOKI_ETA',            'Kminus_LOKI_ETA',  '',      0.,   -RooInf, +RooInf )
+               , B_Pt                       = ( 'B_Pt',                       'B_Pt',             'MeV/c', 0.,    0.,      RooInf )
+               , B_P                        = ( 'B_P',                        'B_P',              'MeV/c', 0.,    0.,      RooInf )
                , phi_1020_pt                = ( 'phi_1020_pt',                'phi_1020_pt',    500.,  500.,    RooInf )
                , B_s0_LOKI_CosPolAngle_Dau1 = ( 'B_s0_LOKI_CosPolAngle_Dau1', 'mumu cos(th)',   0.,   -1.,     +1.     )
                , B_s0_IP_OWNPV              = ( 'B_s0_IP_OWNPV',              'B_s0_IP_OWNPV',  0.,   -RooInf, +RooInf )
@@ -140,9 +170,9 @@ obsDict = dict(  runPeriod = ( 'runPeriod',            'run period', dict( [ ( '
                , J_psi_1S_ENDVERTEX_CHI2    = ( 'J_psi_1S_ENDVERTEX_CHI2',    'KK vert chi2',   0.,   0.,       16.    )
               )
 
-massRanges = dict(  LeftSideBand  = ( 5200., 5320. )
-                  , Signal        = ( 5320., 5420. )
-                  , RightSideBand = ( 5420., 5550. )
+massRanges = dict(  LeftSideBand  = ( 5200., 5300. )
+                  , Signal        = ( 5300., 5440. )
+                  , RightSideBand = ( 5440., 5550. )
                   , PeakBkg       = ( 5390., 5440. )
                  )
 
@@ -182,9 +212,8 @@ else :
 from P2VV.Load import RooFitOutput, LHCbStyle
 
 # create list of required observables
-reqObsList = [ 'index', 'mass', 'KKMass', 'tagDecOS', 'tagDecSS', 'wTagOS', 'wTagSS' ]
+reqObsList = [ 'index', 'mass', 'KKMass', 'tagDecOS', 'tagDecSS', 'wTagOS', 'wTagSS', 'hlt1ExclB' ]
 reqObsList += ['runPeriod'] if runPeriods else [ ]
-reqObsList += ['hlt1ExclB'] if triggerSel == 'paper2012' else [ 'hlt1ExclB', 'hlt2B' ] if triggerSel == 'timeEffFit' else [ ]
 reqObsList += [ '%s_P%s' % ( part, comp ) for part in [ 'Kplus', 'Kminus', 'muplus', 'muminus' ] for comp in ( 'X', 'Y', 'Z' ) ]\
               if addTrackMomenta else [ ]
 
@@ -308,6 +337,9 @@ if not simulation :
     elif sigMassModel.startswith('DoubleCB') :
         from P2VV.Parameterizations.MassPDFs import DoubleCB_Signal_Mass as SignalBMass
 
+    elif sigMassModel.startswith('Ipatia2') :
+        from P2VV.Parameterizations.MassPDFs import Ipatia2_Signal_Mass as SignalBMass
+
     else :
         from P2VV.Parameterizations.MassPDFs import LP2011_Signal_Mass as SignalBMass
 
@@ -345,21 +377,39 @@ if not simulation :
     massFitResult.covarianceMatrix().Print()
     massFitResult.correlationMatrix().Print()
 
-    if SWeightsType.startswith('simultaneous') and (runPeriods or triggerSel in ['paper2012', 'timeEffFit'] or len(KKMassBinBounds) > 2) :
+    splitCats = { }
+    if SWeightsType.startswith('simultaneous') :
         # get splitting categories and parameters
-        splitCats = { }
-        yieldNames = [ par.GetName() for par in massPdf.Parameters() if par.getAttribute('Yield') ]
+        yieldNames  = [ par.GetName() for par in massPdf.Parameters() if par.getAttribute('Yield') ]
+        allParNames = [ par.GetName() for par in massPdf.Parameters() if not par.getAttribute('Yield') if not par.isConstant() ]
+        sigParNames = [ par.GetName() for par in signalBMass.parameters() if not par.isConstant() ]
+        bkgParNames = [ par.GetName() for par in backgroundBMass.parameters() if not par.isConstant() ]
         if runPeriods :
-            splitCats[observables['runPeriod'].GetName()] = set([ par.GetName() for par in massPdf.Parameters() if not par.isConstant() ])
+            # split yields and background parameters for run period
+            splitCats[ observables['runPeriod'].GetName() ] = set( yieldNames + bkgParNames )
+
         if len(KKMassBinBounds) > 2 :
+            # split yields for KK-mass category
             splitCats[ observables['KKMassCat'].GetName() ] = set(yieldNames)
+            if sigMassModel.startswith('Ipatia2') :
+                # split signal parameters for KK-mass category
+                splitCats[ observables['KKMassCat'].GetName() ].add('m_sig_sigma')
             if 'FreeCBkg' in SWeightsType :
-                for par in backgroundBMass.parameters() :
-                    if not par.isConstant() : splitCats[ observables['KKMassCat'].GetName() ].add( par.GetName() )
-        if triggerSel == 'paper2012' or triggerSel == 'timeEffFit' :
-            splitCats[ observables['hlt1ExclB'].GetName() ] = set(yieldNames)
-        if triggerSel == 'timeEffFit' :
-            splitCats[ observables['hlt2B'].GetName() ] = set(yieldNames)
+                # split all background parameters for KK-mass category
+                for parName in bkgParNames : splitCats[ observables['KKMassCat'].GetName() ].add(parName)
+
+        # split yields for HLT1 category
+        splitCats[ observables['hlt1ExclB'].GetName() ] = set(yieldNames)
+        if sigMassModel.startswith('Ipatia2') :
+            # split signal parameters for KK-mass category
+            #splitCats[ observables['KKMassCat'].GetName() ].add('m_sig_sigma')
+            pass
+
+        for cat in constSplitCats :
+            # split specified constant shape parameters
+            catName = observables[cat].GetName()
+            if catName not in splitCats : splitCats[catName] = set()
+            for parName in constSplitPars : splitCats[catName].add(parName)
 
         splitParsDict = { }
         pdfVars = massPdf.getVariables()
@@ -398,14 +448,16 @@ if not simulation :
                                          , SplitParameters = splitPars
                                         )
 
-        # set yields for categories
+        # set yields and constant splitted parameters
         splitCat      = sWeightMassPdf.indexCat()
+        inputCats     = [ splitCat ] if splitCat.isFundamental() else splitCat.inputCatList()
         splitCatIter  = splitCat.typeIterator()
         splitCatState = splitCatIter.Next()
         massPdfPars   = sWeightMassPdf.getVariables()
         from P2VV.Utilities.General import getSplitPar
         from math import sqrt
         while splitCatState :
+            splitCat.setIndex( splitCatState.getVal() )
             KKMassState = -1
             if splitCat.isFundamental() :
                 selStr = '!(%s-%d)' % ( splitCat.GetName(), splitCatState.getVal() )
@@ -433,6 +485,12 @@ if not simulation :
                 yieldVar.setError( sqrt( yieldVar.getVal() ) )
                 yieldVar.setMin(0.)
                 yieldVar.setMax(nEvBin)
+
+            catStates = tuple( [ observables[catName].getLabel() for catName in constSplitCats ] )
+            stateName = catStates[0] if len(catStates) == 1 else '{' + ';'.join( state for state in catStates ) + '}'
+            for it, parName in enumerate(constSplitPars) :
+                par = getSplitPar( parName, stateName, massPdfPars )
+                par.setVal( constSplitVals[catStates][it] )
 
             splitCatState = splitCatIter.Next()
 
@@ -488,10 +546,27 @@ if not simulation :
                 #par.setVal( fixedMassParVals[par.GetName()][0] )
                 #par.setError( fixedMassParVals[par.GetName()][1] )
 
-        # determine mass parameters in each subsample with a fit
+        if parFileIn or parFileOut :
+            # create PDF configuration object
+            from P2VV.Parameterizations.FullPDFs import PdfConfiguration as PdfConfig
+            pdfConfig = PdfConfig()
+
         print 120 * '='
+        if parFileIn :
+            # read parameters from file
+            pdfConfig.readParametersFromFile( filePath = parFileIn )
+            pdfConfig.setParametersInPdf(sWeightMassPdf)
+        print 'P2VV - INFO: createB2CCDataSet: parameters in simultaneous mass PDF:'
+        sWeightMassPdf.getParameters( dataSets['pre'][0] ).Print('v')
+
+        # determine mass parameters in each subsample with a fit
         print 'P2VV - INFO: createB2CCDataSet: fitting with simultaneous mass PDF'
         simMassFitResult = sWeightMassPdf.fitTo( dataSets['pre'][0], Save = True, **fitOpts )
+
+        if parFileOut :
+            # write parameters to file
+            pdfConfig.getParametersFromPdf( sWeightMassPdf, dataSets['pre'][0] )
+            pdfConfig.writeParametersToFile( filePath = parFileOut )
 
         from P2VV.Imports import parValues
         simMassFitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames, ParValues = parValues )
@@ -518,10 +593,155 @@ if not simulation :
 
 
 ###########################################################################################################################################
+## make J/psiKK mass plots ##
+#############################
+
+plotsFilePath = plotsFilePath.split('.')
+if not simulation and plotsFilePath :
+    print 120 * '='
+    print 'P2VV - INFO: createB2CCDataSet: plotting J/psiKK invariant mass distribution'
+
+    # import plotting tools
+    from P2VV.Utilities.Plotting import plot
+    from ROOT import TCanvas, kBlue, kRed, kGreen, kFullDotLarge, TPaveText, TLatex
+    from P2VV.Utilities.Plotting import _P2VVPlotStash
+
+    LHCbLabel = TPaveText( 0.24, 0.81, 0.37, 0.89, 'BRNDC' )
+    LHCbLabel.AddText('LHCb')
+    LHCbLabel.SetFillColor(0)
+    LHCbLabel.SetTextAlign(12)
+    LHCbLabel.SetTextSize(0.072)
+    LHCbLabel.SetBorderSize(0)
+    _P2VVPlotStash.append(LHCbLabel)
+
+    binLabel = TLatex()
+    binLabel.SetTextAlign(12)
+    binLabel.SetTextSize(0.05)
+    _P2VVPlotStash.append(LHCbLabel)
+
+    if SWeightsType.startswith('simultaneous') :
+        # create projection data set
+        indexCat = sWeightMassPdf.indexCat()
+        if indexCat.isFundamental() :
+            projWDataSet = [ indexCat ]
+        else :
+            projWDataSet = [ cat for cat in indexCat.inputCatList() ]
+
+        projWData = dict( ProjWData = ( dataSets['pre'][0].reduce( ArgSet = projWDataSet ), False ) )
+        print 'P2VV - INFO: createB2CCDataSet: projection data set for J/psiKK mass plots:'
+        projWData['ProjWData'][0].Print()
+
+    else :
+        # don't use projection data set
+        projWData = dict()
+
+    # plot J/psiKK mass distributions
+    massCanvs = [  TCanvas( 'massCanvLog',     'B mass logarithmic scale'  )
+                 , TCanvas( 'massCanvSig',     'B mass signal range'       )
+                 , TCanvas( 'massCanvLeft',    'B mass left side band'     )
+                 , TCanvas( 'massCanvRight',   'B mass right side band'    )
+                 , TCanvas( 'massCanvPeakBkg', 'B mass peaking background' )
+                ]
+    for index, ( pad, frameRange, nBins, plotTitle, plotName, logy, scale, yTitleOffset, markSize, markLineWidth )\
+          in enumerate ( zip(  massCanvs
+                             , [ '', 'Signal', 'LeftSideBand', 'RightSideBand', 'PeakBkg' ]
+                             , numMassBins
+                             , [  obsDict['mass'][1]
+                                , obsDict['mass'][1] + ' mass fit - signal'
+                                , obsDict['mass'][1] + ' mass fit - left side band'
+                                , obsDict['mass'][1] + ' mass fit - right side band'
+                                , obsDict['mass'][1] + ' mass fit - peaking background'
+                               ]
+                             , [  obsDict['mass'][0]
+                                , obsDict['mass'][0] + ' fit - signal'
+                                , obsDict['mass'][0] + ' fit - left side band'
+                                , obsDict['mass'][0] + ' fit - right side band'
+                                , obsDict['mass'][0] + ' fit - peaking background'
+                               ]
+                             , [ True, False, False, False, False ]
+                             , [ massLogPlotRange, ( None, None ), ( None, None ), ( None, None ), ( None, None ) ]
+                             , [ 1.00, 1.20, 1.15, 1.15, 1.15 ]
+                             , [ 0.6,  0.7,  0.8,  0.8,  0.8  ]
+                             , [ 2,    3,    3,    3,    3    ]
+                       ) ) :
+        pad.SetLeftMargin(0.18)
+        pad.SetRightMargin(0.05)
+        pad.SetBottomMargin(0.18)
+        pad.SetTopMargin(0.05)
+
+        binWidth = ( observables['mass'].getMax(frameRange) - observables['mass'].getMin(frameRange) ) / float(nBins)
+        plot(  pad, observables['mass'], dataSets['pre'][0], sWeightMassPdf, logy = logy, yScale = scale
+             , xTitle = 'm(J/#psi K^{+}K^{-}) [MeV/c^{2}]', yTitle = 'Candidates / (%.1f MeV/c^{2})' % binWidth
+             , xTitleOffset = 1.10, yTitleOffset = yTitleOffset
+             , plotResidHist = 'E3', normalize = True, symmetrize = True
+             , frameOpts  = dict( Range = frameRange, Bins = nBins, Title = plotTitle, Name = plotName )
+             , dataOpts   = dict( MarkerStyle = kFullDotLarge, MarkerSize = markSize, LineWidth = markLineWidth )
+             , pdfOpts    = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = 3, Precision = 1.e-4 )
+             , components = {  'sig*'  : dict( LineColor = kRed,       LineStyle = 7, LineWidth = 3 )
+                             , 'cbkg*' : dict( LineColor = kGreen + 3, LineStyle = 9, LineWidth = 3 )
+                            }
+            )
+        if index < 2 :
+            pad.cd()
+            LHCbLabel.Draw()
+
+    if SWeightsType.startswith('simultaneous') and len(KKMassBinBounds) > 2 :
+        # get simultaneous PDFs
+        indexCatIter  = indexCat.typeIterator()
+        indexCatState = indexCatIter.Next()
+        bins = [ ]
+        pdfs = [ ]
+        while indexCatState :
+            indexCat.setIndex( indexCatState.getVal() )
+            bins.append( [ ( indexCat.GetName(), indexCatState.getVal(), indexCatState.GetName() ) ] )
+            if indexCat.isFundamental() :
+                bins[-1].append( bins[-1][0] )
+            else :
+                for cat in indexCat.inputCatList() :
+                    bins[-1].append( ( cat.GetName(), cat.getIndex(), cat.getLabel() ) )
+
+            pdfs.append( sWeightMassPdf.getPdf( indexCatState.GetName() ) )
+            indexCatState = indexCatIter.Next()
+
+        # plot distributions in simultaneous bins
+        for ( bin, pdf ) in zip(  bins, pdfs ) :
+            massCanvs.append( TCanvas( 'massCanvSigBins%d' % bin[0][1], 'B mass signal range bins' ) )
+            plotTitle = observables['mass'].GetTitle() + ' bin %s - signal' % bin[0][2]
+            dataCutStr = dict( Cut = ' && '.join( '%s==%d' % ( c[0], c[1] ) for c in bin[ 1 : ] ) )
+            norm = dataSets['pre'][0].sumEntries( ' && '.join( '%s==%d' % ( c[0], c[1] ) for c in bin[ 1 : ] ) )\
+                   / dataSets['pre'][0].sumEntries()
+
+            pad.SetLeftMargin(0.18)
+            pad.SetRightMargin(0.05)
+            pad.SetBottomMargin(0.18)
+            pad.SetTopMargin(0.05)
+
+            binWidth = ( observables['mass'].getMax('Signal') - observables['mass'].getMin('Signal') ) / float(numMassBins[0])
+            plot(  massCanvs[-1], observables['mass'], dataSets['pre'][0], pdf
+                 , xTitle = 'm(J/#psi K^{+}K^{-}) [MeV/c^{2}]', yTitle = 'Candidates / (%.1f MeV/c^{2})' % binWidth
+                 , xTitleOffset = 1.10, yTitleOffset = 1.20
+                 , plotResidHist = 'E3', normalize = True, symmetrize = True
+                 , frameOpts  = dict( Range = 'Signal', Bins = numMassBins[0], Title = plotTitle )
+                 , dataOpts   = dict( MarkerStyle = kFullDotLarge, MarkerSize = 0.4, **dataCutStr )
+                 , pdfOpts    = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm )
+                 , components = {  'sig*'  : dict( LineColor = kRed,       LineStyle = 7, LineWidth = 3 )
+                                 , 'cbkg*' : dict( LineColor = kGreen + 3, LineStyle = 9, LineWidth = 3 )
+                                }
+                )
+
+            massCanvs[-1].cd()
+            binLabel.DrawLatex( 0.18, 0.91, bin[0][2].strip('{}') )
+
+    for it, canv in enumerate(massCanvs) :
+        canv.Print( plotsFilePath[0] + '_mass.' + plotsFilePath[1] + ( '(' if it == 0 else ')' if it == len(massCanvs) - 1 else '' ) )
+
+
+###########################################################################################################################################
 ## compute sWeights ##
 ######################
 
 if not simulation :
+    print 120 * '='
     print 'P2VV - INFO: createB2CCDataSet: computing sWeights'
 
     # compute sWeights
@@ -705,172 +925,16 @@ if addTaggingObs :
 
 
 ###########################################################################################################################################
-## make J/psiKK mass plots ##
+## make sWeight plots ##
 #############################
 
 if not simulation and plotsFilePath :
     print 120 * '='
-    print 'P2VV - INFO: createB2CCDataSet: plotting J/psiKK invariant mass distribution'
-
-    # import plotting tools
-    from P2VV.Utilities.Plotting import plot
-    from ROOT import TCanvas, kBlue, kRed, kGreen, kFullDotLarge, TPaveText
-    from P2VV.Utilities.Plotting import _P2VVPlotStash
-
-    LHCbLabel = TPaveText( 0.24, 0.81, 0.37, 0.89, 'BRNDC' )
-    LHCbLabel.AddText('LHCb')
-    LHCbLabel.SetFillColor(0)
-    LHCbLabel.SetTextAlign(12)
-    LHCbLabel.SetTextSize(0.072)
-    LHCbLabel.SetBorderSize(0)
-    _P2VVPlotStash.append(LHCbLabel)
-
-    if SWeightsType.startswith('simultaneous') and (runPeriods or triggerSel in ['paper2012', 'timeEffFit'] or len(KKMassBinBounds) > 2) :
-        # create projection data set
-        indexCat = sWeightMassPdf.indexCat()
-        if indexCat.isFundamental() :
-            projWDataSet = [ indexCat ]
-        else :
-            projWDataSet = [ cat for cat in indexCat.getObservables( dataSets['main'][0] ) ]
-
-        projWData = dict( ProjWData = ( dataSets['main'][0].reduce( ArgSet = projWDataSet ), False ) )
-        print 'P2VV - INFO: createB2CCDataSet: projection data set for J/psiKK mass plots:'
-        projWData['ProjWData'][0].Print()
-
-    else :
-        # don't use projection data set
-        projWData = dict()
-
-    # plot J/psiKK mass distributions
-    massCanvs = [  TCanvas( 'massCanvLog',     'B mass logarithmic scale'  )
-                 , TCanvas( 'massCanvSig',     'B mass signal range'       )
-                 , TCanvas( 'massCanvLeft',    'B mass left side band'     )
-                 , TCanvas( 'massCanvRight',   'B mass right side band'    )
-                 , TCanvas( 'massCanvPeakBkg', 'B mass peaking background' )
-                ]
-    for index, ( pad, frameRange, nBins, plotTitle, plotName, logy, scale, yTitleOffset, markSize, markLineWidth )\
-          in enumerate ( zip(  massCanvs
-                             , [ '', 'Signal', 'LeftSideBand', 'RightSideBand', 'PeakBkg' ]
-                             , numMassBins
-                             , [  obsDict['mass'][1]
-                                , obsDict['mass'][1] + ' mass fit - signal'
-                                , obsDict['mass'][1] + ' mass fit - left side band'
-                                , obsDict['mass'][1] + ' mass fit - right side band'
-                                , obsDict['mass'][1] + ' mass fit - peaking background'
-                               ]
-                             , [  obsDict['mass'][0]
-                                , obsDict['mass'][0] + ' fit - signal'
-                                , obsDict['mass'][0] + ' fit - left side band'
-                                , obsDict['mass'][0] + ' fit - right side band'
-                                , obsDict['mass'][0] + ' fit - peaking background'
-                               ]
-                             , [ True, False, False, False, False ]
-                             , [ massLogPlotRange, ( None, None ), ( None, None ), ( None, None ), ( None, None ) ]
-                             , [ 1.00, 1.20, 1.15, 1.15, 1.15 ]
-                             , [ 0.6,  0.7,  0.8,  0.8,  0.8  ]
-                             , [ 2,    3,    3,    3,    3    ]
-                       ) ) :
-        pad.SetLeftMargin(0.18)
-        pad.SetRightMargin(0.05)
-        pad.SetBottomMargin(0.18)
-        pad.SetTopMargin(0.05)
-
-        binWidth = ( observables['mass'].getMax(frameRange) - observables['mass'].getMin(frameRange) ) / float(nBins)
-        plot(  pad, observables['mass'], dataSets['main'][0], sWeightMassPdf, logy = logy, yScale = scale
-             , xTitle = 'm(J/#psi K^{+}K^{-}) [MeV/c^{2}]', yTitle = 'Candidates / (%.1f MeV/c^{2})' % binWidth
-             , xTitleOffset = 1.10, yTitleOffset = yTitleOffset
-             , plotResidHist = 'E3', normalize = True, symmetrize = True
-             , frameOpts  = dict( Range = frameRange, Bins = nBins, Title = plotTitle, Name = plotName )
-             , dataOpts   = dict( MarkerStyle = kFullDotLarge, MarkerSize = markSize, LineWidth = markLineWidth )
-             , pdfOpts    = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = 3, Precision = 1.e-4 )
-             , components = {  'sig*'  : dict( LineColor = kRed,       LineStyle = 7, LineWidth = 3 )
-                             , 'cbkg*' : dict( LineColor = kGreen + 3, LineStyle = 9, LineWidth = 3 )
-                            }
-            )
-        if index < 2 :
-            pad.cd()
-            LHCbLabel.Draw()
-
-    if SWeightsType.startswith('simultaneous') and ( triggerSel in ['paper2012', 'timeEffFit'] or len(KKMassBinBounds) > 2 ) :
-        # get simultaneous PDFs
-        indexCatIter  = indexCat.typeIterator()
-        indexCatState = indexCatIter.Next()
-        bins = [ ]
-        pdfs = [ ]
-        while indexCatState :
-            indexCat.setIndex( indexCatState.getVal() )
-            bins.append( [ ( indexCat.GetName(), indexCatState.getVal(), indexCatState.GetName() ) ] )
-            if indexCat.isFundamental() :
-                bins[-1].append( bins[-1][0] )
-            else :
-                for cat in indexCat.getObservables( dataSets['main'][0] ) :
-                    bins[-1].append( ( cat.GetName(), cat.getIndex(), cat.getLabel() ) )
-
-            pdfs.append( sWeightMassPdf.getPdf( indexCatState.GetName() ) )
-            indexCatState = indexCatIter.Next()
-
-        # plot mumuKK mass distributions in KK mass bins
-        if   len(bins) <= 4 : nPads = ( 2, 2 )
-        elif len(bins) <= 6 : nPads = ( 3, 2 )
-        elif len(bins) <= 9 : nPads = ( 3, 3 )
-        else :                nPads = ( 4, 3 )
-        massCanvs.append( TCanvas( 'massCanvSigBins', 'B mass signal range bins' ) )
-        for ( pad, pdf, plotTitle, dataCuts, norm )\
-                in zip(  massCanvs[-1].pads( nPads[0], nPads[1] )
-                       , pdfs
-                       , [ observables['mass'].GetTitle() + ' bin %d - signal' % bin[0][1] for bin in bins ]
-                       , [ dict( Cut = ' && '.join( '%s==%d' % ( c[0], c[1] ) for c in bin[ 1 : ] ) ) for bin in bins ]
-                       , [ dataSets['main'][0].sumEntries( ' && '.join( '%s==%d' % ( c[0], c[1] ) for c in bin[ 1 : ] ) )\
-                           / dataSets['main'][0].sumEntries() for bin in bins ]
-                      ) :
-            plot(  pad, observables['mass'], dataSets['main'][0], pdf#, logy = True, yScale = ( 1., None )
-                 , frameOpts  = dict( Range = 'Signal', Bins = numMassBins[0], Title = plotTitle )
-                 , dataOpts   = dict( MarkerStyle = kFullDotLarge, MarkerSize = 0.4, **dataCuts  )
-                 , pdfOpts    = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm     )
-                 , components = {  'sig*'  : dict( LineColor = kRed,       LineStyle = 7 )
-                                 , 'cbkg*' : dict( LineColor = kGreen + 3, LineStyle = 9 )
-                                }
-                )
-
-        massCanvs.append( TCanvas( 'massCanvLeftBins', 'B mass left side band bins' ) )
-        for ( pad, pdf, plotTitle, dataCuts, norm )\
-                in zip(  massCanvs[-1].pads( nPads[0], nPads[1] )
-                       , pdfs
-                       , [ observables['mass'].GetTitle() + ' bin %d - left side band' % bin[0][1] for bin in bins ]
-                       , [ dict( Cut = ' && '.join( '%s==%d' % ( c[0], c[1] ) for c in bin[ 1 : ] ) ) for bin in bins ]
-                       , [ dataSets['main'][0].sumEntries( ' && '.join( '%s==%d' % ( c[0], c[1] ) for c in bin[ 1 : ] ) )\
-                           / dataSets['main'][0].sumEntries() for bin in bins ]
-                      ) :
-            plot(  pad, observables['mass'], dataSets['main'][0], pdf#, logy = True, yScale = ( 1., None )
-                 , frameOpts  = dict( Range = 'LeftSideBand', Bins = numMassBins[1], Title = plotTitle )
-                 , dataOpts   = dict( MarkerStyle = kFullDotLarge, MarkerSize = 0.4, **dataCuts        )
-                 , pdfOpts    = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm      )
-                 , components = {  'sig*'  : dict( LineColor = kRed,       LineStyle = 7 )
-                                 , 'cbkg*' : dict( LineColor = kGreen + 3, LineStyle = 9 )
-                                }
-                )
-
-        massCanvs.append( TCanvas( 'massCanvRightBins', 'B mass right side band bins' ) )
-        for ( pad, pdf, plotTitle, dataCuts, norm )\
-                in zip(  massCanvs[-1].pads( nPads[0], nPads[1] )
-                       , pdfs
-                       , [ observables['mass'].GetTitle() + ' bin %d - right side band' % bin[0][1] for bin in bins ]
-                       , [ dict( Cut = ' && '.join( '%s==%d' % ( c[0], c[1] ) for c in bin[ 1 : ] ) ) for bin in bins ]
-                       , [ dataSets['main'][0].sumEntries( ' && '.join( '%s==%d' % ( c[0], c[1] ) for c in bin[ 1 : ] ) )\
-                           / dataSets['main'][0].sumEntries() for bin in bins ]
-                      ) :
-            plot(  pad, observables['mass'], dataSets['main'][0], pdf#, logy = True, yScale = ( 1., None )
-                 , frameOpts  = dict( Range = 'RightSideBand', Bins = numMassBins[2], Title = plotTitle )
-                 , dataOpts   = dict( MarkerStyle = kFullDotLarge, MarkerSize = 0.4, **dataCuts         )
-                 , pdfOpts    = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm      )
-                 , components = {  'sig*'  : dict( LineColor = kRed,       LineStyle = 7 )
-                                 , 'cbkg*' : dict( LineColor = kGreen + 3, LineStyle = 9 )
-                                }
-                )
+    print 'P2VV - INFO: createB2CCDataSet: plotting sWeights versus J/psiKK mass'
 
     # plot sWeights
-    massCanvs += [ TCanvas('sWeightsAll'), TCanvas('sWeightsSignal') ]
-    for canv in massCanvs[ -2 : ] :
+    sWeightCanvs = [ TCanvas('sWeightsAll'), TCanvas('sWeightsSignal') ]
+    for canv in sWeightCanvs[ -2 : ] :
         canv.SetLeftMargin(0.18)
         canv.SetRightMargin(0.05)
         canv.SetBottomMargin(0.18)
@@ -913,15 +977,15 @@ if not simulation and plotsFilePath :
     allZeroLine = TLine( allSWeights.GetXaxis().GetXmin(), 0., allSWeights.GetXaxis().GetXmax(), 0. )
     sigZeroLine = TLine( sigSWeights.GetXaxis().GetXmin(), 0., sigSWeights.GetXaxis().GetXmax(), 0. )
 
-    massCanvs[-2].cd()
+    sWeightCanvs[-2].cd()
     allSWeights.Draw('AP')
     allZeroLine.Draw()
-    massCanvs[-1].cd()
+    sWeightCanvs[-1].cd()
     sigSWeights.Draw('AP')
     sigZeroLine.Draw()
 
-    for it, canv in enumerate(massCanvs) :
-        canv.Print( plotsFilePath + ( '(' if it == 0 else ')' if it == len(massCanvs) - 1 else '' ) )
+    for it, canv in enumerate(sWeightCanvs) :
+        canv.Print( plotsFilePath[0] + '_sWeights.' + plotsFilePath[1] + ('(' if it == 0 else ')' if it == len(sWeightCanvs) - 1 else '') )
 
 
 ###########################################################################################################################################
