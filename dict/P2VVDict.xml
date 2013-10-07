@@ -80,6 +80,7 @@
         <function name = "gradient" />
         <function name = "gradient_with_errors" />
         <function name = "cross_with_errors" />
+        <function name = "HelicityAngles" />
 
     </selection>
 </lcgdict>
