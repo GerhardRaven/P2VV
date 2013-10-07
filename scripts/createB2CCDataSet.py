@@ -7,19 +7,19 @@ nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/2011_2012_dv33r
 #nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/2012_dv33r6p1_s20r0p1_20130922_tupleB.root'
 #nTupleFilePath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco12/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
 nTupleName       = 'DecayTree'
-dataSetsFilePath = 'temp.root' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_4KKMassBins_2TagCats.root'
+dataSetsFilePath = 'temp.root' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_6KKMassBins_2TagCats.root'
 appendToFile     = False
 savedObjects     = [ 'sigSWeight' ]
-plotsFilePath    = 'temp.ps' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_4KKMassBins_2TagCats.ps'
-parFileIn        = 'eventYields4KKBins.par'
+plotsFilePath    = 'temp.ps' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_6KKMassBins_2TagCats.ps'
+parFileIn        = 'eventYields6KKBins.par'
 parFileOut       = ''
 
 simulation       = False
 runPeriods       = [ 2011, 2012 ]
 triggerSel       = 'paper2012' # 'noSelection' # 'paper2012' # 'HLT1Unbiased' # 'paper2012'
 dataCuts         = 'nominal2011' # 'noSelection' # 'nominal2011'
-dataSample       = '(bkgcat==0 || bkgcat==50)' if simulation else ''
-sWeightName      = 'sigWeight_DG_4KKBins'
+dataSample       = '(bkgcat==0 || bkgcat==50)' if simulation else '' #'mdau2>990. && mdau2<1008. && hlt1_excl_biased_dec==0'
+sWeightName      = 'sigWeight_I2_6KKBins'
 addSWeights      = True
 addKKMassCat     = True
 addTrackMomenta  = False
@@ -27,9 +27,9 @@ addTaggingObs    = ( 2, 2 ) # ( 0, 0 )
 createRangeData  = False
 createNTuple     = False
 splitDataSet     = [ ] #[ 'tagCatP2VVOS', 'tagCatP2VVSS' ]
-KKMassBinBounds  = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ]
+KKMassBinBounds  = [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ]
 
-sigMassModel     = ''
+sigMassModel     = 'Ipatia2'
 cbkgMassModel    = ''
 SWeightsType     = 'simultaneousFreeCBkg'
 
@@ -47,15 +47,30 @@ if sigMassModel == 'Ipatia2' :
     constSplitCats = [ 'hlt1ExclB', 'KKMassCat' ]
     constSplitPars = [ 'm_sig_alpha_1', 'm_sig_alpha_2', 'm_sig_n_1', 'm_sig_n_2', 'm_sig_lambda', 'm_sig_zeta' ]
 
-    # smeared MC, no truth requirement, 4 KK-mass bins
+    ## smeared MC, no truth requirement, 4 KK-mass bins
+    #constSplitVals = {  ( 'notExclB', 'bin0' ) : [ 3.090242001004567, 2.448740313493132, 7.865481777002969e-07, 0.3772603020305554, -1.8028256514259358, 0.0032161538679723045 ]
+    #                  , ( 'notExclB', 'bin1' ) : [ 2.7357926724807715, 2.5325078527657405, 1.410324206500183, 2.1356073743749593, -2.7476260304874316, 3.6501861834237204e-05  ]
+    #                  , ( 'notExclB', 'bin2' ) : [ 3.0203918214648766, 2.3616839764894775, 1.3457820727430088, 1.7328167019210972, -2.7338157946318313, 0.0005618710817781314  ]
+    #                  , ( 'notExclB', 'bin3' ) : [ 2.9828710959611295, 3.023748092386514, 0.3922908133091868, 0.4080097456480669, -2.2104022388970668, 0.0071672915683015925   ]
+    #                  , ( 'exclB',    'bin0' ) : [ 3.0587485511296966, 2.484099316157297, 0.057889921045197745, 0.5528670977674432, -3.007467407061461, 0.1095519817428861     ]
+    #                  , ( 'exclB',    'bin1' ) : [ 2.5950094079868706, 2.540489018460561, 1.5945389901143097, 2.050949882410599, -2.730273102035722, 0.0004971111831370001     ]
+    #                  , ( 'exclB',    'bin2' ) : [ 3.0552471411002733, 2.152609753853441, 1.329325140262283, 2.019935753077858, -2.484855452835132, 0.7630080085121052         ]
+    #                  , ( 'exclB',    'bin3' ) : [ 3.075124852599962, 2.877808057134126, 0.3713565137662156, 0.5448414118880873, -2.316218692561214, 0.0010592756615862564     ]
+    #                 }
+
+    # smeared MC, no truth requirement, 6 KK-mass bins
     constSplitVals = {  ( 'notExclB', 'bin0' ) : [ 3.090242001004567, 2.448740313493132, 7.865481777002969e-07, 0.3772603020305554, -1.8028256514259358, 0.0032161538679723045 ]
                       , ( 'notExclB', 'bin1' ) : [ 2.7357926724807715, 2.5325078527657405, 1.410324206500183, 2.1356073743749593, -2.7476260304874316, 3.6501861834237204e-05  ]
-                      , ( 'notExclB', 'bin2' ) : [ 3.0203918214648766, 2.3616839764894775, 1.3457820727430088, 1.7328167019210972, -2.7338157946318313, 0.0005618710817781314  ]
-                      , ( 'notExclB', 'bin3' ) : [ 2.9828710959611295, 3.023748092386514, 0.3922908133091868, 0.4080097456480669, -2.2104022388970668, 0.0071672915683015925   ]
+                      , ( 'notExclB', 'bin2' ) : [ 2.7357926724807715, 2.5325078527657405, 1.410324206500183, 2.1356073743749593, -2.7476260304874316, 3.6501861834237204e-05  ]
+                      , ( 'notExclB', 'bin3' ) : [ 3.0203918214648766, 2.3616839764894775, 1.3457820727430088, 1.7328167019210972, -2.7338157946318313, 0.0005618710817781314  ]
+                      , ( 'notExclB', 'bin4' ) : [ 3.0203918214648766, 2.3616839764894775, 1.3457820727430088, 1.7328167019210972, -2.7338157946318313, 0.0005618710817781314  ]
+                      , ( 'notExclB', 'bin5' ) : [ 2.9828710959611295, 3.023748092386514, 0.3922908133091868, 0.4080097456480669, -2.2104022388970668, 0.0071672915683015925   ]
                       , ( 'exclB',    'bin0' ) : [ 3.0587485511296966, 2.484099316157297, 0.057889921045197745, 0.5528670977674432, -3.007467407061461, 0.1095519817428861     ]
                       , ( 'exclB',    'bin1' ) : [ 2.5950094079868706, 2.540489018460561, 1.5945389901143097, 2.050949882410599, -2.730273102035722, 0.0004971111831370001     ]
-                      , ( 'exclB',    'bin2' ) : [ 3.0552471411002733, 2.152609753853441, 1.329325140262283, 2.019935753077858, -2.484855452835132, 0.7630080085121052         ]
-                      , ( 'exclB',    'bin3' ) : [ 3.075124852599962, 2.877808057134126, 0.3713565137662156, 0.5448414118880873, -2.316218692561214, 0.0010592756615862564     ]
+                      , ( 'exclB',    'bin2' ) : [ 2.5950094079868706, 2.540489018460561, 1.5945389901143097, 2.050949882410599, -2.730273102035722, 0.0004971111831370001     ]
+                      , ( 'exclB',    'bin3' ) : [ 3.0552471411002733, 2.152609753853441, 1.329325140262283, 2.019935753077858, -2.484855452835132, 0.7630080085121052         ]
+                      , ( 'exclB',    'bin4' ) : [ 3.0552471411002733, 2.152609753853441, 1.329325140262283, 2.019935753077858, -2.484855452835132, 0.7630080085121052         ]
+                      , ( 'exclB',    'bin5' ) : [ 3.075124852599962, 2.877808057134126, 0.3713565137662156, 0.5448414118880873, -2.316218692561214, 0.0010592756615862564     ]
                      }
 
 numMassBins      = [ 70, 40, 20, 20, 20 ]
@@ -85,8 +100,8 @@ obsKeys = [  'runPeriod'
            #, 'wTag', 'tagDec'
            , 'wTagOS'#, 'tagDecOS'
            , 'wTagSS'#, 'tagDecSS'
-           #, 'sel', 'selA', 'selB'
-           , 'hlt1ExclB'#, 'hlt2B', 'hlt2UB', 'hlt1B', 'hlt1UB'
+           , 'sel'#, 'selA', 'selB'
+           , 'hlt1ExclB', 'hlt2B', 'hlt2UB'#, 'hlt1B', 'hlt1UB'
            #, 'trigDecUnb', 'trigDecExclB'
            #, 'B_P', 'B_Pt'
            #, 'Kplus_PX', 'Kplus_PY', 'Kplus_PZ', 'Kplus_LOKI_ETA'
@@ -254,7 +269,8 @@ if dataSample == 'Summer2011' :
 elif dataSample and type(dataSample) == str : ntupleCuts += ( ' && ' if ntupleCuts else '' ) + dataSample
 
 from P2VV.Imports import triggerSelStrings
-ntupleCuts += ( ' && ' if ntupleCuts else '' ) + triggerSelStrings[triggerSel]
+trigSelStr = triggerSelStrings[triggerSel]
+if trigSelStr : ntupleCuts += ( ' && ' if ntupleCuts else '' ) + trigSelStr
 
 # read n-tuple file(s)
 print 'P2VV - INFO: createB2CCDataSet: reading n-tuple "%s" from file "%s"' % ( nTupleName, nTupleFilePath )
@@ -393,7 +409,8 @@ if not simulation :
             splitCats[ observables['KKMassCat'].GetName() ] = set(yieldNames)
             if sigMassModel.startswith('Ipatia2') :
                 # split signal parameters for KK-mass category
-                splitCats[ observables['KKMassCat'].GetName() ].add('m_sig_sigma')
+                #splitCats[ observables['KKMassCat'].GetName() ].add('m_sig_sigma')
+                for parName in sigParNames : splitCats[ observables['KKMassCat'].GetName() ].add(parName)
             if 'FreeCBkg' in SWeightsType :
                 # split all background parameters for KK-mass category
                 for parName in bkgParNames : splitCats[ observables['KKMassCat'].GetName() ].add(parName)
@@ -402,8 +419,8 @@ if not simulation :
         splitCats[ observables['hlt1ExclB'].GetName() ] = set(yieldNames)
         if sigMassModel.startswith('Ipatia2') :
             # split signal parameters for KK-mass category
-            #splitCats[ observables['KKMassCat'].GetName() ].add('m_sig_sigma')
-            pass
+            #splitCats[ observables['hlt1ExclB'].GetName() ].add('m_sig_sigma')
+            for parName in sigParNames : splitCats[ observables['hlt1ExclB'].GetName() ].add(parName)
 
         for cat in constSplitCats :
             # split specified constant shape parameters
@@ -436,6 +453,7 @@ if not simulation :
                 if splitParsDict[par1] == splitCats[-1] :
                     splitPars[-1].add(par1)
                     splitParsDict.pop(par1)
+        for it in range( len(splitCats) ) : splitCats[it] = sorted( list( splitCats[it] ) )
 
         # build simultaneous mass PDF
         print 'P2VV - INFO: createB2CCDataSet: building simultaneous PDF "%s":' % ( massPdf.GetName() + '_simul' )
@@ -660,6 +678,8 @@ if not simulation and plotsFilePath :
                                ]
                              , [ True, False, False, False, False ]
                              , [ massLogPlotRange, ( None, None ), ( None, None ), ( None, None ), ( None, None ) ]
+                             #, [ False, False, False, False, False ]
+                             #, [ ( None, None ), ( None, None ), ( None, None ), ( None, None ), ( None, None ) ]
                              , [ 1.00, 1.20, 1.15, 1.15, 1.15 ]
                              , [ 0.6,  0.7,  0.8,  0.8,  0.8  ]
                              , [ 2,    3,    3,    3,    3    ]

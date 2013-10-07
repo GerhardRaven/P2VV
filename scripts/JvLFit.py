@@ -19,15 +19,15 @@ randomParVals          = ( ) #( 0.2, 12345 )
 pdfConfig['blind']     = {  'phiCP'  : ( 'UnblindUniform', 'BsPhisComb', 0.2  ) #'BsPhis2012', 0.2  )
                           , 'dGamma' : ( 'UnblindUniform', 'BsDGsComb',  0.02 ) #'BsDGs2012',  0.02 )
                          }
-pdfConfig['numEvents'] = 54755
-pdfConfig['sigFrac']   = 0.504
+pdfConfig['numEvents'] = 225000
+pdfConfig['sigFrac']   = 0.43
 dataPath               = '/project/bfys/jleerdam/data/Bs2Jpsiphi/'
 
 pdfConfig['runPeriods'] = [ 2011, 2012 ]
 
 plotsFile     = 'temp.root' #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.ps'
 plotsROOTFile = 'temp.root' #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.root'
-parFileIn     = '20112012Reco14DataFitValues.par'
+parFileIn     = ''#'20112012Reco14DataFitValues.par'
 parFileOut    = ''
 
 if generateData :
@@ -35,7 +35,8 @@ if generateData :
     dataSetFile = 'paper2012_SFit.root' if pdfConfig['SFit'] else 'paper2012_CFit.root'
 elif pdfConfig['SFit'] :
     dataSetName = 'JpsiKK_sigSWeight'
-    dataSetFile = dataPath + 'Reco14/P2VVDataSets20112012Reco14_4KKMassBins_2TagCats.root'
+    #dataSetFile = dataPath + 'Reco14/P2VVDataSets20112012Reco14_4KKMassBins_2TagCats.root'
+    dataSetFile = dataPath + 'Reco14/P2VVDataSets20112012Reco14_6KKMassBins_2TagCats.root'
 else :
     dataSetName = 'JpsiKK'
     dataSetFile = dataPath + 'Reco12/P2VVDataSets2011Reco12_4KKMassBins_2TagCats.root'
@@ -143,8 +144,8 @@ pdfConfig['AparParam']       = 'phase' # 'Mag2ReIm' # 'phase'
 pdfConfig['ambiguityPars']   = False
 
 pdfConfig['paramKKMass']     = 'simultaneous'  # 'simultaneous'
-pdfConfig['KKMassBinBounds'] = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
-pdfConfig['CSPValues']       = [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
+pdfConfig['KKMassBinBounds'] = [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
+pdfConfig['CSPValues']       = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
 KKMassPars = pdfConfig['obsDict']['KKMass']
 pdfConfig['obsDict']['KKMass'] = ( KKMassPars[0], KKMassPars[1], KKMassPars[2]
                                   , 1020., pdfConfig['KKMassBinBounds'][0], pdfConfig['KKMassBinBounds'][-1] )
