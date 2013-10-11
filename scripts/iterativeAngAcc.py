@@ -3,10 +3,10 @@
 ############################################################################################################
 ## Specify paths and paramters ##
 ################################
-globalOutputFolder = '/project/bfys/vsyropou/PhD/macros/iterativeAngAcc/output/'
 
 # mc input File    
 mcTuplePath = '/project/bfys/vsyropou/data/P2VVDataSets2011_MC_forReweighting.root'
+
 # sData input file
 sDataPath    = '/project/bfys/vsyropou/data/P2VVDataSets2011Reco12_wideKKMass_noKKMassBins_2TagCats_forReweighting.root'
 sDataName    = 'JpsiKK_sigSWeight' # 'DecayTree' # 'JpsiKK_sigSWeight', # JpsiKK
@@ -19,41 +19,61 @@ timeEffExclBName  = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut
 angEffMomentsFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
 
 # parameters obtained from the initial sFit to data, no KKMass bins, wide KK mass window. 
-dataParameters = dict(  AperpMag2        = 0.246729
-                       ,AperpPhase       = 3.0270
-                       ,A0Mag2           =  0.52348
+dataParameters = dict(  AperpMag2        = 0.24663
+                       ,AperpPhase       = 3.032
+                       ,A0Mag2           = 0.52352
                        ,A0Phase          = 0 # cosntrained
-                       ,AparPhase        = 3.2133
-                       ,f_S_bin0         = 0.046284
-                       ,ASOddPhase_bin0  = -0.06552
-                       ,dM               = 17.676
-                       ,dGamma           = 0.10220
+                       ,AparPhase        = 3.2176
+                       ,f_S_bin0         = 0.046222
+                       ,ASOddPhase_bin0  = -0.066683
+                       ,dM               = 17.677
+                       ,dGamma           = 0.1023
                        ,Gamma            = 0.67283
-                       ,phiCP            = 0.08455
-                       ,lambdaCP         = 0.92747
+                       ,phiCP            = 0.085636
+                       ,lambdaCP         = 0.92737
                        )
 
 # varius flags / names
-NumbOfIterations = 4 # desired number of iterations.
+NumbOfIterations = 5 # number of iterations.
 physWeightName   = 'weightPhys'
 makePlots        = True
 plotAfterFitting = False
 doBaselineFit    = False
 canvs            = {} if makePlots else '' # keep reference to the plots
 
+# parameters for varius xChecks
+doNothingTest  = False
+sDataXcheck    =  '/project/bfys/vsyropou/PhD/macros/iterativeAngAcc/xChecks/P2VVDataSets2011_MC_forReweighting_RenameTrueTime2Time_TrivialWeights.root' 
+sWeightsNameXcheck = 'trivialWeights'
+devel = True
+if doNothingTest: 
+    dataParameters = dict( AperpMag2        = 0.16
+                           ,AperpPhase       = -0.17
+                           ,A0Mag2           =  0.6
+                           ,A0Phase          = 0 # cosntrained
+                           ,AparPhase        = 2.50
+                           ,f_S_bin0         = 0
+                           ,ASOddPhase_bin0  = 0
+                           ,dM               = 17.8
+                           ,dGamma           = 0.06
+                           ,Gamma            = 0.679
+                           ,phiCP            = -0.04
+                           ,lambdaCP         = 1.
+                           )
 
-############################################################################################################
+###########################################################################################################################
 ## Begin iterative procedure ##
 ################################
 # initialize objects.
 from P2VV.Utilities.MCReweighting import MatchMCphysics2Data, MatchWeightedDistributions, \
-                                         CompareWeightedDistributions, BuildBs2JpsiKK2011sFit
+                                        compareDistributions, BuildBs2JpsiKK2011sFit
 from P2VV.Utilities.DataMoments import RealMomentsBuilder
 from P2VV.Utilities.Plotting import plot
 from P2VV.RooFitWrappers import RooObject, RealEffMoment
 from ROOT import RooArgSet, TFile, TCanvas
 from math import pi, sqrt
 
+# define a workspace
 worksp = RooObject( workspace = 'iterativeAngularAcceptance' ).ws()
 
 #  build data pdf and prepare the sFit ( This pdf is not multiplied by the angular acceptance ).
@@ -81,16 +101,15 @@ KKMassCat  = Bs2JpsiKK2011sFit.getPdfBuilderObject()['observables']['KKMassCat']
 condObsSet = Bs2JpsiKK2011sFit.getPdf().ConditionalObservables().union( set([KKMassCat]) )
 
 # get datasets.
-#mcData        = MatchPhysics.getDataset() 
-sWeightedData = Bs2JpsiKK2011sFit.getDataSet()
-projDataSet = sWeightedData.reduce( RooArgSet(condObsSet) ) # projection dataset for the simultaneous pdf.
+sWeightedData = Bs2JpsiKK2011sFit.getDataSet() if not doNothingTest else TFile.Open(sDataXcheck).Get('MC4xCheck')
+projDataSet = sWeightedData.reduce( RooArgSet(condObsSet) ) if not doNothingTest else None
 
 # initialise kinematic reweighting classs
 matchMC2Data = MatchWeightedDistributions( inTree         = None,          # distribution to be matched with.
                                            outTree        = sWeightedData, # distribution to be matched with.
                                            whichVars      = ['Kminus_P'],
                                            inWeightName   = physWeightName,
-                                           outWeightName  = sWeightsName,
+                                           outWeightName  = sWeightsName if not doNothingTest else sWeightsNameXcheck, 
                                            observables    = MatchPhysics.getMcObsSet(),   # true/reco decay time + angles
                                            spectatorVars  = MatchPhysics.getNtupleVars(), # vraiables copied to the new dataset
                                            nBins          = 1000          # controls the preceision of the reweighting 
@@ -101,7 +120,7 @@ matchMC2Data = MatchWeightedDistributions( inTree         = None,          # dis
 for iterNumb in range( 1, NumbOfIterations + 1 ):
     print 'P2VV - INFO: Begin iteratitive procedure. Iteration step: ' +str(iterNumb) + '.'  
 
-############################################################################################################
+################################################################################################################################
 ## Match mc physics to sData and reweight Kaon momenta ##
 #########################################################
     # calculate physics matcing weights.
@@ -109,21 +128,32 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
     MatchPhysics.writeWeights( weightsName=physWeightName) # mc dataset is internally updated with the weights.
     
     # reweight track momenta
-    matchMC2Data.reweight( iterNumb, MatchPhysics.getDataset() )
-    reweightedData = matchMC2Data.getDataSet()
-
-    if makePlots:
-        # check the effect of physics reweighting. 
-        MatchPhysics.compareAngles(sData=sWeightedData if iterNumb==1 else ''      )  # save to anglesComparision_?.pdf'
-        MatchPhysics.compareTrackMomenta(sData=sWeightedData if iterNumb==1 else '')  # save to Kaon/muonComparision_?.pdf' 
-        # check the effect of kinematic reweighting. 
-        matchMC2Data.compareAngles()
-        matchMC2Data.compareTrackMomenta()
+    if devel:pass
+    else:
+        matchMC2Data.reweight( iterNumb, MatchPhysics.getDataset() )
+        reweightedData = matchMC2Data.getDataSet()
     
-##############################################################################################################
+    if makePlots: # super impose data after each reweighting step
+        
+        if devel:
+            mcData =  MatchPhysics.getDataset() 
+            reweightedData = TFile.Open('../temp_reweightedData_1stIter.root').Get('MomRewMC_1_Iter')
+        
+
+        compPlots = compareDistributions( mcData          = MatchPhysics.getDataset(),
+                                          momRewData      = reweightedData,
+                                          sData           = sWeightedData, 
+                                          itNumb          = iterNumb,
+                                          physWeightsName = physWeightName
+                                          )
+        for canv, name in zip( compPlots, ['anglesTime_%s.pdf'%iterNumb, 'KaonMomenta_%s.pdf'%iterNumb, 'muonMomenta_%s.pdf'%iterNumb, \
+                                                                    'assymKaonmomenta_%s.pdf'%iterNumb, 'assymMuonMomenta_%s.pdf'%iterNumb]
+                               ): canv.Print(name)
+    if devel: assert False
+##################################################################################################################################
 ## Compute angular efficiency moments for the new reweighted MC sample.##
 #########################################################################
-    nominalEffMoms = globalOutputFolder + 'hel_UB_UT_trueTime_BkgCat050_KK30' # efficeincy moments output file 
+    nominalEffMoms = 'hel_UB_UT_trueTime_BkgCat050_KK30' # efficeincy moments output file 
     effMomentsFile = nominalEffMoms + '_Phys_%s_Iteration'%iterNumb 
     effWeightsFile = nominalEffMoms + '_weights_%s_Iteration'%iterNumb
     
@@ -141,13 +171,14 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
     physMoments.write( effMomentsFile , Scale=scaleFactor )
     physMoments.convertPhysMomsToEffWeights( effWeightsFile , Scale=scaleFactor )
     
-############################################################################################################
+#####################################################################################################################################
 ## Perform sFit on data using the new angular acceptance.##
 #########################################################################
-    if doBaselineFit: # perform the sFit with the nominal ang. acceptance
-        dataPdf_StandardAngEff = Bs2JpsiKK2011sFit.multiplyPdfWithAcc( angEffMomentsFile )
-        Bs2JpsiKK2011sFit.doFit( iterNumb, dataPdf_StandardAngEff )
-        if makePlots and plotAfterFitting:
+    
+    # perform the sFit with the nominal ang. acceptance
+    if doBaselineFit:Bs2JpsiKK2011sFit.doFit( iterNumb, angEffMomentsFile )
+    
+    if makePlots and plotAfterFitting:
             canvs['nomFit'] = TCanvas( 'sFit, no AngAccCorr', 'sFit, no AngAccCorr' )
             canvs['nomFit'].Divide(2,2)
             for can, obs, Logy in zip( [ canvs['nomFit'].cd(i) for i in [1,2,3,4]],  angles + time, 3*[False] + [True] ):
@@ -158,7 +189,7 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
     # multiply pdf with the new acceptance and do fit.
     Bs2JpsiKK2011sFit.doFit( iterNumb, effWeightsFile )
 
-    if makePlots anf plotAfterFitting: # plot
+    if makePlots and plotAfterFitting: # plot
         canvs['%siter_sFit'%iterNumb] = TCanvas( 'sFit, %s AngAccCorr'%iterNumb, 'sFit, %s AngAccCorr'%iterNumb )
         canvs['%siter_sFit'%iterNumb].Divide(2,2)
         for can, obs, Logy in zip( [ canvs['%siter_sFit'%iterNumb].cd(i) for i in [1,2,3,4]],  angles + time, 3*[False] + [True] ):

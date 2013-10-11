@@ -325,6 +325,127 @@ def getCondObsPlotsInKKbins(pdf, data, canv):
     return canv
 
 
+def compareDataSets( canv, obs, data={}, dataOpts={}, frameOpts={}, logy=False, RangeY=[], titleY='' ):
+    """ Superimpose RooDataSets
+    example usage:  compareDistributions(     data = dict( dataSet1   = mcBefore
+                                                           dataSet2   = mcAfter                                  ),
+                                          dataOpts = dict( dataSet1   = dict( MarkerColor = 2, MarkerSize = 1 ),
+                                                           dataSet2   = dict( MarkerColor = 4, MarkerSize = 1 )  )
+                                         frameOpts = dict( Bins = 100, Range=( lo, high ) )             
+                                                           """
+    # get dataset scales (scale down the largest samples)
+    entries = [ data[k].sumEntries() for k in data.keys() ]
+    for k in data.keys(): dataOpts[k]['Rescale'] = min(entries) / data[k].sumEntries() 
+        
+    # create frame
+    obsFrame = obs.frame(**frameOpts)
+    obsFrame.SetName( obs.GetName() )
+    
+    # plot data on frame
+    if data:
+        assert data.keys()==dataOpts.keys(), 'must have same keys'
+        for d in data.keys():
+            data[d].plotOn( obsFrame, **dataOpts[d] ) 
+    
+    # start drawing
+    if logy: 
+        canv.SetLogy(1)
+        if obsFrame.GetMinimum() <= 0: 
+            obsFrame.SetMinimum(0.1)
+
+    # title and axis ranges
+    if RangeY: obsFrame.SetAxisRange( RangeY[0], RangeY[1], 'Y' )
+    obsFrame.SetYTitle(titleY)
+    obsFrame.SetTitle('')
+    
+    canv.cd()
+    obsFrame.Draw()
+    return obsFrame
+
+
+def makeAssymetryPlot( canv, frame, refHist ):
+    # get list of RooHist objects from frame
+    HistList = []
+    indx=0
+    while True:
+        if frame.getObject(indx): HistList.append( frame.getObject(indx) )
+        else: break
+        indx+=1
+        
+    # grab reference histogram
+    for h in HistList: 
+        if h.GetName()==refHist: hRef = h
+    if not hRef: assert False, 'P2VV - ERROR: makeAssymetryPlot(): Cannot find reference histogram.'
+    HistList.remove(hRef)
+    
+    # get bin content and errors of reference histogram
+    ylistRef = hRef.GetY()
+    yErrHRef = hRef.GetEYhigh()
+    yErrLRef = hRef.GetEYlow()
+
+    # functions for error caclulation 
+    from array import array
+    from math import sqrt
+    _l2a      = lambda List: array('d', List) # python list to array
+    _assym    = lambda x0,x1: (x0-x1) / (x0+x1) # assymetry value
+    _assymErr = lambda x0,e0,x1,e1: 2*sqrt((x1*e1)**2 + (x0*e0)**2) / (x1+x0)**2 # assymentry error
+        
+    # get bin content and errors of reference histogram
+    ylistRef = hRef.GetY()
+    yErrHRef = hRef.GetEYhigh()
+    yErrLRef = hRef.GetEYlow()
+
+    # functions for error caclulation 
+    from array import array
+    from math import sqrt
+    _l2a      = lambda List: array('d', List) # python list to array
+    _assym    = lambda x0,x1: (x0-x1) / (x0+x1) # assymetry value
+    _assymErr = lambda x0,e0,x1,e1: 2*sqrt((x1*e1)**2 + (x0*e0)**2) / (x1+x0)**2 # assymentry error
+      
+    # make assymetry plots
+    from ROOT import TGraphAsymmErrors
+    assymPlotsList = []
+    for hist in HistList: # loop over histograms present in frame 
+        ylist = hist.GetY()      # array of y-axis values
+        yErrH = hist.GetEYhigh() # array of y-axis high errors 
+        yErrL = hist.GetEYlow()  # array of y-axis low errors
+        assymYlist, assymYerrH, assymYerrL = [],[],[] # prepare relevant assymetry lists 
+        
+        # loop over histogram and calculate per bin assymetry
+        for point in xrange(frame.GetNbinsX()):
+            if ylistRef[point]==0 and ylist[point]==0 :
+                assymYlist.append(.0)
+                assymYerrH.append(.0)
+                assymYerrL.append(.0)
+            else:
+                assymYlist.append( _assym(ylistRef[point], ylist[point]) )
+                assymYerrH.append( _assymErr(ylistRef[point], yErrHRef[point], ylist[point], yErrH[point]) )
+                assymYerrL.append( _assymErr(ylistRef[point], yErrLRef[point], ylist[point], yErrL[point]) )
+
+        graph = TGraphAsymmErrors( frame.GetNbinsX(),   # bins in x-axis
+                                   hRef.GetX(),         # array of x-axis values
+                                   _l2a(assymYlist),    # array of y-axis values
+                                   _l2a( 100*[.0] ),    # array of x-axis high errors 
+                                   _l2a( 100*[.0] ),    # array of x-axis low errors 
+                                   _l2a( assymYerrH ),  # array of y-axis high errors 
+                                   _l2a( assymYerrL )   # array of y-axis low errors 
+                                   )
+
+        graph.SetName(hist.GetName() + frame.getPlotVar().GetName())
+        graph.SetTitle(frame.getPlotVar().GetName())
+        graph.SetMarkerColor(hist.GetMarkerColor())
+        graph.SetMarkerStyle(20)
+        graph.SetMarkerSize(.7)
+        assymPlotsList.append(graph)
+        _P2VVPlotStash.append(graph)
+
+    canv.cd()
+    assymPlotsList.pop().Draw('APZ')
+    for g in assymPlotsList: g.Draw('ZPsame')
+    del assymPlotsList
+    
+
+
 # class for plotting a PDF in KK mass bins
 class CPcomponentsPlotingToolkit():
     def __init__(self, pdf, data):
