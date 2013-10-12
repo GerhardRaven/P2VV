@@ -6,120 +6,126 @@
 ##                                                                                                                                       ##
 ###########################################################################################################################################
 
+ # keep reference to canvases, legends, frames
+from P2VV.Utilities.Plotting import _P2VVPlotStash
 
-global _TreeStash # keep reference to trees, so that they are not created multiple times.
-_TreeStash = []
+def compareDistributions( **kwargs ):
+    mcData          = kwargs.pop('mcData',          None)
+    momRewData      = kwargs.pop('momRewData',      None)
+    sData           = kwargs.pop('sData',           None)
+    itNumb          = kwargs.pop('itNumb',          None)
+    physWeightsName = kwargs.pop('physWeightsName', None)
 
-global _PlotStash # keep reference to canvases, so that they are not created multiple times.
-_PlotStash = []
+    # set truetime to time
+    if mcData.get().find('truetime'): 
+        truetimeFlag = True
+        mcData.get().find('truetime').SetName('time')
+        momRewData.get().find('truetime').SetName('time')
 
-def CompareWeightedDistributions(tree, sTree, var, **kwargs):
-    sVar      = kwargs.pop('sVar',      None      )
-    cut       = kwargs.pop('cut',       None      )
-    sCut      = kwargs.pop('sCut',      None      )
-    weight    = kwargs.pop('weight',    None      )
-    sWeight   = kwargs.pop('sWeight',   None      )
-    rangeX    = kwargs.pop('rangeX',    None      )
-    bins      = kwargs.pop('bins',       50       )
-    assymPlot = kwargs.pop('assymPlot', False     )
-    save      = kwargs.pop('save',        ''      )
-    title     = kwargs.pop('title',       ''      )
+    # get mcData before and after physics reweighting
+    from ROOT import RooFit, RooDataSet
+    mcBeforePhysRew = mcData
+    mcAfterPhysRew  = RooDataSet( 'MC_BeforePhysRew_%s'%itNumb, 'MC_BeforePhysRew_%s'%itNumb, mcData.get(), 
+                                  RooFit.Import(mcData),
+                                  RooFit.WeightVar(physWeightsName)
+                                  )
+   
+    # get observables
+    observables, Kmomenta, muMomenta = [], [], []
+    for obs in mcData.get():
+        obsName = obs.GetName()
+        if obsName.__contains__('hel') or obsName.__contains__('time'): observables.append(obs)
+        elif obsName.startswith('K'):   Kmomenta.append(obs)
+        elif obsName.startswith('mu'):  muMomenta.append(obs)
 
-    from ROOT import RooDataSet, gROOT
-    if type(tree)  == RooDataSet and tree not in _TreeStash:
-        gROOT.cd('PyROOT:/')
-        tree = tree.buildTree( WeightName = weight ) if weight else tree.buildTree()
-        _TreeStash.append(tree)
-    if type(sTree) == RooDataSet and sTree not in _TreeStash: 
-        gROOT.cd('PyROOT:/')
-        sTree = sTree.buildTree( WeightName = sWeight ) if sWeight else sTree.buildTree()
-        _TreeStash.append(sTree)
+    # assymetry plots are compared w.r.t. the sData
+    referenceHistName = 'h_' + sData.GetName() 
 
-    if rangeX:
-        Xmin=str(rangeX[0])
-        Xmax=str(rangeX[1])
-    else:
-        Xmin= str(min(tree.GetMinimum(var),sTree.GetMinimum(var)))
-        Xmax= str(max(tree.GetMaximum(var),sTree.GetMaximum(var)))
+    # start drawing
+    from ROOT import TCanvas, RooAbsData, TPaveText, kGreen, kMagenta
+    from P2VV.Utilities.Plotting import compareDataSets, makeAssymetryPlot
 
-    from ROOT import gPad
-    if cut:
-        if weight: tree.Draw(var + '>>hm('+str(bins)+','+Xmin+','+Xmax+')', weight +'*'+'('+cut+')' )
-        else     : tree.Draw(var + '>>hm('+str(bins)+','+Xmin+','+Xmax+')',                 cut     )
-    else         :
-        print 'P2VV - INFO: Ploting first distribution (1st arguement) with weight: ' + weight + '.'
-        if weight: tree.Draw(var + '>>hm('+str(bins)+','+Xmin+','+Xmax+')', weight)
-        else:      tree.Draw(var + '>>hm('+str(bins)+','+Xmin+','+Xmax+')',    '' )
-    hm = gPad.GetPrimitive('hm')
+    obsCanv = TCanvas('observables_%s'%itNumb,'observables_%s'%itNumb)
+    obsCanv.Divide(2,2)
+    KaonCanv = TCanvas('KaonMomenta_%s'%itNumb,'KaonMomenta_%s'%itNumb)
+    KaonCanv.Divide(4,2)
+    muonCanv = TCanvas('muonMomenta_%s'%itNumb,'muonMomenta_%s'%itNumb)
+    muonCanv.Divide(4,2)
+    assymKaonCanv = TCanvas('assymKaonMomenta_%s'%itNumb,'assymKaonMomenta_%s'%itNumb)
+    assymKaonCanv.Divide(4,2)
+    assymMuonCanv = TCanvas('assymmuonMomenta_%s'%itNumb,'assymmuonMomenta_%s'%itNumb)
+    assymMuonCanv.Divide(4,2)
 
-    if not sVar: sVar=var
-    if sCut:
-        if sWeight: sTree.Draw(sVar + '>>hs('+str(bins)+','+Xmin+','+Xmax+')', sWeight +'*'+'('+sCut+')', 'err' )
-        else      : sTree.Draw(sVar + '>>hs('+str(bins)+','+Xmin+','+Xmax+')',                  sCut    , 'err' )
-    else          :
-        print 'P2VV - INFO: Ploting second distribution (2nd arguement) with weight: ' ,  sWeight
-        if sWeight: sTree.Draw(sVar + '>>hs('+str(bins)+','+Xmin+','+Xmax+')', sWeight, 'err' )
-        else:       sTree.Draw(sVar + '>>hs('+str(bins)+','+Xmin+','+Xmax+')',    ''  , 'err' )
-    hs = gPad.GetPrimitive('hs')
+    # set some data drawing options
+    stdDrawOpts = dict( DataError=RooAbsData.SumW2, MarkerSize = .5, XErrorSize = 0 )
+    colors      = dict(mcBefore=2, mcAfter=kGreen+3, MomRewData=4, Sdata=kMagenta+2)
+    
+    # plot angles and decay time
+    print 'P2VV - INFO: compareDistributions(): Plotting decay angles and time.'
+    for canv, obs, logY, rangeY in zip( [obsCanv.cd(i+1) for i in range(len(observables))], 
+                                        observables,
+                                        3 * [False] + [True],
+                                        [ [400,1500], [500,1200], [700,1200], [.1,5e4] ]
+                                        ): 
+        compareDataSets( canv, 
+                         obs, 
+                         data      = dict( mcBefore   = mcBeforePhysRew, 
+                                           mcAfter    = mcAfterPhysRew, 
+                                           MomRewData = momRewData,      
+                                           Sdata      = sData),
+                         dataOpts  = dict( mcBefore   = dict( MarkerColor = colors['mcBefore'],   **stdDrawOpts ),
+                                           mcAfter    = dict( MarkerColor = colors['mcAfter'],    **stdDrawOpts ),
+                                           MomRewData = dict( MarkerColor = colors['MomRewData'], **stdDrawOpts ),
+                                           Sdata      = dict( MarkerColor = colors['Sdata'],      **stdDrawOpts ) ),
+                         frameOpts = dict( Bins = 30),
+                         logy      = logY,
+                         RangeY    = rangeY
+                         )
+        
+    # plot Kaon and muon momenta
+    print 'P2VV - INFO: compareDistributions(): Plotting track momenta.'
+    for canv, assymCanv, obs, rangeX, rangeY in zip( 
+        [ KaonCanv.cd(k+1) for k in range(len(Kmomenta)) ]      + [ muonCanv.cd(m+1) for m in range(len(muMomenta)) ],
+        [ assymKaonCanv.cd(k+1) for k in range(len(Kmomenta)) ] + [ assymMuonCanv.cd(m+1) for m in range(len(muMomenta)) ],
+        Kmomenta + muMomenta,
+        4*[ (0,1e5), (-1e4,1e4), (-1e4,1e4), (0,1e5) ],
+        2*[ (0.,3000), (0.,4500), (0.,4500), (0.,3000)] + 2*[ (0.,2000), (0.,3000), (0.,3000), (0.,2000) ]
+        ): 
+        momFrame = compareDataSets( canv, 
+                                    obs, 
+                                    data      = dict( mcBefore   = mcBeforePhysRew, 
+                                                      mcAfter    = mcAfterPhysRew, 
+                                                      MomRewData = momRewData,      
+                                                      Sdata      = sData
+                                                      ),
+                                    dataOpts  = dict( mcBefore   = dict( MarkerColor = colors['mcBefore'],    **stdDrawOpts ),
+                                                      mcAfter    = dict( MarkerColor = colors['mcAfter'],     **stdDrawOpts ),
+                                                      MomRewData = dict( MarkerColor = colors['MomRewData'],  **stdDrawOpts ),
+                                                      Sdata      = dict( MarkerColor = colors['Sdata'],       **stdDrawOpts )
+                                                      ),
+                                    frameOpts = dict( Bins = 50, Range=rangeX ),
+                                    RangeY    = rangeY
+                                    )
+        
+    
+        makeAssymetryPlot( assymCanv, momFrame, referenceHistName ) 
+ 
+    # make a legend and draw it
+    legend = TPaveText( .47, .66, .77, .9, 'NDC' )
+    legend.SetFillColor(0)
+    for k in colors.keys(): legend.AddText('#color[%s]{%s}'%( colors[k], k ) )
+    for canv, pad in zip( [obsCanv, KaonCanv, muonCanv, assymKaonCanv, assymMuonCanv], [4,8,8,8,8] ): 
+        canv.cd(pad)
+        legend.Draw()
+    _P2VVPlotStash.append(legend) # keep reference to the legend
+    
+    if truetimeFlag: # restore the truetime in mcData 
+        mcData.get().find('time').SetName('truetime')
+        momRewData.get().find('time').SetName('truetime')
+    
+    del mcAfterPhysRew
+    return [obsCanv,KaonCanv,muonCanv,assymKaonCanv,assymMuonCanv,momFrame]
 
-    hm.SetFillColor(2)
-    hm.SetStats(0)
-    hm.SetTitle(title)
-
-    hs.SetMarkerStyle(20)
-    hs.SetMarkerSize(.5)
-    hs.SetTitle(title)
-    hs.SetStats()
-
-    def getSumOfWeights(t,pref,cut):
-        ## TODO: should return sumW of the selected events by the cut string.
-        if cut: print 'WARNING: Returned number is sumW of the entire tree, not of the subseset selected by cut. '
-        if pref=='': return t.GetEntries(cut)
-        else:
-            sumW=0
-            for e in t:sumW+=getattr(e,pref)
-            return sumW
-
-    if cut==None:  cut=''
-    if sCut==None: sCut=''
-    if weight==None: weight=''
-    if sWeight==None: sWeight=''
-    if tree.GetEntries(cut)>sTree.GetEntries(sCut): hm.Scale(getSumOfWeights(sTree,sWeight,sCut) / getSumOfWeights(tree,weight,cut))
-    else:                                           hs.Scale(getSumOfWeights(tree,weight,cut)    / getSumOfWeights(sTree,sWeight,sCut))
-
-    if rangeX: hm.GetXaxis().SetRangeUser(rangeX[0], rangeX[1])
-    if hm.GetMaximum() < hs.GetMaximum(): hm.GetYaxis().SetRangeUser(0, int( hs.GetMaximum() + .08* hs.GetMaximum() ))
-
-    from ROOT import TCanvas
-    c_distr = TCanvas(var,var)
-    if assymPlot:
-        from ROOT import TH1F, TMath
-        c_asymt = TCanvas('asymetryPlot','asymetryPlot')
-        asymPlot = TH1F('asymPlot','Assymetry Plot', bins, float(Xmin), float(Xmax))
-        for b in xrange(1,hm.GetNbinsX()):
-            try:asym=(hm.GetBinContent(b) - hs.GetBinContent(b)) / (hm.GetBinContent(b) + hs.GetBinContent(b))
-            except ZeroDivisionError: asym=0
-            ##TODO:: Impliment the errors
-            #error = TMath.sqrt ( 1/hm.GetSumOfWeights() + 1/hs.GetSumOfWeights() )
-            asymPlot.SetBinContent(b,asym)
-            #asymPlot.SetBinError(b,error)
-            c_asymt.cd()
-            asymPlot.SetStats(0)
-            asymPlot.Draw()
-
-            c_distr.cd()
-            hm.Draw()
-            hs.Draw('same')
-            if save:
-               c_distr.SaveAs( save )
-               asymPlot.SaveAs('assym_' + save)
-            return c_distr, asymPlot
-    else:
-        c_distr.cd()
-        hm.Draw()
-        hs.Draw('same')
-        if save: c_distr.SaveAs( save )
-        return c_distr
 
 
 class UniFunc(object):
@@ -310,7 +316,7 @@ class MatchMCphysics2Data():
         from P2VV.Parameterizations.CPVParams import LambdaAbsArg_CPParam as CPParam
         lambdaCP    = CPParam( lambdaCP   = 1., phiCP = phiCPVal )
         lambdaCPVal = lambdaCP._lambdaCP.getVal()
-        
+      
         # tagging parameters
         from P2VV.Parameterizations.FlavourTagging import Trivial_TaggingParams as TaggingParams
         taggingParams = TaggingParams()
@@ -380,8 +386,8 @@ class MatchMCphysics2Data():
         
         self._ntupleVars = [ Kplus_P, Kplus_PX, Kplus_PY, Kplus_PZ, Kminus_P, Kminus_PX, Kminus_PY, Kminus_PZ,\
                              muminus_P, muminus_PX, muminus_PY, muminus_PZ, muplus_P, muplus_PX, muplus_PY, muplus_PZ, B_P, B_PT ]
-   
 
+    
     def selectMonteCarloData(self):     
         bkgcatCut      = '(bkgcat == 0 || bkgcat == 50)'
         trackChiSqCuts = 'muplus_track_chi2ndof < 4. && muminus_track_chi2ndof < 4. && Kplus_track_chi2ndof < 4. && Kminus_track_chi2ndof < 4.'
@@ -526,12 +532,12 @@ class MatchMCphysics2Data():
                 canvInitMC.cd(i)
                 if not obs.__contains__('time'): sData.Draw(   obs  + '>>%sPhysRew_cross=InitData%s()'%(self._iterNumb,i), 'N_sigMass_sw' )
                 else:                            sData.Draw( 'time' + '>>%sPhysRew_cross=InitData%s()'%(self._iterNumb,i), 'N_sigMass_sw' )
-                data.Draw( obs + '>>AngInitMC()', self._weightsName, 'same err')
+                data.Draw( obs + '>>AngInitMC()', '', 'same err')
                 gPad.GetPrimitive('AngInitMC').Scale(0.060269794462034676)
                 gPad.GetPrimitive('AngInitMC').SetName( obs + '_AngInitMC_%s' %self._iterNumb )
-                _PlotStash.append(canvInitMC)
+                _P2VVPlotStash.append(canvInitMC)
 
-        _PlotStash.append(canvPhysRew)
+        _P2VVPlotStash.append(canvPhysRew)
         
         if save: 
             canvPhysRew.Print('anglesBeforeAfterPhysReweight_%s.pdf'%self._iterNumb)
@@ -583,12 +589,12 @@ class MatchMCphysics2Data():
                 gPad.GetPrimitive('%smuMomRew_cross=sData%s'%(self._iterNumb,i)).Scale(0.060269794462034676)
                 #gPad.GetPrimitive('hmuonMomInitMcVSsData').SetName(mu +'MomInitMVSsData')
                 
-                _PlotStash.append(canvInitK)
-                _PlotStash.append(canvInitmu)
+                _P2VVPlotStash.append(canvInitK)
+                _P2VVPlotStash.append(canvInitmu)
 
    
-        _PlotStash.append(canvKaon)
-        _PlotStash.append(canvmuon)
+        _P2VVPlotStash.append(canvKaon)
+        _P2VVPlotStash.append(canvmuon)
 
         if save: 
             canvKaon.Print('KaonMomentaPhysReweight_%s.pdf'%self._iterNumb)
@@ -863,8 +869,8 @@ class MatchWeightedDistributions():
             else:                    sWeightData.Draw( obs,    self._outWeightName, 'same err' )
             gPad.GetPrimitive( '%sMomRew_cross=sData%s'%(self._itNum,i) ).Scale(self._dataSetsScale)
 
-        _PlotStash.append(canvsMomRewData)
-        _PlotStash.append(canvsRewVSData)
+        _P2VVPlotStash.append(canvsMomRewData)
+        _P2VVPlotStash.append(canvsRewVSData)
 
         if save: 
             canvsMomRewData.Print('anglesMomBeforeAfterReweight_%s.pdf'%self._itNum)
@@ -911,10 +917,10 @@ class MatchWeightedDistributions():
             gPad.GetPrimitive('hMomMuon').Scale(self._dataSetsScale)
             gPad.GetPrimitive('hMomMuon').SetName( mu + 'MomRew_%s' %self._itNum)
 
-        _PlotStash.append(canvKaonRewVsData)
-        _PlotStash.append(canvKaon)
-        _PlotStash.append(canvmuonRewVsData)
-        _PlotStash.append(canvmuon)
+        _P2VVPlotStash.append(canvKaonRewVsData)
+        _P2VVPlotStash.append(canvKaon)
+        _P2VVPlotStash.append(canvmuonRewVsData)
+        _P2VVPlotStash.append(canvmuon)
 
         if save: 
             canvKaon.Print('KaonMomentaBeforeAfterMomReweight_%s.pdf'%self._itNum)
