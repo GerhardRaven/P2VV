@@ -1,6 +1,6 @@
 # script parameters
-momentsFileOrig = 'MC12_hel_UB_UT_trueTime_BkgCat050_KK30_Phys'
-momentsFileNorm = 'MC12_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_norm'
+momentsFileOrig = 'Sim08_2011_hel_UB_UT_trueTime_BkgCat050_KK30_Phys'
+momentsFileNorm = 'Sim08_2011_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_norm'
 normMoment = 'Re_ang_A0_A0'
 
 # moment containers
