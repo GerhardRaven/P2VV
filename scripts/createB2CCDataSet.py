@@ -760,6 +760,7 @@ if not simulation and plotsFilePath :
 ## compute sWeights ##
 ######################
 
+weightVars = [ ]
 if not simulation :
     print 120 * '='
     print 'P2VV - INFO: createB2CCDataSet: computing sWeights'
@@ -770,7 +771,6 @@ if not simulation :
     dataSets['preS'] = ( sWeightsBuilder.data(), [ ] )
 
     # import sWeight variables
-    weightVars = [ ]
     for wName in [ 'N_sigMass_sw', 'N_cbkgMass_sw' ] :
         ws.put( dataSets['preS'][0].get().find(wName) )
         weightVars.append( RealVar(wName) )
