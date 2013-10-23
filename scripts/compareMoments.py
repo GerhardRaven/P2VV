@@ -52,5 +52,5 @@ diffCovsInv = TMatrixD(diffCovs).Invert()
 chiSq = diffsTrans * diffCovsInv * diffs
 
 from ROOT import TMath
-print 'differences chi^2 / #dof = %.1f / %d = %.1f (%.1f%%)'\
+print 'differences chi^2 / #dof = %.1f / %d = %.1f (%.2g%%)'\
       % ( chiSq[0][0], len(diffNames), chiSq[0][0] / float( len(diffNames) ), TMath.Prob( chiSq[0][0], len(diffNames) ) * 100. )
