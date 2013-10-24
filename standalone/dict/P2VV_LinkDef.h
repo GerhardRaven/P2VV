@@ -38,6 +38,7 @@
 #pragma link C++ class RooEffResAddModel+;
 #pragma link C++ class RooCategoryVar+;
 #pragma link C++ class RooConvertPolAmp+;
+#pragma link C++ class RooIpatia2+;
 
 #pragma link off all functions;
 #pragma link C++ function computeRooRealMoments;
@@ -55,6 +56,7 @@
 #pragma link C++ function second_gradient_with_errors;
 #pragma link C++ function cross_with_errors;
 #pragma link C++ function initial_stepsizes;
+#pragma link C++ function HelicityAngles;
 
 #pragma link C++ class std::map<RooAbsCategory*, std::string>;
 #pragma link C++ class std::map<RooCategoryProxy*, std::string>;

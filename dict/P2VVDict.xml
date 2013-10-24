@@ -44,6 +44,7 @@
         <class name = "RooEffResAddModel" />
         <class name = "RooCategoryVar" />
         <class name = "RooConvertPolAmp" />
+        <class name = "RooIpatia2" />
 
         <class name = "std::map<RooAbsCategory*, std::string>" />
         <class name = "std::map<RooCategoryProxy*, std::string>" />
@@ -79,6 +80,7 @@
         <function name = "gradient" />
         <function name = "gradient_with_errors" />
         <function name = "cross_with_errors" />
+        <function name = "HelicityAngles" />
 
     </selection>
 </lcgdict>

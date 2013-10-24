@@ -229,6 +229,40 @@ class DoubleCB_Signal_Mass ( MassPdf ) :
         self._check_extraneous_kw( kwargs )
 
 
+class Ipatia2_Signal_Mass ( MassPdf ) :
+    def __init__( self, mass, **kwargs ) :
+        self._parseArg( 'm_sig_mean', kwargs, Title = 'B Mass', Unit = 'MeV/c^2', Value = 5368.254, Error = 0.05
+                       , MinMax = ( 5000., 5700. ), Constant = False )
+        self._parseArg( 'm_sig_sigma', kwargs, Title = 'B Mass resolution', Unit = 'MeV/c^2', Value = 9.678, Error = 0.1
+                       , MinMax = ( 0.1, 40. ), Constant = False )
+        self._parseArg( 'm_sig_lambda', kwargs, Title = 'B Mass resolution lambda', Value = -2.5, Error = 0.1, MinMax = ( -10., 10. )
+                       , Constant = True )
+        self._parseArg( 'm_sig_zeta', kwargs, Title = 'B Mass resolution zeta', Value = 0.46, Error = 0.2, MinMax = ( -10., 10. )
+                       , Constant = True )
+        self._parseArg( 'm_sig_beta', kwargs, Title = 'B Mass resolution beta', Value = 0., ObjectType = 'ConstVar' )
+        self._parseArg( 'm_sig_alpha_1', kwargs, Title = 'B Mass tail parameter 1', Value = 1.754, Error = 1., MinMax = ( 0.01, 10. )
+                       , Constant = True )
+        self._parseArg( 'm_sig_alpha_2', kwargs, Title = 'B Mass tail parameter 2', Value = 1.548, Error = 1., MinMax = ( 0.01, 10. )
+                       , Constant = True )
+        self._parseArg( 'm_sig_n_1', kwargs, Title = 'B Mass tail order 1', Value = 1.80, Error = 0.5, MinMax = ( 0., 10. )
+                       , Constant = True )
+        self._parseArg( 'm_sig_n_2', kwargs, Title = 'B Mass tail order 2', Value = 1.70, Error = 0.5, MinMax = ( 0., 10. )
+                       , Constant = True )
+
+        from P2VV.Load import P2VVLibrary
+        from ROOT import RooIpatia2 as Ipatia2
+        from P2VV.RooFitWrappers import Pdf
+        MassPdf.__init__(  self
+                         , pdf = Pdf(  Name = kwargs.pop( 'Name', 'Ipatia2_Signal_Mass' )
+                                     , Type = Ipatia2
+                                     , Parameters = ( mass, self._m_sig_lambda, self._m_sig_zeta, self._m_sig_beta
+                                                     , self._m_sig_sigma, self._m_sig_mean, self._m_sig_alpha_1, self._m_sig_n_1
+                                                     , self._m_sig_alpha_2, self._m_sig_n_2 )
+                                    )
+                        )
+        self._check_extraneous_kw( kwargs )
+
+
 class Box_Signal_Mass ( MassPdf ) :
     def __init__( self, mass, **kwargs ) :
         self._parseArg( 'm_sig_mean', kwargs, Title = 'B Mass', Unit = 'MeV/c^2', Value = 5368., Error = 0.05, MinMax = ( 5000., 5700. ) )
@@ -246,7 +280,7 @@ class Box_Signal_Mass ( MassPdf ) :
 
 class LP2011_Background_Mass ( MassPdf ) :
     def __init__(self, mass, **kwargs ) :
-        self._parseArg( 'm_bkg_exp', kwargs, Title = 'Mass background slope', Unit = 'c^2/MeV', Value = -0.002, Error = 0.0001
+        self._parseArg( 'm_bkg_exp', kwargs, Title = 'Mass background slope', Unit = 'c^2/MeV', Value = -0.0016, Error = 0.0001
                        , MinMax = ( -0.05, 0. ) )
 
         from ROOT import RooExponential as Exponential

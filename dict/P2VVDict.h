@@ -40,6 +40,7 @@
 #include "P2VV/RooHessian.h"
 #include "P2VV/RooCategoryVar.h"
 #include "P2VV/RooConvertPolAmp.h"
+#include "P2VV/RooIpatia2.h"
 
 #include <map>
 #include <string>
