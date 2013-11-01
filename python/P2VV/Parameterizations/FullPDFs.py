@@ -183,8 +183,8 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
                                , cpsi      = ( 'helcosthetaK',         'cos(#theta_{K})',         '',          0.,    -1.,     +1.      )
                                , ctheta    = ( 'helcosthetaL',         'cos(#theta_{#mu})',       '',          0.,    -1.,     +1.      )
                                , phi       = ( 'helphi',               '#phi_{h}',                'rad',       0.,    -pi,     +pi      )
-                               , wTagOS    = ( 'tagomega_os',          'OS est. wrong-tag prob.', '',          0.25,   0.,      0.50001 )
-                               , wTagSS    = ( 'tagomega_ss',          'SS est. wrong-tag prob.', '',          0.25,   0.,      0.50001 )
+                               , wTagOS    = ( 'tagomega_os_cb',       'OS est. wrong-tag prob.', '',          0.25,   0.,      0.50001 )
+                               , wTagSS    = ( 'tagomega_ss_nn',       'SS est. wrong-tag prob.', '',          0.25,   0.,      0.50001 )
                                , iTagOS    = ( 'iTagOS',               'OS flavour tag',          { 'B' : +1, 'Bbar' : -1 }             )
                                , iTagSS    = ( 'iTagSS',               'SS flavour tag',          { 'B' : +1, 'Bbar' : -1 }             )
                                , tagCatOS  = ( 'tagCatP2VVOS',         'OS flavour tag',          { 'Untagged' : 0, 'Tagged' : 1 }      )
@@ -576,31 +576,23 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         splitParsDict[ ws[par] ] = set( [ ws[cat] ] )
                     else :
                         splitParsDict[ ws[par] ].add( ws[cat] )
-            self['splitParsDict'] = splitParsDict.copy()
+            self['splitParsDict'] = splitParsDict
 
-            # create lists of split categories and parameters
-            pars = splitParsDict.keys()
-            splitCats = [ ]
-            splitPars = [ ]
-            for par in pars :
-                if par not in splitParsDict : continue
-                splitPars.append( set( [par] ) )
-                splitCats.append( splitParsDict.pop(par) )
-                for par1 in pars :
-                    if par1 not in splitParsDict : continue
-                    if splitParsDict[par1] == splitCats[-1] :
-                        splitPars[-1].add(par1)
-                        splitParsDict.pop(par1)
+            # create list of split parameters and categories
+            from P2VV.Utilities.General import createSplitParsList
+            splitPars = createSplitParsList(splitParsDict)
 
             # build simultaneous PDF
             print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: building simultaneous PDF "%s":' % ( fullPdf.GetName() + '_simul' )
-            print 13 * ' ' + 'splitting categories: [ %s ]' % ' ], [ '.join(', '.join(cat.GetName() for cat in cats) for cats in splitCats)
-            print 13 * ' ' + 'split parameters:     [ %s ]' % ' ], [ '.join(', '.join(par.GetName() for par in pars) for pars in splitPars)
+            print 13 * ' ' + 'splitted parameters:'
+            for it, pars in enumerate(splitPars) :
+                print 13 * ' ' + '%2d: pars: [ %s ]' % ( it, ', '.join( par.GetName() for par in pars[0] ) )
+                print 13 * ' ' + '    cats: [ %s ]' % ', '.join( cat.GetName() for cat in pars[1] )
             from P2VV.RooFitWrappers import SimultaneousPdf
             self['simulPdf'] = SimultaneousPdf(  fullPdf.GetName() + '_simul'
                                                , MasterPdf       = fullPdf
-                                               , SplitCategories = splitCats
-                                               , SplitParameters = splitPars
+                                               , SplitCategories = [ pars[1] for pars in splitPars ]
+                                               , SplitParameters = [ pars[0] for pars in splitPars ]
                                               )
 
             # set time resolution models

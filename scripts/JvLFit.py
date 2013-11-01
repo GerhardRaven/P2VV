@@ -27,7 +27,7 @@ pdfConfig['runPeriods'] = [ 2011, 2012 ]
 
 plotsFile     = 'temp.root' #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.ps'
 plotsROOTFile = 'temp.root' #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.root'
-parFileIn     = ''#'20112012Reco14DataFitValues.par'
+parFileIn     = '20112012Reco14DataFitValues.par'
 parFileOut    = ''
 
 if generateData :
@@ -67,7 +67,7 @@ fastFit           = False
 manualTagCatBins  = False
 constTagCatCoefs  = True
 constAvgCEvenOdd  = True
-constWTagAsyms    = 'P0P1'
+constWTagAsyms    = ''
 constCSP          = True
 constAmplitudes   = False
 constLambdaCP     = ''  # 'lamb'
@@ -92,15 +92,15 @@ pdfConfig['constrainBeta']      = ''      # '' / 'constrain' / 'fixed' / 'noBeta
 #                                    )
 timeEffHistFiles = SimulCatSettings('timeEffHistFiles')
 timeEffHistFiles.addSettings( [ 'runPeriod' ], [ [ 'p2011' ] ]
-                             , dict(  file      = dataPath + 'Bs_HltPropertimeAcceptance_Data-20120816.root'
-                                    , hlt1UB    ='Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
-                                    , hlt1ExclB = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+                             , dict(  file      = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
+                                    , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+                                    , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
                                    )
                             )
 timeEffHistFiles.addSettings( [ 'runPeriod' ], [ [ 'p2012' ] ]
-                             , dict(  file      = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_20120501.root'
-                                    , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2012_PhiMassWindow30MeV_NextBestPVCut_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
-                                    , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2012_PhiMassWindow30MeV_NextBestPVCut_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+                             , dict(  file      = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
+                                    , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
+                                    , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
                                    )
                             )
 pdfConfig['timeEffHistFiles'] = timeEffHistFiles
@@ -158,25 +158,25 @@ pdfConfig['splitParams'] = dict(  KKMassCat = [ 'f_S', 'ASOddPhase' ]
 
 pdfConfig['externalConstr']['dM']          = (  17.768, 0.024  )
 pdfConfig['externalConstr']['betaTimeEff'] = ( -0.0083, 0.004  )
-pdfConfig['externalConstr']['wTagP0OS']    = (  0.382,  0.014  ) #(  0.392,  0.008  ) #(  0.382,  0.014  )
-pdfConfig['externalConstr']['wTagP1OS']    = (  0.981,  0.074  ) #(  1.000,  0.023  ) #(  0.981,  0.074  )
-pdfConfig['externalConstr']['wTagDelP0OS'] = (  0.,     0.0034 ) #(  0.0110, 0.0034 ) #(  0.,     0.0034 )
-pdfConfig['externalConstr']['wTagDelP1OS'] = (  0.,     0.001  ) #(  0.000,  0.001  ) #(  0.,     0.001  )
-pdfConfig['externalConstr']['wTagP0SS']    = (  0.439,  0.005  ) #(  0.350,  0.017  ) #(  0.439,  0.005  )
-pdfConfig['externalConstr']['wTagP1SS']    = (  1.04,   0.08   ) #(  1.00,   0.16   ) #(  1.04,   0.08   )
-pdfConfig['externalConstr']['wTagDelP0SS'] = (  0.,     0.005  ) #( -0.019,  0.005  ) #(  0.,     0.005  )
-pdfConfig['externalConstr']['wTagDelP1SS'] = (  0.,     0.01   ) #(  0.00,   0.01   ) #(  0.,     0.01   )
+pdfConfig['externalConstr']['wTagP0OS']    = (  0.380,  0.011  ) #(  0.392,  0.008  ) #(  0.382,  0.014  )
+pdfConfig['externalConstr']['wTagP1OS']    = (  1.000,  0.062  ) #(  1.000,  0.023  ) #(  0.981,  0.074  )
+pdfConfig['externalConstr']['wTagDelP0OS'] = (  0.010,  0.001  ) #(  0.0110, 0.0034 ) #(  0.,     0.0034 )
+pdfConfig['externalConstr']['wTagDelP1OS'] = (  0.070,  0.010  ) #(  0.000,  0.001  ) #(  0.,     0.001  )
+pdfConfig['externalConstr']['wTagP0SS']    = (  0.437,  0.008  ) #(  0.350,  0.017  ) #(  0.439,  0.005  )
+pdfConfig['externalConstr']['wTagP1SS']    = (  1.00,   0.12   ) #(  1.00,   0.16   ) #(  1.04,   0.08   )
+pdfConfig['externalConstr']['wTagDelP0SS'] = ( -0.016,  0.002  ) #( -0.019,  0.005  ) #(  0.,     0.005  )
+pdfConfig['externalConstr']['wTagDelP1SS'] = (  0.015,  0.019  ) #(  0.00,   0.01   ) #(  0.,     0.01   )
 
 from P2VV.Imports import extConstraintValues
 extConstraintValues.setVal( 'DM',      ( 17.768, 0.024  ) )
-extConstraintValues.setVal( 'P0OS',    ( 0.382,  0.014, 0.382 ) ) # ( 0.392,  0.008, 0.392 ) ) # ( 0.382,  0.014, 0.382 ) )
-extConstraintValues.setVal( 'P1OS',    ( 0.981,  0.074  ) )       # ( 1.000,  0.023  ) )       # ( 0.981,  0.074  ) )
-extConstraintValues.setVal( 'DelP0OS', ( 0.,     0.0034 ) )       # ( 0.,     0.0034 ) )       # ( 0.,     0.0034 ) )
-extConstraintValues.setVal( 'DelP1OS', ( 0.,     0.001  ) )       # ( 0.,     0.001  ) )       # ( 0.,     0.001  ) )
-extConstraintValues.setVal( 'P0SS',    ( 0.439,  0.005, 0.438 ) ) # ( 0.350,  0.017, 0.350 ) ) # ( 0.439,  0.005, 0.438 ) )
-extConstraintValues.setVal( 'P1SS',    ( 1.04,   0.08   ) )       # ( 1.00,   0.16   ) )       # ( 1.04,   0.08   ) )
-extConstraintValues.setVal( 'DelP0SS', ( 0.,     0.005  ) )       # ( 0.,     0.005  ) )       # ( 0.,     0.005  ) )
-extConstraintValues.setVal( 'DelP1SS', ( 0.,     0.01   ) )       # ( 0.,     0.01   ) )       # ( 0.,     0.01   ) )
+extConstraintValues.setVal( 'P0OS',    (  0.380,  0.011, 0.380 ) ) # ( 0.392,  0.008, 0.392 ) ) # ( 0.382,  0.014, 0.382 ) )
+extConstraintValues.setVal( 'P1OS',    (  1.000,  0.062 ) )        # ( 1.000,  0.023  ) )       # ( 0.981,  0.074  ) )
+extConstraintValues.setVal( 'DelP0OS', (  0.010,  0.001 ) )        # ( 0.,     0.0034 ) )       # ( 0.,     0.0034 ) )
+extConstraintValues.setVal( 'DelP1OS', (  0.070,  0.010 ) )        # ( 0.,     0.001  ) )       # ( 0.,     0.001  ) )
+extConstraintValues.setVal( 'P0SS',    (  0.437,  0.008, 0.437 ) ) # ( 0.350,  0.017, 0.350 ) ) # ( 0.439,  0.005, 0.438 ) )
+extConstraintValues.setVal( 'P1SS',    (  1.00,   0.12  ) )        # ( 1.00,   0.16   ) )       # ( 1.04,   0.08   ) )
+extConstraintValues.setVal( 'DelP0SS', ( -0.016,  0.002 ) )        # ( 0.,     0.005  ) )       # ( 0.,     0.005  ) )
+extConstraintValues.setVal( 'DelP1SS', (  0.015,  0.019 ) )        # ( 0.,     0.01   ) )       # ( 0.,     0.01   ) )
 
 dGammaVal = 0.108
 dMVal     = 17.647
@@ -1489,12 +1489,12 @@ sums = {
 
 from math import exp
 DelmVal  = 17.768
-etaOSVal = 0.382 #0.382 #0.392
-p0OSVal  = 0.382 #0.382 #0.392
-p1OSVal  = 0.981 #0.981 #1.000
-etaSSVal = 0.438 #0.438 #0.35
-p0SSVal  = 0.439 #0.439 #0.35
-p1SSVal  = 1.04  #1.04  #1.0
+etaOSVal = 0.380 #0.382 #0.392
+p0OSVal  = 0.380 #0.382 #0.392
+p1OSVal  = 1.000 #0.981 #1.000
+etaSSVal = 0.437 #0.438 #0.35
+p0SSVal  = 0.437 #0.439 #0.35
+p1SSVal  = 1.000  #1.04  #1.0
 print
 print 'Delta m_s = %.3f' % DelmVal
 print 'w_OS = %.3f + %.3f * (eta - %.3f)' % ( p0OSVal, p1OSVal, etaOSVal )
@@ -1510,7 +1510,7 @@ for varSet in tagData :
   sums['dilRes2All'] += weight * dilResSq
 
   if varSet.getCatIndex('tagCatP2VVOS') != 0 :
-    etaOS  = varSet.getRealValue('tagomega_os')
+    etaOS  = varSet.getRealValue('tagomega_os_cb')
     wTagOS = p0OSVal + p1OSVal * ( etaOS - etaOSVal )
     dilOS  = 1. - 2. * wTagOS
 
@@ -1536,7 +1536,7 @@ for varSet in tagData :
       sums['dilTot2Comb'] += weight * dilResSq * dilOS**2
 
   if varSet.getCatIndex('tagCatP2VVSS') != 0 :
-    etaSS  = varSet.getRealValue('tagomega_ss')
+    etaSS  = varSet.getRealValue('tagomega_ss_nn')
     wTagSS = p0SSVal + p1SSVal * ( etaSS - etaSSVal )
     dilSS  = 1. - 2. * wTagSS
 
@@ -1643,8 +1643,8 @@ for argSet in tagData :
     if argSet.getCatIndex('iTagOS') == -1 and argSet.getCatIndex('iTagSS') == +1 : nBbarB += tagData.weight()
     if argSet.getCatIndex('iTagOS') == +1 and argSet.getCatIndex('iTagSS') == -1 : nBBbar += tagData.weight()
 
-    D_OS = 1. - 2. * argSet.getRealValue('tagomega_os')
-    D_SS = 1. - 2. * argSet.getRealValue('tagomega_ss')
+    D_OS = 1. - 2. * argSet.getRealValue('tagomega_os_cb')
+    D_SS = 1. - 2. * argSet.getRealValue('tagomega_ss_nn')
 
     avD_OS += D_OS * tagData.weight()
     avD_SS += D_SS * tagData.weight()

@@ -437,7 +437,8 @@ def printEventYields( **kwargs ) :
     assert parSet,     'P2VV - ERROR: printEventYields: no parameter set with yield variables found in arguments ("ParameterSet")'
     assert yieldNames, 'P2VV - ERROR: printEventYields: no yield names found in arguments ("YieldNames")'
 
-    if splitCats : splitCats = list( set( cat for cat in splitCats ) )
+    if splitCats :
+        splitCats = sorted( list( set( cat for cat in splitCats ) ), cmp = lambda a, b : cmp( a.GetName(), b.GetName() ) )
 
     # variables for looping over splitting category states
     iters = { }
@@ -507,7 +508,8 @@ def printEventYieldsData( **kwargs ) :
     assert weightDataSets, 'P2VV - ERROR: printEventYieldsData: no weighted data sets found in arguments ("WeightedDataSets")'
     if not dataSetNames : dataSetNames = [ 'data set %d' % it for it, dataSet in enumerate(weightDataSets) ]
 
-    if splitCats : splitCats = list( set( cat for cat in splitCats ) )
+    if splitCats :
+        splitCats = sorted( list( set( cat for cat in splitCats ) ), cmp = lambda a, b : cmp( a.GetName(), b.GetName() ) )
 
     # print total numbers of events
     from math import sqrt

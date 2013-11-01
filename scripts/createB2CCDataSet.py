@@ -2,24 +2,23 @@
 ## script settings ##
 #####################
 
-nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/2011_2012_dv33r6p1_s20_20130927_tupleB_add.root'
-#nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/2011_dv33r6p1_s20r1p1_20130919_tupleB.root'
-#nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/2012_dv33r6p1_s20r0p1_20130922_tupleB.root'
-#nTupleFilePath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco12/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
+nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/2011_2012_dv33r6p1_s20_20131031_tupleB_add.root'
+#nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_merged.root'
 nTupleName       = 'DecayTree'
 dataSetsFilePath = 'temp.root' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_6KKMassBins_2TagCats.root'
 appendToFile     = False
 savedObjects     = [ 'sigSWeight' ]
 plotsFilePath    = 'temp.ps' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_6KKMassBins_2TagCats.ps'
-parFileIn        = 'eventYields6KKBins.par'
+parFileIn        = '' #'eventYields6KKBins.par'
 parFileOut       = ''
 
 simulation       = False
 runPeriods       = [ 2011, 2012 ]
 triggerSel       = 'paper2012' # 'noSelection' # 'paper2012' # 'HLT1Unbiased' # 'paper2012'
 dataCuts         = 'nominal2011' # 'noSelection' # 'nominal2011'
+addCuts          = '' #'wMC > 0.'
 dataSample       = '(bkgcat==0 || bkgcat==50)' if simulation else '' #'mdau2>990. && mdau2<1008. && hlt1_excl_biased_dec==0'
-sWeightName      = 'sigWeight_I2_6KKBins'
+sWeightName      = 'sigWeight_DG_6KKBins'
 addSWeights      = True
 addKKMassCat     = True
 addTrackMomenta  = False
@@ -29,7 +28,7 @@ createNTuple     = False
 splitDataSet     = [ ] #[ 'tagCatP2VVOS', 'tagCatP2VVSS' ]
 KKMassBinBounds  = [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ]
 
-sigMassModel     = 'Ipatia2'
+sigMassModel     = '' #'Ipatia2'
 cbkgMassModel    = ''
 SWeightsType     = 'simultaneousFreeCBkg'
 
@@ -100,7 +99,7 @@ obsKeys = [  'runPeriod'
            #, 'wTag', 'tagDec'
            , 'wTagOS'#, 'tagDecOS'
            , 'wTagSS'#, 'tagDecSS'
-           , 'sel'#, 'selA', 'selB'
+           , 'sel'#, 'sel_cleantail', 'selA', 'selB'
            , 'hlt1ExclB', 'hlt2B', 'hlt2UB'#, 'hlt1B', 'hlt1UB'
            #, 'trigDecUnb', 'trigDecExclB'
            #, 'B_P', 'B_Pt'
@@ -128,14 +127,23 @@ obsDict = dict(  runPeriod = ( 'runPeriod',            'run period', dict( [ ( '
                , cttr      = ( 'trcostheta',           'cos(#theta_{tr})',        '',          0.,    -1.,     +1.          )
                , phitr     = ( 'trphi',                '#phi_{tr}',               'rad',       0.,    -pi,     +pi          )
                , wTag      = ( 'tagomega',             'est. wrong-tag prob.',    '',          0.25,   0.,      0.50001     )
-               , wTagOS    = ( 'tagomega_os',          'OS est. wrong-tag prob.', '',          0.25,   0.,      0.50001     )
-               , wTagSS    = ( 'tagomega_ss',          'SS est. wrong-tag prob.', '',          0.25,   0.,      0.50001     )
+               #, wTagOS    = ( 'tagomega_os',          'OS est. wrong-tag prob.', '',          0.25,   0.,      0.50001     )
+               #, wTagSS    = ( 'tagomega_ss',          'SS est. wrong-tag prob.', '',          0.25,   0.,      0.50001     )
+               , wTagOS    = ( 'tagomega_os_cb',       'OS est. wrong-tag prob.', '',          0.25,   0.,      0.50001     )
+               #, wTagSS    = ( 'tagomega_ss_cb',       'SS est. wrong-tag prob.', '',          0.25,   0.,      0.50001     )
+               #, wTagOS    = ( 'tagomega_os_nn',       'OS est. wrong-tag prob.', '',          0.25,   0.,      0.50001     )
+               , wTagSS    = ( 'tagomega_ss_nn',       'SS est. wrong-tag prob.', '',          0.25,   0.,      0.50001     )
                , tagDec    = ( 'tagdecision',          'tag decision',    { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }         )
-               , tagDecOS  = ( 'tagdecision_os',       'OS tag decision', { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }         )
-               , tagDecSS  = ( 'tagdecision_ss',       'SS tag decision', { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }         )
+               #, tagDecOS  = ( 'tagdecision_os',       'OS tag decision', { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }         )
+               #, tagDecSS  = ( 'tagdecision_ss',       'SS tag decision', { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }         )
+               , tagDecOS  = ( 'tagdecision_os_cb',    'OS tag decision', { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }         )
+               #, tagDecSS  = ( 'tagdecision_ss_cb',    'SS tag decision', { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }         )
+               #, tagDecOS  = ( 'tagdecision_os_nn',    'OS tag decision', { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }         )
+               , tagDecSS  = ( 'tagdecision_ss_nn',    'SS tag decision', { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }         )
                , tagCatOS  = ( 'tagcat_os',            'OS tag category', [ 'unt' ] + [ 'cat%d' % c for c in range(1, 6) ]  )
                , bkgcat    = ( 'bkgcat',               'background cat',  { 'signal' : 0, 'lowMass' : 50 }                  )
                , sel       = ( 'sel',                  'selection',       { 'sel'   : 1, 'notSel'   : 0 }                   )
+               , selClTail = ( 'sel_cleantail',        'clean tail sel.', { 'sel'   : 1, 'notSel'   : 0 }                   )
                , selA      = ( 'selA',                 'selection A',     { 'sel'   : 1, 'notSel'   : 0 }                   )
                , selB      = ( 'selB',                 'selection B',     { 'sel'   : 1, 'notSel'   : 0 }                   )
                , hlt1ExclB = ( 'hlt1_excl_biased_dec', 'HLT1 excl. B.',    { 'exclB' : 1, 'notExclB' : 0 }                  )
@@ -271,6 +279,8 @@ elif dataSample and type(dataSample) == str : ntupleCuts += ( ' && ' if ntupleCu
 from P2VV.Imports import triggerSelStrings
 trigSelStr = triggerSelStrings[triggerSel]
 if trigSelStr : ntupleCuts += ( ' && ' if ntupleCuts else '' ) + trigSelStr
+
+if addCuts : ntupleCuts += ( ' && ' if ntupleCuts else '' ) + addCuts
 
 # read n-tuple file(s)
 print 'P2VV - INFO: createB2CCDataSet: reading n-tuple "%s" from file "%s"' % ( nTupleName, nTupleFilePath )
@@ -440,30 +450,21 @@ if not simulation :
                 else :
                     splitParsDict[ ws[par] ].add( ws[cat] )
 
-        # create lists of split categories and parameters
-        pars = splitParsDict.keys()
-        splitCats = [ ]
-        splitPars = [ ]
-        for par in pars :
-            if par not in splitParsDict : continue
-            splitPars.append( set( [par] ) )
-            splitCats.append( splitParsDict.pop(par) )
-            for par1 in pars :
-                if par1 not in splitParsDict : continue
-                if splitParsDict[par1] == splitCats[-1] :
-                    splitPars[-1].add(par1)
-                    splitParsDict.pop(par1)
-        for it in range( len(splitCats) ) : splitCats[it] = sorted( list( splitCats[it] ) )
+        # create list of split parameters and categories
+        from P2VV.Utilities.General import createSplitParsList
+        splitPars = createSplitParsList(splitParsDict)
 
         # build simultaneous mass PDF
         print 'P2VV - INFO: createB2CCDataSet: building simultaneous PDF "%s":' % ( massPdf.GetName() + '_simul' )
-        print 13 * ' ' + 'splitting categories: [ %s ]' % ' ], [ '.join(', '.join(cat.GetName() for cat in cats) for cats in splitCats)
-        print 13 * ' ' + 'split parameters:     [ %s ]' % ' ], [ '.join(', '.join(par.GetName() for par in pars) for pars in splitPars)
+        print 13 * ' ' + 'splitted parameters:'
+        for it, pars in enumerate(splitPars) :
+            print 13 * ' ' + '%2d: pars: [ %s ]' % ( it, ', '.join( par.GetName() for par in pars[0] ) )
+            print 13 * ' ' + '    cats: [ %s ]' % ', '.join( cat.GetName() for cat in pars[1] )
         from P2VV.RooFitWrappers import SimultaneousPdf
         sWeightMassPdf = SimultaneousPdf(  massPdf.GetName() + '_simul'
                                          , MasterPdf       = massPdf
-                                         , SplitCategories = splitCats
-                                         , SplitParameters = splitPars
+                                         , SplitCategories = [ pars[1] for pars in splitPars ]
+                                         , SplitParameters = [ pars[0] for pars in splitPars ]
                                         )
 
         # set yields and constant splitted parameters
@@ -483,7 +484,7 @@ if not simulation :
             else :
                 splitCat.setLabel( splitCatState.GetName() )
                 selStr = ' && '.join( '!(%s-%d)' % ( cat.GetName(), cat.getIndex() ) for cat in splitCat.inputCatList() )
-                if observables['KKMassCat'] in splitCats[0] :
+                if observables['KKMassCat'] in [ par for pars in splitPars for par in pars[1] ] :
                     for cat in splitCat.inputCatList() :
                         if cat.GetName() == observables['KKMassCat'].GetName() : KKMassState = cat.getIndex()
 
@@ -920,7 +921,7 @@ if not simulation :
     from P2VV.Utilities.DataHandling import printEventYields, printEventYieldsData
     printEventYields(  ParameterSet        = massPdfPars
                      , YieldNames          = yieldNames
-                     , SplittingCategories = [ cat for catList in splitCats for cat in catList ]
+                     , SplittingCategories = [ cat for pars in splitPars for cat in pars[1] ]
                     )
     printEventYieldsData(  FullDataSet         = dataSets['main'][0]
                          , WeightedDataSets    = [ dataSets[name][0] for name in [ 'sigSWeight', 'cbkgSWeight' ] ]

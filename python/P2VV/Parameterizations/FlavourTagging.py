@@ -10,36 +10,36 @@
 from P2VV.Parameterizations.GeneralUtils import _util_parse_mixin, _util_extConstraints_mixin, _util_conditionalObs_mixin
 
 # initial values for tagging calibration parameters in fit
-P0OSVal     =  0.39
+P0OSVal     =  0.38
 P0OSErr     =  0.01
-DelP0OSVal  =  0.011
-DelP0OSErr  =  0.003
+DelP0OSVal  =  0.010
+DelP0OSErr  =  0.001
 P1OSVal     =  1.00
-P1OSErr     =  0.02
-DelP1OSVal  =  0.000
-DelP1OSErr  =  0.001
+P1OSErr     =  0.06
+DelP1OSVal  =  0.07
+DelP1OSErr  =  0.01
 
-P0SSVal     =  0.44 #0.35
-P0SSErr     =  0.02
-DelP0SSVal  = -0.02
-DelP0SSErr  =  0.01
+P0SSVal     =  0.44
+P0SSErr     =  0.01
+DelP0SSVal  = -0.016
+DelP0SSErr  =  0.002
 P1SSVal     =  1.0
-P1SSErr     =  0.2
-DelP1SSVal  =  0.00
-DelP1SSErr  =  0.01
+P1SSErr     =  0.1
+DelP1SSVal  =  0.02
+DelP1SSErr  =  0.02
 
 # values for tagging calibration parameters from tagging calibration: correspond to specific data sample!
 from P2VV.Imports import extConstraintValues
 
-( P0OSConstrVal, P0OSConstrErr, avgEtaOSVal ) = extConstraintValues.getSetVal( 'P0OS',    (  0.392, 0.008, 0.392 ) )
-( DelP0OSConstrVal, DelP0OSConstrErr )        = extConstraintValues.getSetVal( 'DelP0OS', (  0.0110, 0.0034 ) )
-( P1OSConstrVal,    P1OSConstrErr    )        = extConstraintValues.getSetVal( 'P1OS',    (  1.000,  0.023  ) )
-( DelP1OSConstrVal, DelP1OSConstrErr )        = extConstraintValues.getSetVal( 'DelP1OS', (  0.000,  0.001  ) )
+( P0OSConstrVal, P0OSConstrErr, avgEtaOSVal ) = extConstraintValues.getSetVal( 'P0OS',    (  0.380, 0.011, 0.380 ) )
+( DelP0OSConstrVal, DelP0OSConstrErr )        = extConstraintValues.getSetVal( 'DelP0OS', (  0.010, 0.001  ) )
+( P1OSConstrVal,    P1OSConstrErr    )        = extConstraintValues.getSetVal( 'P1OS',    (  1.000,  0.062 ) )
+( DelP1OSConstrVal, DelP1OSConstrErr )        = extConstraintValues.getSetVal( 'DelP1OS', (  0.070,  0.010 ) )
 
-( P0SSConstrVal, P0SSConstrErr, avgEtaSSVal ) = extConstraintValues.getSetVal( 'P0SS',    (  0.350, 0.017, 0.350 ) )
-( DelP0SSConstrVal, DelP0SSConstrErr )        = extConstraintValues.getSetVal( 'DelP0SS', ( -0.019, 0.005   ) )
-( P1SSConstrVal,    P1SSConstrErr    )        = extConstraintValues.getSetVal( 'P1SS',    (  1.00,  0.16    ) )
-( DelP1SSConstrVal, DelP1SSConstrErr )        = extConstraintValues.getSetVal( 'DelP1SS', (  0.00,  0.01    ) )
+( P0SSConstrVal, P0SSConstrErr, avgEtaSSVal ) = extConstraintValues.getSetVal( 'P0SS',    (  0.437, 0.008, 0.437 ) )
+( DelP0SSConstrVal, DelP0SSConstrErr )        = extConstraintValues.getSetVal( 'DelP0SS', ( -0.016, 0.002 ) )
+( P1SSConstrVal,    P1SSConstrErr    )        = extConstraintValues.getSetVal( 'P1SS',    (  1.00,  0.12  ) )
+( DelP1SSConstrVal, DelP1SSConstrErr )        = extConstraintValues.getSetVal( 'DelP1SS', (  0.015, 0.019 ) )
 
 from ROOT import RooNumber
 RooInf = RooNumber.infinity()
