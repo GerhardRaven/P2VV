@@ -532,7 +532,7 @@ class RealMomentsBuilder ( dict ) :
             moments = [ self[name2] for name2 in self._basisFuncNames[ it + 1 : ] ]
             self[name1].appendMoments(moments)
 
-    def compute( self, data ) :
+    def compute( self, data, **kwargs ) :
         """computes moments of data set (wrapper for C++ computeRooRealMoments)
 
         Looping over data in python is quite a bit slower than in C++. Hence, we
@@ -542,7 +542,7 @@ class RealMomentsBuilder ( dict ) :
         from ROOT import std, computeRooRealMoments
         momVec = std.vector('RooRealMoment*')()
         for func in self._basisFuncNames : momVec.push_back( self[func]._var )
-        computeRooRealMoments( data, momVec )
+        computeRooRealMoments( data, momVec, kwargs.pop( 'ResetFirst', False ), kwargs.pop( 'Verbose', True ) )
 
         for it1, func1 in enumerate(self._basisFuncNames) :
             self._coefficients[func1] = ( self[func1].coefficient(), self[func1].stdDev(), self[func1].significance() )
