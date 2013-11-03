@@ -2,30 +2,32 @@
 ## script settings ##
 #####################
 
-nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/2011_2012_dv33r6p1_s20_201309_tupleB_add.root'
+#nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/2011_2012_dv33r6p1_s20_201309_tupleB_add.root'
 #nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/2011_dv33r6p1_s20r1p1_20130919_tupleB.root'
 #nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/2012_dv33r6p1_s20r0p1_20130922_tupleB.root'
-#nTupleFilePath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco12/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
+#nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco12/Bs2JpsiPhi_ntupleB_for_fitting_20121012_MagDownMagUp.root'
+nTupleFilePath   =  '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20130628.root'
+#nTupleFilePath   = '/glusterfs/bfys/users/raaij/NTuples/MC2012/Bs2JpsiPhi_MC2012_ntupleB_20130904.root'
 nTupleName       = 'DecayTree'
 dataSetsFilePath = 'temp.root' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_4KKMassBins_2TagCats.root'
 appendToFile     = False
-savedObjects     = [ 'sigSWeight' ]
+savedObjects     = [ 'main', 'sigSWeight' ]
 plotsFilePath    = 'temp.ps' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_4KKMassBins_2TagCats.ps'
 
-simulation       = False
-runPeriods       = [ 2011, 2012 ]
-triggerSel       = 'paper2012' # 'noSelection' # 'paper2012' # 'HLT1Unbiased' # 'paper2012'
+simulation       = True
+runPeriods       = [] # [ 2011, 2012 ]
+triggerSel       = 'paper2012' #'unbiased' # 'noSelection' # 'paper2012' # 'HLT1Unbiased' # 'paper2012'
 dataCuts         = 'nominal2011' # 'noSelection' # 'nominal2011'
 dataSample       = '(bkgcat==0 || bkgcat==50)' if simulation else ''
 sWeightName      = 'sigWeight_4KKBins'
-addSWeights      = True
+addSWeights      = False
 addKKMassCat     = True
-addTrackMomenta  = False
+addTrackMomenta  = True
 addTaggingObs    = ( 2, 2 ) # ( 0, 0 )
 createRangeData  = False
 createNTuple     = False
 splitDataSet     = [ ] #[ 'tagCatP2VVOS', 'tagCatP2VVSS' ]
-KKMassBinBounds  = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ]
+KKMassBinBounds  = [ 990., 1050 ]# [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ]
 
 eventFracs       = [  dict( N_sigMass = 0.504, N_cbkgMass = None )
                     #, dict( N_sigMass = 0.11,  N_cbkgMass = None )
@@ -55,8 +57,8 @@ RooInf  = RooNumber.infinity()
 KKMMin  = KKMassBinBounds[0]
 KKMMax  = KKMassBinBounds[-1]
 
-obsKeys = [  'runPeriod'
-           , 'mass', 'KKMass', 'mumuMass'
+
+obsKeys = [  'mass', 'KKMass', 'mumuMass'
            , 'time', 'timeRes'
            , 'ctk', 'ctl', 'phih'
            #, 'cpsi', 'cttr', 'phitr'
@@ -66,8 +68,10 @@ obsKeys = [  'runPeriod'
            #, 'sel', 'selA', 'selB'
            , 'hlt1ExclB', 'hlt2B', 'hlt2UB'#, 'hlt1B', 'hlt1UB'
            #, 'trigDecUnb', 'trigDecExclB'
-           #, 'B_P', 'B_Pt'
+           , 'B_P', 'B_Pt'
           ]
+if runPeriods :
+    obsKeys += [ 'runPeriod' ]
 if simulation :
     obsKeys += [ 'truetime', 'bkgcat' ]
 if addTrackMomenta :
@@ -94,6 +98,7 @@ obsDict = dict(  runPeriod = ( 'runPeriod',            'run period', dict( [ ( '
                , tagDecSS  = ( 'tagdecision_ss',       'SS tag decision', { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }         )
                , tagCatOS  = ( 'tagcat_os',            'OS tag category', [ 'unt' ] + [ 'cat%d' % c for c in range(1, 6) ]  )
                , bkgcat    = ( 'bkgcat',               'background cat',  { 'signal' : 0, 'lowMass' : 50 }                  )
+               , trueid    = ( 'trueid',               'true idt',        { 'B' : 531, 'Bbar' : 531,  'NoMutch' : 0 }       )
                , sel       = ( 'sel',                  'selection',       { 'sel'   : 1, 'notSel'   : 0 }                   )
                , selA      = ( 'selA',                 'selection A',     { 'sel'   : 1, 'notSel'   : 0 }                   )
                , selB      = ( 'selB',                 'selection B',     { 'sel'   : 1, 'notSel'   : 0 }                   )
@@ -198,9 +203,9 @@ observables  = { }
 observables['index'] = RealVar( 'index', Title = 'event index', Observable = True, Value = 0., MinMax = ( -RooInf, +RooInf ) )
 obsSetPreDS  = [ observables['index'] ]
 obsSetNTuple = [ ]
-for obs in obsKeys + reqObsList :
-    if obs in observables : continue
 
+for obs in list(set(reqObsList + obsKeys )) :
+    if obs in observables : continue
     if obs.startswith('sigWeight') :
         observables[obs] = RealVar( obs, Title = 'signal sWeight', Observable = True, Value = 1. )
 
@@ -235,6 +240,10 @@ dataTreeFile = TFile.Open(nTupleFilePath)
 assert dataTreeFile, 'P2VV - ERROR: createB2CCDataSet: could not open file "%s"' % nTupleFilePath
 dataTree = dataTreeFile.Get(nTupleName)
 assert dataTree, 'P2VV - ERROR: createB2CCDataSet: could not locate tree "%s" in file "%s"' % ( nTupleName, nTupleFilePath )
+#ntupleCuts += ' && runNumber<2523.95e3 '
+#ntupleCuts += ' && runNumber>=2525e3 && runNumber<2527e3' # part2
+#ntupleCuts += ' && runNumber>=2527e3' # part3
+#ntupleCuts += ' && runNumber<1565e3'
 
 # create data set from n-tuple
 dataSets = dict( pre = ( dataTree.buildDataSet( Observables = obsSetPreDS, Name = 'JpsiKK', Title = 'JpsiKK', Cuts = ntupleCuts
@@ -521,6 +530,7 @@ if not simulation :
 ## compute sWeights ##
 ######################
 
+weightVars = [ ]
 if not simulation :
     print 'P2VV - INFO: createB2CCDataSet: computing sWeights'
 
@@ -530,7 +540,6 @@ if not simulation :
     dataSets['preS'] = ( sWeightsBuilder.data(), [ ] )
 
     # import sWeight variables
-    weightVars = [ ]
     for wName in [ 'N_sigMass_sw', 'N_cbkgMass_sw' ] :
         ws.put( dataSets['preS'][0].get().find(wName) )
         weightVars.append( RealVar(wName) )
@@ -623,6 +632,7 @@ else :
     # create data set without splitting
     mainDS = dataTree.buildDataSet( Observables = obsSetMain, Name = 'JpsiKK', Title = 'JpsiKK', IndexName = 'index'
                                 , OrigDataSet = dataSets['preS'][0] )
+
 
 dataSets['main'] = ( mainDS, mainDSList )
 
