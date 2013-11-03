@@ -433,9 +433,11 @@ def makeAssymetryPlot( canv, frame, refHist ):
 
         graph.SetName(hist.GetName() + frame.getPlotVar().GetName())
         graph.SetTitle(frame.getPlotVar().GetName())
+        graph.GetXaxis().SetTitle(frame.getPlotVar().GetName())
+        graph.GetYaxis().SetTitle('Normalised Assymetry')
         graph.SetMarkerColor(hist.GetMarkerColor())
         graph.SetMarkerStyle(20)
-        graph.SetMarkerSize(.7)
+        graph.SetMarkerSize(.5)
         assymPlotsList.append(graph)
         _P2VVPlotStash.append(graph)
 
