@@ -482,8 +482,12 @@ class DilutionCSFS(object):
         self.__st_mean = st_mean
         self.__sfm_offset = __mkp(self.__result, "sf_mean_offset")
         self.__sfm_slope = __mkp(self.__result, "sf_mean_slope")
+        self.__sfm_slope.setValue(self.__sfm_slope.value() / 0.06)
+        self.__sfm_slope.setError(self.__sfm_slope.error() / 0.06)
         self.__sfs_offset = __mkp(self.__result, "sf_sigma_offset")
         self.__sfs_slope = __mkp(self.__result, "sf_sigma_slope")
+        self.__sfs_slope.setValue(self.__sfs_slope.value() / 0.06)
+        self.__sfs_slope.setError(self.__sfs_slope.error() / 0.06)
         self.__frac = __mkp(self.__result, "timeResFrac2")
         from ROOT import RooArgList
         self.__cv = self.__result.reducedCovarianceMatrix(RooArgList(*[self.__result.floatParsFinal().find(p.name()) for p in [self.__sfm_offset, self.__sfm_slope, self.__frac, self.__sfs_offset, self.__sfs_slope]]))

@@ -43,8 +43,8 @@ RooConvertPolAmp::RooConvertPolAmp(const char* name, const char* title,
   while ((coef = coefIter.next()) != 0) {
     if (dynamic_cast<RooAbsReal*>(coef) == 0) {
       coutE(InputArguments) << "RooConvertPolAmp::RooConvertPolAmp("
-          << GetName() << ") omitting coefficient \"" << coef->GetName()
-          << "\": not a RooAbsReal" << endl;
+			    << GetName() << ") omitting coefficient \"" << coef->GetName()
+			    << "\": not a RooAbsReal" << std::endl;
       continue;
     }
 
@@ -91,9 +91,9 @@ RooConvertPolAmp::RooConvertPolAmp(const char* name, const char* title,
 
   if (_args.getSize() != numReq) {
     coutF(InputArguments) << "RooConvertPolAmp::RooConvertPolAmp("
-        << GetName() << "): got " << _args.getSize()
-        << " arguments instead of " << numReq << " (type " << _type << ")"
-        << endl;
+			  << GetName() << "): got " << _args.getSize()
+			  << " arguments instead of " << numReq << " (type " << _type << ")"
+			  << std::endl;
     assert(0);
   }
 }
@@ -114,7 +114,7 @@ RooConvertPolAmp::~RooConvertPolAmp()
 }
 
 //_____________________________________________________________________________
-void RooConvertPolAmp::printArgs(ostream& os) const
+void RooConvertPolAmp::printArgs(std::ostream& os) const
 {
   os << "[ ";
   switch (_type) {

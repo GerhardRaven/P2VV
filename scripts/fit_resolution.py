@@ -47,11 +47,13 @@ parser.add_option("--split-mean", dest = "split_mean", default = False, action =
 parser.add_option("--split-frac", dest = "split_frac", default = False, action = 'store_true',
                   help = 'Split the fraction of the Gaussians in a simultaneous fit.')
 parser.add_option("--split", dest = "split", default = 'sigmat', action = 'store', type = 'string',
-                  help = 'Which categories should be used to split, [sigmat, momentum, pt, ppt]')
+                  help = 'Which categories should be used to split, [sigmat, momentum, pt, ppt, nPV, pv_zerr]')
 parser.add_option("--correct-errors", dest = "correct_errors", default = False, action = 'store_true',
                   help = 'Apply the SumW2 error correction')
 parser.add_option("--add-background", dest = "add_background", default = False, action = 'store_true',
                   help = 'Add background to the time fit')
+parser.add_option("--no-cache", dest = "cache", default = True, action = 'store_false',
+                  help = 'Use a cache to store results and reuse them.')
 
 (options, args) = parser.parse_args()
 
@@ -101,7 +103,7 @@ m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax =
                          , 'signal'        : ( 5330, 5410 )
                          , 'rightsideband' : ( 5410, None ) 
                          } )
-mpsi = RealVar('mdau1', Title = 'J/psi mass', Unit = 'MeV', Observable = True, MinMax = (3020, 3165))
+mpsi = RealVar('mdau1', Title = 'J/psi mass', Unit = 'MeV', Observable = True, MinMax = (3025, 3165))
 st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.01, 0.07))
 
 # add 20 bins for caching the normalization integral
@@ -146,11 +148,11 @@ elif args[1] == 'double':
     mu['Value'] = mu_values.get(args[0], 0)
     from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
     tres_args = dict(time = time_obs, sigmat = st, Cache = True,
-                              PerEventError = options.pee, Parameterise = options.parameterise,
-                              TimeResSFParam = options.sf_param, SplitFracs = options.split_frac,
-                              timeResMu = mu, GExp = {2 : signal_MC, 1 : False},
-                              ScaleFactors = [(2, 2.1), (1, 1.26)] if options.pee else [(2, 0.1), (1, 0.06)],
-                              Fractions = [(2, 0.2)], SplitMean = options.split_mean)
+                     PerEventError = options.pee, Parameterise = options.parameterise,
+                     TimeResSFParam = options.sf_param, SplitFracs = options.split_frac,
+                     timeResMu = mu, GExp = {2 : signal_MC, 1 : False},
+                     ScaleFactors = [(2, 2.1), (1, 1.26)] if options.pee else [(2, 0.1), (1, 0.06)],
+                     Fractions = [(2, 0.2)], SplitMean = options.split_mean)
     sig_tres = TimeResolution(Name = 'sig_tres', **tres_args)
     bkg_tres = TimeResolution(Name = 'bkg_tres', ParNamePrefix = 'bkg', **tres_args)
 elif args[1] == 'triple':
@@ -163,7 +165,7 @@ elif args[1] == 'triple':
 
 # J/psi mass pdf
 from P2VV.Parameterizations.MassPDFs import DoubleCB_Psi_Mass as PsiMassPdf
-psi_m = PsiMassPdf(mpsi, Name = 'psi_m', )
+psi_m = PsiMassPdf(mpsi, Name = 'psi_m', mpsi_alpha_1 = dict(Value = 2, Constant = '2011' in args[0]))
 psi_m = psi_m.pdf()
     
 # J/psi background
@@ -204,7 +206,7 @@ prompt_pdf = Prompt_Peak(time_obs, sig_tres.model(), Name = 'prompt_pdf')
 prompt = Component('prompt', (prompt_pdf.pdf(), psi_m), Yield = (160160, 100, 500000))
 
 # Read data
-fit_mass = options.fit_mass
+fit_mass = options.fit_mass or not options.cache
 
 # Tree and cut
 tree_name = 'DecayTree'
@@ -221,10 +223,14 @@ if options.cut:
 hd = ('%d' % hash(cut)).replace('-', 'm')
 
 if options.simultaneous:
-    split_utils = {'sigmat' : ('Sigmat', [st]), 'ppt' : ('PPT', [momentum, pt]),
-                   'momentum' : ('Momentum', [momentum]), 'pt' : ('PT', [pt]),
-                   'pv_zerr' : ('PVZerr', [zerr])}
+    split_utils = {'sigmat'   : ('Sigmat', [st]),
+                   'ppt'      : ('PPT', [momentum, pt]),
+                   'momentum' : ('Momentum', [momentum]),
+                   'pt'       : ('PT', [pt]),
+                   'pv_zerr'  : ('PVZerr', [zerr]),
+                   'nPV'      : ('NPV', [nPV])}
     from P2VV.Utilities import Resolution as ResolutionUtils
+    assert(options.split in split_utils)
     split_opts = split_utils[options.split]
     SplitUtil = getattr(ResolutionUtils, 'Split' + split_opts[0])
     split_util = SplitUtil(args[0], *(split_opts[1]))
@@ -233,11 +239,12 @@ else:
     directory = '1bin_%4.2ffs_simple/%s' % (1000 * (t.getMax() - t.getMin()), hd)
 
 from P2VV.CacheUtils import CacheFiles
-cache_files = CacheFiles(*input_data[args[0]]['cache'].rsplit('/', 1))
-cache_dir, cache_file = cache_files.getFromCache(directory)
-if not cache_dir:
-    fit_mass = True
-
+if options.cache:
+    cache_files = CacheFiles(*input_data[args[0]]['cache'].rsplit('/', 1))
+    cache_dir, cache_file = cache_files.getFromCache(directory)
+    if not cache_dir:
+        fit_mass = True
+    
 results = []
 tree_name = 'DecayTree'
 
@@ -259,7 +266,7 @@ for a, n in [('parameterise', None), ('wpv', 'wpv_type'), ('sf_param', None),
         extra_name.append(n if n else v)
 
 ## Read Cache
-if not fit_mass:
+if not fit_mass and options.cache:
     ## Read sdata
     sds_name = 'sdata'
     sdata_dir = cache_dir.Get('sdata')
@@ -347,7 +354,7 @@ if fit_mass:
     data.SetName(tree_name)
     if options.reduce:
         data = data.reduce(EventRange = (0, int(4e4)))
-    elif args[0] == '2012':
+    elif data.numEntries() > 6e5:
         data = data.reduce(EventRange = (0, int(6e5)))
         
     # In case of reweighing 
@@ -367,10 +374,11 @@ if fit_mass:
         mass_result = mass_pdf.fitTo(data, **fitOpts)
         if mass_result.status() == 0:
             break
+    
     assert(mass_result.status() == 0)
     mass_result.SetName('mass_result')
     results.append(mass_result)
-
+    
     ## Plot correlation histogram
     corr_canvas.cd(1)
     corr_hist_mass = mass_result.correlationHist()
@@ -378,11 +386,11 @@ if fit_mass:
     corr_hist_mass.GetYaxis().SetLabelSize(0.03)
     corr_hist_mass.SetContour(20)
     corr_hist_mass.Draw('colz')
-
+    
     ## Plot mass pdf
     from ROOT import kDashed, kRed, kGreen, kBlue, kBlack, kOrange
     from ROOT import TCanvas
-
+    
     mass_canvas = TCanvas('mass_canvas', 'mass_canvas', 600, 530)
     from P2VV.Utilities.Plotting import plot
     pdfOpts  = dict()
@@ -390,6 +398,7 @@ if fit_mass:
         mass_obs = m
     else:
         mass_obs = mpsi
+    
     ps = plot(mass_canvas.cd(1), mass_obs, pdf = mass_pdf, data = data
               , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack, Binning = 50)
               , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
@@ -409,7 +418,7 @@ if fit_mass:
     sData = SData(Pdf = mass_pdf, Data = data_clone, Name = 'MassSPlot')
     single_bin_sig_sdata = sData.data(signal_name)
     single_bin_bkg_sdata = sData.data('background')
-
+    
     sdatas_full = {'full_sig_sdata' : single_bin_sig_sdata,
                    'full_bkg_sdata' : single_bin_bkg_sdata}
 
@@ -572,13 +581,24 @@ elif options.wpv and options.wpv_type == 'Gauss':
         bkg_wpv_pdf = make_wpv_pdf('bkg_')
         bkg_wpv = Component('bkg_wpv', (bkg_wpv_pdf, bkg_mpsi.pdf()), Yield = (552, 1, 50000))
         components += [bkg_wpv]
+
 if options.add_background:
     pdf_obs = (time_obs, mpsi)
 else:
     pdf_obs = (time_obs,)
+
 time_pdf = buildPdf(Components = components, Observables = pdf_obs, Name='time_pdf')
 
 splitLeaves = RooArgSet()
+
+# Which data to fit to
+if options.add_background:
+    fit_data = data
+    fit_data_full = data
+else:
+    fit_data = sig_sdata
+    if options.simultaneous:
+        fit_data_full = sig_sdata_full
 
 if options.simultaneous:
     split_pars = [[]]
@@ -602,6 +622,14 @@ if options.simultaneous:
         split_cat = split_cats[0][0]
         if hasattr(split_cat, '_target_'):
             split_cat = split_cat._target_()
+
+        ## The idea is to create a simultaneous PDF, split using the
+        ## placeholder which was put in place when the resolution
+        ## model was constructed and then in each bin set the created
+        ## split parameter to:
+        ## (mean_in_bin - overall_mean) / (first_bin_mean - last_bin_mean).
+        ## This should make the parameters comparable for different
+        ## splitting observables.
         placeholder = sig_tres.sigmatPlaceHolder()
         from ROOT import RooCustomizer
         customizer = RooCustomizer(time_pdf._target_(), split_cat, splitLeaves)
@@ -611,20 +639,28 @@ if options.simultaneous:
         time_pdf = SimultaneousPdf(time_pdf.GetName() + '_simul',
                                    SplitCategory = split_cat, ExternalConstraints = time_pdf.ExternalConstraints(),
                                    States = states, ConditionalObservables = time_pdf.ConditionalObservables())
-        means = [sig_sdata.mean(st._target_(), '{0} == {0}::{1}'.format(split_cat.GetName(), s.GetName())) for s in split_cat]
+
+        ## Calculate the mean in each bin for the splitting observable
+        split_obs = split_util.observables()[0]
+        means = [sig_sdata.mean(split_obs._target_(), '{0} == {0}::{1}'.format(split_cat.GetName(), s.GetName())) for s in split_cat]
+        split_obs_mean = sig_sdata.mean(split_obs._target_())
+
+        ## Use the center of the first and the last bin as min/max.
+        minmax = [means[0], means[-1]]
+
+        ## Set the split parameters to their calculated value and make
+        ## them constant.
         pars = time_pdf.getParameters(RooArgSet())
-        st_mean = sig_sdata.mean(st._target_())
         for m, s in zip(means, split_cat):
             p = pars.find(placeholder.GetName() + '_' + s.GetName())
             p.setConstant(True)
-            p.setVal(m - st_mean)
-            
+            p.setVal((m - split_obs_mean) / (minmax[1] - minmax[0]))
     else:
         time_pdf = SimultaneousPdf(time_pdf.GetName() + '_simul'
                                    , MasterPdf       = time_pdf
                                    , SplitCategories = split_cats
                                    , SplitParameters = split_pars)
-if options.reuse_result:
+if options.reuse_result and options.cache:
     # Check if we have a cached time result, if so, use it as initial values for the fit
     time_result = None
     for i, r in enumerate(results):
@@ -639,7 +675,7 @@ if options.reuse_result:
             if pdf_par and not pdf_par.isConstant():
                 pdf_par.setVal(p.getVal())
                 pdf_par.setError(p.getError())
-
+                
 time_pdf.Print("t")
 
 ## Fit
@@ -659,14 +695,6 @@ parameters = dict([(p.GetName(), p) for p in time_pdf.getParameters(obs_arg)])
 ## Dilution.signal_dilution_dg(sig_sdata, st, sf1, frac2.getVal(), sf2.getVal())
 
 ## assert(False)
-
-if options.add_background:
-    fit_data = data
-    fit_data_full = data
-else:
-    fit_data = sig_sdata
-    if options.simultaneous:
-        fit_data_full = sig_sdata_full
 
 if options.fit:
     for i in range(3):
@@ -799,66 +827,67 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
 from P2VV.Utilities import Resolution as ResolutionUtils
 time_result.PrintSpecial(LaTeX = True, ParNames = ResolutionUtils.parNames)
 
-from P2VV.CacheUtils import WritableCacheFile
-with WritableCacheFile(cache_files, directory) as cache_file:
-    cache_dir = cache_file.Get(directory)
-    from ROOT import TObjString
-    cut_string = TObjString(cut)
-    cache_dir.WriteTObject(cut_string, 'cut')
-    
-    # Write data to cache file
-    def get_dir(d):
-        tmp = cache_dir.Get(d)
-        if not tmp:
-            cache_dir.mkdir(d)
+if options.cache:
+    from P2VV.CacheUtils import WritableCacheFile
+    with WritableCacheFile(cache_files, directory) as cache_file:
+        cache_dir = cache_file.Get(directory)
+        from ROOT import TObjString
+        cut_string = TObjString(cut)
+        cache_dir.WriteTObject(cut_string, 'cut')
+        
+        # Write data to cache file
+        def get_dir(d):
             tmp = cache_dir.Get(d)
-        return tmp
-    
-    from ROOT import TObject
-    if (options.write_data or fit_mass):
-        sdata_dir = get_dir('sdata')
-        data_dir = get_dir('data')
-        for name, ds in sdatas_full.iteritems():
-             sdata_dir.WriteTObject(ds, name, "Overwrite")
+            if not tmp:
+                cache_dir.mkdir(d)
+                tmp = cache_dir.Get(d)
+            return tmp
         
-        ## if options.simultaneous:
-        ##     for ct in st_cat:
-        ##         opts = dict(Cut = '{0} == {0}::{1}'.format(st_cat.GetName(), ct.GetName()))
-        ##         bin_data = sig_sdata_full.reduce(**opts)
-        ##         bin_data.SetName('sig_sdata_%s' % ct.GetName())
-        ##         sdata_dir.WriteTObject(bin_data, bin_data.GetName(), "Overwrite")
-        ##         bin_data.Delete()
-        ##         del bin_data
+        from ROOT import TObject
+        if (options.write_data or fit_mass):
+            sdata_dir = get_dir('sdata')
+            data_dir = get_dir('data')
+            for name, ds in sdatas_full.iteritems():
+                 sdata_dir.WriteTObject(ds, name, "Overwrite")
+            
+            ## if options.simultaneous:
+            ##     for ct in st_cat:
+            ##         opts = dict(Cut = '{0} == {0}::{1}'.format(st_cat.GetName(), ct.GetName()))
+            ##         bin_data = sig_sdata_full.reduce(**opts)
+            ##         bin_data.SetName('sig_sdata_%s' % ct.GetName())
+            ##         sdata_dir.WriteTObject(bin_data, bin_data.GetName(), "Overwrite")
+            ##         bin_data.Delete()
+            ##         del bin_data
+            
+            sdata_dir.Write(sdata_dir.GetName(), TObject.kOverwrite)
+            data_dir.WriteTObject(data, data.GetName(), "Overwrite")
+            data_dir.Write(data_dir.GetName(), TObject.kOverwrite)
         
-        sdata_dir.Write(sdata_dir.GetName(), TObject.kOverwrite)
-        data_dir.WriteTObject(data, data.GetName(), "Overwrite")
-        data_dir.Write(data_dir.GetName(), TObject.kOverwrite)
-    
-    ## Write PDFs
-    pdf_dir = get_dir('PDFs')
-    pdf_dir.WriteTObject(time_pdf._target_(), 'time_pdf_' + args[1] + \
-                         ('_' + options.parameterise) if options.parameterise else '', "Overwrite")
-    if (options.write_data or fit_mass):
-        pdf_dir.WriteTObject(mass_pdf._target_(), 'mass_pdf', "Overwrite")
-        if options.simultaneous:
-            pdf_dir.WriteTObject(sWeight_mass_pdf._target_(), 'sWeight_mass_pdf', "Overwrite")
-    
-    if not options.reduce and options.fit:
-        ## Write fit results
-        results_dir = get_dir('results')
-        for r in results:
-            results_dir.WriteTObject(r, r.GetName(), "Overwrite")
+        ## Write PDFs
+        pdf_dir = get_dir('PDFs')
+        pdf_dir.WriteTObject(time_pdf._target_(), 'time_pdf_' + args[1] + \
+                             ('_' + options.parameterise) if options.parameterise else '', "Overwrite")
+        if (options.write_data or fit_mass):
+            pdf_dir.WriteTObject(mass_pdf._target_(), 'mass_pdf', "Overwrite")
+            if options.simultaneous:
+                pdf_dir.WriteTObject(sWeight_mass_pdf._target_(), 'sWeight_mass_pdf', "Overwrite")
         
-        results_dir.Write(results_dir.GetName(), TObject.kOverwrite)
+        if not options.reduce and options.fit:
+            ## Write fit results
+            results_dir = get_dir('results')
+            for r in results:
+                results_dir.WriteTObject(r, r.GetName(), "Overwrite")
+            
+            results_dir.Write(results_dir.GetName(), TObject.kOverwrite)
+            
+            ## Write plots
+            plots_dir = get_dir('plots/%s' % '_'.join(extra_name))
+            for ps in plots:
+                for p in ps:
+                    plots_dir.WriteTObject(p, p.GetName(), "Overwrite")
+            
+            plots_dir.Write(plots_dir.GetName(), TObject.kOverwrite)
         
-        ## Write plots
-        plots_dir = get_dir('plots/%s' % '_'.join(extra_name))
-        for ps in plots:
-            for p in ps:
-                plots_dir.WriteTObject(p, p.GetName(), "Overwrite")
-        
-        plots_dir.Write(plots_dir.GetName(), TObject.kOverwrite)
-    
-    # Delete the input TTree which was automatically attached.
-    cache_file.Delete('%s;*' % tree_name)
+        # Delete the input TTree which was automatically attached.
+        cache_file.Delete('%s;*' % tree_name)
 

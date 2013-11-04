@@ -7,8 +7,10 @@ if sys.argv[1] not in ['MC', 'data', 'generate']:
 real_data = sys.argv[1] == 'data'
 MC = sys.argv[1] == 'MC'
 
-from itertools import product
+from P2VV.Load import P2VVLibrary
 from P2VV.RooFitWrappers import *
+
+from itertools import product
 from ROOT import RooCBShape as CrystalBall
 from P2VV.Parameterizations.GeneralUtils import valid_combinations
 
@@ -227,17 +229,21 @@ if real_data:
     spec['Relative'] = rel_spec
     res_model = MultiHistEfficiencyModel(Name = "RMHE", Original = sig_t.pdf(), Observable = t,
                                          ConditionalCategories = True, UseSingleBinConstraint = False,
-                                         ResolutionModel = tres.model(), Spline = True,
+                                         ResolutionModel = tres.model(), Spline = False,
                                          SmoothSpline = 1, **spec)
     pdf = Single_Exponent_Time(Name = 'pdf', time = t, resolutionModel = res_model)
     pdf = pdf.pdf()
     pdf.Print('v')
 
-    mass_pdf.fitTo(data, **fitOpts)
+    for i in range(3):
+        mass_result = mass_pdf.fitTo(data, **fitOpts)
+        if mass_result.status() == 0:
+            break
+    assert(mass_result.status() == 0)
     # Plot mass pdf
     from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
     from ROOT import TCanvas
-    canvas = TCanvas('mass_canvas', 'mass_canvas', 500, 500)
+    canvas = TCanvas('mass_canvas', 'mass_canvas', 600, 530)
     obs = [m]
     for (p,o) in zip(canvas.pads(len(obs)), obs):
         from P2VV.Utilities.Plotting import plot
@@ -253,7 +259,7 @@ if real_data:
              )
     # Do the sWeights
     # make sweighted dataset. TODO: use mumu mass as well...
-    from P2VV.Utilities.SWeights import SData, splot
+    from P2VV.Utilities.SWeights import SData
 
     for p in mass_pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
     splot = SData(Pdf = mass_pdf, Data = data, Name = 'MassSplot')
@@ -415,6 +421,7 @@ for p, shape in zip(eff_canvas.pads(len(shapes), 1), shapes):
 output = {'hlt1_shape' : 'hlt1_excl_biased_dec_excl_biased_bin',
           'hlt2_shape' : 'hlt2_biased_biased_bin'}
 output_file = TFile.Open('efficiencies.root', 'recreate')
+
 allVars = w.allVars()
 from ROOT import TH1D
 for name, pat in output.iteritems():
