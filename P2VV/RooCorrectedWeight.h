@@ -30,11 +30,18 @@ public:
   inline RooCorrectedWeight() {}
 
   RooCorrectedWeight(const char *name, const char *title,
-      RooDataSet& data, Double_t corrFactor);
+      const RooDataSet& data, Double_t corrFactor);
 
   RooCorrectedWeight(const char *name, const char *title,
-      RooDataSet& data, RooAbsCategory& splitCat,
-      std::vector<Double_t> corrFactors);
+      RooAbsReal& origWeight, Double_t corrFactor);
+
+  RooCorrectedWeight(const char *name, const char *title,
+      const RooDataSet& data, RooAbsCategory& splitCat,
+      const std::vector<Double_t> corrFactors);
+
+  RooCorrectedWeight(const char *name, const char *title,
+      RooAbsReal& origWeight, RooAbsCategory& splitCat,
+      const std::vector<Double_t> corrFactors);
 
   RooCorrectedWeight(const RooCorrectedWeight& other, const char* name = 0);
 
@@ -51,12 +58,14 @@ public:
 
   Int_t position() const;
   Double_t correctionFactor() const {return _corrFactors.at(position());}
-  Double_t origWeight() const {return _data != 0 ? _data->weight() : 0.;}
-  RooDataSet& data() const {return *_data;}
+  Double_t origWeight() const {
+    return _data != 0 ? _data->weight() : (Double_t)_origWeight;
+  }
 
 private:
-  RooDataSet* _data;
-  const RooCategoryProxy _splitCat;
+  const RooDataSet* _data;
+  RooRealProxy _origWeight;
+  RooCategoryProxy _splitCat;
   std::vector<Double_t> _corrFactors;
 
   mutable std::map<Int_t, Int_t> _positionMap; //!

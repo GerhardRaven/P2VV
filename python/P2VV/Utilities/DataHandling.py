@@ -259,7 +259,7 @@ def correctWeights( dataSet, splitCatName, **kwargs ) :
     if splitCatName :
         # get category that splits data sample
         splitCat = dataSet.get().find(splitCatName)
-        assert splitCat, 'P2VV - ERROR: correctWeights: unknown spit category: "%s"' % splitCat
+        assert splitCat, 'P2VV - ERROR: correctWeights: unknown split category: "%s"' % splitCat
 
         indexDict = { }
         for iter, catType in enumerate( splitCat ) : indexDict[ iter ] = catType.getVal()
@@ -292,6 +292,14 @@ def correctWeights( dataSet, splitCatName, **kwargs ) :
                        , [ sum / sumSq for sum, sumSq in zip( sumWeights[ 1 : ], sumSqWeights[ 1 : ] ) ]
                       )
 
+    origWeightVar = None
+    origWeightName = kwargs.pop( 'WeightName', '' )
+    if origWeightName :
+        origWeightVar = dataSet.get().find(origWeightName)
+        from ROOT import RooAbsReal
+        assert origWeightVar and isinstance( origWeightVar, RooAbsReal )\
+               , 'P2VV - ERROR: correctWeights: unknown weight variable: "%s"' % origWeightName
+
     # add corrected weights to data set
     from P2VV.Load import P2VVLibrary
     from ROOT import RooCorrectedWeight
@@ -304,12 +312,18 @@ def correctWeights( dataSet, splitCatName, **kwargs ) :
             corrFactorsVec.push_back(fac)
             print '    %d: %.4f' % ( indexDict[iter], fac )
 
-        weightVar = RooCorrectedWeight( 'weightVar', 'weight variable', dataSet, splitCat, corrFactorsVec )
+        if origWeightVar :
+            weightVar = RooCorrectedWeight( 'weightVar', 'weight variable', origWeightVar, splitCat, corrFactorsVec )
+        else :
+            weightVar = RooCorrectedWeight( 'weightVar', 'weight variable', dataSet, splitCat, corrFactorsVec )
 
     else :
         print 'P2VV - INFO: correctWeights: multiplying sWeights (-ln(L)) to correct for background dilution with a factor %.4f'\
               % corrFactors[0]
-        weightVar = RooCorrectedWeight( 'weightVar', 'weight variable', dataSet, corrFactors[0] )
+        if origWeightVar :
+            weightVar = RooCorrectedWeight( 'weightVar', 'weight variable', origWeightVar, corrFactors[0] )
+        else :
+            weightVar = RooCorrectedWeight( 'weightVar', 'weight variable', dataSet, corrFactors[0] )
 
     from ROOT import RooDataSet
     dataSet.addColumn(weightVar)
@@ -495,12 +509,10 @@ def printEventYields( **kwargs ) :
 
 def printEventYieldsData( **kwargs ) :
     # get arguments
-    fullDataSet    = kwargs.pop( 'FullDataSet',         None )
     weightDataSets = kwargs.pop( 'WeightedDataSets',    [ ]  )
     dataSetNames   = kwargs.pop( 'DataSetNames',        [ ]  )
     splitCats      = kwargs.pop( 'SplittingCategories', [ ]  )
 
-    assert fullDataSet,    'P2VV - ERROR: printEventYieldsData: no data set found in arguments ("FullDataSet")'
     assert weightDataSets, 'P2VV - ERROR: printEventYieldsData: no weighted data sets found in arguments ("WeightedDataSets")'
     if not dataSetNames : dataSetNames = [ 'data set %d' % it for it, dataSet in enumerate(weightDataSets) ]
 
@@ -509,8 +521,8 @@ def printEventYieldsData( **kwargs ) :
 
     # print total numbers of events
     from math import sqrt
-    nEvTot = fullDataSet.sumEntries()
     nEv    = [ dataSet.sumEntries() for dataSet in weightDataSets ]
+    nEvTot = sum(nEv)
     frac   = [ num / nEvTot       if nEvTot > 0. else 0. for num in nEv ]
     signif = [ num / sqrt(nEvTot) if nEvTot > 0. else 0. for num in nEv ]
 
@@ -543,8 +555,8 @@ def printEventYieldsData( **kwargs ) :
             labs[cat].append( catState.GetName() )
 
             cut    = '!(%s-%d)' % ( cat.GetName(), inds[cat][-1] )
-            nEvTot = fullDataSet.sumEntries(cut)
             nEv    = [ dataSet.sumEntries(cut) for dataSet in weightDataSets ]
+            nEvTot = sum(nEv)
             frac   = [ num / nEvTot       if nEvTot > 0. else 0. for num in nEv ]
             signif = [ num / sqrt(nEvTot) if nEvTot > 0. else 0. for num in nEv ]
             print ' ' *  4 + ' {0:>30s}   {1:>6.0f} |'.format( labs[cat][-1], nEvTot ) + '|'.join( ' {0:>9.2f}   {1:>6.4f}   {2:>7.3f} '\
@@ -563,8 +575,8 @@ def printEventYieldsData( **kwargs ) :
     while cont :
         stateName = ';'.join( labs[cat][ iters[cat] ] for cat in splitCats )
         cut       = '&&'.join( '!(%s-%d)' % ( cat.GetName(), inds[cat][ iters[cat] ] ) for cat in splitCats )
-        nEvTot    = fullDataSet.sumEntries(cut)
         nEv       = [ dataSet.sumEntries(cut) for dataSet in weightDataSets ]
+        nEvTot    = sum(nEv)
         frac      = [ num / nEvTot       if nEvTot > 0. else 0. for num in nEv ]
         signif    = [ num / sqrt(nEvTot) if nEvTot > 0. else 0. for num in nEv ]
         print ' ' *  4 + ' {0:>30s}   {1:>6.0f} |'.format( stateName, nEvTot ) + '|'.join( ' {0:>9.2f}   {1:>6.4f}   {2:>7.3f} '\

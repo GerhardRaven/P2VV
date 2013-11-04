@@ -29,25 +29,55 @@
 
 //_____________________________________________________________________________
 RooCorrectedWeight::RooCorrectedWeight(const char *name, const char* title,
-    RooDataSet& data, Double_t corrFactor) :
+    const RooDataSet& data, Double_t corrFactor) :
     RooAbsReal(name, title),
   _data(&data),
+  _origWeight("origWeight", "original weight", this),
   _splitCat("splitCat", "split category", this),
   _corrFactors(std::vector<Double_t>(1, corrFactor))
 {
-  // constructor without split category
+  // constructor with data and without split category
 }
 
 //_____________________________________________________________________________
 RooCorrectedWeight::RooCorrectedWeight(const char *name, const char* title,
-    RooDataSet& data, RooAbsCategory& splitCat,
-    std::vector<Double_t> corrFactors) :
+    RooAbsReal& origWeight, Double_t corrFactor) :
+    RooAbsReal(name, title),
+  _data(0),
+  _origWeight("origWeight", "original weight", this, origWeight),
+  _splitCat("splitCat", "split category", this),
+  _corrFactors(std::vector<Double_t>(1, corrFactor))
+{
+  // constructor with original weight and without split category
+}
+
+//_____________________________________________________________________________
+RooCorrectedWeight::RooCorrectedWeight(const char *name, const char* title,
+    const RooDataSet& data, RooAbsCategory& splitCat,
+    const std::vector<Double_t> corrFactors) :
   RooAbsReal(name, title),
   _data(&data),
+  _origWeight("origWeight", "original weight", this),
   _splitCat("splitCat", "split category", this, splitCat),
   _corrFactors(corrFactors)
 {
-  // constructor with split category
+  // constructor with data and with split category
+
+  // check number of correction factors
+  assert((Int_t)corrFactors.size() == splitCat.numTypes());
+}
+
+//_____________________________________________________________________________
+RooCorrectedWeight::RooCorrectedWeight(const char *name, const char* title,
+    RooAbsReal& origWeight, RooAbsCategory& splitCat,
+    const std::vector<Double_t> corrFactors) :
+  RooAbsReal(name, title),
+  _data(0),
+  _origWeight("origWeight", "original weight", this, origWeight),
+  _splitCat("splitCat", "split category", this, splitCat),
+  _corrFactors(corrFactors)
+{
+  // constructor with original weight and with split category
 
   // check number of correction factors
   assert((Int_t)corrFactors.size() == splitCat.numTypes());
@@ -58,6 +88,7 @@ RooCorrectedWeight::RooCorrectedWeight(
     const RooCorrectedWeight& other, const char* name) :
   RooAbsReal(other, name),
   _data(other._data),
+  _origWeight("origWeight", this, other._origWeight),
   _splitCat("splitCat", this, other._splitCat),
   _corrFactors(other._corrFactors),
   _positionMap(other._positionMap)

@@ -37,6 +37,7 @@ elif pdfConfig['SFit'] :
     dataSetName = 'JpsiKK_sigSWeight'
     #dataSetFile = dataPath + 'Reco14/P2VVDataSets20112012Reco14_4KKMassBins_2TagCats.root'
     dataSetFile = dataPath + 'Reco14/P2VVDataSets20112012Reco14_6KKMassBins_2TagCats.root'
+    #dataSetFile = dataPath + 'Reco14/nTupleC_merged_IpatiaDS.root'
 else :
     dataSetName = 'JpsiKK'
     dataSetFile = dataPath + 'Reco12/P2VVDataSets2011Reco12_4KKMassBins_2TagCats.root'
