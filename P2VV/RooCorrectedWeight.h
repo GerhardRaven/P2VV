@@ -12,56 +12,58 @@
  * listed in LICENSE (http://roofit.sourceforge.net/license.txt)             *
  *****************************************************************************/
 
-#ifndef ROO_CORRECTED_SWEIGHT
-#define ROO_CORRECTED_SWEIGHT
+#ifndef ROO_CORRECTED_WEIGHT
+#define ROO_CORRECTED_WEIGHT
 
 #include <vector>
 #include "RooAbsReal.h"
 #include "RooRealProxy.h"
 #include "RooCategoryProxy.h"
+#include "RooDataSet.h"
 
 class RooAbsCategory;
 
-class RooCorrectedSWeight : public RooAbsReal
+class RooCorrectedWeight : public RooAbsReal
 {
 
 public:
-  inline RooCorrectedSWeight() {}
+  inline RooCorrectedWeight() {}
 
-  RooCorrectedSWeight(const char *name, const char *title,
-      RooAbsReal& sWeight, Double_t corrFactor,
-      Bool_t bkgWeight = kFALSE);
+  RooCorrectedWeight(const char *name, const char *title,
+      RooDataSet& data, Double_t corrFactor);
 
-  RooCorrectedSWeight(const char *name, const char *title,
-      RooAbsReal& sWeight, RooAbsCategory& splitCat,
-      std::vector<Double_t> corrFactors, Bool_t bkgWeight = kFALSE);
+  RooCorrectedWeight(const char *name, const char *title,
+      RooDataSet& data, RooAbsCategory& splitCat,
+      std::vector<Double_t> corrFactors);
 
-  RooCorrectedSWeight(const RooCorrectedSWeight& other, const char* name = 0);
+  RooCorrectedWeight(const RooCorrectedWeight& other, const char* name = 0);
 
   virtual TObject* clone(const char* newname) const 
   { 
-    return new RooCorrectedSWeight(*this, newname);
+    return new RooCorrectedWeight(*this, newname);
   }
 
-  ~RooCorrectedSWeight();
+  ~RooCorrectedWeight();
+
+  inline Double_t getVal(const RooArgSet* set = 0)  const {return evaluate();}
+  inline Double_t getVal(const RooArgSet& set)      const {return evaluate();}
+  inline Double_t getValV(const RooArgSet* set = 0) const {return evaluate();}
 
   Int_t position() const;
   Double_t correctionFactor() const {return _corrFactors.at(position());}
-  Double_t sigSWeight() const {return _bkgWeight ? 1. - _sWeight : _sWeight;}
-  Bool_t bkgWeight() const {return _bkgWeight;}
+  Double_t origWeight() const {return _data != 0 ? _data->weight() : 0.;}
+  RooDataSet& data() const {return *_data;}
 
 private:
-  const RooRealProxy _sWeight;
+  RooDataSet* _data;
   const RooCategoryProxy _splitCat;
   std::vector<Double_t> _corrFactors;
-  Bool_t _bkgWeight;
 
   mutable std::map<Int_t, Int_t> _positionMap; //!
 
-  virtual Double_t evaluate() const;
+  Double_t evaluate() const;
 
-  ClassDef(RooCorrectedSWeight, 1) // corrects sWeights (-ln(L)) for background dilution
+  ClassDef(RooCorrectedWeight, 1) // corrects event weights (-ln(L)) for background dilution
 };
 
 #endif
-

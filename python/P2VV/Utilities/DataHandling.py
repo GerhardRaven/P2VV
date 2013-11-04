@@ -252,18 +252,14 @@ def writeData( filePath, dataSetName, data, NTuple = False ) :
     f.Close()
 
 
-def correctSWeights( dataSet, bkgWeightName, splitCatName, **kwargs ) :
-    """correct sWeights in dataSet for background dilution
+def correctWeights( dataSet, splitCatName, **kwargs ) :
+    """correct weights in dataSet for background dilution
     """
-
-    # check if background weight variable exists in data set
-    bkgWeight = dataSet.get().find(bkgWeightName)
-    assert bkgWeight, 'P2VV - ERROR: correctSWeights: unknown background weight: "%s"' % bkgWeightName
 
     if splitCatName :
         # get category that splits data sample
         splitCat = dataSet.get().find(splitCatName)
-        assert splitCat, 'P2VV - ERROR: correctSWeights: unknown spit category: "%s"' % splitCat
+        assert splitCat, 'P2VV - ERROR: correctWeights: unknown spit category: "%s"' % splitCat
 
         indexDict = { }
         for iter, catType in enumerate( splitCat ) : indexDict[ iter ] = catType.getVal()
@@ -298,22 +294,22 @@ def correctSWeights( dataSet, bkgWeightName, splitCatName, **kwargs ) :
 
     # add corrected weights to data set
     from P2VV.Load import P2VVLibrary
-    from ROOT import RooCorrectedSWeight
+    from ROOT import RooCorrectedWeight
     if splitCatName :
         from ROOT import std
         corrFactorsVec = std.vector('Double_t')()
-        print 'P2VV - INFO: correctSWeights: multiplying sWeights (-ln(L)) to correct for background dilution with factors (overall factor %.4f):'\
+        print 'P2VV - INFO: correctWeights: multiplying sWeights (-ln(L)) to correct for background dilution with factors (overall factor %.4f):'\
               % corrFactors[0]
         for iter, fac in enumerate( corrFactors[1] ) :
             corrFactorsVec.push_back(fac)
             print '    %d: %.4f' % ( indexDict[iter], fac )
 
-        weightVar = RooCorrectedSWeight( 'weightVar', 'weight variable', bkgWeight, splitCat, corrFactorsVec, True )
+        weightVar = RooCorrectedWeight( 'weightVar', 'weight variable', dataSet, splitCat, corrFactorsVec )
 
     else :
-        print 'P2VV - INFO: correctSWeights: multiplying sWeights (-ln(L)) to correct for background dilution with a factor %.4f'\
+        print 'P2VV - INFO: correctWeights: multiplying sWeights (-ln(L)) to correct for background dilution with a factor %.4f'\
               % corrFactors[0]
-        weightVar = RooCorrectedSWeight( 'weightVar', 'weight variable', bkgWeight, corrFactors[0], True )
+        weightVar = RooCorrectedWeight( 'weightVar', 'weight variable', dataSet, corrFactors[0] )
 
     from ROOT import RooDataSet
     dataSet.addColumn(weightVar)

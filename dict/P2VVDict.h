@@ -21,7 +21,7 @@
 #include "P2VV/RooCruijff.h"
 #include "P2VV/RooEfficiencyBin.h"
 #include "P2VV/RooAvEffConstraint.h"
-#include "P2VV/RooCorrectedSWeight.h"
+#include "P2VV/RooCorrectedWeight.h"
 #include "P2VV/RooAbsEffResModel.h"
 #include "P2VV/RooEffResModel.h"
 #include "P2VV/RooMultiEffResModel.h"

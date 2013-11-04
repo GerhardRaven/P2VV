@@ -199,10 +199,9 @@ if parFileIn :
     pdfConfig.readParametersFromFile( filePath = parFileIn )
     pdfConfig.setParametersInPdf(pdf)
 
-from P2VV.Utilities.DataHandling import correctSWeights
-fitData = correctSWeights( dataSet, 'N_cbkgMass_sw'
-                          , 'KKMassCat' if pdfConfig['paramKKMass'] == 'simultaneous' else ''
-                          , CorrectionFactors = None if corrSFitErr == 'sumWeight' else corrSFitErr )
+from P2VV.Utilities.DataHandling import correctWeights
+fitData = correctWeights( dataSet, 'KKMassCat' if pdfConfig['paramKKMass'] == 'simultaneous' else ''
+                         , CorrectionFactors = None if corrSFitErr == 'sumWeight' else corrSFitErr )
 
 # get observables and parameters in PDF
 pdfObs  = pdf.getObservables(fitData)

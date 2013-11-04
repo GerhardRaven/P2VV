@@ -106,10 +106,9 @@ if parFileIn :
 # data set with weights corrected for background dilution: for phi_s fit only!
 if corrSFitErr == 'sumWeight'\
         or ( type(corrSFitErr) != str and hasattr( corrSFitErr, '__iter__' ) and hasattr( corrSFitErr, '__getitem__' ) ) :
-    from P2VV.Utilities.DataHandling import correctSWeights
-    fitData = correctSWeights( dataSet, 'N_cbkgMass_sw'
-                              , 'KKMassCat' if pdfConfig['paramKKMass'] == 'simultaneous' else ''
-                              , CorrectionFactors = None if corrSFitErr == 'sumWeight' else corrSFitErr )
+    from P2VV.Utilities.DataHandling import correctWeights
+    fitData = correctWeights( dataSet, 'KKMassCat' if pdfConfig['paramKKMass'] == 'simultaneous' else ''
+                             , CorrectionFactors = None if corrSFitErr == 'sumWeight' else corrSFitErr )
 
 else :
     fitData = dataSet

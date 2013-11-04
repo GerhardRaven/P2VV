@@ -284,10 +284,9 @@ if generateData :
 elif pdfConfig['SFit'] :
     if corrSFitErr == 'sumWeight'\
             or ( type(corrSFitErr) != str and hasattr( corrSFitErr, '__iter__' ) and hasattr( corrSFitErr, '__getitem__' ) ) :
-        from P2VV.Utilities.DataHandling import correctSWeights
-        fitData = correctSWeights( dataSet, 'N_cbkgMass_sw'
-                                  , 'KKMassCat' if pdfConfig['parameterizeKKMass'] == 'simultaneous' else ''
-                                  , CorrectionFactors = None if corrSFitErr == 'sumWeight' else corrSFitErr )
+        from P2VV.Utilities.DataHandling import correctWeights
+        fitData = correctWeights( dataSet, 'KKMassCat' if pdfConfig['parameterizeKKMass'] == 'simultaneous' else ''
+                                 , CorrectionFactors = None if corrSFitErr == 'sumWeight' else corrSFitErr )
 
     else :
         fitData = dataSet

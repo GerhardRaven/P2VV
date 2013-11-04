@@ -24,7 +24,7 @@
         <class name = "RooCruijff" />
         <class name = "RooEfficiencyBin" />
         <class name = "RooAvEffConstraint" />
-        <class name = "RooCorrectedSWeight" />
+        <class name = "RooCorrectedWeight" />
         <class name = "RooAbsEffResModel" />
         <class name = "RooEffResModel" />
         <class name = "MultiHistEntry" />

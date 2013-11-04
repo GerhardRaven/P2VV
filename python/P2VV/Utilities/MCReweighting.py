@@ -1038,10 +1038,9 @@ class BuildBs2JpsiKK2011sFit():
             # data set with weights corrected for background dilution: for phi_s fit only!
         if self._corrSFitErr == 'sumWeight'\
                 or ( type(self._corrSFitErr) != str and hasattr( self._corrSFitErr, '__iter__' ) and hasattr( self._corrSFitErr, '__getitem__' ) ) :
-            from P2VV.Utilities.DataHandling import correctSWeights
-            self._fitData = correctSWeights( dataSet, 'N_cbkgMass_sw'
-                                       , 'KKMassCat' if KKmassParam  else ''
-                                       , CorrectionFactors = None if self._corrSFitErr == 'sumWeight' else self._corrSFitErr )
+            from P2VV.Utilities.DataHandling import correctWeights
+            self._fitData = correctWeights( dataSet, 'KKMassCat' if KKmassParam  else ''
+                                           , CorrectionFactors = None if self._corrSFitErr == 'sumWeight' else self._corrSFitErr )
 
         else :
             self._fitData = dataSet
