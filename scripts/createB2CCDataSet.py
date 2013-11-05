@@ -22,7 +22,7 @@ dataSample       = '(bkgcat==0 || bkgcat==50)' if simulation else ''
 sWeightName      = 'sigWeight_DG_6KKBins'
 addSWeights      = True
 addKKMassCat     = True
-addTrackMomenta  = False
+addTrackMomenta  = True
 addTaggingObs    = ( 2, 2 ) # ( 0, 0 )
 createRangeData  = False
 createNTuple     = False
@@ -109,6 +109,8 @@ obsKeys = [  'sWeights_ipatia', 'runPeriod'
            #, 'muplus_PX', 'muplus_PY', 'muplus_PZ', 'muplus_LOKI_ETA'
            #, 'muminus_PX', 'muminus_PY', 'muminus_PZ', 'muminus_LOKI_ETA'
           ]
+if runPeriods :
+    obsKeys += [ 'runPeriod' ]
 if simulation :
     obsKeys += [ 'truetime', 'bkgcat' ]
 if addTrackMomenta :
@@ -143,6 +145,7 @@ obsDict = dict(  runPeriod = ( 'runPeriod',            'run period', dict( [ ( '
                , tagDecSS  = ( 'tagdecision_ss_nn',    'SS tag decision', { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }         )
                , tagCatOS  = ( 'tagcat_os',            'OS tag category', [ 'unt' ] + [ 'cat%d' % c for c in range(1, 6) ]  )
                , bkgcat    = ( 'bkgcat',               'background cat',  { 'signal' : 0, 'lowMass' : 50 }                  )
+               , trueid    = ( 'trueid',               'true idt',        { 'B' : 531, 'Bbar' : 531,  'NoMutch' : 0 }       )
                , sel       = ( 'sel',                  'selection',       { 'sel'   : 1, 'notSel'   : 0 }                   )
                , selClTail = ( 'sel_cleantail',        'clean tail sel.', { 'sel'   : 1, 'notSel'   : 0 }                   )
                , selA      = ( 'selA',                 'selection A',     { 'sel'   : 1, 'notSel'   : 0 }                   )
@@ -254,10 +257,10 @@ obsSetPreDS  = [ observables['index'] ]
 if weightName :
     observables[weightName] = RealVar( weightName, Title = 'event weight', Observable = True, Value = 0., MinMax = ( -RooInf, +RooInf ) )
     obsSetPreDS += [ observables[weightName] ]
-obsSetNTuple = [ ]
-for obs in obsKeys + reqObsList :
-    if obs in observables : continue
 
+obsSetNTuple = [ ]
+for obs in list(set(reqObsList + obsKeys )) :
+    if obs in observables : continue
     if obs.startswith('sigWeight') or obs.startswith('sWeight') :
         observables[obs] = RealVar( obs, Title = 'signal sWeight', Observable = True, Value = 1. )
 
@@ -295,6 +298,10 @@ dataTreeFile = TFile.Open(nTupleFilePath)
 assert dataTreeFile, 'P2VV - ERROR: createB2CCDataSet: could not open file "%s"' % nTupleFilePath
 dataTree = dataTreeFile.Get(nTupleName)
 assert dataTree, 'P2VV - ERROR: createB2CCDataSet: could not locate tree "%s" in file "%s"' % ( nTupleName, nTupleFilePath )
+#ntupleCuts += ' && runNumber<2523.95e3 '
+#ntupleCuts += ' && runNumber>=2525e3 && runNumber<2527e3' # part2
+#ntupleCuts += ' && runNumber>=2527e3' # part3
+#ntupleCuts += ' && runNumber<1565e3'
 
 # create data set from n-tuple
 dataSets = dict( pre = ( dataTree.buildDataSet( Observables = obsSetPreDS, Name = 'JpsiKK', Title = 'JpsiKK', Cuts = ntupleCuts
@@ -869,6 +876,7 @@ else :
     # create data set without splitting
     mainDS = dataTree.buildDataSet( Observables = obsSetMain, Name = 'JpsiKK', Title = 'JpsiKK', IndexName = 'index'
                                 , OrigDataSet = dataSets['preS'][0] )
+
 
 dataSets['main'] = ( mainDS, mainDSList )
 if dataSets['preS'][0] : dataSets['preS'][0].IsA().Destructor(dataSets['preS'][0])
