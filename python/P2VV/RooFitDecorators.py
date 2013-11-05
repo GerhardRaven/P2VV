@@ -116,14 +116,14 @@ def __RooDataSetToTree( self, Name = '', Title = '', WeightName = '', BranchList
     return RooDataSetToTree( self, Name, Title, WeightName, BranchList, RooFitFormat )
 RooDataSet.buildTree = __RooDataSetToTree
 
-def __TreeToRooDataSet( self, Observables = [ ], Name = '', Title = '', Cuts = '', IndexName = '', OrigDataSet = None ) :
+def __TreeToRooDataSet( self, Observables = [ ], Name = '', Title = '', Cuts = '', IndexName = '', WeightName = '', OrigDataSet = None ) :
     from P2VV.Load import P2VVLibrary
     from ROOT import TreeToRooDataSet
     obsSet = RooArgSet( Observables )
     if OrigDataSet :
-        return TreeToRooDataSet( self, obsSet, Name, Title, Cuts, IndexName, OrigDataSet )
+        return TreeToRooDataSet( self, obsSet, Name, Title, Cuts, IndexName, WeightName, OrigDataSet )
     else :
-        return TreeToRooDataSet( self, obsSet, Name, Title, Cuts, IndexName )
+        return TreeToRooDataSet( self, obsSet, Name, Title, Cuts, IndexName, WeightName )
 from ROOT import TTree
 TTree.buildDataSet = __TreeToRooDataSet
 

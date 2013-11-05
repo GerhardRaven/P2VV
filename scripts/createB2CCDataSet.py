@@ -2,22 +2,23 @@
 ## script settings ##
 #####################
 
-nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/2011_2012_dv33r6p1_s20_20131031_tupleB_add.root'
-#nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_merged.root'
+#nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/2011_2012_dv33r6p1_s20_20131031_tupleB_add.root'
+nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_merged.root'
 nTupleName       = 'DecayTree'
 dataSetsFilePath = 'temp.root' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_6KKMassBins_2TagCats.root'
 appendToFile     = False
-savedObjects     = [ 'sigSWeight' ]
+savedObjects     = [ 'main', 'sigSWeight' ]
 plotsFilePath    = 'temp.ps' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_6KKMassBins_2TagCats.ps'
 parFileIn        = '' #'eventYields6KKBins.par'
 parFileOut       = ''
 
 simulation       = False
+weightName       = 'wMC'
 runPeriods       = [ 2011, 2012 ]
-triggerSel       = 'paper2012' # 'noSelection' # 'paper2012' # 'HLT1Unbiased' # 'paper2012'
-dataCuts         = 'nominal2011' # 'noSelection' # 'nominal2011'
-addCuts          = '' #'wMC > 0.'
-dataSample       = '(bkgcat==0 || bkgcat==50)' if simulation else '' #'mdau2>990. && mdau2<1008. && hlt1_excl_biased_dec==0'
+triggerSel       = 'noSelection' # 'paper2012' # 'HLT1Unbiased' # 'paper2012'
+dataCuts         = 'noSelection' # 'nominal2011'
+addCuts          = ''
+dataSample       = '(bkgcat==0 || bkgcat==50)' if simulation else ''
 sWeightName      = 'sigWeight_DG_6KKBins'
 addSWeights      = True
 addKKMassCat     = True
@@ -91,7 +92,7 @@ RooInf  = RooNumber.infinity()
 KKMMin  = KKMassBinBounds[0]
 KKMMax  = KKMassBinBounds[-1]
 
-obsKeys = [  'runPeriod'
+obsKeys = [  'sWeights_ipatia', 'runPeriod'
            , 'mass', 'KKMass', 'mumuMass'
            , 'time', 'timeRes'
            , 'ctk', 'ctl', 'phih'
@@ -236,6 +237,7 @@ from P2VV.Load import RooFitOutput, LHCbStyle
 
 # create list of required observables
 reqObsList = [ 'index', 'mass', 'KKMass', 'tagDecOS', 'tagDecSS', 'wTagOS', 'wTagSS', 'hlt1ExclB' ]
+reqObsList += [ weightName ] if weightName else [ ]
 reqObsList += ['runPeriod'] if runPeriods else [ ]
 reqObsList += [ '%s_P%s' % ( part, comp ) for part in [ 'Kplus', 'Kminus', 'muplus', 'muminus' ] for comp in ( 'X', 'Y', 'Z' ) ]\
               if addTrackMomenta else [ ]
@@ -249,11 +251,14 @@ from P2VV.RooFitWrappers import RealVar, Category
 observables  = { }
 observables['index'] = RealVar( 'index', Title = 'event index', Observable = True, Value = 0., MinMax = ( -RooInf, +RooInf ) )
 obsSetPreDS  = [ observables['index'] ]
+if weightName :
+    observables[weightName] = RealVar( weightName, Title = 'event weight', Observable = True, Value = 0., MinMax = ( -RooInf, +RooInf ) )
+    obsSetPreDS += [ observables[weightName] ]
 obsSetNTuple = [ ]
 for obs in obsKeys + reqObsList :
     if obs in observables : continue
 
-    if obs.startswith('sigWeight') :
+    if obs.startswith('sigWeight') or obs.startswith('sWeight') :
         observables[obs] = RealVar( obs, Title = 'signal sWeight', Observable = True, Value = 1. )
 
     elif type( obsDict[obs][2] ) == dict or type( obsDict[obs][2] ) == list :
@@ -293,7 +298,7 @@ assert dataTree, 'P2VV - ERROR: createB2CCDataSet: could not locate tree "%s" in
 
 # create data set from n-tuple
 dataSets = dict( pre = ( dataTree.buildDataSet( Observables = obsSetPreDS, Name = 'JpsiKK', Title = 'JpsiKK', Cuts = ntupleCuts
-                        , IndexName = 'index' ), [ ] ) )
+                        , IndexName = 'index', WeightName = weightName if weightName else '' ), [ ] ) )
 print 'P2VV - INFO: createB2CCDataSet: data set from n-tuple:\n' + ' ' * 13,
 dataSets['pre'][0].Print()
 print
@@ -396,7 +401,7 @@ if not simulation :
     # determine mass parameters with a fit
     print 120 * '='
     print 'P2VV - INFO: createB2CCDataSet: fitting with mass PDF'
-    massFitResult = massPdf.fitTo( dataSets['pre'][0], Save = True, **fitOpts )
+    massFitResult = massPdf.fitTo( dataSets['pre'][0], Save = True, SumW2Error = False, **fitOpts )
 
     from P2VV.Imports import parNames
     massFitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames )
@@ -557,7 +562,7 @@ if not simulation :
                 par.setError( parValues[par.GetName()][1] )
 
             massNLL = sWeightMassPdf.createNLL( dataSets['pre'][0] )
-            simMassFitResult = sWeightMassPdf.fitTo( dataSets['pre'][0], Save = True, **fitOpts )
+            simMassFitResult = sWeightMassPdf.fitTo( dataSets['pre'][0], Save = True, SumW2Error = False, **fitOpts )
             simMassFitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames )
             massNLLValNom = massNLL.getVal()
             for par in fixedMassPars :
@@ -580,7 +585,7 @@ if not simulation :
 
         # determine mass parameters in each subsample with a fit
         print 'P2VV - INFO: createB2CCDataSet: fitting with simultaneous mass PDF'
-        simMassFitResult = sWeightMassPdf.fitTo( dataSets['pre'][0], Save = True, **fitOpts )
+        simMassFitResult = sWeightMassPdf.fitTo( dataSets['pre'][0], Save = True, SumW2Error = False, **fitOpts )
 
         if parFileOut :
             # write parameters to file
@@ -866,7 +871,6 @@ else :
                                 , OrigDataSet = dataSets['preS'][0] )
 
 dataSets['main'] = ( mainDS, mainDSList )
-
 if dataSets['preS'][0] : dataSets['preS'][0].IsA().Destructor(dataSets['preS'][0])
 if dataSets['pre'][0]  : dataSets['pre'][0].IsA().Destructor(dataSets['pre'][0])
 if dataTree            : dataTree.IsA().Destructor(dataTree)
