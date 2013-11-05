@@ -264,6 +264,15 @@ def correctWeights( dataSet, splitCatName, **kwargs ) :
         indexDict = { }
         for iter, catType in enumerate( splitCat ) : indexDict[ iter ] = catType.getVal()
 
+    # get variable that contains original event weights
+    origWeightVar = None
+    origWeightName = kwargs.pop( 'WeightName', '' )
+    if origWeightName :
+        origWeightVar = dataSet.get().find(origWeightName)
+        from ROOT import RooAbsReal
+        assert origWeightVar and isinstance( origWeightVar, RooAbsReal )\
+               , 'P2VV - ERROR: correctWeights: unknown weight variable: "%s"' % origWeightName
+
     corrFactors = kwargs.pop( 'CorrectionFactors', [ ] )
     if not corrFactors :
         if splitCatName :
@@ -280,25 +289,17 @@ def correctWeights( dataSet, splitCatName, **kwargs ) :
 
         # loop over events and get sums of weights and weights squared
         for varSet in dataSet :
-            weight = dataSet.weight()
-            sumWeights[0]   += dataSet.weight()
-            sumSqWeights[0] += dataSet.weight()**2
+            weight = origWeightVar.getVal() if origWeightVar else dataSet.weight()
+            sumWeights[0]   += weight
+            sumSqWeights[0] += weight**2
             if splitCatName :
-                sumWeights[ posDict[ varSet.getCatIndex(splitCatName) ] + 1 ]   += dataSet.weight()
-                sumSqWeights[ posDict[ varSet.getCatIndex(splitCatName) ] + 1 ] += dataSet.weight()**2
+                sumWeights[ posDict[ varSet.getCatIndex(splitCatName) ] + 1 ]   += weight
+                sumSqWeights[ posDict[ varSet.getCatIndex(splitCatName) ] + 1 ] += weight**2
 
         # get correction factors
         corrFactors = (  sumWeights[0] / sumSqWeights[0]
                        , [ sum / sumSq for sum, sumSq in zip( sumWeights[ 1 : ], sumSqWeights[ 1 : ] ) ]
                       )
-
-    origWeightVar = None
-    origWeightName = kwargs.pop( 'WeightName', '' )
-    if origWeightName :
-        origWeightVar = dataSet.get().find(origWeightName)
-        from ROOT import RooAbsReal
-        assert origWeightVar and isinstance( origWeightVar, RooAbsReal )\
-               , 'P2VV - ERROR: correctWeights: unknown weight variable: "%s"' % origWeightName
 
     # add corrected weights to data set
     from P2VV.Load import P2VVLibrary
