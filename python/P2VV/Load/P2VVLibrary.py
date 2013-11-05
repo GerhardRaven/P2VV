@@ -4,6 +4,7 @@ Load the P2VV library, assuming that the library directory is in $LD_LIBRARYPATH
 """
 
 print "P2VV - INFO: loading Cintex library"
-import PyCintex
-PyCintex.Cintex.Enable()
-PyCintex.loadDictionary("P2VVDict")
+import ROOT
+ROOT.gSystem.Load("libCintex.so")
+ROOT.Cintex.Enable()
+ROOT.gSystem.Load("libP2VVDict.so")
