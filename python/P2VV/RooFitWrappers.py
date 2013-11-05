@@ -400,13 +400,17 @@ class SuperCategory( Category ) :
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
 class MappedCategory( Category ) :
-    def __init__(self,Name,cat,mapper,**kwargs):
+    def __init__(self, Name, cat, mapper, **kwargs):
         if Name not in self.ws():
             # construct factory string on the fly: no factory string for MappedCategory???
             from ROOT import RooMappedCategory
             obj =  RooMappedCategory(Name,Name,__dref__(cat) )
             for k,vs in mapper.iteritems() :
-                for v in vs : obj.map( v, k )
+                for v in vs :
+                    if len(v) == 2:
+                        obj.map( v[0], k, v[1] )
+                    else:
+                        obj.map( v, k )
             data = kwargs.pop('Data', None)
             def init(o, t):
                 obj = self._addObject(o)
@@ -2150,11 +2154,12 @@ class MultiHistEfficiencyModel(ResolutionModel):
     def heights(self) : return self.__heights
 
     def __build_shapes(self, relative):
-        from ROOT import std
+        import ROOT
+        std = ROOT.std
         from ROOT import MultiHistEntry
 
         efficiency_entries = std.vector('MultiHistEntry*')()
-
+        map_type = std.map('RooAbsCategory*', 'std::string')
         for categories, relative_efficiency in relative.iteritems():
             # Make EfficiencyBins for the bin values
             # WIP: allow two extra coefficients for spline
@@ -2194,7 +2199,7 @@ class MultiHistEfficiencyModel(ResolutionModel):
                 eff_model = self.__build_eff_res(prefix, heights)
 
             # MultiHistEntry
-            cm = std.map('RooAbsCategory*', 'string')()
+            cm = map_type()
             for category, state in categories: cm[__dref__(category)] = state
             efficiency = self.__relative_efficiencies[state_name]
             entry = MultiHistEntry(cm, __dref__(eff_model), __dref__(efficiency))
@@ -2219,7 +2224,7 @@ class MultiHistEfficiencyModel(ResolutionModel):
                                      SplineFunction = spline_fun)
 
     def __add_constraints(self):
-        self.setExternalConstraints(self.__constraints)
+        self.setExternalConstraints(set(self.__constraints))
 
     def __find_coefficient(self, val, bounds, coefficients):
         for i in range(len(bounds) - 1):

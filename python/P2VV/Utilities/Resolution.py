@@ -1,4 +1,5 @@
 from P2VV.RooFitWrappers import BinningCategory
+from P2VV.RooFitWrappers import MappedCategory
 from ROOT import RooBinning
 from array import array
 
@@ -41,6 +42,9 @@ class SplitPPT(object):
     def directory(self, hd):
         return self.__format + '/' + hd
 
+    def observables(self):
+        return [self.__p, self.__pt]
+        
 class SplitSigmat(object):
     def __init__(self, data_type, st):
         self.__st = st
@@ -76,7 +80,10 @@ class SplitSigmat(object):
         
     def directory(self, hd):
         return self.__format + '/' + hd
-        
+
+    def observables(self):
+        return [self.__st]
+
 class SplitMomentum(object):
     def __init__(self, data_type, p):
         self.__p = p
@@ -105,12 +112,15 @@ class SplitMomentum(object):
     def directory(self, hd):
         return self.__format + '/' + hd
 
+    def observables(self):
+        return [self.__p]
+
 class SplitPT(object):
     def __init__(self, data_type, pt):
         self.__pt = pt
         self.__bins = array('d', [0, 976.79, 1385.08, 1750.6, 2123.96, 2529.76,
                                   2991.73, 3560.23, 4330.62, 5603.08, 1e5])
-        self.__format = 'pt_{0}bins_simul/{1}'.format(len(self.__bins))
+        self.__format = 'pt_{0}bins_simul'.format(len(self.__bins))
         
     def split_cats(self, data = None):
         if hasattr(self, '__cat'):
@@ -133,6 +143,9 @@ class SplitPT(object):
     def directory(self, hd):
         return self.__format + '/' + hd
 
+    def observables(self):
+        return [self.__pt]
+        
 class SplitPVZerr(object):
     def __init__(self, data_type, zerr):
         self.__zerr = zerr
@@ -160,6 +173,39 @@ class SplitPVZerr(object):
     def directory(self, hd):
         return self.__format + '/' + hd
 
+    def observables(self):
+        return [self.__zerr]
+
+class SplitNPV(object):
+    def __init__(self, data_type, nPV):
+        self.__nPV = nPV
+        self.__bins = array('d', [-0.5 + i for i in range(5)] + [12])
+        self.__format = 'nPV_{0}bins_simul'.format(len(self.__bins))
+        
+    def split_cats(self, data = None):
+        if hasattr(self, '__cat'):
+            return [self.__cat]
+        cat = data.get().find(self.__nPV.GetName() + '_cat')
+        if cat:
+            self.__cat = self.__nPV.ws().put(cat)
+        else:
+            nPV_binning = RooBinning(len(self.__bins) - 1, self.__bins, 'nPV_binning')
+            self.__nPV.setBinning(nPV_binning, 'nPV_binning')
+            self.__cat = BinningCategory(self.__nPV.GetName() + '_cat', Observable = self.__nPV,
+                                         Binning = nPV_binning, Fundamental = True, Data = data,
+                                         CatTypeName = 'nPV_bin_')
+        return [self.__cat]
+    
+    def binning(self, observable):
+        assert(observable == self.__nPV)
+        return self.__bins
+
+    def directory(self, hd):
+        return self.__format + '/' + hd
+
+    def observables(self):
+        return [self.__nPV]
+
 parNames = {'N_prompt'      : ('#prompt', '\\# prompt \jpsi'),
             'N_psi_ll'      : ('#longlived', '\\# long--lived \jpsi'),
             'N_bkg'         : ('#background', '\\# background'),
@@ -170,4 +216,52 @@ parNames = {'N_prompt'      : ('#prompt', '\\# prompt \jpsi'),
             'timeResMu'     : ('mean of Gaussians', 'common mean of Gaussians'),
             'timeResComb'   : ('sf comb', '$\\text{sf}_{\\text{comb}}$'),
             'timeResFrac2'  : ('frac G2', 'fraction 2nd Gauss'),
-            'timeResSigmaSF_2' : ('sf G2', '$\\text{sf}_{\\text{2}}$')}
+            'timeResSigmaSF_2' : ('sf G2', '$\\text{sf}_{2}$'),
+            'timeResSigmaSF_1' : ('sf G1', '$\\text{sf}_{1}$'),
+            'timeResSFMean' : ('sf mean', '$\\overline{\\mathrm{sf}}$'),
+            'timeResSFSigma' : ('sf sigma', '$\\mathrm{sf}_{\sigma}$'),
+            'sf_mean_offset' : ('sf mean offset', '$\\overline{\\sigma}$ offset'),
+            'sf_mean_slope' : ('sf mean slope', '$\\overline{\\sigma}$ slope'),
+            'sf_sigma_offset' : ('sf sigma offset', '$\\mathrm{sf}_{\\sigma}$ offset'),
+            'sf_sigma_slope' : ('sf sigma offset', '$\\mathrm{sf}_{\\sigma}$ slope')
+            }
+
+import os
+prefix = '/stuff/PhD' if os.path.exists('/stuff') else '/bfys/raaij'
+input_data = {'2011' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2011_ntupleB_20130722.root'),
+                        'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_Mixing_2011_DataSet.root'),
+                        'workspace' : 'Bs2JpsiPhiPrescaled_2011_workspace',
+                        'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Prescaled.root')},
+              '2011_Reco14' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2011_Reco14_Stripv20r1_ntupleB_20131002.root'),
+                               'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_Mixing_2011_Reco14_DataSet.root'),
+                               'workspace' : 'Bs2JpsiPhiPrescaled_WPV_2011_Reco14_workspace',
+                               'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Reco14_Prescaled.root')},
+              '2012' : {'data' :os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2012_ntupleB_20130905.root'),
+                        'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_Mixing_2012_DataSet.root'),
+                        'workspace' : 'Bs2JpsiPhiPrescaled_WPV_2012_workspace',
+                        'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2012_Prescaled.root')},
+              'MC11a' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20130613.root'),
+                         'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC11a.root'),
+                         'workspace' : 'Bs2JpsiPhiPrescaled_MC11a_workspace',
+                         'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC11a_Prescaled.root')},
+              'MC11a_incl_Jpsi' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC11a_incl_Jpsi_ntupleB_20130801.root'),
+                                   'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC11a.root'),
+                                   'workspace' : 'Bs2JpsiPhiPrescaled_MC11a_workspace',
+                                   'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC11a_incl_Jpsi_Prescaled.root')},
+              'MC2012' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC2012_ntupleB_20130904.root'),
+                          'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC2012.root'),
+                          'workspace' : 'Bs2JpsiPhiPrescaled_MC2012_workspace',
+                          'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC2012_Prescaled.root')},
+              'MC2012_incl_Jpsi' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC2012_incl_Jpsi_ntupleB_20130916.root'),
+                                    'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC2012_DataSet.root'),
+                                    'workspace' : 'Bs2JpsiPhiPrescaled_MC2012_workspace',
+                                    'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC2012_incl_Jpsi_Prescaled.root')},
+              'MC2011_Sim08a' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC2011_Sim08a_ntupleB_20130909.root'),
+                                 'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC2011_Sim08a.root'),
+                                 'workspace' : 'Bs2JpsiPhiPrescaled_MC2011_Sim08a_workspace',
+                                 'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC2011_Sim08a_Prescaled.root')},
+              'MC2011_Sim08a_incl_Jpsi' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC2011_Sim08a_incl_Jpsi_ntupleB_20130909.root'),
+                                           'wpv' : os.path.join(prefix, 'mixing/Bs2JpsiPhiPrescaled_MC2011_Sim08a.root'),
+                                           'workspace' : 'Bs2JpsiPhiPrescaled_MC2011_Sim08a_workspace',
+                                           'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC2011_Sim08a_incl_Jpsi_Prescaled.root')}
+              }

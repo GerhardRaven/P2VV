@@ -159,7 +159,7 @@ Double_t RooExplicitNormPdf::evaluate() const
       intVal += _projData->weight() * _function->getVal() / _normFunc->getVal();
     }
     intVal /= _projData->sumEntries();
-    cout << "." << flush;
+    std::cout << "." << std::flush;
   }
 
   return _normFactor * intVal;
@@ -179,9 +179,9 @@ void RooExplicitNormPdf::initVariables(const RooArgSet* obsSet,
   while ((var = (RooAbsArg*)varIter->Next()) != 0) {
     if (functionVars->find(var->GetName()) == 0) {
       coutW(InputArguments) << "RooExplicitNormPdf::initVariables("
-          << GetName()
-          << "): specified function does not depend on observable \""
-          << var->GetName() << "\"" << endl;
+			    << GetName()
+			    << "): specified function does not depend on observable \""
+			    << var->GetName() << "\"" << std::endl;
     }
 
     _obsSet.add(*var);
@@ -194,9 +194,9 @@ void RooExplicitNormPdf::initVariables(const RooArgSet* obsSet,
     while ((var = (RooAbsArg*)varIter->Next()) != 0) {
       if (_obsSet.find(var->GetName()) != 0) {
         coutW(InputArguments) << "RooExplicitNormPdf::initVariables("
-            << GetName() << "): integration observable \"" << var->GetName()
-            << "\" is in the set of observables; not integrating over \""
-            << var->GetName() << "\"" << endl;
+			      << GetName() << "): integration observable \"" << var->GetName()
+			      << "\" is in the set of observables; not integrating over \""
+			      << var->GetName() << "\"" << std::endl;
         continue;
       }
 
@@ -260,10 +260,10 @@ void RooExplicitNormPdf::initFunctions() const
     delete obsIter;
 
     coutI(Eval) << "RooExplicitNormPdf::initFunctions(" << GetName()
-        << "): evaluating integral as a data-weighted average with data set \""
-        << _projData->GetName() << "\": " << setprecision(1) << fixed
-        << _projData->numEntries() << " (" << _projData->sumEntries()
-        << ") entries" << endl;
+		<< "): evaluating integral as a data-weighted average with data set \""
+		<< _projData->GetName() << "\": " << std::setprecision(1) << std::fixed
+		<< _projData->numEntries() << " (" << _projData->sumEntries()
+		<< ") entries" << std::endl;
     coutI(Eval) << "conditional observables: ";
     _projData->get()->Print();
   }

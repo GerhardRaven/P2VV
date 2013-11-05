@@ -216,7 +216,7 @@ void RooRealMoment::clearMoments()
 }
 
 //_____________________________________________________________________________
-ostream& RooRealMoment::print(ostream& os, Bool_t normalize) const
+std::ostream& RooRealMoment::print(std::ostream& os, Bool_t normalize) const
 {
   return os << "moment(" << _name << ") = " << coefficient(normalize) << " +- "
       << stdDev(normalize) << " (significance: " << significance() << ")"

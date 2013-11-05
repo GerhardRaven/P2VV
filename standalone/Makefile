@@ -1,6 +1,6 @@
 DEPDIR = .deps
 SRCDIR = src
-INCDIR = include
+INCDIR = ./include
 BUILDDIR = .build
 LIBDIR = lib
 DICTDIR = dict
@@ -47,7 +47,7 @@ vpath %.c   $(SRCDIR):$(DICTDIR):$(BUILDDIR)
 vpath %.h   $(INCDIR)/P2VV:$(DICTDIR):$(BUILDDIR)
 vpath %.o   $(BUILDDIR)
 
-.PHONY: all clean profiler
+.PHONY: all clean profiler dict-clean
 
 all: $(DEPDIR) $(LIBDIR) $(BUILDDIR) .deps $(LIBDIR)/libP2VV.so $(LIBDIR)/dilution.so
 
@@ -86,7 +86,10 @@ $(LIBDIR)/dilution.so: $(DILUTION_OBJECTS)
 	$(LD) $(PYTHON_LDFLAGS) -shared -o $@ $^
 
 clean:
-	-rm -rf $(LIBDIR)/*.so $(DILUTION_OBJECTS) $(OBJECTS) P2VV_dict.* *.pyc *.bak *.aux $(BUILDDIR)/* texput.log
+	-rm -rf $(LIBDIR)/*.so $(DILUTION_OBJECTS) $(OBJECTS) $(BUILDDIR)/P2VV_dict.* *.pyc *.bak *.aux $(BUILDDIR)/* texput.log
+
+dict-clean:
+	-rm -rf $(LIBDIR)/*.so $(BUILDDIR)/P2VV_dict.o $(BUILDDIR)/P2VV_dict.* 
 
 $(DEPDIR) $(LIBDIR) $(BUILDDIR):
 	@if [ ! -d $@ ]; then mkdir $@; fi

@@ -463,3 +463,198 @@ class SolveSF(object):
         rf.SetNpx(20)
         rf.Solve()
         return rf.Root()
+
+
+from P2VV.PropagateErrors import Parameter
+
+class DilutionCSFS(object):
+    def __init__(self, st_mean, result_dir):
+        self.__result_name = 'time_result_double_RMS_Gauss_linear'
+        self.__result = result_dir.Get(self.__result_name)
+        if not self.__result:
+            raise RuntimeError('no result available')
+
+        def __mkp(result, name):
+            p = result.floatParsFinal().find(name)
+            return Parameter(name, p.getVal(), p.getError())
+
+        self.__dms = Parameter('dms', 17.768,  0.024)
+        self.__st_mean = st_mean
+        self.__sfm_offset = __mkp(self.__result, "sf_mean_offset")
+        self.__sfm_slope = __mkp(self.__result, "sf_mean_slope")
+        self.__sfm_slope.setValue(self.__sfm_slope.value() / 0.06)
+        self.__sfm_slope.setError(self.__sfm_slope.error() / 0.06)
+        self.__sfs_offset = __mkp(self.__result, "sf_sigma_offset")
+        self.__sfs_slope = __mkp(self.__result, "sf_sigma_slope")
+        self.__sfs_slope.setValue(self.__sfs_slope.value() / 0.06)
+        self.__sfs_slope.setError(self.__sfs_slope.error() / 0.06)
+        self.__frac = __mkp(self.__result, "timeResFrac2")
+        from ROOT import RooArgList
+        self.__cv = self.__result.reducedCovarianceMatrix(RooArgList(*[self.__result.floatParsFinal().find(p.name()) for p in [self.__sfm_offset, self.__sfm_slope, self.__frac, self.__sfs_offset, self.__sfs_slope]]))
+
+        from P2VV.PropagateErrors import ErrorCSFS
+        self.__error = ErrorCSFS(st_mean, self.__dms, self.__sfm_offset, self.__sfm_slope,
+                                 self.__frac, self.__sfs_offset, self.__sfs_slope, self.__cv)
+
+    def dilution(self, data):
+        d = dilution(data, [([(self.__st_mean, self.__sfm_offset.value(), self.__sfm_slope.value()),
+                              (self.__st_mean, self.__sfs_offset.value(), self.__sfs_slope.value()),
+                              self.__frac.value()], (1 - self.__frac.value())),
+                            ([(self.__st_mean, self.__sfm_offset.value(), self.__sfm_slope.value()),
+                              (self.__st_mean, self.__sfs_offset.value(), self.__sfs_slope.value()),
+                              self.__frac.value()], self.__frac.value())],
+                            (self.calib_sf1, self.calib_sf2), self.__error)
+        return d
+
+    def calib_sf1(self, pars, st):
+        sfm_pars = pars[0]
+        sfs_pars = pars[1]
+        f = pars[2]
+        sfm = self.calib(sfm_pars, st)
+        sfs = self.calib(sfs_pars, st)
+        return (- sqrt(f / (1 - f)) * sfs + sfm) * st
+
+    def calib_sf2(self, pars, st):
+        sfm_pars = pars[0]
+        sfs_pars = pars[1]
+        f = pars[2]
+        sfm = self.calib(sfm_pars, st)
+        sfs = self.calib(sfs_pars, st)
+        return (sqrt((1 - f) / f) * sfs + sfm) * st
+
+    def calib(self, pars, st):
+        return sum(pars[i + 1] * pow(st - pars[0], i) for i in range(len(pars) - 1))
+
+class DilutionCSFC(object):
+    def __init__(self, st_mean, result_dir):
+        self.__result_name = 'time_result_double_Comb_Gauss_linear'
+        self.__result = result_dir.Get(self.__result_name)
+        if not self.__result:
+            raise RuntimeError('no result available')
+
+        def __mkp(result, name):
+            p = result.floatParsFinal().find(name)
+            return Parameter(name, p.getVal(), p.getError())
+
+        self.__dms = Parameter('dms', 17.768,  0.024)
+        self.__st_mean = st_mean
+        self.__sfc_offset = __mkp(self.__result, "sfc_offset")
+        self.__sfc_slope = __mkp(self.__result, "sfc_slope")
+        self.__frac = __mkp(self.__result, "timeResFrac2")
+        self.__sf2_offset = __mkp(self.__result, "sf2_offset")
+        self.__sf2_slope = __mkp(self.__result, "sf2_slope")
+        from ROOT import RooArgList
+        self.__cv = self.__result.reducedCovarianceMatrix(RooArgList(*[self.__result.floatParsFinal().find(p.name()) for p in [self.__sfc_offset, self.__sfc_slope, self.__frac, self.__sf2_offset, self.__sf2_slope]]))
+
+        from P2VV.PropagateErrors import ErrorCDG
+        self.__error = ErrorCDG(st_mean, self.__dms, self.__sfc_offset, self.__sfc_slope,
+                                self.__frac, self.__sf2_offset, self.__sf2_slope, self.__cv)
+
+    def dilution(self, data):
+        d = dilution(data, [([(self.__st_mean, self.__sfc_offset.value(), self.__sfc_slope.value()),
+                              (self.__st_mean, self.__sf2_offset.value(), self.__sf2_slope.value()), self.__frac.value()],
+                             (1 - self.__frac.value())), ((self.__st_mean, self.__sf2_offset.value(),
+                                                           self.__sf2_slope.value()), self.__frac.value())],
+                     (self.calib_sf1, self.calib_sf2), self.__error)
+        return d
+
+    def calib_sf1(self, pars, st):
+        sfc_pars = pars[0]
+        sf2_pars = pars[1]
+        frac = pars[2]
+        sfc = self.calib(sfc_pars, st)
+        sf2 = self.calib(sf2_pars, st)
+        return (sfc - frac * sf2) / (1 - frac) * st
+
+    def calib_sf2(self, pars, st):
+        return self.calib(pars, st) * st
+
+    def calib(self, pars, st):
+        return sum(pars[i + 1] * pow(st - pars[0], i) for i in range(len(pars) - 1))
+        
+class DilutionSG(object):
+    def __init__(self):
+        self.__sf = Parameter('sf_sg', 1.45, 0.06)
+
+        self.__dms = Parameter('dms', 17.768,  0.024)
+        from P2VV.PropagateErrors import ErrorSG
+        self.__error = ErrorSG(self.__dms, self.__sf)
+
+    def dilution(self, data):
+        return dilution(data, [((self.__sf,), 1)], (self.calib,), self.__error)
+
+    def calib(self, p, st):
+        return p[0].value() * st
+
+class DilutionSFC(object):
+    def __init__(self, result_dir):
+        def __mkp(result, name):
+            p = result.floatParsFinal().find(name)
+            return Parameter(name, p.getVal(), p.getError())
+
+        self.__result_name = 'time_result_double_Comb_Gauss'
+        self.__result = result_dir.Get(self.__result_name)
+        if not self.__result:
+            raise RuntimeError('no result available')
+
+        self.__dms = Parameter('dms', 17.768,  0.024)
+        self.__sfc = __mkp(self.__result, "timeResComb")
+        self.__frac = __mkp(self.__result, "timeResFrac2")
+        self.__sf2 = __mkp(self.__result, "timeResSigmaSF_2")
+        from ROOT import RooArgList
+        self.__cv = self.__result.reducedCovarianceMatrix(RooArgList(*[self.__result.floatParsFinal().find(p.name()) for p in [self.__sfc, self.__frac, self.__sf2]]))
+
+        from P2VV.PropagateErrors import ErrorSFC
+        self.__error = ErrorSFC(self.__dms, self.__sfc, self.__frac, self.__sf2, self.__cv)
+
+    def dilution(self, data):
+        return dilution(data, [((self.__sfc, self.__frac, self.__sf2), (1 - self.__frac.value())),
+                               ((0, self.__sf2), self.__frac.value())],
+                        (self.sf1, self.calib), self.__error)
+
+    def calib(self, p, st):
+        return p[1].value() * st
+
+    def sf1(self, p, st):
+        return (p[0].value() - p[1].value() * p[2].value()) / (1 - p[1].value()) * st
+
+from math import sqrt
+
+class DilutionSFS(object):
+    def __init__(self, result_dir):
+        def __mkp(result, name):
+            p = result.floatParsFinal().find(name)
+            return Parameter(name, p.getVal(), p.getError())
+
+        self.__result_name = 'time_result_double_RMS_Gauss'
+        self.__result = result_dir.Get(self.__result_name)
+        if not self.__result:
+            raise RuntimeError('no result available')
+
+        self.__dms = Parameter('dms', 17.768,  0.024)
+        self.__sfc = __mkp(self.__result, "timeResSFMean")
+        self.__frac = __mkp(self.__result, "timeResFrac2")
+        self.__sfs = __mkp(self.__result, "timeResSFSigma")
+        from ROOT import RooArgList
+        self.__cv = self.__result.reducedCovarianceMatrix(RooArgList(*[self.__result.floatParsFinal().find(p.name()) for p in [self.__sfc, self.__frac, self.__sfs]]))
+
+        from P2VV.PropagateErrors import ErrorSFS
+        self.__error = ErrorSFS(self.__dms, self.__sfc, self.__frac, self.__sfs, self.__cv)
+
+    def dilution(self, data):
+        return dilution(data, [((self.__sfc, self.__frac, self.__sfs), (1 - self.__frac.value())),
+                               ((self.__sfc, self.__frac, self.__sfs), self.__frac.value())],
+                        (self.sf1, self.sf2), self.__error)
+
+    def sf1(self, p, st):
+        f = p[1].value()
+        sfc = p[0].value()
+        sfs = p[2].value()
+        return (- sqrt(f / (1 - f)) * sfs + sfc) * st
+
+    def sf2(self, p, st):
+        f = p[1].value()
+        sfc = p[0].value()
+        sfs = p[2].value()
+        return (sqrt((1 - f) / f) * sfs + sfc) * st
+
