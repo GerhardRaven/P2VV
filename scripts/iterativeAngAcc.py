@@ -180,7 +180,7 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
     physMoments.initCovariances()
     physMoments.compute(reweightedData) 
     physMoments.write( effMomentsFile , Scale=scaleFactor )
-    physMoments.convertPhysMomsToEffWeights( effWeightsFile , Scale=scaleFactor )
+    physMoments.convertEffWeightsToMoments( OutputFilePath = effWeightsFile , Scale = scaleFactor )
     
 #####################################################################################################################################
 ## Perform sFit on data using the new angular acceptance.##
