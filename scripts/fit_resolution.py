@@ -150,7 +150,7 @@ elif args[1] == 'double':
     tres_args = dict(time = time_obs, sigmat = st, Cache = True,
                      PerEventError = options.pee, Parameterise = options.parameterise,
                      TimeResSFParam = options.sf_param, SplitFracs = options.split_frac,
-                     timeResMu = mu, GExp = {2 : signal_MC, 1 : False},
+                     timeResMu = mu, GExp = {2 : False, 1 : False},
                      ScaleFactors = [(2, 2.1), (1, 1.26)] if options.pee else [(2, 0.1), (1, 0.06)],
                      Fractions = [(2, 0.2)], SplitMean = options.split_mean)
     sig_tres = TimeResolution(Name = 'sig_tres', **tres_args)
