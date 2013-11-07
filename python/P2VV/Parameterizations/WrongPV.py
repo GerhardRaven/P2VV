@@ -26,9 +26,9 @@ class ShapeBuilder(object):
 
         self.__masses = masses
 
-        self._sig = Component('wpv_signal', [], Yield = (1000, 10, 50000))
-        self._psi = Component('wpv_jpsi',   [], Yield = (5000, 10, 50000))
-        self._bkg = Component('wpv_bkg',    [], Yield = (5000, 10, 50000))
+        self._sig = Component('wpv_signal', [], Yield = (1000, 10, 5e5))
+        self._psi = Component('wpv_jpsi',   [], Yield = (5000, 10, 5e5))
+        self._bkg = Component('wpv_bkg',    [], Yield = (5000, 10, 5e5))
 
         if 'B' in masses:
             ## m_sig_mean  = RealVar('wpv_m_sig_mean',   Unit = 'MeV', Value = 5365, MinMax = (5363, 5372))

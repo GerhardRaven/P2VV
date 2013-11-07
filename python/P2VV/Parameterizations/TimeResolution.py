@@ -128,6 +128,7 @@ class Gaussian_TimeResolution ( TimeResolution ) :
 
 class Multi_Gauss_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :
+        Name = kwargs.pop('Name', 'timeResModelMG')
         namePF = self.getNamePrefix(kwargs)
         from P2VV.RooFitWrappers import ResolutionModel, AddModel
         from ROOT import RooNumber
@@ -145,10 +146,10 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         sf_param = kwargs.pop('TimeResSFParam', False)
         if sf_param:
             self._parseArg('sigmat_mean', kwargs, Value = 3.47648e-02, Constant = True)
-            self.__st_placeholder = self._parseArg( self._sigmat.GetName() + '_placeholder', kwargs, Value = 0.033
-                                                   , MinMax = (-0.2, 0.2), Constant = True )
+            self.__placeholder = self._parseArg(namePF + 'tres_placeholder', kwargs, Value = 0
+                                                   , MinMax = (-1e6, 1e6), Constant = True )
         else:
-            self.__st_placeholder = None
+            self.__placeholder = None
         
         assert(len(sigmasSFs) - 1 == len(fracs))
 
@@ -167,21 +168,20 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         self._timeResFracs     = [ self._parseArg( 'timeResFrac%s' % num, kwargs, Value = val, MinMax = (0.0001, 0.99) )\
                                   for num, val in fracs ]
 
-        Name = kwargs.pop('Name', 'timeResModelMG')
-
         from ROOT import RooNumber
         RooInf = RooNumber.infinity()
         if param == 'RMS': 
             if sf_param:
-                self._parseArg('sf_sigma_slope', kwargs, Value = -4.08319, MinMax = (-20, 20) )
-                self._parseArg('sf_sigma_offset', kwargs, Value = 2.03079, MinMax = (-20, 20) )
-                self._sf_sigma = self._parseArg('timeResSFMean_linear', kwargs, ObjectType = 'PolyVar'
-                                                , ObsVar = self.__st_placeholder
-                                                , Coefficients = [self._sf_sigma_offset, self._sf_sigma_slope])
-                self._parseArg( 'sf_mean_slope', kwargs, Value = -3.41081, MinMax = (-20, 20) )
-                self._parseArg( 'sf_mean_offset', kwargs, Value = 1.43297, MinMax = (-20, 20) )
-                self._sf_mean = self._parseArg('timeResSFSigma_linear', kwargs, ObjectType = 'PolyVar', ObsVar = self.__st_placeholder
-                                            , Coefficients = [ self._sf_mean_offset, self._sf_mean_slope ] )
+                self._parseArg( 'sf_mean_offset', kwargs, Value = 1.5, MinMax = (-20, 20) )
+                self._parseArg( 'sf_mean_slope', kwargs, Value = -0.1, MinMax = (-20, 20) )
+                self._sf_mean = self._parseArg('timeResSFMean_linear', kwargs,
+                                                Formula = '@0 + @1 * @2', ObjectType = 'FormulaVar',
+                                                Arguments = [self._sf_mean_offset, self._sf_mean_slope, self.__placeholder])
+                self._parseArg('sf_sigma_offset', kwargs, Value = 0.4, MinMax = (-20, 20) )
+                self._parseArg('sf_sigma_slope', kwargs, Value = -0.05, MinMax = (-20, 20) )
+                self._sf_sigma = self._parseArg('timeResSFSigma_linear', kwargs,
+                                                Formula = '@0 + @1 * @2', ObjectType = 'FormulaVar',
+                                                Arguments = [self._sf_sigma_offset, self._sf_sigma_slope, self.__placeholder])
             else:
                 from math import sqrt
                 self._sf_mean = self._parseArg('timeResSFMean', kwargs
@@ -204,16 +204,17 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                     self._realVars += self._timeResFracs
         elif param == 'Comb':
             if sf_param:
-                self._parseArg( 'sf2_slope', kwargs, Value = -4.08319, MinMax = (-20, 20) )
-                self._parseArg( 'sf2_offset', kwargs, Value = 2.03079, MinMax = (-20, 20) )
+                self._parseArg( 'sf2_slope', kwargs, Value = -1, MinMax = (-20, 20) )
+                self._parseArg( 'sf2_offset', kwargs, Value = 0, MinMax = (-20, 20) )
                 self._sf2_original = self._timeResSigmasSFs[0]
-                self._timeResSigmasSFs[0] = self._parseArg( self._sf2_original.GetName() + '_linear', kwargs, ObjectType = 'PolyVar'
-                                                           , ObsVar = self.__st_placeholder
-                                                           , Coefficients = [ self._sf2_offset, self._sf2_slope ] )
+                self._timeResSigmasSFs[0] = self._parseArg( self._sf2_original.GetName() + '_linear', kwargs,
+                                                            Formula = '@0 + @1 * @2', ObjectType = 'FormulaVar',
+                                                            Arguments = [self._sf2_offset, self._sf2_slope, self.__placeholder])
                 self._parseArg( 'sf_mean_slope', kwargs, Value = -3.41081, MinMax = (-20, 20) )
                 self._parseArg( 'sf_mean_offset', kwargs, Value = 1.43297, MinMax = (-20, 20) )
-                self._comb = self._parseArg( 'timeResSFMean_linear', kwargs, ObjectType = 'PolyVar', ObsVar = self.__st_placeholder
-                                            , Coefficients = [ self._sfc_offset, self._sfc_slope ] )
+                self._comb = self._parseArg( 'timeResSFMean_linear', kwargs,
+                                             Formula = '@0 + @1 * @2', ObjectType = 'FormulaVar', 
+                                             Arguments = [ self._sf_mean_offset, self._sf_mean_slope, self.__placeholder] )
             else:
                 self._sf_mean = self._parseArg('timeResSFMean', kwargs
                                                , Value = ( ( 1. - fracs[0][1] ) * sigmasSFs[1][1] + fracs[0][1] * sigmasSFs[0][1] )
@@ -268,7 +269,7 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         return sv
 
     def sigmatPlaceHolder(self):
-        return self.__st_placeholder
+        return self.__placeholder
         
 class Paper2012_TimeResolution ( TimeResolution ) :
     def __init__( self, **kwargs ) :

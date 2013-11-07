@@ -9,10 +9,10 @@ parser = optparse.OptionParser(usage = '%prog data_type')
 (options, args) = parser.parse_args()
 
 if len(args) != 1:
-    print parser.usage
+    print parser.print_usage()
     sys.exit(-2)
 elif args[0] not in ['2011', '2012', 'MC11a']:
-    print parser.usage
+    print parser.print_usage()
     sys.exit(-2)
 
 from ROOT import *
@@ -132,7 +132,7 @@ __canvases = []
 __histos = []
 __fit_funcs = []
 
-fit_type = 'double_Comb_Gauss'
+fit_type = 'double_RMS_Gauss'
 
 __fit_results = defaultdict(list)
 from array import array
@@ -175,12 +175,13 @@ def draw_res_graph(res_graph, hist_events):
     hist_events.Scale(scale)
     hist_events.GetYaxis().SetRangeUser(0, res_max * 1.10)
     res_graph.GetYaxis().SetRangeUser(0, res_max * 1.10)
-    hist_events.Draw('hist') 
     from ROOT import kGray
     hist_events.SetFillColor(kGray + 1)
+    hist_events.Draw('hist') 
     res_graph.Draw('P')
     return hist_events
     
+ffs = defaultdict(dict)
 for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split('/')[-1]]):
     index = good[key.split('/')[-1]]
     full_sdata = sdatas[index]['sig_sdata']
@@ -204,8 +205,8 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
     res_x = array('d')
     comb = array('d')
     comb_e = array('d')
-    sf2s = array('d')
-    sf2_es = array('d')
+    sfos = array('d')
+    sfo_es = array('d')
     total = full_sdata.sumEntries()
     for b, ct in enumerate(st_cat):
         d = split_bounds[b + 1] - split_bounds[b]
@@ -218,7 +219,12 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
             sf_comb = time_fpf.find('timeResComb_%s' % ct.GetName())
             sf, sf_e = sf_comb.getVal(), sf_comb.getError()
             tmp = time_fpf.find('timeResSigmaSF_2_%s' % ct.GetName())
-            sf2, sf2_e = tmp.getVal(), tmp.getError()
+            sfo, sfo_e = tmp.getVal(), tmp.getError()
+        elif fit_type.startswith('double_RMS'):
+            sf_av = time_fpf.find('timeResSFMean_%s' % ct.GetName())
+            sf, sf_e = sf_av.getVal(), sf_av.getError()
+            sf_sigma = time_fpf.find('timeResSFSigma_%s' % ct.GetName())
+            sfo, sfo_e = sf_sigma.getVal(), sf_sigma.getError()
         elif fit_type == 'double':
             from P2VV.PropagateErrors import propagateScaleFactor
             sf, sf_e = propagateScaleFactor(time_result, '_' + ct.GetName())
@@ -231,49 +237,76 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
         res_x.append(mean)
         comb.append(sf)
         comb_e.append(sf_e)
-        sf2s.append(sf2)
-        sf2_es.append(sf2_e)
+        sfos.append(sfo)
+        sfo_es.append(sfo_e)
     
     res_ex = array('d', [0 for i in range(len(res_x))])
     res_graph = TGraphErrors(len(res_x), res_x, comb, res_ex, comb_e)
     res_graph.SetName('res_graph_%d' % index)
-    sf2_graph = TGraphErrors(len(res_x), res_x, sf2s, res_ex, sf2_es)
-    sf2_graph.SetName('sf2_graph_%d' % index)
-    __histos.extend([res_graph, sf2_graph])
+    sfo_graph = TGraphErrors(len(res_x), res_x, sfos, res_ex, sfo_es)
+    sfo_graph.SetName('sfo_graph_%d' % index)
+    __histos.extend([res_graph, sfo_graph])
     
     from ROOT import TF1
     fit_funcs = {'pol1' : ('pol1', 'S0+'),
                  'pol2' : ('pol2', 'S0+'),
-                 'pol1_mean_param' : ('[0] + [1] + [2] * (x - [0])', 'S+'),
+                 'pol1_mean_param' : ('[1] + [2] * ((x - [0]) / [3])', 'S0+'),
                  'pol2_no_offset' : ('x ++ x * x', 'S0+'),
-                 'pol2_mean_param' : ('[0] + [1] + [2] * (x - [0]) + [3] * (x - [0])^2', 'S0+')}
+                 'pol2_mean_param' : ('[1] + [2] * ((x - [0]) / [3]) + [4] * ((x - [0]) / [3])^2', 'S0+')}
     print titles[key]
     st_mean = full_sdata.mean(st)
-    for g in (res_graph, sf2_graph):
+    for g in (res_graph, sfo_graph):
         frs = []
         for i, (name, (func, opts)) in enumerate(fit_funcs.iteritems()):
             fit_func = TF1(name, func, split_bounds[0], split_bounds[-1])
             if name.endswith('mean_param'):
                 fit_func.FixParameter(0, st_mean)
+                fit_func.FixParameter(3, res_x[-1] - res_x[0])
             print name
             fit_result = g.Fit(fit_func, opts, "L")
             fit_result.SetName('result_' + name)
             print 'Chi2 / nDoF = %5.3f\n' % (fit_result.Chi2() / fit_result.Ndf())
             __fit_results[g.GetName().rsplit('_', 1)[0]].append(fit_result)
             frs.append(fit_result.Get())
+            ffs[g.GetName()][name] = fit_func
         print fr_latex(frs)
     
     print ''
+
+    def draw_calib_graph(prefix):
+        calib_result = fit_results[time_result.GetName() + '_linear']
+        if not calib_result:
+            return
+        calib_fpf = dict([(p.GetName(), [p.getVal(), p.getError()]) for p in calib_result.floatParsFinal()])
+        offset = calib_fpf['_'.join((prefix, 'offset'))]
+        slope = calib_fpf['_'.join((prefix, 'slope'))]
+        slope[0] /= (split_bounds[-1] - split_bounds[0])
+        calib_func = TF1(prefix + '_simul', '[0] + [1] * (x - [2])',
+                         (split_bounds[0] + split_bounds[1]) / 2.,
+                         (split_bounds[-2] + split_bounds[-1]) / 2.)
+        for i, (v, e) in [(0, offset), (1, slope), (2, (st_mean, 0))]:
+            calib_func.SetParameter(i, v)
+            calib_func.SetParError(i, e)
+        from ROOT import kBlue
+        calib_func.SetLineColor(kBlue)
+        calib_func.Draw('same')
+        __histos.append(calib_func)
     
     canvas.cd(1)
     sf1_hist = draw_res_graph(res_graph, hist_events)
     sf1_hist.GetXaxis().SetTitle('estimated decay time resolution [ps]')
-    sf1_hist.GetYaxis().SetTitle('combined scale factor')
+    sf1_hist.GetYaxis().SetTitle('#bar{sf}')
+    sf1_hist.GetYaxis().SetTitleOffset(1.05)
+    draw_calib_graph('sf_mean')
     
     canvas.cd(2)
-    sf2_hist = draw_res_graph(sf2_graph, hist_events)
-    sf2_hist.GetXaxis().SetTitle('estimated decay time resolution [ps]')
-    sf2_hist.GetYaxis().SetTitle('2nd scale factor')
+    sfo_hist = draw_res_graph(sfo_graph, hist_events)
+    sfo_hist.GetXaxis().SetTitle('estimated decay time resolution [ps]')
+    sfo_hist.GetYaxis().SetTitle('sf_{#sigma}')
+    sfo_hist.GetYaxis().SetTitleOffset(1.05)
+    draw_calib_graph('sf_sigma')
+
+    canvas.Update()
 
 ## def chunks(l, n):
 ##     """ Yield successive n-sized chunks from l.
@@ -304,60 +337,3 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
 ##         g.Draw('AP')
 ##     else:
 ##         g.Draw('P')
-
-## Make datasets for simultaneous fit
-import ROOT
-         
-######################################################################
-
-class SimFunction( ROOT.TPyMultiGenFunction ):
-    def __init__(self, x, c, ce, s2, s2e, sim = True):
-        ROOT.TPyMultiGenFunction.__init__(self, self)
-        self.__x = x
-        self.__c = c
-        self.__ce = ce
-        self.__s2 = s2
-        self.__s2e = s2e
-        self.__sim = sim
-        
-        self.__mean = sum(x) / float(len(x))
-        
-    def NDim(self):
-        return 3 if self.__sim else 4
-    
-    def __fun(self, x, par):
-        return par[0] + par[1] * (x - self.__mean)
-    
-    def DoEval(self, x):
-        # calculate chisquare
-        chisq, delta = 0., 0.
-        if self.__sim:
-            par_c = [x[0], x[1]]
-            par_s2 = [x[0], x[2]]
-        else:
-            par_c = [x[0], x[1]]
-            par_s2 = [x[2], x[3]]
-        for z, ze, par in [(self.__c, self.__ce, par_c),
-                           (self.__s2, self.__s2e, par_s2)]:
-            for i in range(len(self.__x)):
-                delta  = (z[i]-self.__fun(self.__x[i], par)) / ze[i]
-                chisq += delta*delta
-        
-        return chisq
-
-def sim_fit(x, c, ce, s2, s2e, sim = True):
-    fitter = ROOT.Fit.Fitter()
-    fitter.Config().MinimizerOptions().SetMinimizerType("Minuit2")
-    fitter.Config().MinimizerOptions().SetMinimizerAlgorithm("Migrad")
-    fitter.Config().MinimizerOptions().SetPrintLevel(2) 
-    
-    fcn = SimFunction(x, c, ce, s2, s2e, sim)
-    
-    start = array('d', (0, -3, -3))
-    fitter.FitFCN(fcn, start)
-    
-    return fitter.Result()
-
-## sim_result = sim_fit(res_x, comb, comb_e, sf2s, sf2_es, True)
-## sep_result = sim_fit(res_x, comb, comb_e, sf2s, sf2_es, False)
-

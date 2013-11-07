@@ -18,4 +18,11 @@ if not 'libRooFit' in gSystem.GetLibraries() :
 
 if not 'libP2VV' in gSystem.GetLibraries() :
     print "P2VV - INFO: loading P2VV library"
+    try:
+        from ROOT import gCling
+        gSystem.Load("libGui")
+        import os
+        gCling.AddIncludePath(os.path.join(os.environ['P2VVROOT'], 'include'))
+    except ImportError:
+        pass
     gSystem.Load('libP2VV')

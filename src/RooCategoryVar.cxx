@@ -48,8 +48,8 @@ void RooCategoryVar::initVarsMap() const
 {
   if (_cat.arg().numTypes() != _vars.getSize()) {
     coutF(InputArguments) << "RooCategoryVar::initVarsMap(" << GetName()
-        << "): number of variables does not match number of category types"
-        << endl;
+			  << "): number of variables does not match number of category types"
+			  << std::endl;
     assert(0);
   }
 
@@ -61,8 +61,8 @@ void RooCategoryVar::initVarsMap() const
     RooAbsReal* var(dynamic_cast<RooAbsReal*>(_vars.at(++varsIter)));
     if (var == 0) {
       coutF(InputArguments) << "RooCategoryVar::initVarsMap(" << GetName()
-          << "): variable at index " << varsIter
-          << " in list does not inherit from \"RooAbsReal\"" << endl;
+			    << "): variable at index " << varsIter
+			    << " in list does not inherit from \"RooAbsReal\"" << std::endl;
       assert(0);
     }
     _varIndices[state->getVal()] = varsIter;

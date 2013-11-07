@@ -49,7 +49,7 @@ RooComplementCoef::RooComplementCoef(
 {}
 
 //_____________________________________________________________________________
-void RooComplementCoef::printArgs(ostream& os) const
+void RooComplementCoef::printArgs(std::ostream& os) const
 {
   os << "[ 1";
   Int_t iter(0);

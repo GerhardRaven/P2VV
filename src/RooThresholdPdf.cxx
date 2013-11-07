@@ -88,8 +88,8 @@ Double_t RooThresholdPdf::analyticalIntegral(Int_t code, const char* rangeName) 
 {
   if (code != 1) {
     coutF(InputArguments) << "RooThresholdPdf::analyticalIntegral("
-        << GetName() << "): integration code should be 1 (got " << code << ")"
-        << endl;
+			  << GetName() << "): integration code should be 1 (got " << code << ")"
+			  << std::endl;
     assert(0);
   }
 
