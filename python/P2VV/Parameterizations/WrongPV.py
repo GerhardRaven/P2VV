@@ -185,16 +185,14 @@ class ShapeBuilder(object):
         from ROOT import TCanvas
         self.__time_canvases  = [TCanvas('wpv_time_%s' % c.GetName(), 'wpv_time_%s' % c.GetName(), 600, 400) for c in self.__shapes.keys()]
         t = self.__time
-        st = self.__st
         from ROOT import RooArgSet
         for (p, (c, shape)) in zip(self.__time_canvases, self.__shapes.items()):
             from P2VV.Utilities.Plotting import plot
-            pdfOpts  = dict(ProjWData = (RooArgSet(st), self.__sdatas[c], True))
             nBins = 80
             frame = plot(p, t, pdf = shape, data = self.__sdatas[c]
                          , frameOpts = dict(Title = c.GetName())
                          , dataOpts = dict(MarkerSize = 0.8, Binning = nBins, MarkerColor = kBlack)
-                         , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
+                         , pdfOpts  = dict(LineWidth = 2)
                          , logy = False
                          , plotResidHist = False)[0]
             frame.GetXaxis().SetTitle('decay time [ps]')
@@ -205,14 +203,12 @@ class ShapeBuilder(object):
         from ROOT import TCanvas
         self.__diff_canvas = TCanvas('wpv_diff_canvas', 'wpv_diff_canvas', len(self.__diff_shapes) * 500, 500)
         t_diff = self.__t_diff
-        st = self.__st
         from ROOT import RooArgSet
         for (p, (c, shape)) in zip(self.__diff_canvas.pads(len(self.__diff_shapes)), self.__diff_shapes.items()):
             from P2VV.Utilities.Plotting import plot
-            pdfOpts  = dict(ProjWData = (RooArgSet(st), self.__sdatas[c], True))
             plot(p, t_diff, pdf = shape, data = self.__sdatas[c]
                  , dataOpts = dict(MarkerSize = 0.8, Binning = 80, MarkerColor = kBlack)
-                 , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
+                 , pdfOpts  = dict(LineWidth = 2)
                  , logy = False
                  , plotResidHist = False)
 
