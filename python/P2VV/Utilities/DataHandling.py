@@ -252,17 +252,30 @@ def writeData( filePath, dataSetName, data, NTuple = False ) :
     f.Close()
 
 
-def correctWeights( dataSet, splitCatName, **kwargs ) :
+def correctWeights( dataSet, splitCatNames, **kwargs ) :
     """correct weights in dataSet for background dilution
     """
 
-    if splitCatName :
+    if splitCatNames :
         # get category that splits data sample
-        splitCat = dataSet.get().find(splitCatName)
-        assert splitCat, 'P2VV - ERROR: correctWeights: unknown split category: "%s"' % splitCat
+        if type(splitCatNames) == str : splitCatNames = [ splitCatNames ]
+        if len(splitCatNames) == 1 :
+            splitCat = dataSet.get().find( splitCatNames[0] )
+            assert splitCat, 'P2VV - ERROR: correctWeights: unknown split category: "%s"' % splitCatNames[0]
+
+        else :
+            from ROOT import RooArgSet
+            catSet = RooArgSet()
+            for catName in splitCatNames :
+                cat = dataSet.get().find(catName)
+                assert cat, 'P2VV - ERROR: correctWeights: unknown split category: "%s"' % catName
+                catSet.add(cat)
+
+            from ROOT import RooSuperCategory
+            splitCat = RooSuperCategory( 'splitCat', 'splitCat', catSet)
 
         indexDict = { }
-        for iter, catType in enumerate( splitCat ) : indexDict[ iter ] = catType.getVal()
+        for iter, catType in enumerate( splitCat ) : indexDict[ iter ] = ( catType.GetName(), catType.getVal() )
 
     # get variable that contains original event weights
     origWeightVar = None
@@ -275,7 +288,7 @@ def correctWeights( dataSet, splitCatName, **kwargs ) :
 
     corrFactors = kwargs.pop( 'CorrectionFactors', [ ] )
     if not corrFactors :
-        if splitCatName :
+        if splitCatNames :
             # initialize sums for the weights and the weights squared per category
             sumWeights   = [ 0. ] * ( splitCat.numTypes() + 1 )
             sumSqWeights = [ 0. ] * ( splitCat.numTypes() + 1 )
@@ -292,26 +305,27 @@ def correctWeights( dataSet, splitCatName, **kwargs ) :
             weight = origWeightVar.getVal() if origWeightVar else dataSet.weight()
             sumWeights[0]   += weight
             sumSqWeights[0] += weight**2
-            if splitCatName :
-                sumWeights[ posDict[ varSet.getCatIndex(splitCatName) ] + 1 ]   += weight
-                sumSqWeights[ posDict[ varSet.getCatIndex(splitCatName) ] + 1 ] += weight**2
+            if splitCatNames :
+                sumWeights[   posDict[ splitCat.getIndex() ] + 1 ] += weight
+                sumSqWeights[ posDict[ splitCat.getIndex() ] + 1 ] += weight**2
 
         # get correction factors
-        corrFactors = (  sumWeights[0] / sumSqWeights[0]
-                       , [ sum / sumSq for sum, sumSq in zip( sumWeights[ 1 : ], sumSqWeights[ 1 : ] ) ]
+        corrFactors = (  ( sumWeights[0] / sumSqWeights[0], sumWeights[0] )
+                       , [ ( sum / sumSq, sum ) for sum, sumSq in zip( sumWeights[ 1 : ], sumSqWeights[ 1 : ] ) ]
                       )
 
     # add corrected weights to data set
     from P2VV.Load import P2VVLibrary
     from ROOT import RooCorrectedWeight
-    if splitCatName :
+    if splitCatNames :
         from ROOT import std
         corrFactorsVec = std.vector('Double_t')()
-        print 'P2VV - INFO: correctWeights: multiplying sWeights (-ln(L)) to correct for background dilution with factors (overall factor %.4f):'\
+        print 'P2VV - INFO: correctWeights: multiplying sWeights (-ln(L)) to correct for background dilution with factors (overall factor %.4f for %.1f events):'\
               % corrFactors[0]
+        maxLenStateName = max( len( ind[0] ) for ind in indexDict.values() )
         for iter, fac in enumerate( corrFactors[1] ) :
-            corrFactorsVec.push_back(fac)
-            print '    %d: %.4f' % ( indexDict[iter], fac )
+            corrFactorsVec.push_back( fac[0] )
+            print ( '    {0:%ds} : {1:.4f} (events: {2:.1f})' % maxLenStateName ).format( indexDict[iter][0], fac[0], fac[1] )
 
         if origWeightVar :
             weightVar = RooCorrectedWeight( 'weightVar', 'weight variable', origWeightVar, splitCat, corrFactorsVec )
@@ -319,12 +333,12 @@ def correctWeights( dataSet, splitCatName, **kwargs ) :
             weightVar = RooCorrectedWeight( 'weightVar', 'weight variable', dataSet, splitCat, corrFactorsVec )
 
     else :
-        print 'P2VV - INFO: correctWeights: multiplying sWeights (-ln(L)) to correct for background dilution with a factor %.4f'\
+        print 'P2VV - INFO: correctWeights: multiplying sWeights (-ln(L)) to correct for background dilution with a factor %.4f for %.1f events'\
               % corrFactors[0]
         if origWeightVar :
-            weightVar = RooCorrectedWeight( 'weightVar', 'weight variable', origWeightVar, corrFactors[0] )
+            weightVar = RooCorrectedWeight( 'weightVar', 'weight variable', origWeightVar, corrFactors[0][0] )
         else :
-            weightVar = RooCorrectedWeight( 'weightVar', 'weight variable', dataSet, corrFactors[0] )
+            weightVar = RooCorrectedWeight( 'weightVar', 'weight variable', dataSet, corrFactors[0][0] )
 
     from ROOT import RooDataSet
     dataSet.addColumn(weightVar)
