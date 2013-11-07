@@ -1642,6 +1642,7 @@ def multiplyByAngularAcceptance( pdf, self, **kwargs ) :
     moments.appendPYList( angleFuncs.angles, angularMomentIndices( anglesEffType, angleFuncs ) )
     moments.read(angEffMomsFile)
     moments.Print()
-    moments.multiplyPDFWithEff( pdf, CoefName = parNamePrefix + 'effC' + '_' + coefNamePF )
+    moments.multiplyPDFWithEff( pdf, CoefName = parNamePrefix + ( '_' if parNamePrefix else '' ) + 'effC'\
+                                                + ( '_' if coefNamePF else '' ) + coefNamePF )
 
     return pdf

@@ -66,12 +66,15 @@ class JpsiphiTransversityAmplitudesHelicityAngles( AngularFunctions ) :
         angles = kwargs.pop('Angles')
         coef   = kwargs.pop( 'DummyCoef', False )
 
+        from P2VV.Parameterizations.GeneralUtils import getParNamePrefix
+        namePF = getParNamePrefix(True)
+
         # define function to build angular function; create dummy coefficient if we need to split the angular efficiency functions later
         from P2VV.RooFitWrappers import P2VVAngleBasis, Addition, RealVar
-        dummy = RealVar( Name = 'angEffDummyCoef', Value = 1. ) if coef else None
+        dummy = RealVar( Name = namePF + 'angEffDummyCoef', Value = 1. ) if coef else None
         _ba = lambda name, args :\
-            Addition( name, [ P2VVAngleBasis( Name = name, Angles = angles, Indices = arg[0], FixedCoef = arg[1], Coefficient = dummy )\
-                              for arg in args ] )
+            Addition( namePF + name, [ P2VVAngleBasis( Name = namePF + name, Angles = angles, Indices = arg[0], FixedCoef = arg[1]
+                                                      , Coefficient = dummy ) for arg in args ] )
 
         # TODO: generate the following table straight from the physics using PS->(VV,VS) ->ffss  (V=spin 1, f=spin 1/2, PS,S,s = spin 0)
         from math import sqrt
@@ -104,12 +107,15 @@ class JpsiphiTransversityAmplitudesTransversityAngles( AngularFunctions ) :
         angles = kwargs.pop('Angles')
         coef   = kwargs.pop( 'DummyCoef', False )
 
+        from P2VV.Parameterizations.GeneralUtils import getParNamePrefix
+        namePF = getParNamePrefix(True)
+
         # define function to build angular function; create dummy coefficient if we need to split the angular efficiency functions later
         from P2VV.RooFitWrappers import P2VVAngleBasis, Addition, RealVar
-        dummy = RealVar( Name = 'angEffDummyCoef', Value = 1. ) if coef else None
+        dummy = RealVar( Name = namePF + 'angEffDummyCoef', Value = 1. ) if coef else None
         _ba = lambda name, args :\
-            Addition( name, [ P2VVAngleBasis( Name = name, Angles = angles, Indices = arg[0], FixedCoef = arg[1], Coefficient = dummy )\
-                              for arg in args ] )
+            Addition( namePF + name, [ P2VVAngleBasis( Name = namePF + name, Angles = angles, Indices = arg[0], FixedCoef = arg[1]
+                                                      , Coefficient = dummy ) for arg in args ] )
 
         # TODO: generate the following table straight from the physics using PS->(VV,VS) ->ffss  (V=spin 1, f=spin 1/2, PS,S,s = spin 0)
         from math import sqrt

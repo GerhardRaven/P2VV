@@ -105,10 +105,10 @@ pdfConfig['anglesEffType'] = 'weights'  # 'weights' # 'basis012' # 'basisSig4'
 pdfConfig['angEffMomsFiles'] = dataPath + 'Reco14/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
 #angEffMomsFiles = SimulCatSettings('angEffMomsFiles')
 #angEffMomsFiles.addSettings( [ 'hlt1_excl_biased_dec' ], [ [ 'notExclB' ] ]
-#                            , dataPath + 'Reco14/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
+#                            , dataPath + 'Reco14/Sim08_20112012_hel_U_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
 #                           )
 #angEffMomsFiles.addSettings( [ 'hlt1_excl_biased_dec' ], [ [ 'exclB' ] ]
-#                            , dataPath + 'Reco14/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
+#                            , dataPath + 'Reco14/Sim08_20112012_hel_B_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
 #                           )
 #pdfConfig['angEffMomsFiles'] = angEffMomsFiles
 pdfConfig['angularRanges'] = dict( ctheta = [  ( 'ctlBin0', -1.,   -0.70 )
