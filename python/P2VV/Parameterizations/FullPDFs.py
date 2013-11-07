@@ -351,9 +351,13 @@ class PdfBuilder ( dict ) :
         for name in obsDict.keys() :
             if readFromWS :
                 ws = RooObject().ws()
-                if   ws.var( obsDict[name][0] ) : self['observables'][name] = RealVar(  obsDict[name][0] )
-                elif ws.cat( obsDict[name][0] ) : self['observables'][name] = Category( obsDict[name][0] )
-                else : raise RuntimeError( 'P2VV - ERROR: PdfBuilder._createObservables(): variable "%s" not in workspace' % name )
+                if ws.var( obsDict[name][0] ) :
+                    self['observables'][name] = RealVar( obsDict[name][0] )
+                elif ws.cat( obsDict[name][0] ) :
+                    self['observables'][name] = Category( obsDict[name][0] )
+                else :
+                    raise RuntimeError( 'P2VV - ERROR: PdfBuilder._createObservables(): variable "%s" ("%s") not in workspace'\
+                                        % ( obsDict[name][0], name ) )
             else :
                 if type( obsDict[name][2] ) != dict :
                     self['observables'][name] = RealVar( obsDict[name][0], Title = obsDict[name][1]
