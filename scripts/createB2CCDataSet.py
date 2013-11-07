@@ -9,7 +9,7 @@ dataSetsFilePath = 'temp.root' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P
 appendToFile     = False
 savedObjects     = [ 'main', 'sigSWeight' ]
 plotsFilePath    = 'temp.ps' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_6KKMassBins_2TagCats.ps'
-parFileIn        = '' #'eventYields6KKBins.par'
+parFileIn        = 'eventYields4KKBins.par' #'eventYields6KKBinsNoMC.par' #'eventYields6KKBins.par'
 parFileOut       = ''
 
 simulation       = False
@@ -17,9 +17,9 @@ weightName       = 'wMC'
 runPeriods       = [ 2011, 2012 ]
 triggerSel       = 'noSelection' # 'paper2012' # 'HLT1Unbiased' # 'paper2012'
 dataCuts         = 'noSelection' # 'nominal2011'
-addCuts          = ''
+addCuts          = '' #'wMC > 0.'
 dataSample       = '(bkgcat==0 || bkgcat==50)' if simulation else ''
-sWeightName      = 'sigWeight_DG_6KKBins'
+sWeightName      = 'sigWeight_I2_4KKBins'
 addSWeights      = True
 addKKMassCat     = True
 addTrackMomenta  = False
@@ -27,9 +27,9 @@ addTaggingObs    = ( 2, 2 ) # ( 0, 0 )
 createRangeData  = False
 createNTuple     = False
 splitDataSet     = [ ] #[ 'tagCatP2VVOS', 'tagCatP2VVSS' ]
-KKMassBinBounds  = [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ]
+KKMassBinBounds  = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ]
 
-sigMassModel     = '' #'Ipatia2'
+sigMassModel     = 'Ipatia2'
 cbkgMassModel    = ''
 SWeightsType     = 'simultaneousFreeCBkg'
 
@@ -48,33 +48,33 @@ if sigMassModel == 'Ipatia2' :
     constSplitPars = [ 'm_sig_alpha_1', 'm_sig_alpha_2', 'm_sig_n_1', 'm_sig_n_2', 'm_sig_lambda', 'm_sig_zeta' ]
 
     ## smeared MC, no truth requirement, 4 KK-mass bins
-    #constSplitVals = {  ( 'notExclB', 'bin0' ) : [ 3.090242001004567, 2.448740313493132, 7.865481777002969e-07, 0.3772603020305554, -1.8028256514259358, 0.0032161538679723045 ]
-    #                  , ( 'notExclB', 'bin1' ) : [ 2.7357926724807715, 2.5325078527657405, 1.410324206500183, 2.1356073743749593, -2.7476260304874316, 3.6501861834237204e-05  ]
-    #                  , ( 'notExclB', 'bin2' ) : [ 3.0203918214648766, 2.3616839764894775, 1.3457820727430088, 1.7328167019210972, -2.7338157946318313, 0.0005618710817781314  ]
-    #                  , ( 'notExclB', 'bin3' ) : [ 2.9828710959611295, 3.023748092386514, 0.3922908133091868, 0.4080097456480669, -2.2104022388970668, 0.0071672915683015925   ]
-    #                  , ( 'exclB',    'bin0' ) : [ 3.0587485511296966, 2.484099316157297, 0.057889921045197745, 0.5528670977674432, -3.007467407061461, 0.1095519817428861     ]
-    #                  , ( 'exclB',    'bin1' ) : [ 2.5950094079868706, 2.540489018460561, 1.5945389901143097, 2.050949882410599, -2.730273102035722, 0.0004971111831370001     ]
-    #                  , ( 'exclB',    'bin2' ) : [ 3.0552471411002733, 2.152609753853441, 1.329325140262283, 2.019935753077858, -2.484855452835132, 0.7630080085121052         ]
-    #                  , ( 'exclB',    'bin3' ) : [ 3.075124852599962, 2.877808057134126, 0.3713565137662156, 0.5448414118880873, -2.316218692561214, 0.0010592756615862564     ]
-    #                 }
-
-    # smeared MC, no truth requirement, 6 KK-mass bins
     constSplitVals = {  ( 'notExclB', 'bin0' ) : [ 3.090242001004567, 2.448740313493132, 7.865481777002969e-07, 0.3772603020305554, -1.8028256514259358, 0.0032161538679723045 ]
                       , ( 'notExclB', 'bin1' ) : [ 2.7357926724807715, 2.5325078527657405, 1.410324206500183, 2.1356073743749593, -2.7476260304874316, 3.6501861834237204e-05  ]
-                      , ( 'notExclB', 'bin2' ) : [ 2.7357926724807715, 2.5325078527657405, 1.410324206500183, 2.1356073743749593, -2.7476260304874316, 3.6501861834237204e-05  ]
-                      , ( 'notExclB', 'bin3' ) : [ 3.0203918214648766, 2.3616839764894775, 1.3457820727430088, 1.7328167019210972, -2.7338157946318313, 0.0005618710817781314  ]
-                      , ( 'notExclB', 'bin4' ) : [ 3.0203918214648766, 2.3616839764894775, 1.3457820727430088, 1.7328167019210972, -2.7338157946318313, 0.0005618710817781314  ]
-                      , ( 'notExclB', 'bin5' ) : [ 2.9828710959611295, 3.023748092386514, 0.3922908133091868, 0.4080097456480669, -2.2104022388970668, 0.0071672915683015925   ]
+                      , ( 'notExclB', 'bin2' ) : [ 3.0203918214648766, 2.3616839764894775, 1.3457820727430088, 1.7328167019210972, -2.7338157946318313, 0.0005618710817781314  ]
+                      , ( 'notExclB', 'bin3' ) : [ 2.9828710959611295, 3.023748092386514, 0.3922908133091868, 0.4080097456480669, -2.2104022388970668, 0.0071672915683015925   ]
                       , ( 'exclB',    'bin0' ) : [ 3.0587485511296966, 2.484099316157297, 0.057889921045197745, 0.5528670977674432, -3.007467407061461, 0.1095519817428861     ]
                       , ( 'exclB',    'bin1' ) : [ 2.5950094079868706, 2.540489018460561, 1.5945389901143097, 2.050949882410599, -2.730273102035722, 0.0004971111831370001     ]
-                      , ( 'exclB',    'bin2' ) : [ 2.5950094079868706, 2.540489018460561, 1.5945389901143097, 2.050949882410599, -2.730273102035722, 0.0004971111831370001     ]
-                      , ( 'exclB',    'bin3' ) : [ 3.0552471411002733, 2.152609753853441, 1.329325140262283, 2.019935753077858, -2.484855452835132, 0.7630080085121052         ]
-                      , ( 'exclB',    'bin4' ) : [ 3.0552471411002733, 2.152609753853441, 1.329325140262283, 2.019935753077858, -2.484855452835132, 0.7630080085121052         ]
-                      , ( 'exclB',    'bin5' ) : [ 3.075124852599962, 2.877808057134126, 0.3713565137662156, 0.5448414118880873, -2.316218692561214, 0.0010592756615862564     ]
+                      , ( 'exclB',    'bin2' ) : [ 3.0552471411002733, 2.152609753853441, 1.329325140262283, 2.019935753077858, -2.484855452835132, 0.7630080085121052         ]
+                      , ( 'exclB',    'bin3' ) : [ 3.075124852599962, 2.877808057134126, 0.3713565137662156, 0.5448414118880873, -2.316218692561214, 0.0010592756615862564     ]
                      }
 
-numMassBins      = [ 70, 40, 20, 20, 20 ]
-massLogPlotRange = ( 1.e3, 3.8e4 ) # ( 1.9e2, 1.2e4 ) # ( 8.e2, 2.5e4 )
+    ## smeared MC, no truth requirement, 6 KK-mass bins
+    #constSplitVals = {  ( 'notExclB', 'bin0' ) : [ 3.0322459762528475, 2.447864335272964, 0.010000000234995435, 0.3761600406855794, -1.7819601169940276, 6.59900444615058e-05  ]
+    #                  , ( 'notExclB', 'bin1' ) : [ 2.2345975396331355, 2.2733096038422564, 1.1520163546544167, 1.6942069968363522, -2.66798830193635, 0.20854507860559107      ]
+    #                  , ( 'notExclB', 'bin2' ) : [ 2.866727015029009, 2.52785976502023, 1.9694393775246413, 2.643343246963921, -2.8552062219784524, 9.674595605263514e-05      ]
+    #                  , ( 'notExclB', 'bin3' ) : [ 3.13640772719914, 2.164273316995139, 1.6880545260328532, 2.625937585938297, -2.742728647811494, 0.38557682029282614         ]
+    #                  , ( 'notExclB', 'bin4' ) : [ 2.691388719858974, 2.1765693301510467, 1.1328053404011302, 1.3535888755187133, -2.6834400853733795, 0.006669749679341086    ]
+    #                  , ( 'notExclB', 'bin5' ) : [ 2.985877329806639, 3.1190879158936817, 0.392737190065505, 0.36203589944356046, -2.1461396103494774, 0.0004175978121001567   ]
+    #                  , ( 'exclB',    'bin0' ) : [ 3.042217322789827, 2.4700042960827178, 0.06194035223910982, 0.5597726690852415, -2.928065834264261, 0.0048085653574805876   ]
+    #                  , ( 'exclB',    'bin1' ) : [ 2.2304631405694995, 2.2681661243312385, 1.218192799968996, 1.6767301735939948, -2.641095299127259, 0.14207389372690699      ]
+    #                  , ( 'exclB',    'bin2' ) : [ 2.5697808515643894, 2.5119962645338587, 2.28395543514728, 2.4915556694437684, -2.8809822628631334, 7.761444933496175e-05    ]
+    #                  , ( 'exclB',    'bin3' ) : [ 3.1153599082377905, 2.1319443211850606, 1.6421649419097952, 2.6368700437507004, -2.7839454814253495, 1.5078269163915081e-05 ]
+    #                  , ( 'exclB',    'bin4' ) : [ 2.6456511462439103, 1.9878672383403715, 1.214951242924778, 1.5843436697596214, -2.8417604939372745, 0.06797317803125186     ]
+    #                  , ( 'exclB',    'bin5' ) : [ 3.0757264652220297, 2.8829257202136667, 0.3704700122418063, 0.5435778339755468, -2.3207566521696803, 0.001582721837209422   ]
+    #                 }
+
+numMassBins      = [ 140, 56, 40, 44, 24 ]
+massLogPlotRange = ( 5.e2, 2.e4 ) # ( 1.e2, 6.e3 ) # ( 4.e2, 1.3e4 )
 
 fitOpts = dict(  NumCPU    = 8
                , Optimize  = 1
@@ -198,7 +198,7 @@ obsDict = dict(  runPeriod = ( 'runPeriod',            'run period', dict( [ ( '
 massRanges = dict(  LeftSideBand  = ( 5200., 5300. )
                   , Signal        = ( 5300., 5440. )
                   , RightSideBand = ( 5440., 5550. )
-                  , PeakBkg       = ( 5390., 5440. )
+                  , PeakBkg       = ( 5380., 5440. )
                  )
 
 if addTaggingObs and addTaggingObs[0] == 2 :
@@ -434,9 +434,12 @@ if not simulation :
         # split yields for HLT1 category
         splitCats[ observables['hlt1ExclB'].GetName() ] = set(yieldNames)
         if sigMassModel.startswith('Ipatia2') :
-            # split signal parameters for KK-mass category
+            # split signal parameters for HLT1 category
             #splitCats[ observables['hlt1ExclB'].GetName() ].add('m_sig_sigma')
             for parName in sigParNames : splitCats[ observables['hlt1ExclB'].GetName() ].add(parName)
+        if 'FreeCBkg' in SWeightsType :
+            # split all background parameters for HLT1 category
+            for parName in bkgParNames : splitCats[ observables['hlt1ExclB'].GetName() ].add(parName)
 
         for cat in constSplitCats :
             # split specified constant shape parameters
@@ -593,8 +596,7 @@ if not simulation :
             pdfConfig.getParametersFromPdf( sWeightMassPdf, dataSets['pre'][0] )
             pdfConfig.writeParametersToFile( filePath = parFileOut )
 
-        from P2VV.Imports import parValues
-        simMassFitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames, ParValues = parValues )
+        simMassFitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames )
         simMassFitResult.covarianceMatrix().Print()
         simMassFitResult.correlationMatrix().Print()
 
@@ -743,12 +745,12 @@ if not simulation and plotsFilePath :
             pad.SetBottomMargin(0.18)
             pad.SetTopMargin(0.05)
 
-            binWidth = ( observables['mass'].getMax('Signal') - observables['mass'].getMin('Signal') ) / float(numMassBins[0])
+            binWidth = ( observables['mass'].getMax('Signal') - observables['mass'].getMin('Signal') ) / float(numMassBins[1])
             plot(  massCanvs[-1], observables['mass'], dataSets['pre'][0], pdf
                  , xTitle = 'm(J/#psi K^{+}K^{-}) [MeV/c^{2}]', yTitle = 'Candidates / (%.1f MeV/c^{2})' % binWidth
                  , xTitleOffset = 1.10, yTitleOffset = 1.20
                  , plotResidHist = 'E3', normalize = True, symmetrize = True
-                 , frameOpts  = dict( Range = 'Signal', Bins = numMassBins[0], Title = plotTitle )
+                 , frameOpts  = dict( Range = 'Signal', Bins = numMassBins[1], Title = plotTitle )
                  , dataOpts   = dict( MarkerStyle = kFullDotLarge, MarkerSize = 0.4, **dataCutStr )
                  , pdfOpts    = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm )
                  , components = {  'sig*'  : dict( LineColor = kRed,       LineStyle = 7, LineWidth = 3 )
