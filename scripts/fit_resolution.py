@@ -5,7 +5,7 @@ import os
 from math import sqrt
 
 parser = optparse.OptionParser(usage = 'usage: %prog year model')
-
+ 
 parser.add_option("--no-pee", dest = "pee", default = True,
                   action = 'store_false', help = 'Do not use per-event proper-time error')
 parser.add_option("-w", "--wpv", dest = "wpv", default = False,
@@ -52,6 +52,8 @@ parser.add_option("--correct-errors", dest = "correct_errors", default = False, 
                   help = 'Apply the SumW2 error correction')
 parser.add_option("--add-background", dest = "add_background", default = False, action = 'store_true',
                   help = 'Add background to the time fit')
+parser.add_option("--use-refit", dest = "use_refit", default = False, action = 'store_true',
+                  help = 'Use new PV refitting.')
 parser.add_option("--no-cache", dest = "cache", default = True, action = 'store_false',
                   help = 'Use a cache to store results and reuse them.')
 
@@ -92,35 +94,40 @@ w = obj.ws()
 
 from math import pi
 if options.peak_only:
-    t_minmax = (-0.08, 0.08)
+    if signal_MC:
+        t_minmax = (-5, 14)
+        tdiff_minmax = (-0.08, 0.08)
+    else:
+        t_minmax = (-0.08, 0.08)        
 elif options.wpv and options.wpv_type == 'Gauss':
     t_minmax = (-1.5, 14)
 else:
     t_minmax = (-5, 14)
-t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax = t_minmax)
+t  = RealVar('time' if not options.use_refit else 'time_refit', Title = 'decay time', Unit='ps', Observable = True, MinMax = t_minmax)
 m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5200, 5550),
              Ranges =  { 'leftsideband'  : ( None, 5330 )
                          , 'signal'        : ( 5330, 5410 )
                          , 'rightsideband' : ( 5410, None ) 
                          } )
 mpsi = RealVar('mdau1', Title = 'J/psi mass', Unit = 'MeV', Observable = True, MinMax = (3025, 3165))
-st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.01, 0.07))
+st = RealVar('sigmat' if not options.use_refit else 'sigmat_refit',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.01, 0.07))
 
 # add 20 bins for caching the normalization integral
 st.setBins(500, 'cache')
 
 # Categories needed for selecting events
-unbiased = Category('triggerDecisionUnbiasedPrescaled', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
+hlt1_unbiased = Category('hlt1_unbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
+hlt2_unbiased = Category('hlt2_unbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
 selected = Category('sel', States = {'selected' : 1, 'not_selected' : 0})
 momentum = RealVar('B_P', Title = 'B momentum', Unit = 'MeV', Observable = True, MinMax = (0, 1e6))
 pt = RealVar('B_Pt', Title = 'B transverse momentum', Unit = 'MeV', Observable = True, MinMax = (0, 1e6))
 nPV = RealVar('nPV', Title = 'Number of PVs', Observable = True, MinMax = (0, 10))
 zerr = RealVar('B_s0_bpv_zerr', Title = 'Best PV Z error', Unit = 'mm', Observable = True, MinMax = (0, 1))
 
-observables = [t, m, mpsi, st, unbiased, selected, nPV, momentum, pt, zerr]
+observables = [t, m, mpsi, st, hlt1_unbiased, hlt2_unbiased, selected, nPV, momentum, pt, zerr]
 if signal_MC:
     t_true = RealVar('truetime', Title = 'true decay time', Unit='ps', Observable = True, MinMax=(-1100, 14))
-    t_diff = RealVar('time_diff', Unit = 'ps', Observable = True, MinMax = (-1, 1))
+    t_diff = RealVar('time_diff' if not options.use_refit else 'time_diff_refit', Unit = 'ps', Observable = True, MinMax = (-1, 1) if not options.peak_only else tdiff_minmax)
     observables.extend([t_true, t_diff])
 
 # Define a time_obs symbol to wrap around selection of t or t_diff
@@ -136,7 +143,7 @@ sig_tres = None
 if args[1] == 'single':
     from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
     tres_args = dict(time = t, sigmat = st, PerEventError = options.pee,
-                     BiasScaleFactor = False, Cache = False,
+                     BiasScaleFactor = False, Cache = True,
                      TimeResSFParam = options.sf_param, SplitMean = options.split_mean)
     sig_tres = TimeResolution(Name = 'tres', **tres_args)
     bkg_tres = TimeResolution(Name = 'bkg_tres', ParNamePrefix = 'bkg', **tres_args)
@@ -210,14 +217,14 @@ fit_mass = options.fit_mass or not options.cache
 
 # Tree and cut
 tree_name = 'DecayTree'
-cut = 'sel == 1 && triggerDecisionUnbiasedPrescaled == 1 && '
+cut = 'sel == 1 && hlt1_unbiased == 1 && hlt2_unbiased == 1 && '
 cut += ' && '.join(['%s < 4' % e for e in ['muplus_track_chi2ndof', 'muminus_track_chi2ndof', 'Kplus_track_chi2ndof', 'Kminus_track_chi2ndof']])
 if not options.wpv or (options.wpv and options.wpv_type == "Gauss"):
     cut += ' && sel_cleantail == 1'
 if signal_MC:
     cut += ' && abs(trueid) == 531'
 if options.peak_only:
-    cut += ' && time > %5.3f && time < %5.3f' % t_minmax
+    cut += ' && %s > %5.3f && %s < %5.3f' % (time_obs.GetName(), time_obs.getMin(), time_obs.GetName(), time_obs.getMax())
 if options.cut:
     cut = options.cut + ' && ' + cut
 hd = ('%d' % hash(cut)).replace('-', 'm')
@@ -258,7 +265,7 @@ gStyle.SetPalette(53)
 ## Extra name for fit result and plots
 extra_name = [args[1]]
 for a, n in [('parameterise', None), ('wpv', 'wpv_type'), ('sf_param', None),
-             ('peak_only', 'peak_only'), ('add_background', 'cfit')]:
+             ('peak_only', 'peak'), ('add_background', 'cfit')]:
     v = getattr(options, a)
     if v:
         if n and n != v and hasattr(options, n):
@@ -336,7 +343,7 @@ if not fit_mass and options.cache:
         split_cats = [split_util.split_cats(sig_sdata)]
         
 ## Fitting opts
-fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True,
+fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 1, Offset = True,
                Verbose = options.verbose, Strategy = 1)
 
 ## List of all plots we make
@@ -553,7 +560,10 @@ if options.wpv and options.wpv_type == 'Mixing':
                                        Reweigh = dict(Data = reweigh_data, DataVar = nPV, Binning = PV_bounds),
                                        sigmat = st, MassResult = mass_result, **extra_args)
     if signal_MC:
-        wpv_signal = wpv_builder.shape('B')
+        if time_obs == t:
+            wpv_signal = wpv_builder.shape('B')
+        else:
+            wpv_signal = wpv_builder.diff_shape('B')
         sig_wpv = Component('sig_wpv', (wpv_signal, m), Yield = (888, 50, 300000))
     else:
         wpv_psi = wpv_builder.shape('jpsi')
@@ -568,7 +578,7 @@ elif options.wpv and options.wpv_type == 'Gauss':
     ##     wpv_mean = sig_tres._timeResMu
     ## else:
     def make_wpv_pdf(prefix):
-        wpv_mean = RealVar('%swpv_mean' % prefix, Value = 0, MinMax = (-1, 1), Constant = True)
+        wpv_mean = RealVar('%swpv_mean' % prefix, Value = 0, MinMax = (-1, 1), Constant = not signal_MC)
         if options.wpv_gauss_width != 0:
             wpv_sigma = RealVar('%swpv_sigma' % prefix, Value = options.wpv_gauss_width, MinMax = (0.01, 1000), Constant = True)
         else:
@@ -813,7 +823,7 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
                   , dataOpts = dict(MarkerSize = 0.8, Binning = bins, MarkerColor = kBlack)
                   , pdfOpts  = dict(LineWidth = 4, **pdfOpts)
                   , xTitle = 'decay time [ps]'
-                  , yTitle = 'Candidates / (XX ps)'
+                  ##, yTitle = 'Candidates / (XX ps)'
                   , yTitleOffset = 0.9
                   , logy = pl
                   , plotResidHist = 'BX')

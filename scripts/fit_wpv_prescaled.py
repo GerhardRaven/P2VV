@@ -100,9 +100,16 @@ tree_name = 'DecayTree'
 ## cut = 'runNumber > 0 && sel == 1 && sel_cleantail == 1 && (hlt1_biased == 1 || hlt1_unbiased_dec == 1) && hlt2_biased == 1 && '
 cut = 'runNumber > 0 && sel == 1 && sel_cleantail == 1 && hlt1_unbiased_dec == 1 && hlt2_unbiased == 1 && '
 cut += ' && '.join(['%s < 4' % e for e in ['muplus_track_chi2ndof', 'muminus_track_chi2ndof', 'Kplus_track_chi2ndof', 'Kminus_track_chi2ndof']])
+
+from ROOT import RooAbsData
+storage = RooAbsData.getDefaultStorageType()
+RooAbsData.setDefaultStorageType(RooAbsData.Tree)
+
 data = readData(input_data[args[0]]['data'], tree_name, ntupleCuts = cut,
                 NTuple = True, observables = observables)
 data_cut = data.reduce("time > 0.3")
+
+RooAbsData.setDefaultStorageType(storage)
 
 ## Build PDF
 mass_pdf = buildPdf(Components = (background, signal), Observables = (m, ), Name = 'mass_pdf')

@@ -6,7 +6,7 @@ parser = optparse.OptionParser(usage = '%prog file year')
 (options, args) = parser.parse_args()
 
 if len(args) != 2:
-    print parser.usage
+    print parser.print_usage()
     sys.exit(-2)
 
 input_filename = args[0]
