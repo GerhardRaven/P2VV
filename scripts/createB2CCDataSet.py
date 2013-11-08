@@ -17,9 +17,9 @@ weightName       = 'wMC'
 runPeriods       = [ 2011, 2012 ]
 triggerSel       = 'noSelection' # 'paper2012' # 'HLT1Unbiased' # 'paper2012'
 dataCuts         = 'noSelection' # 'nominal2011'
-addCuts          = '' #'wMC > 0.'
+addCuts          = '' # 'runPeriod == 2011 && hlt1_excl_biased_dec == 1' # 'wMC > 0.'
 dataSample       = '(bkgcat==0 || bkgcat==50)' if simulation else ''
-sWeightName      = 'sigWeight_I2_4KKBins'
+sWeightName      = 'sigWeight_I2'
 addSWeights      = True
 addKKMassCat     = True
 addTrackMomenta  = False
@@ -27,7 +27,7 @@ addTaggingObs    = ( 2, 2 ) # ( 0, 0 )
 createRangeData  = False
 createNTuple     = False
 splitDataSet     = [ ] #[ 'tagCatP2VVOS', 'tagCatP2VVSS' ]
-KKMassBinBounds  = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ]
+KKMassBinBounds  = [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ]
 
 sigMassModel     = 'Ipatia2'
 cbkgMassModel    = ''
@@ -398,6 +398,7 @@ if not simulation :
 ## fit J/psiKK mass distributions ##
 ####################################
 
+splitPars = [ ]
 if not simulation :
     # determine mass parameters with a fit
     print 120 * '='
