@@ -666,20 +666,29 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
 
     def _multiplyByTimeAcceptance( self, **kwargs ) :
+        timeEffType      = getKWArg( self, kwargs, 'timeEffType' )
         timeEffHistFiles = getKWArg( self, kwargs, 'timeEffHistFiles' )
         pdf              = getKWArg( self, kwargs, 'pdf' )
         simulPdf         = getKWArg( self, kwargs, 'simulPdf' )
         signalData       = getKWArg( self, kwargs, 'signalData' )
+        observables      = getKWArg( self, kwargs, 'observables' )
 
         if not simulPdf :
+            # original PDF is not simultaneous: multiply with acceptance from outside PDF
             multiplyByTimeAcceptance( pdf, self, data = signalData, histFile = timeEffHistFiles['file']
                                      , histUBName = timeEffHistFiles['hlt1UB'], histExclBName = timeEffHistFiles['hlt1ExclB'] )
         else :
+            # original PDF is simultaneous: multiply with acceptance separately for all categories
             splitCat      = simulPdf.indexCat()
             splitCatIter  = splitCat.typeIterator()
             splitCatState = splitCatIter.Next()
             inputCats     = [ splitCat ] if splitCat.isFundamental() else splitCat.inputCatList()
+            singleHLT1Eff = timeEffType.startswith('paper2012')\
+                            and any( cat.GetName() == observables['hlt1ExclB'].GetName() for cat in inputCats )
+
+            # loop over simultaneous categories
             while splitCatState :
+                # get category state and corresponding acceptance parameters
                 splitCat.setIndex( splitCatState.getVal() )
                 if type(timeEffHistFiles) == dict :
                     effFile = timeEffHistFiles
@@ -687,9 +696,20 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     effFile = timeEffHistFiles.getSettings( [ ( cat.GetName(), cat.getLabel() ) for cat in inputCats ] )
                 catPdf = simulPdf.getPdf( splitCatState.GetName() )
                 cNamePF = ( splitCatState.GetName() ).replace( '{', '' ).replace( '}', '' ).replace( ';', '_' )
-                multiplyByTimeAcceptance( catPdf, self, data = signalData, histFile = effFile['file'], histUBName = effFile['hlt1UB']
-                                         , histExclBName = effFile['hlt1ExclB'], coefNamePF = cNamePF, motherPdf = simulPdf
-                                         , resModelKey = splitCatState.GetName() )
+                effType = observables['hlt1ExclB'].getIndex() if singleHLT1Eff else timeEffType
+                if effType == 0 :
+                    effType = 'HLT1Unbiased'
+                elif effType == 1 :
+                    effType = 'HLT1ExclBiased'
+                elif effType != timeEffType :
+                    raise AssertionError\
+                          , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: unknown HLT1 exclusively biased state: %s (%d)'\
+                            % ( observables['hlt1ExclB'].getLabel(), effType )
+
+                # multiply PDF for this category state with acceptance
+                multiplyByTimeAcceptance( catPdf, self, data = signalData, timeEffType = effType, histFile = effFile['file']
+                                         , histUBName = effFile['hlt1UB'], histExclBName = effFile['hlt1ExclB'], coefNamePF = cNamePF
+                                         , motherPdf = simulPdf, resModelKey = splitCatState.GetName() )
                 splitCatState = splitCatIter.Next()
 
 
@@ -1543,9 +1563,19 @@ def multiplyByTimeAcceptance( pdf, self, **kwargs ) :
     hlt2B     = observables['hlt2B']
     hlt2UB    = observables['hlt2UB']
 
+    # get index categories if mother PDF is a simultaneous PDF
+    if hasattr( motherPdf, 'indexCat' ) :
+        indexCat = motherPdf.indexCat()
+        indexCatNames = [ indexCat.GetName() ] if indexCat.isFundamental() else [ cat.GetName() for cat in indexCat.inputCatList() ]
+    else :
+        indexCats = [ ]
+
     # build new decay-time resolution model that includes the decay-time acceptance function
     print 'P2VV - INFO: multiplyByTimeAcceptance(): multiplying PDF "%s" with decay-time acceptance function' % pdf.GetName()
     if timeEffType == 'fit' :
+        assert all( cat.GetName() not in indexCatNames for cat in [ hlt1ExclB, hlt2B, hlt2UB ] )\
+               , 'P2VV - ERROR: multiplyByTimeAcceptance(): acceptance function depends on the index category of the simultaneous mother PDF'
+
         hists = {  hlt1ExclB : {  'exclB'    : { 'histogram' : 'hlt1_shape', 'average' : ( 6.285e-01, 1.633e-02 ) }
                                 , 'notExclB' : { 'bins'      : time.getRange(), 'heights' : [0.5]                 }
                                }
@@ -1565,6 +1595,9 @@ def multiplyByTimeAcceptance( pdf, self, **kwargs ) :
                                                    )
 
     elif timeEffType == 'paper2012_multi' :
+        assert hlt1ExclB.GetName() not in indexCatNames\
+               , 'P2VV - ERROR: multiplyByTimeAcceptance(): acceptance function depends on the index category of the simultaneous mother PDF'
+
         hists = { hlt1ExclB : {  'exclB'    : { 'histogram' : histExclBName }
                                , 'notExclB' : { 'histogram' : histUBName    }
                               }
@@ -1582,6 +1615,9 @@ def multiplyByTimeAcceptance( pdf, self, **kwargs ) :
                                                    )
 
     elif timeEffType == 'paper2012' :
+        assert hlt1ExclB.GetName() not in indexCatNames\
+               , 'P2VV - ERROR: multiplyByTimeAcceptance(): acceptance function depends on the index category of the simultaneous mother PDF'
+
         hists = { hlt1ExclB : {  'exclB'    : { 'histogram' : histExclBName }
                                , 'notExclB' : { 'histogram' : histUBName    }
                               }
