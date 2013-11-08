@@ -857,6 +857,9 @@ class Linear_TaggingCategories( TaggingCategories ) :
             self._wTagP1.setConstant(True)
             self._wTagP1.setVal(self._calVals['P1'])
             self._wTagP1.setError(self._calVals['P1Err'])
+            self._wTagDelP1.setConstant(True)
+            self._wTagDelP1.setVal(self._calVals['DelP1'])
+            self._wTagDelP1.setError(self._calVals['DelP1Err'])
 
         elif wTagP1Constraint :
             from P2VV.RooFitWrappers import Pdf
