@@ -102,15 +102,21 @@ pdfConfig['timeEffHistFiles'] = timeEffHistFiles
 
 pdfConfig['transAngles']   = False
 pdfConfig['anglesEffType'] = 'weights'  # 'weights' # 'basis012' # 'basisSig4'
-#pdfConfig['angEffMomsFiles'] = dataPath + 'Reco14/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
-angEffMomsFiles = SimulCatSettings('angEffMomsFiles')
-angEffMomsFiles.addSettings( [ 'KKMassCat' ], [ [ 'bin0', 'bin1', 'bin2' ] ]
-                            , dataPath + 'Reco14/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK09901020_Phys_moms_norm'
-                           )
-angEffMomsFiles.addSettings( [ 'KKMassCat' ], [ [ 'bin3', 'bin4', 'bin5' ] ]
-                            , dataPath + 'Reco14/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK10201050_Phys_moms_norm'
-                           )
-pdfConfig['angEffMomsFiles'] = angEffMomsFiles
+pdfConfig['angEffMomsFiles'] = dataPath + 'Reco14/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
+#angEffMomsFiles = SimulCatSettings('angEffMomsFiles')
+#angEffMomsFiles.addSettings( [ 'KKMassCat' ], [ [ 'bin0', 'bin1', 'bin2' ] ]
+#                            , dataPath + 'Reco14/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK09901020_Phys_moms_norm'
+#                           )
+#angEffMomsFiles.addSettings( [ 'KKMassCat' ], [ [ 'bin3', 'bin4', 'bin5' ] ]
+#                            , dataPath + 'Reco14/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK10201050_Phys_moms_norm'
+#                           )
+#angEffMomsFiles.addSettings( [ 'tagCatP2VV' ], [ [ 'Untagged' ] ]
+#                            , dataPath + 'Reco14/Sim08_20112012_hel_UB_U_trueTime_BkgCat050_KK30_Phys_moms_norm'
+#                           )
+#angEffMomsFiles.addSettings( [ 'tagCatP2VV' ], [ [ 'Tagged' ] ]
+#                            , dataPath + 'Reco14/Sim08_20112012_hel_UB_T_trueTime_BkgCat050_KK30_Phys_moms_norm'
+#                           )
+#pdfConfig['angEffMomsFiles'] = angEffMomsFiles
 pdfConfig['angularRanges'] = dict( ctheta = [  ( 'ctlBin0', -1.,   -0.70 )
                                              , ( 'ctlBin1', -0.70, -0.25 )
                                              , ( 'ctlBin2', -0.25, +0.25 )
