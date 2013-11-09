@@ -12,7 +12,7 @@ from P2VV.Parameterizations.GeneralUtils import _util_parse_mixin, _util_extCons
 # initial values for tagging calibration parameters in fit
 P0OSVal     =  0.38
 P0OSErr     =  0.01
-DelP0OSVal  =  0.010
+DelP0OSVal  =  0.014
 DelP0OSErr  =  0.001
 P1OSVal     =  1.00
 P1OSErr     =  0.06
@@ -31,10 +31,10 @@ DelP1SSErr  =  0.02
 # values for tagging calibration parameters from tagging calibration: correspond to specific data sample!
 from P2VV.Imports import extConstraintValues
 
-( P0OSConstrVal, P0OSConstrErr, avgEtaOSVal ) = extConstraintValues.getSetVal( 'P0OS',    (  0.380, 0.011, 0.380 ) )
-( DelP0OSConstrVal, DelP0OSConstrErr )        = extConstraintValues.getSetVal( 'DelP0OS', (  0.010, 0.001  ) )
-( P1OSConstrVal,    P1OSConstrErr    )        = extConstraintValues.getSetVal( 'P1OS',    (  1.000,  0.062 ) )
-( DelP1OSConstrVal, DelP1OSConstrErr )        = extConstraintValues.getSetVal( 'DelP1OS', (  0.070,  0.010 ) )
+( P0OSConstrVal, P0OSConstrErr, avgEtaOSVal ) = extConstraintValues.getSetVal( 'P0OS',    (  0.379,  0.011, 0.379 ) )
+( DelP0OSConstrVal, DelP0OSConstrErr )        = extConstraintValues.getSetVal( 'DelP0OS', (  0.0137, 0.0012 ) )
+( P1OSConstrVal,    P1OSConstrErr    )        = extConstraintValues.getSetVal( 'P1OS',    (  1.00,   0.06   ) )
+( DelP1OSConstrVal, DelP1OSConstrErr )        = extConstraintValues.getSetVal( 'DelP1OS', (  0.070,  0.012  ) )
 
 ( P0SSConstrVal, P0SSConstrErr, avgEtaSSVal ) = extConstraintValues.getSetVal( 'P0SS',    (  0.437, 0.008, 0.437 ) )
 ( DelP0SSConstrVal, DelP0SSConstrErr )        = extConstraintValues.getSetVal( 'DelP0SS', ( -0.016, 0.002 ) )

@@ -3,7 +3,7 @@
 ###########################
 
 from math import pi
-from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_2011Analysis as PdfConfig
+from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_runIAnalysis as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
@@ -25,7 +25,7 @@ dataPath               = '/project/bfys/jleerdam/data/Bs2Jpsiphi/'
 
 pdfConfig['runPeriods'] = [ 2011, 2012 ]
 
-plotsFile     = 'temp.root' #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.ps'
+plotsFile     = 'temp.ps'   #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.ps'
 plotsROOTFile = 'temp.root' #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.root'
 parFileIn     = '20112012Reco14DataFitValues.par' # '20112012Reco14DataFitValues_4KKMassBins.par' # '20112012Reco14DataFitValues.par'
 parFileOut    = ''
@@ -46,7 +46,7 @@ MinosPars = [#  'phiCP', 'lambdaCP'
              #, 'f_S_bin0',        'f_S_bin1',        'f_S_bin2',        'f_S_bin3'#,        'f_S_bin4',        'f_S_bin5'
              #, 'timeResSigmaSF'
             ]
-dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
+dllPars = [ ] # [ ( 'ASOddPhase_bin2', True, True, True ) ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
 # fit options
 fitRange = ''
@@ -159,26 +159,6 @@ pdfConfig['splitParams'] = dict(  KKMassCat = [ 'f_S', 'ASOddPhase' ]
 
 pdfConfig['externalConstr']['dM']          = (  17.768, 0.024  )
 #pdfConfig['externalConstr']['betaTimeEff'] = ( -0.0083, 0.004  )
-pdfConfig['externalConstr'].pop('betaTimeEff')
-pdfConfig['externalConstr']['wTagP0OS']    = (  0.380,  0.011  ) #(  0.392,  0.008  ) #(  0.382,  0.014  )
-pdfConfig['externalConstr']['wTagP1OS']    = (  1.000,  0.062  ) #(  1.000,  0.023  ) #(  0.981,  0.074  )
-pdfConfig['externalConstr']['wTagDelP0OS'] = (  0.010,  0.001  ) #(  0.0110, 0.0034 ) #(  0.,     0.0034 )
-pdfConfig['externalConstr']['wTagDelP1OS'] = (  0.070,  0.010  ) #(  0.000,  0.001  ) #(  0.,     0.001  )
-pdfConfig['externalConstr']['wTagP0SS']    = (  0.437,  0.008  ) #(  0.350,  0.017  ) #(  0.439,  0.005  )
-pdfConfig['externalConstr']['wTagP1SS']    = (  1.00,   0.12   ) #(  1.00,   0.16   ) #(  1.04,   0.08   )
-pdfConfig['externalConstr']['wTagDelP0SS'] = ( -0.016,  0.002  ) #( -0.019,  0.005  ) #(  0.,     0.005  )
-pdfConfig['externalConstr']['wTagDelP1SS'] = (  0.015,  0.019  ) #(  0.00,   0.01   ) #(  0.,     0.01   )
-
-from P2VV.Imports import extConstraintValues
-extConstraintValues.setVal( 'DM',      ( 17.768, 0.024  ) )
-extConstraintValues.setVal( 'P0OS',    (  0.380,  0.011, 0.380 ) ) # ( 0.392,  0.008, 0.392 ) ) # ( 0.382,  0.014, 0.382 ) )
-extConstraintValues.setVal( 'P1OS',    (  1.000,  0.062 ) )        # ( 1.000,  0.023  ) )       # ( 0.981,  0.074  ) )
-extConstraintValues.setVal( 'DelP0OS', (  0.010,  0.001 ) )        # ( 0.,     0.0034 ) )       # ( 0.,     0.0034 ) )
-extConstraintValues.setVal( 'DelP1OS', (  0.070,  0.010 ) )        # ( 0.,     0.001  ) )       # ( 0.,     0.001  ) )
-extConstraintValues.setVal( 'P0SS',    (  0.437,  0.008, 0.437 ) ) # ( 0.350,  0.017, 0.350 ) ) # ( 0.439,  0.005, 0.438 ) )
-extConstraintValues.setVal( 'P1SS',    (  1.00,   0.12  ) )        # ( 1.00,   0.16   ) )       # ( 1.04,   0.08   ) )
-extConstraintValues.setVal( 'DelP0SS', ( -0.016,  0.002 ) )        # ( 0.,     0.005  ) )       # ( 0.,     0.005  ) )
-extConstraintValues.setVal( 'DelP1SS', (  0.015,  0.019 ) )        # ( 0.,     0.01   ) )       # ( 0.,     0.01   ) )
 
 dGammaVal = 0.108
 dMVal     = 17.647
@@ -1436,7 +1416,7 @@ if dllPars :
                                      , '0.5*(@0-{0:.6f})*(@0-{0:.6f})/{1:.6f}/{1:.6f}'.format( rooPar.getVal(), rooPar.getError() )
                                      , RooArgList(rooPar)
                                     )
-            parabola.plotOn( parFrame, RooFit.LineColor(RooFit.kBlack), RooFit.Precision(0.001) )
+            parabola.plotOn( parFrame, RooFit.LineColor(RooFit.kBlack), RooFit.Precision(0.0001) )
 
         if doDLL :
             print 'JvLFit: plotting Delta -log(L) for %s' % par

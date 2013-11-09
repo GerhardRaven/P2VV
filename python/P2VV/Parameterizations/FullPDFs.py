@@ -160,8 +160,8 @@ class PdfConfiguration( dict ) :
                 % ( numPars, '' if numPars == 1 else 's', filePath )
 
 
-# B_s^0 -> J/psi phi analysis of 1 fb^-1 2011 data (paper) configuration
-class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
+# B_s^0 -> J/psi phi analysis configuration
+class Bs2Jpsiphi_PdfConfiguration( PdfConfiguration ) :
     def __init__( self ) :
         from math import pi
 
@@ -183,8 +183,6 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
                                , cpsi      = ( 'helcosthetaK',         'cos(#theta_{K})',         '',          0.,    -1.,     +1.      )
                                , ctheta    = ( 'helcosthetaL',         'cos(#theta_{#mu})',       '',          0.,    -1.,     +1.      )
                                , phi       = ( 'helphi',               '#phi_{h}',                'rad',       0.,    -pi,     +pi      )
-                               , wTagOS    = ( 'tagomega_os_cb',       'OS est. wrong-tag prob.', '',          0.25,   0.,      0.50001 )
-                               , wTagSS    = ( 'tagomega_ss_nn',       'SS est. wrong-tag prob.', '',          0.25,   0.,      0.50001 )
                                , iTagOS    = ( 'iTagOS',               'OS flavour tag',          { 'B' : +1, 'Bbar' : -1 }             )
                                , iTagSS    = ( 'iTagSS',               'SS flavour tag',          { 'B' : +1, 'Bbar' : -1 }             )
                                , tagCatOS  = ( 'tagCatP2VVOS',         'OS flavour tag',          { 'Untagged' : 0, 'Tagged' : 1 }      )
@@ -197,26 +195,23 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
         self['signalData'] = None     # data set of signal events
 
         # fit options
-        self['fitOptions'] = dict( NumCPU = 1, Optimize = 1, Timer = True, Minimizer = 'Minuit2' )
+        self['fitOptions'] = dict( NumCPU = 2, Optimize = 2, Timer = True, Minimizer = 'Minuit2' )
 
         # PDF parameters
         self['numTimeBins']        = 30               # number of bins for the decay time observable
         self['numTimeResBins']     = 40               # number of bins for the decay-time resolution observable (used for caching)
         self['timeResType']        = 'eventNoMean'    # '' / 'event' / 'eventNoMean' / 'eventConstMean' / '3Gauss'
-        self['constrainTResScale'] = ''      # '' / 'constrain' / 'fixed'
+        self['constrainTResScale'] = ''               # '' / 'constrain' / 'fixed'
         self['timeEffType']        = 'paper2012'      # 'HLT1Unbiased' / 'HLT1ExclBiased' / 'paper2012' / 'fit'
-        self['constrainDeltaM']    = ''      # '' / 'constrain' / 'fixed'
+        self['constrainDeltaM']    = ''               # '' / 'constrain' / 'fixed'
         self['constrainBeta']      = 'noBeta'         # '' / 'constrain' / 'fixed' / 'noBeta'
 
-        self['timeEffHistFiles'] = dict(  file      = 'data/Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
-                                        , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
-                                        , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
-                                       )
-        self['timeEffParameters']    = { }
+        self['timeEffHistFiles']  = { }
+        self['timeEffParameters'] = { }
 
         self['transAngles']     = False        # use transversity angles?
         self['anglesEffType']   = 'weights'    # '' / 'weights' / 'basis012' / 'basis012Plus' / 'basis012Thetal' / 'basis0123' / 'basis01234' / 'basisSig3' / 'basisSig4'
-        self['angEffMomsFiles'] = 'data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
+        self['angEffMomsFiles'] = ''
         self['angularRanges']   = dict( cpsi = [ ], ctheta = [ ], phi = [ ] )
 
         self['sigTaggingType']   = 'tagUntag'    # 'histPdf' / 'tagUntag' / 'tagCats' / 'tagUntagRelative' / 'tagCatsRelative'
@@ -224,7 +219,7 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
         self['SSTagging']        = True           # use same-side Kaon tagging?
         self['condTagging']      = True           # make tagging categories and B/Bbar tags conditional observables?
         self['contEstWTag']      = True           # use a continuous estimated wrong-tag probability instead of tagging categories?
-        self['constrainTagging'] = ''    # '' / 'constrain' / 'fixed'
+        self['constrainTagging'] = ''             # '' / 'constrain' / 'fixed'
         self['tagCatsOS']        = [ ]            # [ ( 'Untagged', 0, 0.5000001, 0.5,   0.5,   0.0, 0.669, 0.0 ), ( 'Tagged',   1, 0.4999999, 0.392, 0.392, 0.0, 0.331, 0.0 ) ]
         self['tagCatsSS']        = [ ]            # [ ( 'Untagged', 0, 0.5000001, 0.5,   0.5,   0.0, 0.896, 0.0 ), ('Tagged',    1, 0.4999999, 0.359, 0.359, 0.0, 0.104, 0.0 ) ]
 
@@ -241,18 +236,7 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
 
         self['splitParams'] = dict( KKMassCat = [ 'f_S', 'ASOddPhase' ] )
 
-        self['externalConstr'] = dict(  dM             = (  17.768, 0.024  )
-                                      , wTagP0OS       = (  0.392,  0.008  )
-                                      , wTagP1OS       = (  1.000,  0.023  )
-                                      , wTagDelP0OS    = (  0.0110, 0.0034 )
-                                      , wTagDelP1OS    = (  0.000,  0.001  )
-                                      , wTagP0SS       = (  0.350,  0.017  )
-                                      , wTagP1SS       = (  1.00,   0.16   )
-                                      , wTagDelP0SS    = ( -0.019,  0.005  )
-                                      , wTagDelP1SS    = (  0.00,   0.01   )
-                                      , timeResSigmaSF = (  1.45,   0.06   )
-                                      , betaTimeEff    = ( -0.0083, 0.004  )
-                                     )
+        self['externalConstr'] = { }
 
         # initialize PdfConfiguration object
         PdfConfiguration.__init__( self )
@@ -270,6 +254,109 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
 
     def rmBkgParams(self) :
         for key in [ 'bkgAnglePdfType', 'numAngleBins' ] : self.pop( key, None )
+
+
+# B_s^0 -> J/psi phi analysis of 1 fb^-1 2011 data (paper) configuration
+class Bs2Jpsiphi_2011Analysis( Bs2Jpsiphi_PdfConfiguration ) :
+    def __init__( self ) :
+        Bs2Jpsiphi_PdfConfiguration.__init__(self)
+
+        self['numEvents']  = 54755
+        self['sigFrac']    = 0.51
+        self['runPeriods'] = [ ]
+
+        self['obsDict']['wTagOS'] = ( 'tagomega_os', 'OS est. wrong-tag prob.', '', 0.25, 0., 0.50001 )
+        self['obsDict']['wTagSS'] = ( 'tagomega_ss', 'SS est. wrong-tag prob.', '', 0.25, 0., 0.50001 )
+
+        self['timeEffHistFiles'] = dict(  file      = 'data/Bs_HltPropertimeAcceptance_Data-20120816.root'
+                                        , hlt1UB    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+                                        , hlt1ExclB = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+                                       )
+        self['angEffMomsFiles'] = 'data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
+
+        self['KKMassBinBounds'] = [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ]
+        self['CSPValues']       = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
+
+        self['externalConstr'] = dict(  dM             = (  17.63,  0.11   )
+                                      , wTagP0OS       = (  0.392,  0.008  )
+                                      , wTagP1OS       = (  1.000,  0.023  )
+                                      , wTagDelP0OS    = (  0.0110, 0.0034 )
+                                      , wTagDelP1OS    = (  0.,     0.     )
+                                      , wTagP0SS       = (  0.350,  0.017  )
+                                      , wTagP1SS       = (  1.00,   0.16   )
+                                      , wTagDelP0SS    = ( -0.019,  0.005  )
+                                      , wTagDelP1SS    = (  0.,     0.     )
+                                      , timeResSigmaSF = (  1.45,   0.06   )
+                                     )
+
+        from P2VV.Imports import extConstraintValues
+        extConstraintValues.setVal( 'DM',      (  17.63,  0.11   ) )
+        extConstraintValues.setVal( 'P0OS',    (  0.392,  0.008, 0.392 ) )
+        extConstraintValues.setVal( 'P1OS',    (  1.000,  0.023  ) )
+        extConstraintValues.setVal( 'DelP0OS', (  0.0110, 0.0034 ) )
+        extConstraintValues.setVal( 'DelP1OS', (  0.,     0.     ) )
+        extConstraintValues.setVal( 'P0SS',    (  0.350,  0.017, 0.350 ) )
+        extConstraintValues.setVal( 'P1SS',    (  1.00,   0.16   ) )
+        extConstraintValues.setVal( 'DelP0SS', ( -0.019,  0.005  ) )
+        extConstraintValues.setVal( 'DelP1SS', (  0.,     0.     ) )
+
+
+# B_s^0 -> J/psi phi analysis of 3 fb^-1 run-I data configuration
+class Bs2Jpsiphi_runIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
+    def __init__( self ) :
+        Bs2Jpsiphi_PdfConfiguration.__init__(self)
+
+        self['blind'] = {  'phiCP'  : ( 'UnblindUniform', 'BsPhisComb', 0.2  )
+                         , 'dGamma' : ( 'UnblindUniform', 'BsDGsComb',  0.02 )
+                        }
+        self['numEvents']  = 220000
+        self['sigFrac']    = 0.43
+        self['runPeriods'] = [ 2011, 2012 ]
+
+        self['obsDict']['wTagOS'] = ( 'tagomega_os_cb', 'OS est. wrong-tag prob.', '', 0.25, 0., 0.50001 )
+        self['obsDict']['wTagSS'] = ( 'tagomega_ss_nn', 'SS est. wrong-tag prob.', '', 0.25, 0., 0.50001 )
+
+        timeEffHistFiles = SimulCatSettings('timeEffHistFiles')
+        timeEffHistFiles.addSettings( [ 'runPeriod' ], [ [ 'p2011' ] ]
+                                     , dict(  file      = 'data/Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
+                                            , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+                                            , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+                                           )
+                                    )
+        timeEffHistFiles.addSettings( [ 'runPeriod' ], [ [ 'p2012' ] ]
+                                     , dict(  file      = 'data/Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
+                                            , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
+                                            , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+                                           )
+                                    )
+        self['timeEffHistFiles'] = timeEffHistFiles
+
+        self['angEffMomsFiles'] = 'data/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
+
+        self['KKMassBinBounds'] = [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ]
+        self['CSPValues']       = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
+
+        self['externalConstr'] = dict(  wTagP0OS       = (  0.379,  0.011  )
+                                      , wTagP1OS       = (  1.00,   0.06   )
+                                      , wTagDelP0OS    = (  0.0137, 0.0012 )
+                                      , wTagDelP1OS    = (  0.070,  0.012  )
+                                      , wTagP0SS       = (  0.437,  0.008  )
+                                      , wTagP1SS       = (  1.00,   0.12   )
+                                      , wTagDelP0SS    = ( -0.016,  0.002  )
+                                      , wTagDelP1SS    = (  0.015,  0.019  )
+                                      , timeResSigmaSF = (  1.45,   0.06   )
+                                     )
+
+        from P2VV.Imports import extConstraintValues
+        extConstraintValues.setVal( 'DM',      ( 17.768, 0.024   ) )
+        extConstraintValues.setVal( 'P0OS',    (  0.379,  0.011, 0.379 ) )
+        extConstraintValues.setVal( 'P1OS',    (  1.00,   0.06   ) )
+        extConstraintValues.setVal( 'DelP0OS', (  0.0137, 0.0012 ) )
+        extConstraintValues.setVal( 'DelP1OS', (  0.070,  0.012  ) )
+        extConstraintValues.setVal( 'P0SS',    (  0.437,  0.008, 0.437 ) )
+        extConstraintValues.setVal( 'P1SS',    (  1.00,   0.12   ) )
+        extConstraintValues.setVal( 'DelP0SS', ( -0.016,  0.002  ) )
+        extConstraintValues.setVal( 'DelP1SS', (  0.015,  0.019  ) )
 
 
 class SimulCatSettings(list) :
@@ -745,16 +832,20 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         constraints = set()
         def buildConstraint( par, constrVals ) :
-            from P2VV.RooFitWrappers import Pdf, ConstVar
-            from ROOT import RooGaussian as Gaussian
-            constrName = par.GetName().replace( '{', '' ).replace( '}', '' ).replace( ';', '_' )
-            constraints.add( Pdf(  Name = constrName + '_constraint', Type = Gaussian
-                                 , Parameters = [  par
-                                                 , ConstVar( Name = constrName + '_mean',  Value = constrVals[0] )
-                                                 , ConstVar( Name = constrName + '_sigma', Value = constrVals[1] )
-                                                ]
-                                )
-                           )
+            par.setVal( constrVals[0] )
+            if type(constrVals[1]) == float and constrVals[1] > 0. :
+                from P2VV.RooFitWrappers import Pdf, ConstVar
+                from ROOT import RooGaussian as Gaussian
+                constrName = par.GetName().replace( '{', '' ).replace( '}', '' ).replace( ';', '_' )
+                constraints.add( Pdf(  Name = constrName + '_constraint', Type = Gaussian
+                                     , Parameters = [  par
+                                                     , ConstVar( Name = constrName + '_mean',  Value = constrVals[0] )
+                                                     , ConstVar( Name = constrName + '_sigma', Value = constrVals[1] )
+                                                    ]
+                                    )
+                               )
+            else :
+                par.setConstant(True)
 
         ws = pdf.ws()
         pdfVars = pdf.getVariables()
