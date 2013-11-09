@@ -3,7 +3,7 @@
 ###########################
 
 from math import pi
-from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_runIAnalysis as PdfConfig
+from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_RunIAnalysis as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
@@ -673,7 +673,9 @@ else :
 if parFileOut :
     # write parameters to file
     pdfConfig.getParametersFromPdf( pdf, fitData )
-    pdfConfig.writeParametersToFile( filePath = parFileOut )
+    pdfConfig.writeParametersToFile(  filePath = parFileOut
+                                    , FitStatus = ( fitResult.status(), fitResult.minNll(), fitResult.edm() ) if fitResult else ( )
+                                   )
 
 
 ###########################################################################################################################################

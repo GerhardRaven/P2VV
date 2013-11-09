@@ -71,17 +71,23 @@ class PdfConfiguration( dict ) :
 
         # loop over lines and read parameters
         numPars = 0
+        fitStatus = ( )
         while True :
             # read next line
             line = parFile.readline()
             if not line : break
 
             # check for empty or comment lines
-            line = line.strip()
-            if not line or line[0] == '#' : continue
+            line = line.strip().split()
+            if not line :
+                continue
+            elif line[0][0] == '#' :
+                # check if this is the "fit status" line
+                if len(line) == 12 and line[1] == 'fit' and line[2] == 'status:' :
+                    fitStatus = ( int( line[5][ : -1 ] ), float( line[8][ : -1 ] ), float( line[11] ) )
+                continue
 
             # check moment format
-            line = line.split()
             if len(line) != 6 : continue
 
             # check name
@@ -104,6 +110,8 @@ class PdfConfiguration( dict ) :
 
         print 'P2VV - INFO: PdfConfiguration.readParametersFromFile(): %d parameter%s read from file \"%s\"'\
                 % ( numPars, '' if numPars == 1 else 's', filePath )
+
+        return fitStatus
 
     def writeParametersToFile( self, filePath = 'parameters', **kwargs ) :
         # get file path and name
@@ -129,10 +137,14 @@ class PdfConfiguration( dict ) :
         floating = kwargs.pop( 'Floating', None )
         if floating not in [ True, False ] : floating = None
 
+        # get fit status
+        fitStat = kwargs.pop( 'FitStatus', ( -1, 0., 0. ) )
+
         # write parameters to content string
         cont = '# %s: parameters\n' % fileName\
              + '# name requirement: \'{0}\'\n'.format( names if names else '' )\
              + '# floating:         \'{0}\'\n'.format( 'True' if floating == True else ( 'False' if floating == False else '' ) )\
+             + '# fit status:       status = {0:d}; NLL = {1:+.16g}; EDM = {2:.3g}\n'.format( fitStat[0], fitStat[1], fitStat[2] )\
              + '#\n'\
              + '# ' + '-' * (79 + maxLenName) + '\n'\
              + ( '# {0:<%s}   {1:<14}   {2:<13}   {3:<14}   {4:<14}   {5:<}\n' % maxLenName )\
@@ -302,7 +314,7 @@ class Bs2Jpsiphi_2011Analysis( Bs2Jpsiphi_PdfConfiguration ) :
 
 
 # B_s^0 -> J/psi phi analysis of 3 fb^-1 run-I data configuration
-class Bs2Jpsiphi_runIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
+class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
     def __init__( self ) :
         Bs2Jpsiphi_PdfConfiguration.__init__(self)
 
@@ -335,6 +347,8 @@ class Bs2Jpsiphi_runIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
 
         self['KKMassBinBounds'] = [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ]
         self['CSPValues']       = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
+
+        self['splitParams']['runPeriod'] = [ 'Gamma' ]
 
         self['externalConstr'] = dict(  wTagP0OS       = (  0.379,  0.011  )
                                       , wTagP1OS       = (  1.00,   0.06   )

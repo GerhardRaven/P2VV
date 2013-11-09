@@ -105,7 +105,7 @@ pdfPars = pdf.getParameters(fitData)
 ## fit data ##
 ##############
 
-# float values of some parameters
+# fix values of some parameters
 for CEvenOdds in pdfBuild['taggingParams']['CEvenOdds'] :
     if not pdfConfig['SSTagging'] :
         CEvenOdds.setConstant('avgCEven.*')
@@ -161,7 +161,7 @@ if doFit :
 
     print 120 * '=' + '\n'
 
-if parFileOut :
-    # write parameters to file
-    pdfConfig.getParametersFromPdf( pdf, fitData )
-    pdfConfig.writeParametersToFile( filePath = parFileOut )
+    if parFileOut :
+        # write parameters to file
+        pdfConfig.getParametersFromPdf( pdf, fitData )
+        pdfConfig.writeParametersToFile( filePath = parFileOut, FitStatus = ( fitResult.status(), fitResult.minNll(), fitResult.edm() ) )
