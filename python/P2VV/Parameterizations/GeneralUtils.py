@@ -45,12 +45,12 @@ class _util_parse_mixin( object ) :
                 argPars = kwargs.pop(argName)
                 parsDict.pop( argName, None )
             else :
-                argPars = parsDict.pop( argName, { } )
+                argPars = parsDict.pop( argName, None )
 
             # parse parameter dictionary
             import P2VV.RooFitWrappers
             singleArgKey = parsDict.pop( 'SingleArgKey', 'Value' )
-            if argPars :
+            if argPars != None :
                 if isinstance( argPars, P2VV.RooFitWrappers.RooObject ) : return argPars
                 parsDict.update( argPars if type(argPars) == dict else { singleArgKey : argPars } )
 
