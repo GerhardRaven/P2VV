@@ -352,6 +352,9 @@ def convertEffWeightsToMoments( Weights, **kwargs ) :
                            , 'S S' : 'Re_ang_AS_AS', '0 S' : 'Re_ang_A0_AS', 'para S' : 'Re_ang_Apar_AS', 'perp S' : 'Im_ang_Aperp_AS'
                           }
                        )
+    pref = kwargs.pop('WeightNamesPrefix', '')
+    for wNam in wNames.keys(): wNames[wNam] = pref + '_' + wNames[wNam]
+
     for pol in pols :
         assert pol in wNames.keys()\
             , 'P2VV - ERROR: convertEffWeightsToMoments(): polarization "%s" not found in weight names dictionary' % pol
