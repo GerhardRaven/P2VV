@@ -56,6 +56,8 @@ class PdfConfiguration( dict ) :
             par.setConstant( False if self._parameters[ par.GetName() ][4] else True )
 
     def readParametersFromFile( self, filePath = 'parameters', **kwargs ) :
+        verb = kwargs.pop( 'Verbose', True )
+
         # get file path
         filePath = filePath.strip()
 
@@ -108,8 +110,9 @@ class PdfConfiguration( dict ) :
 
         parFile.close()
 
-        print 'P2VV - INFO: PdfConfiguration.readParametersFromFile(): %d parameter%s read from file \"%s\"'\
-                % ( numPars, '' if numPars == 1 else 's', filePath )
+        if verb :
+            print 'P2VV - INFO: PdfConfiguration.readParametersFromFile(): %d parameter%s read from file \"%s\"'\
+                  % ( numPars, '' if numPars == 1 else 's', filePath )
 
         return fitStatus
 
