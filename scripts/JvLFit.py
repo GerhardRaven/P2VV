@@ -157,7 +157,7 @@ pdfConfig['splitParams'] = dict(  KKMassCat = [ 'f_S', 'ASOddPhase' ]
                                 , runPeriod = [ 'Gamma' ] # [ 'betaTimeEff' ] # [ 'tagCatCoef0_1' ]
                                )
 
-pdfConfig['externalConstr']['dM']          = (  17.768, 0.024  )
+#pdfConfig['externalConstr']['dM']          = (  17.768, 0.024  )
 #pdfConfig['externalConstr']['betaTimeEff'] = ( -0.0083, 0.004  )
 
 dGammaVal = 0.108
