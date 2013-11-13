@@ -190,7 +190,7 @@ class Bs2Jpsiphi_PdfConfiguration( PdfConfiguration ) :
 
         self['obsDict'] = dict(  runPeriod = ( 'runPeriod',            'run period',              { }                                   )
                                , mass      = ( 'mass',                 'm(J/#psi K^{+}K^{-})',    'MeV/c^{2}', 5368.,  5200.,   5550.   )
-                               , mumuMass  = ( 'mdau1',                'm(#mu^{+}#mu^{-})',       'MeV/c^{2}', 3096.,  3030.,   3150.   )
+                               #, mumuMass  = ( 'mdau1',                'm(#mu^{+}#mu^{-})',       'MeV/c^{2}', 3096.,  3030.,   3150.   )
                                , KKMass    = ( 'mdau2',                'm(K^{+}K^{-})',           'MeV/c^{2}', 1020.,   990.,   1050.   )
                                , KKMassCat = ( 'KKMassCat',            'KK mass category',        { }                                   )
                                , time      = ( 'time',                 'Decay time',              'ps',        1.5,    0.3,     14.     )
@@ -692,7 +692,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
             # build simultaneous PDF
             print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: building simultaneous PDF "%s":' % ( fullPdf.GetName() + '_simul' )
-            print 13 * ' ' + 'splitted parameters:'
+            print 13 * ' ' + 'split parameters:'
             for it, pars in enumerate(splitPars) :
                 print 13 * ' ' + '%2d: pars: [ %s ]' % ( it, ', '.join( par.GetName() for par in pars[0] ) )
                 print 13 * ' ' + '    cats: [ %s ]' % ', '.join( cat.GetName() for cat in pars[1] )
@@ -747,7 +747,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 splitCatState = splitCatIter.Next()
 
             if paramKKMass == 'simultaneous' and ASParam != 'Mag2ReIm' :
-                # set values for splitted S-P coupling factors
+                # set values for split S-P coupling factors
                 if ASParam != 'Mag2ReIm' :
                     print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: using S-P-wave coupling factors:',
                     for iter, fac in enumerate( CSPValues ) :
