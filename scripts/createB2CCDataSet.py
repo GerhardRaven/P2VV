@@ -3,11 +3,11 @@
 #####################
 
 #nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/2011_2012_dv33r6p1_s20_20131031_tupleB_add.root'
-nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_merged.root'
+nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_w0.root'
 nTupleName       = 'DecayTree'
 dataSetsFilePath = 'temp.root' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_6KKMassBins_2TagCats.root'
 appendToFile     = False
-savedObjects     = [ 'main', 'sigSWeight' ]
+savedObjects     = [ 'sigSWeight' ]
 plotsFilePath    = 'temp.ps' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_6KKMassBins_2TagCats.ps'
 parFileIn        = 'eventYields6KKBins.par' #'eventYields6KKBinsNoMC.par' #'eventYields6KKBins.par'
 parFileOut       = ''
@@ -20,7 +20,7 @@ dataCuts         = 'noSelection' # 'nominal2011'
 addCuts          = '' # 'runPeriod == 2011 && hlt1_excl_biased_dec == 1' # 'wMC > 0.'
 dataSample       = '(bkgcat==0 || bkgcat==50)' if simulation else ''
 sWeightName      = 'sigWeight_I2'
-addSWeights      = True
+addSWeights      = False
 addKKMassCat     = True
 addTrackMomenta  = False
 addTaggingObs    = ( 2, 2 ) # ( 0, 0 )
@@ -95,14 +95,14 @@ KKMMin  = KKMassBinBounds[0]
 KKMMax  = KKMassBinBounds[-1]
 
 obsKeys = [  'sWeights_ipatia', 'runPeriod'
-           , 'mass', 'KKMass', 'mumuMass'
+           , 'mass', 'KKMass'#, 'mumuMass'
            , 'time', 'timeRes'
            , 'ctk', 'ctl', 'phih'
            #, 'cpsi', 'cttr', 'phitr'
            #, 'wTag', 'tagDec'
            , 'wTagOS'#, 'tagDecOS'
            , 'wTagSS'#, 'tagDecSS'
-           , 'sel'#, 'sel_cleantail', 'selA', 'selB'
+           #, 'sel', 'sel_cleantail', 'selA', 'selB'
            , 'hlt1ExclB', 'hlt2B', 'hlt2UB'#, 'hlt1B', 'hlt1UB'
            #, 'trigDecUnb', 'trigDecExclB'
            #, 'B_P', 'B_Pt'
@@ -422,6 +422,10 @@ if not simulation :
         if runPeriods :
             # split yields and background parameters for run period
             splitCats[ observables['runPeriod'].GetName() ] = set( yieldNames + bkgParNames )
+            if sigMassModel.startswith('Ipatia2') :
+                # split signal mean and sigma for run period
+                for parName in sigParNames :
+                    if 'mean' in parName or 'sigma' in parName : splitCats[ observables['runPeriod'].GetName() ].add(parName)
 
         if len(KKMassBinBounds) > 2 :
             # split yields for KK-mass category
@@ -468,7 +472,7 @@ if not simulation :
 
         # build simultaneous mass PDF
         print 'P2VV - INFO: createB2CCDataSet: building simultaneous PDF "%s":' % ( massPdf.GetName() + '_simul' )
-        print 13 * ' ' + 'splitted parameters:'
+        print 13 * ' ' + 'split parameters:'
         for it, pars in enumerate(splitPars) :
             print 13 * ' ' + '%2d: pars: [ %s ]' % ( it, ', '.join( par.GetName() for par in pars[0] ) )
             print 13 * ' ' + '    cats: [ %s ]' % ', '.join( cat.GetName() for cat in pars[1] )
