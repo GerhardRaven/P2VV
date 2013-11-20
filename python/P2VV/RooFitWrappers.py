@@ -544,8 +544,15 @@ class MultiVarGaussian(RooObject):
 
         name = kwargs.pop('Name')
         from ROOT import RooArgList
-        args = [RooArgList(*kwargs.pop(k)) for k in ['Parameters', 'CentralValues']] \
-               + [kwargs.pop('Covariance')]
+        pars = RooArgList()
+        for p in kwargs.pop('Parameters'):
+            pars.add(__dref__(p))
+        cv = kwargs.pop('CentralValues')
+        if hasattr(cv, '__iter__'):
+            cvs = RooArgList()
+            for p in cv:
+                cvs.add(__dref__(p))
+        args = [pars, cv, kwargs.pop('Covariance')]
         from ROOT import RooMultiVarGaussian
         mvg = RooMultiVarGaussian(name, name, *args)
         mvg = self._addObject(mvg)
@@ -1328,6 +1335,21 @@ class KeysPdf(Pdf):
         keysPdf = self._addObject(keysPdf)
         self._init(name, 'RooKeysPdf')
         Pdf.__init__(self , Name = name , Type = 'RooKeysPdf')
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+
+    def _make_pdf(self):
+        pass
+
+class Chebychev(Pdf):
+    def __init__(self,**kwargs) :
+        name = kwargs.pop('Name')
+        observable = kwargs.pop('Observable')
+        coefs = kwargs.pop('Coefficients')
+
+        self._declare("Chebychev::%s(%s, {%s})" % (name, observable.GetName(), ','.join([c.GetName() for c in coefs])))
+        self._init(name,'RooChebychev')
+
+        Pdf.__init__(self , Name = name , Type = 'RooChebychev')
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
     def _make_pdf(self):
