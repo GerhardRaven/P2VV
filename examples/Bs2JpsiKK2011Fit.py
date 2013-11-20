@@ -27,7 +27,6 @@ fitOpts = dict(  NumCPU    = 2
 pdfConfig['fitOptions'] = fitOpts
 
 fitRange      = ''
-corrSFitErr   = 'sumWeight' # '' / 'sumWeight' / ( 0.887, [ 0.566, 0.863, 0.956, 0.948, 0.855, 0.662 ] ) / 'matrix'
 randomParVals = ( ) # ( 1., 12345 )
 MinosPars     = [#  'AparPhase'
                  #, 'f_S_bin0',        'f_S_bin1',        'f_S_bin2',        'f_S_bin3',        'f_S_bin4',        'f_S_bin5'
@@ -35,44 +34,34 @@ MinosPars     = [#  'AparPhase'
                 ]
 
 # PDF options
-pdfConfig['numTimeResBins']     = 40
-pdfConfig['timeResType']        = 'eventNoMean'
-pdfConfig['constrainTResScale'] = 'constrain'
-pdfConfig['timeEffType']        = 'paper2012'
-pdfConfig['constrainDeltaM']    = 'constrain'
+pdfConfig['numTimeResBins'] = 40
+pdfConfig['timeResType']    = 'eventNoMean'
+pdfConfig['timeEffType']    = 'paper2012'
 
 pdfConfig['timeEffHistFiles'] = dict(  file      = 'data/Bs_HltPropertimeAcceptance_Data-20120816.root'
                                      , hlt1UB    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
                                      , hlt1ExclB = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
                                     )
 
-pdfConfig['anglesEffType'] = 'weights'
+pdfConfig['anglesEffType']   = 'weights'
 pdfConfig['angEffMomsFiles'] = 'data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
 
-pdfConfig['SSTagging']        = True
-pdfConfig['condTagging']      = True
-pdfConfig['contEstWTag']      = True
-pdfConfig['constrainTagging'] = 'constrain'
+pdfConfig['SSTagging']   = True
+pdfConfig['condTagging'] = True
+pdfConfig['contEstWTag'] = True
 
 pdfConfig['paramKKMass']     = 'simultaneous'
 pdfConfig['KKMassBinBounds'] = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ]
 pdfConfig['CSPValues']       = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
+
 KKMassPars = pdfConfig['obsDict']['KKMass']
 pdfConfig['obsDict']['KKMass'] = ( KKMassPars[0], KKMassPars[1], KKMassPars[2]
                                   , 1020., pdfConfig['KKMassBinBounds'][0], pdfConfig['KKMassBinBounds'][-1] )
 
 pdfConfig['lambdaCPParam'] = 'lambPhi'
 
-from P2VV.Imports import extConstraintValues
-extConstraintValues.setVal( 'DM',      ( 17.63, 0.11 ) )
-extConstraintValues.setVal( 'P0OS',    (  0.392, 0.008, 0.392 ) )
-extConstraintValues.setVal( 'DelP0OS', (  0.0110, 0.0034 ) )
-extConstraintValues.setVal( 'P1OS',    (  1.000,  0.023  ) )
-extConstraintValues.setVal( 'DelP1OS', (  0.000,  0.001  ) )
-extConstraintValues.setVal( 'P0SS',    (  0.350, 0.017, 0.350 ) )
-extConstraintValues.setVal( 'DelP0SS', ( -0.019, 0.005   ) )
-extConstraintValues.setVal( 'P1SS',    (  1.00,  0.16    ) )
-extConstraintValues.setVal( 'DelP1SS', (  0.00,  0.01    ) )
+pdfConfig['externalConstr']['dM']             = ( 17.63, 0.11 )
+pdfConfig['externalConstr']['timeResSigmaSF'] = (  1.45, 0.06 )
 
 
 ###########################################################################################################################################
@@ -104,15 +93,8 @@ if parFileIn :
     pdfConfig.setParametersInPdf(pdf)
 
 # data set with weights corrected for background dilution: for phi_s fit only!
-if corrSFitErr == 'sumWeight'\
-        or ( type(corrSFitErr) != str and hasattr( corrSFitErr, '__iter__' ) and hasattr( corrSFitErr, '__getitem__' ) ) :
-    from P2VV.Utilities.DataHandling import correctSWeights
-    fitData = correctSWeights( dataSet, 'N_cbkgMass_sw'
-                              , 'KKMassCat' if pdfConfig['paramKKMass'] == 'simultaneous' else ''
-                              , CorrectionFactors = None if corrSFitErr == 'sumWeight' else corrSFitErr )
-
-else :
-    fitData = dataSet
+from P2VV.Utilities.DataHandling import correctWeights
+fitData = correctWeights( dataSet, 'KKMassCat' if pdfConfig['paramKKMass'] == 'simultaneous' else '' )
 
 # get observables and parameters in PDF
 pdfObs  = pdf.getObservables(fitData)
@@ -123,7 +105,7 @@ pdfPars = pdf.getParameters(fitData)
 ## fit data ##
 ##############
 
-# float/fix values of some parameters
+# fix values of some parameters
 for CEvenOdds in pdfBuild['taggingParams']['CEvenOdds'] :
     if not pdfConfig['SSTagging'] :
         CEvenOdds.setConstant('avgCEven.*')
@@ -132,11 +114,6 @@ for CEvenOdds in pdfBuild['taggingParams']['CEvenOdds'] :
         for CEvenOdd in CEvenOdds :
             CEvenOdd.setConstant('avgCEven.*')
             CEvenOdd.setConstant( 'avgCOdd.*', True )
-
-pdfBuild['tagCatsOS'].parameter('wTagDelP1OS').setVal(0.)
-pdfBuild['tagCatsSS'].parameter('wTagDelP1SS').setVal(0.)
-pdfBuild['tagCatsOS'].setConstant('wTagDelP1')
-pdfBuild['tagCatsSS'].setConstant('wTagDelP1')
 
 pdfBuild['amplitudes'].setConstant('C_SP')
 
@@ -157,6 +134,8 @@ print 'Bs2JpsiKK2011Fit: observables in PDF:'
 pdfObs.Print('v')
 print 'Bs2JpsiKK2011Fit: parameters in PDF:'
 pdfPars.Print('v')
+print 'Bs2JpsiKK2011Fit: constraints in PDF:'
+for constr in pdf.ExternalConstraints() : constr.Print()
 
 if doFit :
     # fit data
@@ -171,10 +150,7 @@ if doFit :
             print '"%s"' % RooMinPars[-1],
         print
 
-    fitResult = pdf.fitTo( fitData, SumW2Error = True if corrSFitErr == 'matrix' else False
-                          , Minos = RooMinPars, Save = True, Range = fitRange
-                          , **fitOpts
-                         )
+    fitResult = pdf.fitTo( fitData, SumW2Error = False, Minos = RooMinPars, Save = True, Range = fitRange, **fitOpts )
 
     # print parameter values
     from P2VV.Imports import parNames, parValues2011 as parValues
@@ -185,7 +161,7 @@ if doFit :
 
     print 120 * '=' + '\n'
 
-if parFileOut :
-    # write parameters to file
-    pdfConfig.getParametersFromPdf( pdf, fitData )
-    pdfConfig.writeParametersToFile( filePath = parFileOut )
+    if parFileOut :
+        # write parameters to file
+        pdfConfig.getParametersFromPdf( pdf, fitData )
+        pdfConfig.writeParametersToFile( filePath = parFileOut, FitStatus = ( fitResult.status(), fitResult.minNll(), fitResult.edm() ) )

@@ -5,7 +5,7 @@
  * Authors:                                                                  *
  *   JvL, Jeroen van Leerdam, Nikhef, j.van.leerdam@nikhef.nl                *
  *                                                                           *
- * Copyright (c) 2012, Nikhef. All rights reserved.                          *
+ * Copyright (c) 2013, Nikhef. All rights reserved.                          *
  *                                                                           *
  * Redistribution and use in source and binary forms,                        *
  * with or without modification, are permitted according to the terms        *
@@ -16,66 +16,93 @@
 //////////////////////////////////////////////////////////////////////////////
 //
 // BEGIN_HTML
-// Corrects a given signal sWeight with a correction factor for background
-// dilution. Optionally, a correction factor is given for each state of the
-// split category in a simultaneous fit. Either the signal sWeight or the
-// background sWeight is specified.
+// Multiplies a given event weight with a correction factor. Optionally, a
+// correction factor is given for each state of the split category in a
+// simultaneous fit.
 // END_HTML
 //
 
 #include "Riostream.h"
 #include "RooMsgService.h"
 #include "RooAbsCategory.h"
-#include "P2VV/RooCorrectedSWeight.h"
+#include "P2VV/RooCorrectedWeight.h"
 
 //_____________________________________________________________________________
-RooCorrectedSWeight::RooCorrectedSWeight(const char *name, const char* title,
-  RooAbsReal& sWeight, Double_t corrFactor, Bool_t bkgWeight) :
-  RooAbsReal(name, title),
-  _sWeight("sWeight", "sWeight", this, sWeight),
+RooCorrectedWeight::RooCorrectedWeight(const char *name, const char* title,
+    const RooDataSet& data, Double_t corrFactor) :
+    RooAbsReal(name, title),
+  _data(&data),
+  _origWeight("origWeight", "original weight", this),
   _splitCat("splitCat", "split category", this),
-  _corrFactors(std::vector<Double_t>(1, corrFactor)),
-  _bkgWeight(bkgWeight)
+  _corrFactors(std::vector<Double_t>(1, corrFactor))
 {
-  // constructor without split category
+  // constructor with data and without split category
 }
 
 //_____________________________________________________________________________
-RooCorrectedSWeight::RooCorrectedSWeight(const char *name, const char* title,
-  RooAbsReal& sWeight, RooAbsCategory& splitCat,
-  std::vector<Double_t> corrFactors, Bool_t bkgWeight) :
-  RooAbsReal(name, title),
-  _sWeight("sWeight", "sWeight", this, sWeight),
-  _splitCat("splitCat", "split category", this, splitCat),
-  _corrFactors(corrFactors),
-  _bkgWeight(bkgWeight)
+RooCorrectedWeight::RooCorrectedWeight(const char *name, const char* title,
+    RooAbsReal& origWeight, Double_t corrFactor) :
+    RooAbsReal(name, title),
+  _data(0),
+  _origWeight("origWeight", "original weight", this, origWeight),
+  _splitCat("splitCat", "split category", this),
+  _corrFactors(std::vector<Double_t>(1, corrFactor))
 {
-  // constructor with split category
+  // constructor with original weight and without split category
+}
+
+//_____________________________________________________________________________
+RooCorrectedWeight::RooCorrectedWeight(const char *name, const char* title,
+    const RooDataSet& data, RooAbsCategory& splitCat,
+    const std::vector<Double_t> corrFactors) :
+  RooAbsReal(name, title),
+  _data(&data),
+  _origWeight("origWeight", "original weight", this),
+  _splitCat("splitCat", "split category", this, splitCat),
+  _corrFactors(corrFactors)
+{
+  // constructor with data and with split category
 
   // check number of correction factors
   assert((Int_t)corrFactors.size() == splitCat.numTypes());
 }
 
 //_____________________________________________________________________________
-RooCorrectedSWeight::RooCorrectedSWeight(
-    const RooCorrectedSWeight& other, const char* name) :
+RooCorrectedWeight::RooCorrectedWeight(const char *name, const char* title,
+    RooAbsReal& origWeight, RooAbsCategory& splitCat,
+    const std::vector<Double_t> corrFactors) :
+  RooAbsReal(name, title),
+  _data(0),
+  _origWeight("origWeight", "original weight", this, origWeight),
+  _splitCat("splitCat", "split category", this, splitCat),
+  _corrFactors(corrFactors)
+{
+  // constructor with original weight and with split category
+
+  // check number of correction factors
+  assert((Int_t)corrFactors.size() == splitCat.numTypes());
+}
+
+//_____________________________________________________________________________
+RooCorrectedWeight::RooCorrectedWeight(
+    const RooCorrectedWeight& other, const char* name) :
   RooAbsReal(other, name),
-  _sWeight("sWeight", this, other._sWeight),
+  _data(other._data),
+  _origWeight("origWeight", this, other._origWeight),
   _splitCat("splitCat", this, other._splitCat),
   _corrFactors(other._corrFactors),
-  _bkgWeight(other._bkgWeight),
   _positionMap(other._positionMap)
 {
   // copy constructor
 }
 
 //_____________________________________________________________________________
-RooCorrectedSWeight::~RooCorrectedSWeight()
+RooCorrectedWeight::~RooCorrectedWeight()
 {
   // destructor
 }
 
-Int_t RooCorrectedSWeight::position() const
+Int_t RooCorrectedWeight::position() const
 {
   if (_splitCat.absArg() != 0 && _positionMap.empty()) {
     // create map from split category indices to positions in factors vector
@@ -97,8 +124,9 @@ Int_t RooCorrectedSWeight::position() const
 }
 
 //_____________________________________________________________________________
-Double_t RooCorrectedSWeight::evaluate() const
+Double_t RooCorrectedWeight::evaluate() const
 {
   // calculate and return the corrected signal sWeight
-  return sigSWeight() * correctionFactor();
+  _value = origWeight() * correctionFactor();
+  return _value;
 }

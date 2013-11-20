@@ -8,23 +8,17 @@ pdfConfig = PdfConfig()
 
 # job parameters
 from P2VV.Parameterizations.FullPDFs import SimulCatSettings
-doFit                  = True #'NLL'
-HLT1Biased             = True
-corrSFitErr            = 'sumWeight' # '' / 'sumWeight' / ( 0.887, [ 0.566, 0.863, 0.956, 0.948, 0.855, 0.662 ] ) / 'matrix'
-pdfConfig['blind']     = {#  'phiCP'  : ( 'UnblindUniform', 'BsPhis2013EPS',  0.2  )
-                          #, 'dGamma' : ( 'UnblindUniform', 'BsDGs2013EPS',   0.02 )
-                         }
-pdfConfig['numEvents'] = 54755
-pdfConfig['sigFrac']   = 0.504
-dataPath               = '/project/bfys/jleerdam/data/Bs2Jpsiphi/'
+doFit      = True
+HLT1Biased = False
+dataPath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/'
 
-parFileIn     = '' #'2011DataFitValues.par'
+pdfConfig['runPeriods'] = [ ] #[ 2011, 2012 ]
+
+parFileIn     = ''
 parFileOut    = ''
 
 dataSetName = 'JpsiKK_sigSWeight'
-#dataSetFile = dataPath + 'P2VVDataSets2011Reco12_4KKMassBins_2TagCats.root'
-#dataSetFile = dataPath + 'P2VVDataSets2011Reco12_unbiased_4KKMassBins_2TagCats.root'
-dataSetFile = dataPath + 'P2VVDataSets2011Reco12_exclBiased_4KKMassBins_2TagCats.root'
+dataSetFile = dataPath + 'Reco14/P2VVDataSets2011Reco14_I2Mass_exclBiased_narrowKKMass_noKKMassBins_2TagCats.root'
 
 MinosPars = [#  'phiCP', 'lambdaCP'
              #, 'AparPhase', 'AperpPhase'
@@ -32,7 +26,6 @@ MinosPars = [#  'phiCP', 'lambdaCP'
              #, 'f_S_bin0',        'f_S_bin1',        'f_S_bin2',        'f_S_bin3'#,        'f_S_bin4',        'f_S_bin5'
              #, 'timeResSigmaSF'
             ]
-dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
 # fit options
 fitRange = ''
@@ -49,95 +42,89 @@ fitOpts = dict(  NumCPU    = 8
 pdfConfig['fitOptions'] = fitOpts
 
 fastFit           = False
-manualTagCatBins  = False
 constTagCatCoefs  = True
 constAvgCEvenOdd  = True
-constWTagAsyms    = 'P1'
+constWTagAsyms    = ''
 constCSP          = True
 constAmplitudes   = False
 constLambdaCP     = ''  # 'lamb'
-equalAbsLambdaCPs = False
 
 # PDF options
 pdfConfig['numTimeBins'] = 30
 pdfConfig['numTimeResBins']     = 40
 pdfConfig['timeResType']        = 'eventNoMean' # 'eventDoubleGaussConstantFixedMean' # 'event' # 'eventNoMean'
-pdfConfig['constrainTResScale'] = '' # 'fixed'  # 'constrain'
+pdfConfig['constrainTResScale'] = 'fixed' # 'fixed'  # 'constrain'
 pdfConfig['timeEffType']        = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
-pdfConfig['constrainDeltaM']    = ''  # 'constrain' # fixed
+pdfConfig['constrainDeltaM']    = 'fixed'  # 'constrain' # fixed
 pdfConfig['constrainBeta']      = 'noBeta'      # '' / 'constrain' / 'fixed' / 'noBeta'
 
-pdfConfig['timeEffHistFiles'] = dict(  file      = dataPath + 'Bs_HltPropertimeAcceptance_Data-20120816.root'
-                                     , hlt1UB    ='Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
-                                     , hlt1ExclB = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+pdfConfig['timeEffHistFiles'] = dict(  file      = dataPath + 'Reco14/Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
+                                     , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+                                     , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
                                     )
 #timeEffHistFiles = SimulCatSettings('timeEffHistFiles')
-#timeEffHistFiles.addSettings( 'default', [ ]
-#                             , dict(  file      = dataPath + 'Bs_HltPropertimeAcceptance_Data-20120816.root'
-#                                    , hlt1UB    ='Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
-#                                    , hlt1ExclB = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+#timeEffHistFiles.addSettings( [ 'runPeriod' ], [ [ 'p2011' ] ]
+#                             , dict(  file      = dataPath + 'Reco14/Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
+#                                    , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+#                                    , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
 #                                   )
 #                            )
-#timeEffHistFiles.addSettings( [ 'KKMassCat' ], [ [ 'bin0', 'bin3' ] ]
-#                             , dict(  file      = dataPath + 'Bs_HltPropertimeAcceptance_Data-20120816.root'
-#                                    , hlt1UB    ='Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
-#                                    , hlt1ExclB = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
-#                                   )
-#                            )
-#timeEffHistFiles.addSettings( [ 'KKMassCat' ], [ [ 'bin1', 'bin2' ] ]
-#                             , dict(  file      = dataPath + 'Bs_HltPropertimeAcceptance_Data-20120816.root'
-#                                    , hlt1UB    ='Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
-#                                    , hlt1ExclB = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+#timeEffHistFiles.addSettings( [ 'runPeriod' ], [ [ 'p2012' ] ]
+#                             , dict(  file      = dataPath + 'Reco14/Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
+#                                    , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
+#                                    , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
 #                                   )
 #                            )
 #pdfConfig['timeEffHistFiles'] = timeEffHistFiles
 
-pdfConfig['transAngles']   = False
-pdfConfig['anglesEffType'] = 'weights'  # 'weights' # 'basis012' # 'basisSig4'
-#pdfConfig['angEffMomsFiles'] = dataPath + 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
-angEffMomsFiles = SimulCatSettings('angEffMomsFiles')
-angEffMomsFiles.addSettings( 'default', [ ], dataPath + 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights' )
-angEffMomsFiles.addSettings( [ 'hlt1_excl_biased_dec' ], [ [ 'exclBiased' ] ]
-                            , dataPath + 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights' )
-angEffMomsFiles.addSettings( [ 'hlt1_excl_biased_dec' ], [ [ 'notExclBiased' ] ]
-                            , dataPath + 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights' )
-pdfConfig['angEffMomsFiles'] = angEffMomsFiles
-
-pdfConfig['angularRanges'] = dict( ctheta = [  ( 'ctlBin0', -1.,   -0.70 )
-                                             , ( 'ctlBin1', -0.70, -0.25 )
-                                             , ( 'ctlBin2', -0.25, +0.25 )
-                                             , ( 'ctlBin3', +0.25, +0.70 )
-                                             , ( 'ctlBin4', +0.70, +1.   )
-                                            ]
-                                 )
-if not pdfConfig['SFit'] : pdfConfig['bkgAnglePdfType'] = 'hybrid'
+pdfConfig['anglesEffType'] = 'weights'
+pdfConfig['angEffMomsFiles'] = dataPath + 'Reco14/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
+#angEffMomsFiles = SimulCatSettings('angEffMomsFiles')
+#angEffMomsFiles.addSettings( [ 'hlt1_excl_biased_dec' ], [ [ 'notExclB' ] ]
+#                            , dataPath + 'Reco14/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
+#                           )
+#angEffMomsFiles.addSettings( [ 'hlt1_excl_biased_dec' ], [ [ 'exclB' ] ]
+#                            , dataPath + 'Reco14/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
+#                           )
+#pdfConfig['angEffMomsFiles'] = angEffMomsFiles
 
 pdfConfig['sigTaggingType']   = 'tagUntag'
 pdfConfig['SSTagging']        = True
 pdfConfig['condTagging']      = True
 pdfConfig['contEstWTag']      = True
-pdfConfig['constrainTagging'] = ''  # 'constrain'
+pdfConfig['constrainTagging'] = 'fixed'  # 'constrain'
 
 pdfConfig['amplitudeParam']  = 'phasesSWaveFrac' # 'bank' # 'phasesSWaveFrac'
 pdfConfig['ASParam']         = 'deltaPerp'  # 'deltaPerp'
 pdfConfig['AparParam']       = 'phase' # 'Mag2ReIm' # 'phase'
 pdfConfig['ambiguityPars']   = False
 
-pdfConfig['paramKKMass']     = 'simultaneous'  # 'simultaneous'
-pdfConfig['KKMassBinBounds'] = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
-pdfConfig['CSPValues']       = [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
+pdfConfig['paramKKMass']     = ''
+pdfConfig['KKMassBinBounds'] = [ 1008., 1050. ] #[ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
+pdfConfig['CSPValues']       = [ 0.498 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
 KKMassPars = pdfConfig['obsDict']['KKMass']
 pdfConfig['obsDict']['KKMass'] = ( KKMassPars[0], KKMassPars[1], KKMassPars[2]
                                   , 1020., pdfConfig['KKMassBinBounds'][0], pdfConfig['KKMassBinBounds'][-1] )
 
-pdfConfig['lambdaCPParam'] = 'lambPhi' # 'lambPhi_CPVDecay_PSWaves'  # 'lambPhi'
+pdfConfig['lambdaCPParam'] = 'lambPhi'
 
-pdfConfig['splitParams'] = dict( KKMassCat = [ 'f_S', 'ASOddPhase' ] )
+pdfConfig['splitParams'] = dict(#  KKMassCat = [ 'f_S', 'ASOddPhase' ]
+                                #, runPeriod = [ 'Gamma' ] # [ 'betaTimeEff' ] # [ 'tagCatCoef0_1' ]
+                                hlt1_excl_biased_dec = [ 'tagCatCoef0_1' ]
+                               )
 
-pdfConfig['externalConstr']['dM'] = ( 17.63, 0.11 )
+pdfConfig['externalConstr'] = { }
 
 from P2VV.Imports import extConstraintValues
-extConstraintValues.setVal( 'DM', ( 17.63, 0.11 ) )
+extConstraintValues.setVal( 'DM',      ( 17.768, 0.024  ) )
+extConstraintValues.setVal( 'P0OS',    (  0.380,  0.011, 0.380 ) )
+extConstraintValues.setVal( 'P1OS',    (  1.000,  0.062 ) )
+extConstraintValues.setVal( 'DelP0OS', (  0.010,  0.001 ) )
+extConstraintValues.setVal( 'DelP1OS', (  0.070,  0.010 ) )
+extConstraintValues.setVal( 'P0SS',    (  0.437,  0.008, 0.437 ) )
+extConstraintValues.setVal( 'P1SS',    (  1.00,   0.12  ) )
+extConstraintValues.setVal( 'DelP0SS', ( -0.016,  0.002 ) )
+extConstraintValues.setVal( 'DelP1SS', (  0.015,  0.019 ) )
 
 dGammaVal = 0.108
 dMVal     = 17.647
@@ -184,8 +171,6 @@ KKMass     = pdfBuild['observables']['KKMass']
 estWTagOS  = pdfBuild['observables']['wTagOS']
 timeRes    = pdfBuild['observables']['timeRes']
 
-if not pdfConfig['SFit'] : obsSetP2VV.append(BMass)
-
 tagCatP2VVOS = pdfBuild['observables']['tagCatOS']
 tagCatP2VVSS = pdfBuild['observables']['tagCatSS']
 obsSetP2VV.append(tagCatP2VVOS)
@@ -199,14 +184,9 @@ if parFileIn :
     pdfConfig.readParametersFromFile( filePath = parFileIn )
     pdfConfig.setParametersInPdf(pdf)
 
-from P2VV.Utilities.DataHandling import correctSWeights
-fitData = correctSWeights( dataSet, 'N_cbkgMass_sw'
-                          , 'KKMassCat' if pdfConfig['paramKKMass'] == 'simultaneous' else ''
-                          , CorrectionFactors = None if corrSFitErr == 'sumWeight' else corrSFitErr )
-
 # get observables and parameters in PDF
-pdfObs  = pdf.getObservables(fitData)
-pdfPars = pdf.getParameters(fitData)
+pdfObs  = pdf.getObservables(dataSet)
+pdfPars = pdf.getParameters(dataSet)
 
 
 ###########################################################################################################################################
@@ -245,9 +225,7 @@ if constWTagAsyms and constWTagAsyms != 'P0' :
     pdfBuild['tagCatsSS'].setConstant('wTagDelP1')
 
 if pdfConfig['paramKKMass'] == 'amplitudes' :
-    for par in pdfBuild['signalKKMass'].pdf().getParameters(fitData) : par.setConstant(True)
-    if not pdfConfig['SFit'] :
-        for par in pdfBuild['backgroundKKMass'].pdf().getParameters(fitData) : par.setConstant(True)
+    for par in pdfBuild['signalKKMass'].pdf().getParameters(dataSet) : par.setConstant(True)
 
 if constCSP : pdfBuild['amplitudes'].setConstant('C_SP')
 
@@ -285,57 +263,48 @@ if fastFit :
     pdfBuild['lifetimeParams'].parameter('dGamma').setVal(dGammaVal)
     pdfBuild['timeResModel'].setConstant('.*')
     pdfBuild['signalBMass'].setConstant('.*')
-    if not pdfConfig['SFit'] :
-        pdfBuild['backgroundBMass'].setConstant('.*')
-        pdfBuild['backgroundTime'].setConstant('.*')
-        if hasattr( pdfBuild, '_bkgTaggingPdf' ) : pdfBuild['bkgTaggingPdf'].setConstant('.*')
     pdfBuild['amplitudes'].setConstant('C_SP')
 
-if pdfConfig['lambdaCPParam'].startswith('lambPhi_CPVDecay') :
-    if equalAbsLambdaCPs : pdfBuild['lambdaCP'].setConstant('rhoCP_A.*')
-    else :                 pdfBuild['lambdaCP'].setConstant('rhoCP_m')
-
-# set value of HLT1 biased category
 ws['hlt1_excl_biased_dec'].setIndex( 1 if HLT1Biased else 0 )
 
 # print parameters
 print 120 * '='
-print 'HLT1BiasedCatProblem: fit data:'
-fitData.Print()
-print 'HLT1BiasedCatProblem: observables in PDF:'
+print 'JvLFit: fit data:'
+dataSet.Print()
+print 'JvLFit: observables in PDF:'
 pdfObs.Print('v')
-print 'HLT1BiasedCatProblem: parameters in PDF:'
+print 'JvLFit: parameters in PDF:'
 pdfPars.Print('v')
-print 'HLT1BiasedCatProblem: constraints in PDF:'
+print 'JvLFit: constraints in PDF:'
 for constr in pdf.ExternalConstraints() : constr.Print()
 
 if doFit :
     # fit data
     print 120 * '='
-    print 'HLT1BiasedCatProblem: fitting %d events (%s)' % ( fitData.numEntries(), 'weighted' if fitData.isWeighted() else 'not weighted' )
+    print 'JvLFit: fitting %d events (%s)' % ( dataSet.numEntries(), 'weighted' if dataSet.isWeighted() else 'not weighted' )
 
     RooMinPars = [ ]
     if MinosPars :
-        print 'HLT1BiasedCatProblem: running Minos for parameters',
+        print 'JvLFit: running Minos for parameters',
         for parName in MinosPars :
             RooMinPars.append( pdfPars.find(parName) )
             print '"%s"' % RooMinPars[-1],
         print
 
-    fitResult = pdf.fitTo( fitData, SumW2Error = True if corrSFitErr == 'matrix' else False
+    fitResult = pdf.fitTo( dataSet, SumW2Error = False
                           , Minos = RooMinPars, Save = True, Range = fitRange
                           , **fitOpts
                          )
 
-    from P2VV.Imports import parNames, parValues4KKBins as parValues
-    print 'HLT1BiasedCatProblem: parameters:'
+    from P2VV.Imports import parNames, parValues
+    print 'JvLFit: parameters:'
     fitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames, ParValues = parValues )
-    fitResult.covarianceMatrix().Print()
-    fitResult.correlationMatrix().Print()
+    #fitResult.covarianceMatrix().Print()
+    #fitResult.correlationMatrix().Print()
 
     print 120 * '=' + '\n'
 
 if parFileOut :
     # write parameters to file
-    pdfConfig.getParametersFromPdf( pdf, fitData )
+    pdfConfig.getParametersFromPdf( pdf, dataSet )
     pdfConfig.writeParametersToFile( filePath = parFileOut )

@@ -334,7 +334,7 @@ TTree* RooDataSetToTree(const RooDataSet& dataSet, const char* name,
 
 RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
       const char* name, const char* title, const char* cuts,
-      const char* indexName, RooDataSet* origDataSet)
+      const char* indexName, const char* weightName, RooDataSet* origDataSet)
 {
   // get tree name and title
   TString dsName(name);
@@ -342,9 +342,19 @@ RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
   if (dsName.Length() < 1) dsName = tree.GetName();
   if (dsTitle.Length() < 1) dsTitle = tree.GetTitle();
 
-  if (cuts == 0 && indexName == 0 && origDataSet == 0)
+  TString selStr(cuts);
+  TString indStr(indexName);
+  TString wStr(weightName);
+  if (selStr.Length() < 1 && indStr.Length() < 1 && origDataSet == 0) {
     // default: import tree with RooDataSet constructor
-    return new RooDataSet(dsName, dsTitle, observables, RooFit::Import(tree));
+    if (wStr.Length() > 0) {
+      return new RooDataSet(dsName, dsTitle, observables,
+          RooFit::Import(tree), RooFit::WeightVar(wStr));
+    } else {
+      return new RooDataSet(dsName, dsTitle, observables,
+          RooFit::Import(tree));
+    }
+  }
 
   // check number of entries in tree and original data set
   if (origDataSet != 0
@@ -357,7 +367,7 @@ RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
   // get number of data set entries
   Long64_t numEntr = origDataSet == 0 ?
       tree.GetEntries() : (Long64_t)origDataSet->numEntries();
-  if (indexName != 0 && numEntr > (Long64_t)1.e15) {
+  if (indStr.Length() > 0 && numEntr > (Long64_t)1.e15) {
     cout << "P2VV - ERROR: TreeToRooDataSet(): number of entries with index variable limited to 10^15"
         << endl;
     return 0;
@@ -371,15 +381,15 @@ RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
   // find index variable
   RooRealVar* index(0);
   RooRealVar* origIndex(0);
-  if (indexName != 0) {
-    index = dynamic_cast<RooRealVar*>(obsSet.find(indexName));
-    if (index == 0 && obsSet.find(indexName) != 0) {
+  if (indStr.Length() > 0) {
+    index = dynamic_cast<RooRealVar*>(obsSet.find(indStr));
+    if (index == 0 && obsSet.find(indStr) != 0) {
       cout << "P2VV - ERROR: TreeToRooDataSet(): index variable is not a RooRealVar"
           << endl;
       return 0;
     }
-    origIndex = dynamic_cast<RooRealVar*>(origObsSet->find(indexName));
-    if (origIndex == 0 && origObsSet->find(indexName) != 0) {
+    origIndex = dynamic_cast<RooRealVar*>(origObsSet->find(indStr));
+    if (origIndex == 0 && origObsSet->find(indStr) != 0) {
       cout << "P2VV - ERROR: TreeToRooDataSet(): original index variable is not a RooRealVar"
           << endl;
       return 0;
@@ -396,7 +406,6 @@ RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
   }
 
   // initialize observables
-  TString selStr(cuts);
   std::map<TString,Double_t*> doubleMap;
   std::map<TString,Float_t*> floatMap;
   std::map<TString,Int_t*> intMap;
@@ -570,8 +579,24 @@ RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
     (*it)->SetStatus(kFALSE);
   disabledBrList.clear();
 
+  // get weight variable
+  RooRealVar* weight = 0;
+  if (wStr.Length() > 0) {
+    weight = dynamic_cast<RooRealVar*>(obsSet.find(wStr));
+    if (weight == 0)
+      cout << "P2VV - WARNING: TreeToRooDataSet(): no RooRealVar named "
+          << wStr << " found in set of observables: no event weights applied"
+          << endl;
+  }
+
   // create data set
-  RooDataSet* dataSet = new RooDataSet(dsName, dsTitle, obsSet);
+  RooDataSet* dataSet = 0;
+  if (weight != 0) {
+    dataSet = new RooDataSet(dsName, dsTitle, obsSet, wStr);
+  } else {
+    dataSet = new RooDataSet(dsName, dsTitle, obsSet);
+  }
+
   for (Long64_t it = 0; it < numEntr; ++it) {
     // get entries in tree and original data set
     if (origDataSet != 0) {
@@ -621,7 +646,10 @@ RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
     }
 
     // add row to data set
-    dataSet->add(obsSet);
+    if (weight != 0)
+      dataSet->add(obsSet, weight->getVal());
+    else
+      dataSet->add(obsSet);
   }
 
   // delete branch addresses

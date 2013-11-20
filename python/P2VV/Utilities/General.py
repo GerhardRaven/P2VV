@@ -68,6 +68,31 @@ def getSplitPar( parName, stateName, parSet ) :
     return None
 
 
+# function for creating lists of split parameters and categories
+def createSplitParsList( splitParsDict ) :
+    # create lists of split categories and parameters
+    splitParsDict = splitParsDict.copy()
+    pars = splitParsDict.keys()
+    splitPars = [ ]
+    for par in pars :
+        if par not in splitParsDict : continue
+        splitPars.append( [ set( [par] ), splitParsDict.pop(par) ] )
+        for par1 in pars :
+            if par1 not in splitParsDict : continue
+            if splitParsDict[par1] == splitPars[-1][1] :
+                splitPars[-1][0].add(par1)
+                splitParsDict.pop(par1)
+
+    # sort lists of split categories and parameters
+    compFunc = lambda a, b : cmp( a.GetName(), b.GetName() )
+    for it in range( len(splitPars) ) :
+        splitPars[it][0] = sorted( list( splitPars[it][0] ), compFunc )
+        splitPars[it][1] = sorted( list( splitPars[it][1] ), compFunc )
+    splitPars.sort( cmp = lambda a, b : cmp( a[0][0].GetName(), b[0][0].GetName() ) )
+
+    return splitPars
+
+
 def make_binning(data, var, n_bins):
     tmp = data.get().find(var.GetName())
     values = []

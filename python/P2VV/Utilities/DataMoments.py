@@ -344,6 +344,59 @@ def readMoments( filePath = 'moments', **kwargs ) :
           % ( numMoments, '' if numMoments == 1 else 's', filePath )
 
 
+def convertEffWeightsToMoments( Weights, **kwargs ) :
+    pols = [ '0 0', 'para para', 'perp perp', '0 para', '0 perp', 'para perp', 'S S', '0 S', 'para S', 'perp S' ]
+    wNames = kwargs.pop( 'WeightNames'
+                        , { '0 0' : 'Re_ang_A0_A0', 'para para' : 'Re_ang_Apar_Apar', 'perp perp' : 'Re_ang_Aperp_Aperp'
+                           , '0 para' : 'Re_ang_A0_Apar', '0 perp' : 'Im_ang_A0_Aperp', 'para perp' : 'Im_ang_Apar_Aperp'
+                           , 'S S' : 'Re_ang_AS_AS', '0 S' : 'Re_ang_A0_AS', 'para S' : 'Re_ang_Apar_AS', 'perp S' : 'Im_ang_Aperp_AS'
+                          }
+                       )
+    for pol in pols :
+        assert pol in wNames.keys()\
+            , 'P2VV - ERROR: convertEffWeightsToMoments(): polarization "%s" not found in weight names dictionary' % pol
+        assert wNames[pol] in Weights.keys()\
+            , 'P2VV - ERROR: convertEffWeightsToMoments(): weight "%s" not found in weights dictionary' % wNames[pol]
+
+    momNames = [  'p2vvab_0000', 'p2vvab_0020',  'p2vvab_0022'
+                , 'p2vvab_0021', 'p2vvab_002m1', 'p2vvab_002m2'
+                , 'p2vvab_1000', 'p2vvab_1021',  'p2vvab_102m1'
+                , 'p2vvab_2000'
+               ]
+
+    # convert weights to moments
+    from math import sqrt, pi
+    coef = lambda name : Weights[ wNames[name] ][0]
+    moms = { }
+    moms['p2vvab_0000']  =   1. / 3.                        * ( coef('0 0') + coef('para para') + coef('perp perp') )
+    moms['p2vvab_0020']  =   1. / 3. * sqrt(5.)             * ( coef('0 0') + coef('para para') + coef('perp perp') - 3. * coef('S S') )
+    moms['p2vvab_0022']  =            -sqrt(5. / 3.)        * ( coef('para para') - coef('perp perp') )
+    moms['p2vvab_2000']  =   5. / 2.                        * ( coef('0 0') - coef('S S') )
+    moms['p2vvab_0021']  = - 8. / 3. * sqrt( 5. / 2. ) / pi *   coef('para S')
+    moms['p2vvab_002m1'] = - 8. / 3. * sqrt( 5. / 2. ) / pi *  -coef('perp S')
+    moms['p2vvab_002m2'] =             sqrt( 5. / 3. )      *  -coef('para perp')
+    moms['p2vvab_1000']  =   1. / 2. * sqrt(3.)             *   coef('0 S')
+    moms['p2vvab_1021']  = -32. / 3. * sqrt( 5. / 6. ) / pi *   coef('0 para')
+    moms['p2vvab_102m1'] = +32. / 3. * sqrt( 5. / 6. ) / pi *  -coef('0 perp')
+
+    # match the general moments coefficients format
+    for name in momNames : moms[name] = ( moms[name], 0., 0. )
+
+    # get scale factor for moment coefficient
+    scale = kwargs.pop( 'Scale', 1. )
+
+    if kwargs.pop( 'PrintMoments', True ) :
+        # print moments to screen
+        printMoments( BasisFuncNames = momNames, Moments = moms, Scale = scale )
+
+    if kwargs.get( 'OutputFilePath', '' ) :
+        # write the moments to a file
+        writeMoments( kwargs.pop('OutputFilePath'), BasisFuncNames = momNames, Moments = moms, Scale = scale )
+
+    # check if there are remaining keyword arguments
+    assert len(kwargs) == 0, 'P2VV - ERROR: convertEffWeightsToMoments(): unused keyword arguments: %s' % kwargs
+
+
 def multiplyP2VVAngleBases( angleBasis, **kwargs ) :
     doReset = kwargs.pop( 'DoReset', True )
 
@@ -532,7 +585,7 @@ class RealMomentsBuilder ( dict ) :
             moments = [ self[name2] for name2 in self._basisFuncNames[ it + 1 : ] ]
             self[name1].appendMoments(moments)
 
-    def compute( self, data ) :
+    def compute( self, data, **kwargs ) :
         """computes moments of data set (wrapper for C++ computeRooRealMoments)
 
         Looping over data in python is quite a bit slower than in C++. Hence, we
@@ -542,7 +595,7 @@ class RealMomentsBuilder ( dict ) :
         from ROOT import std, computeRooRealMoments
         momVec = std.vector('RooRealMoment*')()
         for func in self._basisFuncNames : momVec.push_back( self[func]._var )
-        computeRooRealMoments( data, momVec )
+        computeRooRealMoments( data, momVec, kwargs.pop( 'ResetFirst', False ), kwargs.pop( 'Verbose', True ) )
 
         for it1, func1 in enumerate(self._basisFuncNames) :
             self._coefficients[func1] = ( self[func1].coefficient(), self[func1].stdDev(), self[func1].significance() )
@@ -552,47 +605,8 @@ class RealMomentsBuilder ( dict ) :
                     corrs[func2] = self[func2].correlation( it1 - it2 ) if it2 < it1 else self[func1].correlation( it2 - it1)
                 self._correlations[func1] = corrs
 
-    def convertPhysMomsToEffWeights(self,outFile,Scale=1):
-        # This method is ONLY intended to transform the angular function weights to the equivalent weights in the orthogonal base.
-        if not ( self._basisFuncNames[0].startswith('Re') or self._basisFuncNames[0].startswith('Im') ):
-            print 'P2VV - ERROR: Method convertPhysicsToBasisMoments() of class RealMomentsBuilder is intended only for angular function weights conversion.:'
-        else:
-            from math import sqrt, pi
-            physMoments = self._coefficients
-            orthBaseEquivMoms = { }
-            s = Scale #Apply a scale factor to the converted moments
-            orthBaseEquivMoms['p2vvab_0000']  = (  physMoments['Re_ang_A0_A0'][0]             \
-                                                 + physMoments['Re_ang_Apar_Apar'][0]         \
-                                                 + physMoments['Re_ang_Aperp_Aperp'] [0]      \
-                                                  ) / 3.
-            orthBaseEquivMoms['p2vvab_0020']  = (  physMoments['Re_ang_A0_A0'][0]             \
-                                                 + physMoments['Re_ang_Apar_Apar'][0]         \
-                                                 + physMoments['Re_ang_Aperp_Aperp'][0]       \
-                                                 - physMoments['Re_ang_AS_AS'][0]   * 3.      \
-                                                  ) / 3. * sqrt(5.)
-            orthBaseEquivMoms['p2vvab_0022']  = (  physMoments['Re_ang_Apar_Apar'][0]         \
-                                                 - physMoments['Re_ang_Aperp_Aperp'][0]       \
-                                                  ) * -sqrt(5. / 3.)
-            orthBaseEquivMoms['p2vvab_2000']  = (  physMoments['Re_ang_A0_A0'][0]             \
-                                                 - physMoments['Re_ang_AS_AS'][0]             \
-                                                  ) * 5. / 2.
-            orthBaseEquivMoms['p2vvab_0021']  = (  physMoments['Re_ang_Apar_AS'][0]           \
-                                                  ) * -8. / 3. * sqrt(5. / 2.) / pi
-            orthBaseEquivMoms['p2vvab_002m1'] = (- physMoments['Im_ang_Aperp_AS'][0]          \
-                                                  ) * -8. / 3. * sqrt(5. / 2.) / pi
-            orthBaseEquivMoms['p2vvab_002m2'] = (- physMoments['Im_ang_Apar_Aperp'][0]        \
-                                                  ) * sqrt(5. / 3.)
-            orthBaseEquivMoms['p2vvab_1000']  = (  physMoments['Re_ang_A0_AS'][0]             \
-                                                  ) * sqrt(3.) / 2.
-            orthBaseEquivMoms['p2vvab_1021']  = (  physMoments['Re_ang_A0_Apar'][0]           \
-                                                  ) * -32. / 3. * sqrt(5. / 6.) / pi
-            orthBaseEquivMoms['p2vvab_102m1'] = (- physMoments['Im_ang_A0_Aperp'][0]          \
-                                                  ) * +32. / 3. * sqrt(5. / 6.) / pi
-
-            # Apply a scale factor and mutch the format that writeMoments requires.
-            for k in orthBaseEquivMoms.keys(): orthBaseEquivMoms[k] = ( s*orthBaseEquivMoms[k],0,0 )
-            # Write the converted moments to a file
-            writeMoments( outFile, BasisFuncNames=orthBaseEquivMoms.keys(), Moments=orthBaseEquivMoms )
+    def convertEffWeightsToMoments( self, **kwargs ) :
+        convertEffWeightsToMoments( Weights = self._coefficients, **kwargs )
 
     def Print( self, **kwargs ) :
         printMoments( BasisFuncNames = self._basisFuncNames, Moments = self._coefficients, Correlations = self._correlations, **kwargs )

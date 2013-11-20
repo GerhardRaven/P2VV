@@ -3,7 +3,7 @@
 ###########################
 
 from math import pi
-from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_2011Analysis as PdfConfig
+from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_RunIAnalysis as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
@@ -14,7 +14,7 @@ makeObservablePlots    = False
 makeKKMassPlots        = False
 plotAnglesNoEff        = False
 pdfConfig['SFit']      = True
-corrSFitErr            = 'sumWeight' # '' / 'sumWeight' / ( 0.887, [ 0.566, 0.863, 0.956, 0.948, 0.855, 0.662 ] ) / 'matrix'
+corrSFitErr            = ( 'sumWeight', [ 'runPeriod', 'hlt1_excl_biased_dec', 'KKMassCat' ] )
 randomParVals          = ( ) #( 0.2, 12345 )
 pdfConfig['blind']     = {  'phiCP'  : ( 'UnblindUniform', 'BsPhisComb', 0.2  ) #'BsPhis2012', 0.2  )
                           , 'dGamma' : ( 'UnblindUniform', 'BsDGsComb',  0.02 ) #'BsDGs2012',  0.02 )
@@ -25,9 +25,9 @@ dataPath               = '/project/bfys/jleerdam/data/Bs2Jpsiphi/'
 
 pdfConfig['runPeriods'] = [ 2011, 2012 ]
 
-plotsFile     = 'temp.root' #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.ps'
+plotsFile     = 'temp.ps'   #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.ps'
 plotsROOTFile = 'temp.root' #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.root'
-parFileIn     = ''#'20112012Reco14DataFitValues.par'
+parFileIn     = '20112012Reco14DataFitValues.par' # '20112012Reco14DataFitValues_4KKMassBins.par' # '20112012Reco14DataFitValues.par'
 parFileOut    = ''
 
 if generateData :
@@ -35,11 +35,10 @@ if generateData :
     dataSetFile = 'paper2012_SFit.root' if pdfConfig['SFit'] else 'paper2012_CFit.root'
 elif pdfConfig['SFit'] :
     dataSetName = 'JpsiKK_sigSWeight'
-    #dataSetFile = dataPath + 'Reco14/P2VVDataSets20112012Reco14_4KKMassBins_2TagCats.root'
-    dataSetFile = dataPath + 'Reco14/P2VVDataSets20112012Reco14_6KKMassBins_2TagCats.root'
+    dataSetFile = dataPath + 'Reco14/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats.root'
 else :
     dataSetName = 'JpsiKK'
-    dataSetFile = dataPath + 'Reco12/P2VVDataSets2011Reco12_4KKMassBins_2TagCats.root'
+    dataSetFile = dataPath + 'Reco14/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats.root'
 
 MinosPars = [#  'phiCP', 'lambdaCP'
              #, 'AparPhase', 'AperpPhase'
@@ -47,7 +46,7 @@ MinosPars = [#  'phiCP', 'lambdaCP'
              #, 'f_S_bin0',        'f_S_bin1',        'f_S_bin2',        'f_S_bin3'#,        'f_S_bin4',        'f_S_bin5'
              #, 'timeResSigmaSF'
             ]
-dllPars = [ ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
+dllPars = [ ] # [ ( 'ASOddPhase_bin2', True, True, True ) ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
 # fit options
 fitRange = ''
@@ -67,7 +66,7 @@ fastFit           = False
 manualTagCatBins  = False
 constTagCatCoefs  = True
 constAvgCEvenOdd  = True
-constWTagAsyms    = 'P0P1'
+constWTagAsyms    = ''
 constCSP          = True
 constAmplitudes   = False
 constLambdaCP     = ''  # 'lamb'
@@ -80,42 +79,44 @@ pdfConfig['timeResType']        = 'eventNoMean' # 'eventDoubleGaussConstantFixed
 pdfConfig['constrainTResScale'] = '' # 'fixed'  # 'constrain'
 pdfConfig['timeEffType']        = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
 pdfConfig['constrainDeltaM']    = ''  # 'constrain' # fixed
-pdfConfig['constrainBeta']      = ''      # '' / 'constrain' / 'fixed' / 'noBeta'
+pdfConfig['constrainBeta']      = 'noBeta'      # '' / 'constrain' / 'fixed' / 'noBeta'
 
-#pdfConfig['timeEffHistFiles'] = dict(  file      = dataPath + 'Bs_HltPropertimeAcceptance_Data-20120816.root'
-#                                     , hlt1UB    ='Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
-#                                     , hlt1ExclB = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
-#                                    )
-#pdfConfig['timeEffHistFiles'] = dict(  file      = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_20120501.root'
-#                                     , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2012_PhiMassWindow30MeV_NextBestPVCut_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
-#                                     , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2012_PhiMassWindow30MeV_NextBestPVCut_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+#pdfConfig['timeEffHistFiles'] = dict(  file      = dataPath + 'Reco14/Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
+#                                     , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
+#                                     , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
 #                                    )
 timeEffHistFiles = SimulCatSettings('timeEffHistFiles')
 timeEffHistFiles.addSettings( [ 'runPeriod' ], [ [ 'p2011' ] ]
-                             , dict(  file      = dataPath + 'Bs_HltPropertimeAcceptance_Data-20120816.root'
-                                    , hlt1UB    ='Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
-                                    , hlt1ExclB = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+                             , dict(  file      = dataPath + 'Reco14/Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
+                                    , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+                                    , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
                                    )
                             )
 timeEffHistFiles.addSettings( [ 'runPeriod' ], [ [ 'p2012' ] ]
-                             , dict(  file      = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_20120501.root'
-                                    , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2012_PhiMassWindow30MeV_NextBestPVCut_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
-                                    , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2012_PhiMassWindow30MeV_NextBestPVCut_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+                             , dict(  file      = dataPath + 'Reco14/Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
+                                    , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
+                                    , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
                                    )
                             )
 pdfConfig['timeEffHistFiles'] = timeEffHistFiles
 
 pdfConfig['transAngles']   = False
 pdfConfig['anglesEffType'] = 'weights'  # 'weights' # 'basis012' # 'basisSig4'
-pdfConfig['angEffMomsFiles'] = dataPath + 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
+pdfConfig['angEffMomsFiles'] = dataPath + 'Reco14/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
 #angEffMomsFiles = SimulCatSettings('angEffMomsFiles')
-#angEffMomsFiles.addSettings( 'default', [ ], dataPath + 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights' )
-#angEffMomsFiles.addSettings( [ 'KKMassCat' ], [ [ 'bin0', 'bin3' ] ]
-#                            , dataPath + 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights' )
-#angEffMomsFiles.addSettings( [ 'KKMassCat' ], [ [ 'bin1', 'bin2' ] ]
-#                            , dataPath + 'hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights' )
+#angEffMomsFiles.addSettings( [ 'KKMassCat' ], [ [ 'bin0', 'bin1', 'bin2' ] ]
+#                            , dataPath + 'Reco14/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK09901020_Phys_moms_norm'
+#                           )
+#angEffMomsFiles.addSettings( [ 'KKMassCat' ], [ [ 'bin3', 'bin4', 'bin5' ] ]
+#                            , dataPath + 'Reco14/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK10201050_Phys_moms_norm'
+#                           )
+#angEffMomsFiles.addSettings( [ 'tagCatP2VV' ], [ [ 'Untagged' ] ]
+#                            , dataPath + 'Reco14/Sim08_20112012_hel_UB_U_trueTime_BkgCat050_KK30_Phys_moms_norm'
+#                           )
+#angEffMomsFiles.addSettings( [ 'tagCatP2VV' ], [ [ 'Tagged' ] ]
+#                            , dataPath + 'Reco14/Sim08_20112012_hel_UB_T_trueTime_BkgCat050_KK30_Phys_moms_norm'
+#                           )
 #pdfConfig['angEffMomsFiles'] = angEffMomsFiles
-
 pdfConfig['angularRanges'] = dict( ctheta = [  ( 'ctlBin0', -1.,   -0.70 )
                                              , ( 'ctlBin1', -0.70, -0.25 )
                                              , ( 'ctlBin2', -0.25, +0.25 )
@@ -153,30 +154,11 @@ pdfConfig['obsDict']['KKMass'] = ( KKMassPars[0], KKMassPars[1], KKMassPars[2]
 pdfConfig['lambdaCPParam'] = 'lambPhi' # 'lambPhi_CPVDecay_PSWaves'  # 'lambPhi'
 
 pdfConfig['splitParams'] = dict(  KKMassCat = [ 'f_S', 'ASOddPhase' ]
-                                , runPeriod = [ 'betaTimeEff' ] #'tagCatCoef0_1' ]
+                                , runPeriod = [ 'Gamma' ] # [ 'betaTimeEff' ] # [ 'tagCatCoef0_1' ]
                                )
 
-pdfConfig['externalConstr']['dM']          = (  17.768, 0.024  )
-pdfConfig['externalConstr']['betaTimeEff'] = ( -0.0083, 0.004  )
-pdfConfig['externalConstr']['wTagP0OS']    = (  0.382,  0.014  ) #(  0.392,  0.008  ) #(  0.382,  0.014  )
-pdfConfig['externalConstr']['wTagP1OS']    = (  0.981,  0.074  ) #(  1.000,  0.023  ) #(  0.981,  0.074  )
-pdfConfig['externalConstr']['wTagDelP0OS'] = (  0.,     0.0034 ) #(  0.0110, 0.0034 ) #(  0.,     0.0034 )
-pdfConfig['externalConstr']['wTagDelP1OS'] = (  0.,     0.001  ) #(  0.000,  0.001  ) #(  0.,     0.001  )
-pdfConfig['externalConstr']['wTagP0SS']    = (  0.439,  0.005  ) #(  0.350,  0.017  ) #(  0.439,  0.005  )
-pdfConfig['externalConstr']['wTagP1SS']    = (  1.04,   0.08   ) #(  1.00,   0.16   ) #(  1.04,   0.08   )
-pdfConfig['externalConstr']['wTagDelP0SS'] = (  0.,     0.005  ) #( -0.019,  0.005  ) #(  0.,     0.005  )
-pdfConfig['externalConstr']['wTagDelP1SS'] = (  0.,     0.01   ) #(  0.00,   0.01   ) #(  0.,     0.01   )
-
-from P2VV.Imports import extConstraintValues
-extConstraintValues.setVal( 'DM',      ( 17.768, 0.024  ) )
-extConstraintValues.setVal( 'P0OS',    ( 0.382,  0.014, 0.382 ) ) # ( 0.392,  0.008, 0.392 ) ) # ( 0.382,  0.014, 0.382 ) )
-extConstraintValues.setVal( 'P1OS',    ( 0.981,  0.074  ) )       # ( 1.000,  0.023  ) )       # ( 0.981,  0.074  ) )
-extConstraintValues.setVal( 'DelP0OS', ( 0.,     0.0034 ) )       # ( 0.,     0.0034 ) )       # ( 0.,     0.0034 ) )
-extConstraintValues.setVal( 'DelP1OS', ( 0.,     0.001  ) )       # ( 0.,     0.001  ) )       # ( 0.,     0.001  ) )
-extConstraintValues.setVal( 'P0SS',    ( 0.439,  0.005, 0.438 ) ) # ( 0.350,  0.017, 0.350 ) ) # ( 0.439,  0.005, 0.438 ) )
-extConstraintValues.setVal( 'P1SS',    ( 1.04,   0.08   ) )       # ( 1.00,   0.16   ) )       # ( 1.04,   0.08   ) )
-extConstraintValues.setVal( 'DelP0SS', ( 0.,     0.005  ) )       # ( 0.,     0.005  ) )       # ( 0.,     0.005  ) )
-extConstraintValues.setVal( 'DelP1SS', ( 0.,     0.01   ) )       # ( 0.,     0.01   ) )       # ( 0.,     0.01   ) )
+#pdfConfig['externalConstr']['dM']          = (  17.768, 0.024  )
+#pdfConfig['externalConstr']['betaTimeEff'] = ( -0.0083, 0.004  )
 
 dGammaVal = 0.108
 dMVal     = 17.647
@@ -275,7 +257,6 @@ angles     = obsSetP2VV[ 1 : 4 ]
 iTagOS     = obsSetP2VV[4]
 iTagSS     = pdfBuild['observables']['iTagSS']
 BMass      = pdfBuild['observables']['mass']
-mumuMass   = pdfBuild['observables']['mumuMass']
 KKMass     = pdfBuild['observables']['KKMass']
 estWTagOS  = pdfBuild['observables']['wTagOS']
 timeRes    = pdfBuild['observables']['timeRes']
@@ -331,12 +312,10 @@ if generateData :
     fitData = dataSet
 
 elif pdfConfig['SFit'] :
-    if corrSFitErr == 'sumWeight'\
-            or ( type(corrSFitErr) != str and hasattr( corrSFitErr, '__iter__' ) and hasattr( corrSFitErr, '__getitem__' ) ) :
-        from P2VV.Utilities.DataHandling import correctSWeights
-        fitData = correctSWeights( dataSet, 'N_cbkgMass_sw'
-                                  , 'KKMassCat' if pdfConfig['paramKKMass'] == 'simultaneous' else ''
-                                  , CorrectionFactors = None if corrSFitErr == 'sumWeight' else corrSFitErr )
+    if corrSFitErr[0] == 'sumWeight'\
+            or ( type(corrSFitErr[0]) != str and hasattr( corrSFitErr[0], '__iter__' ) and hasattr( corrSFitErr[0], '__getitem__' ) ) :
+        from P2VV.Utilities.DataHandling import correctWeights
+        fitData = correctWeights( dataSet, corrSFitErr[1], CorrectionFactors = None if corrSFitErr[0] == 'sumWeight' else corrSFitErr[0] )
 
     else :
         fitData = dataSet
@@ -679,7 +658,7 @@ if doFit :
         ampsFitResult.Print()
         ampsFitResult.covarianceMatrix().Print()
 
-    from P2VV.Imports import parNames, parValues4KKBins as parValues
+    from P2VV.Imports import parNames, parValues
     print 'JvLFit: parameters:'
     fitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames, ParValues = parValues )
     fitResult.covarianceMatrix().Print()
@@ -693,7 +672,9 @@ else :
 if parFileOut :
     # write parameters to file
     pdfConfig.getParametersFromPdf( pdf, fitData )
-    pdfConfig.writeParametersToFile( filePath = parFileOut )
+    pdfConfig.writeParametersToFile(  filePath = parFileOut
+                                    , FitStatus = ( fitResult.status(), fitResult.minNll(), fitResult.edm() ) if fitResult else ( )
+                                   )
 
 
 ###########################################################################################################################################
@@ -1436,7 +1417,7 @@ if dllPars :
                                      , '0.5*(@0-{0:.6f})*(@0-{0:.6f})/{1:.6f}/{1:.6f}'.format( rooPar.getVal(), rooPar.getError() )
                                      , RooArgList(rooPar)
                                     )
-            parabola.plotOn( parFrame, RooFit.LineColor(RooFit.kBlack), RooFit.Precision(0.001) )
+            parabola.plotOn( parFrame, RooFit.LineColor(RooFit.kBlack), RooFit.Precision(0.0001) )
 
         if doDLL :
             print 'JvLFit: plotting Delta -log(L) for %s' % par
@@ -1489,12 +1470,12 @@ sums = {
 
 from math import exp
 DelmVal  = 17.768
-etaOSVal = 0.382 #0.382 #0.392
-p0OSVal  = 0.382 #0.382 #0.392
-p1OSVal  = 0.981 #0.981 #1.000
-etaSSVal = 0.438 #0.438 #0.35
-p0SSVal  = 0.439 #0.439 #0.35
-p1SSVal  = 1.04  #1.04  #1.0
+etaOSVal = 0.380 #0.382 #0.392
+p0OSVal  = 0.380 #0.382 #0.392
+p1OSVal  = 1.000 #0.981 #1.000
+etaSSVal = 0.437 #0.438 #0.35
+p0SSVal  = 0.437 #0.439 #0.35
+p1SSVal  = 1.000  #1.04  #1.0
 print
 print 'Delta m_s = %.3f' % DelmVal
 print 'w_OS = %.3f + %.3f * (eta - %.3f)' % ( p0OSVal, p1OSVal, etaOSVal )
@@ -1510,7 +1491,7 @@ for varSet in tagData :
   sums['dilRes2All'] += weight * dilResSq
 
   if varSet.getCatIndex('tagCatP2VVOS') != 0 :
-    etaOS  = varSet.getRealValue('tagomega_os')
+    etaOS  = varSet.getRealValue('tagomega_os_cb')
     wTagOS = p0OSVal + p1OSVal * ( etaOS - etaOSVal )
     dilOS  = 1. - 2. * wTagOS
 
@@ -1536,7 +1517,7 @@ for varSet in tagData :
       sums['dilTot2Comb'] += weight * dilResSq * dilOS**2
 
   if varSet.getCatIndex('tagCatP2VVSS') != 0 :
-    etaSS  = varSet.getRealValue('tagomega_ss')
+    etaSS  = varSet.getRealValue('tagomega_ss_nn')
     wTagSS = p0SSVal + p1SSVal * ( etaSS - etaSSVal )
     dilSS  = 1. - 2. * wTagSS
 
@@ -1643,8 +1624,8 @@ for argSet in tagData :
     if argSet.getCatIndex('iTagOS') == -1 and argSet.getCatIndex('iTagSS') == +1 : nBbarB += tagData.weight()
     if argSet.getCatIndex('iTagOS') == +1 and argSet.getCatIndex('iTagSS') == -1 : nBBbar += tagData.weight()
 
-    D_OS = 1. - 2. * argSet.getRealValue('tagomega_os')
-    D_SS = 1. - 2. * argSet.getRealValue('tagomega_ss')
+    D_OS = 1. - 2. * argSet.getRealValue('tagomega_os_cb')
+    D_SS = 1. - 2. * argSet.getRealValue('tagomega_ss_nn')
 
     avD_OS += D_OS * tagData.weight()
     avD_SS += D_SS * tagData.weight()

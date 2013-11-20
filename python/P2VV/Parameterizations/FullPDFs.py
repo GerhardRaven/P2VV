@@ -56,6 +56,8 @@ class PdfConfiguration( dict ) :
             par.setConstant( False if self._parameters[ par.GetName() ][4] else True )
 
     def readParametersFromFile( self, filePath = 'parameters', **kwargs ) :
+        verb = kwargs.pop( 'Verbose', True )
+
         # get file path
         filePath = filePath.strip()
 
@@ -71,17 +73,23 @@ class PdfConfiguration( dict ) :
 
         # loop over lines and read parameters
         numPars = 0
+        fitStatus = ( )
         while True :
             # read next line
             line = parFile.readline()
             if not line : break
 
             # check for empty or comment lines
-            line = line.strip()
-            if not line or line[0] == '#' : continue
+            line = line.strip().split()
+            if not line :
+                continue
+            elif line[0][0] == '#' :
+                # check if this is the "fit status" line
+                if len(line) == 12 and line[1] == 'fit' and line[2] == 'status:' :
+                    fitStatus = ( int( line[5][ : -1 ] ), float( line[8][ : -1 ] ), float( line[11] ) )
+                continue
 
             # check moment format
-            line = line.split()
             if len(line) != 6 : continue
 
             # check name
@@ -102,8 +110,11 @@ class PdfConfiguration( dict ) :
 
         parFile.close()
 
-        print 'P2VV - INFO: PdfConfiguration.readParametersFromFile(): %d parameter%s read from file \"%s\"'\
-                % ( numPars, '' if numPars == 1 else 's', filePath )
+        if verb :
+            print 'P2VV - INFO: PdfConfiguration.readParametersFromFile(): %d parameter%s read from file \"%s\"'\
+                  % ( numPars, '' if numPars == 1 else 's', filePath )
+
+        return fitStatus
 
     def writeParametersToFile( self, filePath = 'parameters', **kwargs ) :
         # get file path and name
@@ -129,10 +140,14 @@ class PdfConfiguration( dict ) :
         floating = kwargs.pop( 'Floating', None )
         if floating not in [ True, False ] : floating = None
 
+        # get fit status
+        fitStat = kwargs.pop( 'FitStatus', ( -1, 0., 0. ) )
+
         # write parameters to content string
         cont = '# %s: parameters\n' % fileName\
              + '# name requirement: \'{0}\'\n'.format( names if names else '' )\
              + '# floating:         \'{0}\'\n'.format( 'True' if floating == True else ( 'False' if floating == False else '' ) )\
+             + '# fit status:       status = {0:d}; NLL = {1:+.16g}; EDM = {2:.3g}\n'.format( fitStat[0], fitStat[1], fitStat[2] )\
              + '#\n'\
              + '# ' + '-' * (79 + maxLenName) + '\n'\
              + ( '# {0:<%s}   {1:<14}   {2:<13}   {3:<14}   {4:<14}   {5:<}\n' % maxLenName )\
@@ -160,8 +175,8 @@ class PdfConfiguration( dict ) :
                 % ( numPars, '' if numPars == 1 else 's', filePath )
 
 
-# B_s^0 -> J/psi phi analysis of 1 fb^-1 2011 data (paper) configuration
-class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
+# B_s^0 -> J/psi phi analysis configuration
+class Bs2Jpsiphi_PdfConfiguration( PdfConfiguration ) :
     def __init__( self ) :
         from math import pi
 
@@ -175,7 +190,7 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
 
         self['obsDict'] = dict(  runPeriod = ( 'runPeriod',            'run period',              { }                                   )
                                , mass      = ( 'mass',                 'm(J/#psi K^{+}K^{-})',    'MeV/c^{2}', 5368.,  5200.,   5550.   )
-                               , mumuMass  = ( 'mdau1',                'm(#mu^{+}#mu^{-})',       'MeV/c^{2}', 3096.,  3030.,   3150.   )
+                               #, mumuMass  = ( 'mdau1',                'm(#mu^{+}#mu^{-})',       'MeV/c^{2}', 3096.,  3030.,   3150.   )
                                , KKMass    = ( 'mdau2',                'm(K^{+}K^{-})',           'MeV/c^{2}', 1020.,   990.,   1050.   )
                                , KKMassCat = ( 'KKMassCat',            'KK mass category',        { }                                   )
                                , time      = ( 'time',                 'Decay time',              'ps',        1.5,    0.3,     14.     )
@@ -183,8 +198,6 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
                                , cpsi      = ( 'helcosthetaK',         'cos(#theta_{K})',         '',          0.,    -1.,     +1.      )
                                , ctheta    = ( 'helcosthetaL',         'cos(#theta_{#mu})',       '',          0.,    -1.,     +1.      )
                                , phi       = ( 'helphi',               '#phi_{h}',                'rad',       0.,    -pi,     +pi      )
-                               , wTagOS    = ( 'tagomega_os',          'OS est. wrong-tag prob.', '',          0.25,   0.,      0.50001 )
-                               , wTagSS    = ( 'tagomega_ss',          'SS est. wrong-tag prob.', '',          0.25,   0.,      0.50001 )
                                , iTagOS    = ( 'iTagOS',               'OS flavour tag',          { 'B' : +1, 'Bbar' : -1 }             )
                                , iTagSS    = ( 'iTagSS',               'SS flavour tag',          { 'B' : +1, 'Bbar' : -1 }             )
                                , tagCatOS  = ( 'tagCatP2VVOS',         'OS flavour tag',          { 'Untagged' : 0, 'Tagged' : 1 }      )
@@ -197,26 +210,23 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
         self['signalData'] = None     # data set of signal events
 
         # fit options
-        self['fitOptions'] = dict( NumCPU = 1, Optimize = 1, Timer = True, Minimizer = 'Minuit2' )
+        self['fitOptions'] = dict( NumCPU = 2, Optimize = 2, Timer = True, Minimizer = 'Minuit2' )
 
         # PDF parameters
         self['numTimeBins']        = 30               # number of bins for the decay time observable
         self['numTimeResBins']     = 40               # number of bins for the decay-time resolution observable (used for caching)
         self['timeResType']        = 'eventNoMean'    # '' / 'event' / 'eventNoMean' / 'eventConstMean' / '3Gauss'
-        self['constrainTResScale'] = ''      # '' / 'constrain' / 'fixed'
+        self['constrainTResScale'] = ''               # '' / 'constrain' / 'fixed'
         self['timeEffType']        = 'paper2012'      # 'HLT1Unbiased' / 'HLT1ExclBiased' / 'paper2012' / 'fit'
-        self['constrainDeltaM']    = ''      # '' / 'constrain' / 'fixed'
+        self['constrainDeltaM']    = ''               # '' / 'constrain' / 'fixed'
         self['constrainBeta']      = 'noBeta'         # '' / 'constrain' / 'fixed' / 'noBeta'
 
-        self['timeEffHistFiles']     = (  'data/Bs_HltPropertimeAcceptance_Data-20120816.root'
-                                        , 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
-                                        , 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
-                                       )
-        self['timeEffParameters']    = { }
+        self['timeEffHistFiles']  = { }
+        self['timeEffParameters'] = { }
 
         self['transAngles']     = False        # use transversity angles?
         self['anglesEffType']   = 'weights'    # '' / 'weights' / 'basis012' / 'basis012Plus' / 'basis012Thetal' / 'basis0123' / 'basis01234' / 'basisSig3' / 'basisSig4'
-        self['angEffMomsFiles'] = 'data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
+        self['angEffMomsFiles'] = ''
         self['angularRanges']   = dict( cpsi = [ ], ctheta = [ ], phi = [ ] )
 
         self['sigTaggingType']   = 'tagUntag'    # 'histPdf' / 'tagUntag' / 'tagCats' / 'tagUntagRelative' / 'tagCatsRelative'
@@ -224,7 +234,7 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
         self['SSTagging']        = True           # use same-side Kaon tagging?
         self['condTagging']      = True           # make tagging categories and B/Bbar tags conditional observables?
         self['contEstWTag']      = True           # use a continuous estimated wrong-tag probability instead of tagging categories?
-        self['constrainTagging'] = ''    # '' / 'constrain' / 'fixed'
+        self['constrainTagging'] = ''             # '' / 'constrain' / 'fixed'
         self['tagCatsOS']        = [ ]            # [ ( 'Untagged', 0, 0.5000001, 0.5,   0.5,   0.0, 0.669, 0.0 ), ( 'Tagged',   1, 0.4999999, 0.392, 0.392, 0.0, 0.331, 0.0 ) ]
         self['tagCatsSS']        = [ ]            # [ ( 'Untagged', 0, 0.5000001, 0.5,   0.5,   0.0, 0.896, 0.0 ), ('Tagged',    1, 0.4999999, 0.359, 0.359, 0.0, 0.104, 0.0 ) ]
 
@@ -241,18 +251,7 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
 
         self['splitParams'] = dict( KKMassCat = [ 'f_S', 'ASOddPhase' ] )
 
-        self['externalConstr'] = dict(  dM             = (  17.768, 0.024  )
-                                      , wTagP0OS       = (  0.392,  0.008  )
-                                      , wTagP1OS       = (  1.000,  0.023  )
-                                      , wTagDelP0OS    = (  0.0110, 0.0034 )
-                                      , wTagDelP1OS    = (  0.000,  0.001  )
-                                      , wTagP0SS       = (  0.350,  0.017  )
-                                      , wTagP1SS       = (  1.00,   0.16   )
-                                      , wTagDelP0SS    = ( -0.019,  0.005  )
-                                      , wTagDelP1SS    = (  0.00,   0.01   )
-                                      , timeResSigmaSF = (  1.45,   0.06   )
-                                      , betaTimeEff    = ( -0.0083, 0.004  )
-                                     )
+        self['externalConstr'] = { }
 
         # initialize PdfConfiguration object
         PdfConfiguration.__init__( self )
@@ -270,6 +269,111 @@ class Bs2Jpsiphi_2011Analysis( PdfConfiguration ) :
 
     def rmBkgParams(self) :
         for key in [ 'bkgAnglePdfType', 'numAngleBins' ] : self.pop( key, None )
+
+
+# B_s^0 -> J/psi phi analysis of 1 fb^-1 2011 data (paper) configuration
+class Bs2Jpsiphi_2011Analysis( Bs2Jpsiphi_PdfConfiguration ) :
+    def __init__( self ) :
+        Bs2Jpsiphi_PdfConfiguration.__init__(self)
+
+        self['numEvents']  = 54755
+        self['sigFrac']    = 0.51
+        self['runPeriods'] = [ ]
+
+        self['obsDict']['wTagOS'] = ( 'tagomega_os', 'OS est. wrong-tag prob.', '', 0.25, 0., 0.50001 )
+        self['obsDict']['wTagSS'] = ( 'tagomega_ss', 'SS est. wrong-tag prob.', '', 0.25, 0., 0.50001 )
+
+        self['timeEffHistFiles'] = dict(  file      = 'data/Bs_HltPropertimeAcceptance_Data-20120816.root'
+                                        , hlt1UB    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+                                        , hlt1ExclB = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+                                       )
+        self['angEffMomsFiles'] = 'data/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
+
+        self['KKMassBinBounds'] = [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ]
+        self['CSPValues']       = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
+
+        self['externalConstr'] = dict(  dM             = (  17.63,  0.11   )
+                                      , wTagP0OS       = (  0.392,  0.008  )
+                                      , wTagP1OS       = (  1.000,  0.023  )
+                                      , wTagDelP0OS    = (  0.0110, 0.0034 )
+                                      , wTagDelP1OS    = (  0.,     0.     )
+                                      , wTagP0SS       = (  0.350,  0.017  )
+                                      , wTagP1SS       = (  1.00,   0.16   )
+                                      , wTagDelP0SS    = ( -0.019,  0.005  )
+                                      , wTagDelP1SS    = (  0.,     0.     )
+                                      , timeResSigmaSF = (  1.45,   0.06   )
+                                     )
+
+        from P2VV.Imports import extConstraintValues
+        extConstraintValues.setVal( 'DM',      (  17.63,  0.11   ) )
+        extConstraintValues.setVal( 'P0OS',    (  0.392,  0.008, 0.392 ) )
+        extConstraintValues.setVal( 'P1OS',    (  1.000,  0.023  ) )
+        extConstraintValues.setVal( 'DelP0OS', (  0.0110, 0.0034 ) )
+        extConstraintValues.setVal( 'DelP1OS', (  0.,     0.     ) )
+        extConstraintValues.setVal( 'P0SS',    (  0.350,  0.017, 0.350 ) )
+        extConstraintValues.setVal( 'P1SS',    (  1.00,   0.16   ) )
+        extConstraintValues.setVal( 'DelP0SS', ( -0.019,  0.005  ) )
+        extConstraintValues.setVal( 'DelP1SS', (  0.,     0.     ) )
+
+
+# B_s^0 -> J/psi phi analysis of 3 fb^-1 run-I data configuration
+class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
+    def __init__( self ) :
+        Bs2Jpsiphi_PdfConfiguration.__init__(self)
+
+        self['blind'] = {  'phiCP'  : ( 'UnblindUniform', 'BsPhisComb', 0.2  )
+                         , 'dGamma' : ( 'UnblindUniform', 'BsDGsComb',  0.02 )
+                        }
+        self['numEvents']  = 220000
+        self['sigFrac']    = 0.43
+        self['runPeriods'] = [ 2011, 2012 ]
+
+        self['obsDict']['wTagOS'] = ( 'tagomega_os_cb', 'OS est. wrong-tag prob.', '', 0.25, 0., 0.50001 )
+        self['obsDict']['wTagSS'] = ( 'tagomega_ss_nn', 'SS est. wrong-tag prob.', '', 0.25, 0., 0.50001 )
+
+        timeEffHistFiles = SimulCatSettings('timeEffHistFiles')
+        timeEffHistFiles.addSettings( [ 'runPeriod' ], [ [ 'p2011' ] ]
+                                     , dict(  file      = 'data/Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
+                                            , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+                                            , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+                                           )
+                                    )
+        timeEffHistFiles.addSettings( [ 'runPeriod' ], [ [ 'p2012' ] ]
+                                     , dict(  file      = 'data/Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
+                                            , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
+                                            , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+                                           )
+                                    )
+        self['timeEffHistFiles'] = timeEffHistFiles
+
+        self['angEffMomsFiles'] = 'data/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
+
+        self['KKMassBinBounds'] = [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ]
+        self['CSPValues']       = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
+
+        self['splitParams']['runPeriod'] = [ 'Gamma' ]
+
+        self['externalConstr'] = dict(  wTagP0OS       = (  0.379,  0.011  )
+                                      , wTagP1OS       = (  1.00,   0.06   )
+                                      , wTagDelP0OS    = (  0.0137, 0.0012 )
+                                      , wTagDelP1OS    = (  0.070,  0.012  )
+                                      , wTagP0SS       = (  0.437,  0.008  )
+                                      , wTagP1SS       = (  1.00,   0.12   )
+                                      , wTagDelP0SS    = ( -0.016,  0.002  )
+                                      , wTagDelP1SS    = (  0.015,  0.019  )
+                                      , timeResSigmaSF = (  1.45,   0.06   )
+                                     )
+
+        from P2VV.Imports import extConstraintValues
+        extConstraintValues.setVal( 'DM',      ( 17.768, 0.024   ) )
+        extConstraintValues.setVal( 'P0OS',    (  0.379,  0.011, 0.379 ) )
+        extConstraintValues.setVal( 'P1OS',    (  1.00,   0.06   ) )
+        extConstraintValues.setVal( 'DelP0OS', (  0.0137, 0.0012 ) )
+        extConstraintValues.setVal( 'DelP1OS', (  0.070,  0.012  ) )
+        extConstraintValues.setVal( 'P0SS',    (  0.437,  0.008, 0.437 ) )
+        extConstraintValues.setVal( 'P1SS',    (  1.00,   0.12   ) )
+        extConstraintValues.setVal( 'DelP0SS', ( -0.016,  0.002  ) )
+        extConstraintValues.setVal( 'DelP1SS', (  0.015,  0.019  ) )
 
 
 class SimulCatSettings(list) :
@@ -351,9 +455,13 @@ class PdfBuilder ( dict ) :
         for name in obsDict.keys() :
             if readFromWS :
                 ws = RooObject().ws()
-                if   ws.var( obsDict[name][0] ) : self['observables'][name] = RealVar(  obsDict[name][0] )
-                elif ws.cat( obsDict[name][0] ) : self['observables'][name] = Category( obsDict[name][0] )
-                else : raise RuntimeError( 'P2VV - ERROR: PdfBuilder._createObservables(): variable "%s" not in workspace' % name )
+                if ws.var( obsDict[name][0] ) :
+                    self['observables'][name] = RealVar( obsDict[name][0] )
+                elif ws.cat( obsDict[name][0] ) :
+                    self['observables'][name] = Category( obsDict[name][0] )
+                else :
+                    raise RuntimeError( 'P2VV - ERROR: PdfBuilder._createObservables(): variable "%s" ("%s") not in workspace'\
+                                        % ( obsDict[name][0], name ) )
             else :
                 if type( obsDict[name][2] ) != dict :
                     self['observables'][name] = RealVar( obsDict[name][0], Title = obsDict[name][1]
@@ -576,31 +684,23 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         splitParsDict[ ws[par] ] = set( [ ws[cat] ] )
                     else :
                         splitParsDict[ ws[par] ].add( ws[cat] )
-            self['splitParsDict'] = splitParsDict.copy()
+            self['splitParsDict'] = splitParsDict
 
-            # create lists of split categories and parameters
-            pars = splitParsDict.keys()
-            splitCats = [ ]
-            splitPars = [ ]
-            for par in pars :
-                if par not in splitParsDict : continue
-                splitPars.append( set( [par] ) )
-                splitCats.append( splitParsDict.pop(par) )
-                for par1 in pars :
-                    if par1 not in splitParsDict : continue
-                    if splitParsDict[par1] == splitCats[-1] :
-                        splitPars[-1].add(par1)
-                        splitParsDict.pop(par1)
+            # create list of split parameters and categories
+            from P2VV.Utilities.General import createSplitParsList
+            splitPars = createSplitParsList(splitParsDict)
 
             # build simultaneous PDF
             print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: building simultaneous PDF "%s":' % ( fullPdf.GetName() + '_simul' )
-            print 13 * ' ' + 'splitting categories: [ %s ]' % ' ], [ '.join(', '.join(cat.GetName() for cat in cats) for cats in splitCats)
-            print 13 * ' ' + 'split parameters:     [ %s ]' % ' ], [ '.join(', '.join(par.GetName() for par in pars) for pars in splitPars)
+            print 13 * ' ' + 'split parameters:'
+            for it, pars in enumerate(splitPars) :
+                print 13 * ' ' + '%2d: pars: [ %s ]' % ( it, ', '.join( par.GetName() for par in pars[0] ) )
+                print 13 * ' ' + '    cats: [ %s ]' % ', '.join( cat.GetName() for cat in pars[1] )
             from P2VV.RooFitWrappers import SimultaneousPdf
             self['simulPdf'] = SimultaneousPdf(  fullPdf.GetName() + '_simul'
                                                , MasterPdf       = fullPdf
-                                               , SplitCategories = splitCats
-                                               , SplitParameters = splitPars
+                                               , SplitCategories = [ pars[1] for pars in splitPars ]
+                                               , SplitParameters = [ pars[0] for pars in splitPars ]
                                               )
 
             # set time resolution models
@@ -647,7 +747,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 splitCatState = splitCatIter.Next()
 
             if paramKKMass == 'simultaneous' and ASParam != 'Mag2ReIm' :
-                # set values for splitted S-P coupling factors
+                # set values for split S-P coupling factors
                 if ASParam != 'Mag2ReIm' :
                     print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: using S-P-wave coupling factors:',
                     for iter, fac in enumerate( CSPValues ) :
@@ -670,20 +770,29 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
 
     def _multiplyByTimeAcceptance( self, **kwargs ) :
+        timeEffType      = getKWArg( self, kwargs, 'timeEffType' )
         timeEffHistFiles = getKWArg( self, kwargs, 'timeEffHistFiles' )
         pdf              = getKWArg( self, kwargs, 'pdf' )
         simulPdf         = getKWArg( self, kwargs, 'simulPdf' )
         signalData       = getKWArg( self, kwargs, 'signalData' )
+        observables      = getKWArg( self, kwargs, 'observables' )
 
         if not simulPdf :
+            # original PDF is not simultaneous: multiply with acceptance from outside PDF
             multiplyByTimeAcceptance( pdf, self, data = signalData, histFile = timeEffHistFiles['file']
                                      , histUBName = timeEffHistFiles['hlt1UB'], histExclBName = timeEffHistFiles['hlt1ExclB'] )
         else :
+            # original PDF is simultaneous: multiply with acceptance separately for all categories
             splitCat      = simulPdf.indexCat()
             splitCatIter  = splitCat.typeIterator()
             splitCatState = splitCatIter.Next()
             inputCats     = [ splitCat ] if splitCat.isFundamental() else splitCat.inputCatList()
+            singleHLT1Eff = timeEffType.startswith('paper2012')\
+                            and any( cat.GetName() == observables['hlt1ExclB'].GetName() for cat in inputCats )
+
+            # loop over simultaneous categories
             while splitCatState :
+                # get category state and corresponding acceptance parameters
                 splitCat.setIndex( splitCatState.getVal() )
                 if type(timeEffHistFiles) == dict :
                     effFile = timeEffHistFiles
@@ -691,9 +800,20 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     effFile = timeEffHistFiles.getSettings( [ ( cat.GetName(), cat.getLabel() ) for cat in inputCats ] )
                 catPdf = simulPdf.getPdf( splitCatState.GetName() )
                 cNamePF = ( splitCatState.GetName() ).replace( '{', '' ).replace( '}', '' ).replace( ';', '_' )
-                multiplyByTimeAcceptance( catPdf, self, data = signalData, histFile = effFile['file'], histUBName = effFile['hlt1UB']
-                                         , histExclBName = effFile['hlt1ExclB'], coefNamePF = cNamePF, motherPdf = simulPdf
-                                         , resModelKey = splitCatState.GetName() )
+                effType = observables['hlt1ExclB'].getIndex() if singleHLT1Eff else timeEffType
+                if effType == 0 :
+                    effType = 'HLT1Unbiased'
+                elif effType == 1 :
+                    effType = 'HLT1ExclBiased'
+                elif effType != timeEffType :
+                    raise AssertionError\
+                          , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: unknown HLT1 exclusively biased state: %s (%d)'\
+                            % ( observables['hlt1ExclB'].getLabel(), effType )
+
+                # multiply PDF for this category state with acceptance
+                multiplyByTimeAcceptance( catPdf, self, data = signalData, timeEffType = effType, histFile = effFile['file']
+                                         , histUBName = effFile['hlt1UB'], histExclBName = effFile['hlt1ExclB'], coefNamePF = cNamePF
+                                         , motherPdf = simulPdf, resModelKey = splitCatState.GetName() )
                 splitCatState = splitCatIter.Next()
 
 
@@ -729,16 +849,20 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         constraints = set()
         def buildConstraint( par, constrVals ) :
-            from P2VV.RooFitWrappers import Pdf, ConstVar
-            from ROOT import RooGaussian as Gaussian
-            constrName = par.GetName().replace( '{', '' ).replace( '}', '' ).replace( ';', '_' )
-            constraints.add( Pdf(  Name = constrName + '_constraint', Type = Gaussian
-                                 , Parameters = [  par
-                                                 , ConstVar( Name = constrName + '_mean',  Value = constrVals[0] )
-                                                 , ConstVar( Name = constrName + '_sigma', Value = constrVals[1] )
-                                                ]
-                                )
-                           )
+            par.setVal( constrVals[0] )
+            if type(constrVals[1]) == float and constrVals[1] > 0. :
+                from P2VV.RooFitWrappers import Pdf, ConstVar
+                from ROOT import RooGaussian as Gaussian
+                constrName = par.GetName().replace( '{', '' ).replace( '}', '' ).replace( ';', '_' )
+                constraints.add( Pdf(  Name = constrName + '_constraint', Type = Gaussian
+                                     , Parameters = [  par
+                                                     , ConstVar( Name = constrName + '_mean',  Value = constrVals[0] )
+                                                     , ConstVar( Name = constrName + '_sigma', Value = constrVals[1] )
+                                                    ]
+                                    )
+                               )
+            else :
+                par.setConstant(True)
 
         ws = pdf.ws()
         pdfVars = pdf.getVariables()
@@ -1547,9 +1671,19 @@ def multiplyByTimeAcceptance( pdf, self, **kwargs ) :
     hlt2B     = observables['hlt2B']
     hlt2UB    = observables['hlt2UB']
 
+    # get index categories if mother PDF is a simultaneous PDF
+    if hasattr( motherPdf, 'indexCat' ) :
+        indexCat = motherPdf.indexCat()
+        indexCatNames = [ indexCat.GetName() ] if indexCat.isFundamental() else [ cat.GetName() for cat in indexCat.inputCatList() ]
+    else :
+        indexCats = [ ]
+
     # build new decay-time resolution model that includes the decay-time acceptance function
     print 'P2VV - INFO: multiplyByTimeAcceptance(): multiplying PDF "%s" with decay-time acceptance function' % pdf.GetName()
     if timeEffType == 'fit' :
+        assert all( cat.GetName() not in indexCatNames for cat in [ hlt1ExclB, hlt2B, hlt2UB ] )\
+               , 'P2VV - ERROR: multiplyByTimeAcceptance(): acceptance function depends on the index category of the simultaneous mother PDF'
+
         hists = {  hlt1ExclB : {  'exclB'    : { 'histogram' : 'hlt1_shape', 'average' : ( 6.285e-01, 1.633e-02 ) }
                                 , 'notExclB' : { 'bins'      : time.getRange(), 'heights' : [0.5]                 }
                                }
@@ -1569,6 +1703,9 @@ def multiplyByTimeAcceptance( pdf, self, **kwargs ) :
                                                    )
 
     elif timeEffType == 'paper2012_multi' :
+        assert hlt1ExclB.GetName() not in indexCatNames\
+               , 'P2VV - ERROR: multiplyByTimeAcceptance(): acceptance function depends on the index category of the simultaneous mother PDF'
+
         hists = { hlt1ExclB : {  'exclB'    : { 'histogram' : histExclBName }
                                , 'notExclB' : { 'histogram' : histUBName    }
                               }
@@ -1586,6 +1723,9 @@ def multiplyByTimeAcceptance( pdf, self, **kwargs ) :
                                                    )
 
     elif timeEffType == 'paper2012' :
+        assert hlt1ExclB.GetName() not in indexCatNames\
+               , 'P2VV - ERROR: multiplyByTimeAcceptance(): acceptance function depends on the index category of the simultaneous mother PDF'
+
         hists = { hlt1ExclB : {  'exclB'    : { 'histogram' : histExclBName }
                                , 'notExclB' : { 'histogram' : histUBName    }
                               }
@@ -1650,6 +1790,7 @@ def multiplyByAngularAcceptance( pdf, self, **kwargs ) :
     moments.appendPYList( angleFuncs.angles, angularMomentIndices( anglesEffType, angleFuncs ) )
     moments.read(angEffMomsFile)
     moments.Print()
-    moments.multiplyPDFWithEff( pdf, CoefName = parNamePrefix + 'effC' + '_' + coefNamePF )
+    moments.multiplyPDFWithEff( pdf, CoefName = parNamePrefix + ( '_' if parNamePrefix else '' ) + 'effC'\
+                                                + ( '_' if coefNamePF else '' ) + coefNamePF )
 
     return pdf

@@ -252,6 +252,7 @@ else :
 
 # print moments to screen
 physMoments.Print(  Scale = PDFInt / 16. / sqrt(pi)                       )
+physMoments.convertEffWeightsToMoments( OutputFilePath = momentsFile + '_Basis_weights', Scale = PDFInt / 16. / sqrt(pi) )
 basisMoments.Print( Scale = PDFInt /  2. / sqrt(pi)                       )
 basisMoments.Print( Scale = PDFInt /  2. / sqrt(pi), MinSignificance = 5. )
 

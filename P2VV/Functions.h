@@ -30,7 +30,8 @@ TTree* RooDataSetToTree(const RooDataSet& dataSet, const char* name = 0,
 
 RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
       const char* name = 0, const char* title = 0, const char* cuts = 0,
-      const char* indexName = 0, RooDataSet* origDataSet = 0);
+      const char* indexName = 0, const char* weightName = 0,
+      RooDataSet* origDataSet = 0);
 
 std::vector<double> HelicityAngles(TLorentzVector Kplus_P, TLorentzVector Kminus_P, 
 				   TLorentzVector muplus_P, TLorentzVector muminus_P);
