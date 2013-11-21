@@ -368,7 +368,8 @@ if pdfConfig['paramKKMass'] == 'amplitudes' :
     if not pdfConfig['SFit'] :
         for par in pdfBuild['backgroundKKMass'].pdf().getParameters(fitData) : par.setConstant(True)
 
-if constCSP : pdfBuild['amplitudes'].setConstant('C_SP')
+for par in pdfPars :
+    if par.GetName().startswith('C_SP') : par.setConstant( True if constCSP else False )
 
 if fastFit or constAmplitudes :
     pdfBuild['amplitudes'].setConstant('A0Mag2')
