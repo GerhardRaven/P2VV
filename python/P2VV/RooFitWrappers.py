@@ -544,8 +544,15 @@ class MultiVarGaussian(RooObject):
 
         name = kwargs.pop('Name')
         from ROOT import RooArgList
-        args = [RooArgList(*kwargs.pop(k)) for k in ['Parameters', 'CentralValues']] \
-               + [kwargs.pop('Covariance')]
+        pars = RooArgList()
+        for p in kwargs.pop('Parameters'):
+            pars.add(__dref__(p))
+        cv = kwargs.pop('CentralValues')
+        if hasattr(cv, '__iter__'):
+            cvs = RooArgList()
+            for p in cv:
+                cvs.add(__dref__(p))
+        args = [pars, cv, kwargs.pop('Covariance')]
         from ROOT import RooMultiVarGaussian
         mvg = RooMultiVarGaussian(name, name, *args)
         mvg = self._addObject(mvg)
@@ -1333,6 +1340,21 @@ class KeysPdf(Pdf):
     def _make_pdf(self):
         pass
 
+class Chebychev(Pdf):
+    def __init__(self,**kwargs) :
+        name = kwargs.pop('Name')
+        observable = kwargs.pop('Observable')
+        coefs = kwargs.pop('Coefficients')
+
+        self._declare("Chebychev::%s(%s, {%s})" % (name, observable.GetName(), ','.join([c.GetName() for c in coefs])))
+        self._init(name,'RooChebychev')
+
+        Pdf.__init__(self , Name = name , Type = 'RooChebychev')
+        for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
+
+    def _make_pdf(self):
+        pass
+
 class GenericPdf( Pdf ) :
     def _make_pdf(self) : pass
     def __init__(self,Name,**kwargs) :
@@ -1756,9 +1778,15 @@ class AddModel(ResolutionModel) :
         fractions = self._dict['Fractions']
         return "AddModel::%s({%s},{%s})"%(self._dict['Name'],','.join(i.GetName() for i in models),','.join(j.GetName() for j in fractions) )
 
+    def setModels(self, models):
+        self.__models = models
+        
     def models(self):
         return self.__models
 
+    def setFractions(self, fractions):
+        self.__fractions = fractions
+        
     def fractions(self):
         return self.__fractions
 
@@ -1947,6 +1975,10 @@ class CubicSplineGaussModel(ResolutionModel) :
             for t, fun in types.iteritems():
                 if isinstance(res_model._target_(), t):
                     model, this_type, name = fun(name, res_model, efficiency)
+                    if type(model) == str:
+                        print model
+                    else:
+                        model.Print()
         else:
             model = 'RooGaussEfficiencyModel::{0}({1},{2},{3})'.format(name, params[0].GetName(), efficiency.GetName(), ','.join([p.GetName() for p in params[1:]]))
             this_type = 'RooGaussEfficiencyModel'
@@ -1969,7 +2001,7 @@ class CubicSplineGaussModel(ResolutionModel) :
     def __from_add_model(self, name, add_model, spline_fun):
         spline_models = []
         for model in add_model.models():
-            spline_models.append(CubicSplineGaussModel(Name = name, ResolutionModel = model, SplineFunction = spline_fun))
+            spline_models.append(CubicSplineGaussModel(Name = name, ResolutionModel = model, Efficiency = spline_fun))
         fractions = add_model.fractions()
         name = name + '_' + add_model.GetName().replace( '{', '' ).replace( '}', '' ).replace( ';', '_' ) + '_spline'
         model = EffResAddModel(Name = name, Models = spline_models, Fractions = fractions)
