@@ -14,7 +14,7 @@ makeObservablePlots    = False
 makeKKMassPlots        = False
 plotAnglesNoEff        = False
 pdfConfig['SFit']      = True
-corrSFitErr            = ( 'sumWeight', [ 'runPeriod', 'hlt1_excl_biased_dec', 'KKMassCat' ] )
+corrSFitErr            = ( 'sumWeight', [ 'runPeriod', 'KKMassCat' ] )
 randomParVals          = ( ) #( 0.2, 12345 )
 pdfConfig['blind']     = {  'phiCP'  : ( 'UnblindUniform', 'BsPhisComb', 0.2  ) #'BsPhis2012', 0.2  )
                           , 'dGamma' : ( 'UnblindUniform', 'BsDGsComb',  0.02 ) #'BsDGs2012',  0.02 )
@@ -36,6 +36,7 @@ if generateData :
 elif pdfConfig['SFit'] :
     dataSetName = 'JpsiKK_sigSWeight'
     dataSetFile = dataPath + 'Reco14/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats.root'
+    #dataSetFile = dataPath + 'Reco14/P2VVDataSets20112012Reco14_I2DiegoMass_6KKMassBins_2TagCats.root'
 else :
     dataSetName = 'JpsiKK'
     dataSetFile = dataPath + 'Reco14/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats.root'
