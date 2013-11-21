@@ -157,7 +157,7 @@ if args[1] == 'single':
         bkg_tres = TimeResolution(Name = 'bkg_tres', ParNamePrefix = 'bkg', **tres_args)
 elif args[1] in ['double', 'core']:
     mu = dict(MinMax = (-0.010, 0.010))
-    mu['Constant'] = options.simultaneous and not options.split_mean
+    mu['Constant'] = False
     mu_values = {'MC11a_incl_Jpsi' : -0.000408, '2011_Reco14' : -0.00298,  
                  '2011' : -0.00407301, '2012' : -0.00365}
     mu['Value'] = mu_values.get(args[0], 0)
@@ -382,7 +382,9 @@ if fit_mass:
     if options.reduce:
         data = data.reduce(EventRange = (0, int(4e4)))
     elif data.numEntries() > 6e5:
-        data = data.reduce(EventRange = (0, int(6e5)))
+        new_data = data.reduce(EventRange = (0, int(6e5)))
+        data.IsA().Delete()
+        data = new_data
         
     # In case of reweighing 
     sig_mass_pdf = buildPdf(Components = (signal, background), Observables = (m,), Name = 'sig_mass_pdf')
@@ -560,21 +562,21 @@ if signal_MC and not options.simultaneous:
     from ROOT import RooIpatia2 as Ipatia2
     from P2VV.RooFitWrappers import Pdf
 
-    rest_mean = RealVar('rest_mean', Value = 0, MinMax = ( -10, 10 ), Constant = False )
-    rest_sigma = RealVar('rest_sigma', Value = 9.678, Error = 0.1
-                         , MinMax = ( 0.1, 40. ), Constant = False)
-    rest_lambda = RealVar('rest_lambda', Value = -2.5, Error = 0.1, MinMax = ( -10., -0.1 ))
-    rest_zeta = RealVar('rest_zeta', Value = 0., Error = 0.2, MinMax = ( -10., 10. ), Constant = True)
-    rest_beta = ConstVar(Name = 'rest_beta', Value = 0.)
-    rest_alpha_1 = RealVar('rest_alpha_1', Value = 7, Error = 1., MinMax = ( 0.01, 10. ), Constant = True)
-    rest_alpha_2 = RealVar('rest_alpha_2', Value = 8, Error = 1., MinMax = ( 0.01, 10. ), Constant = True)
-    rest_n_1 = RealVar('rest_order_1', Value = 2, Error = 0.5, MinMax = ( 0., 10. ), Constant = True)
-    rest_n_2 = RealVar('rest_order_2', Value = 2, Error = 0.5, MinMax = ( 0., 10. ), Constant = True)
+    ## rest_mean = RealVar('rest_mean', Value = 0, MinMax = ( -10, 10 ), Constant = False )
+    ## rest_sigma = RealVar('rest_sigma', Value = 9.678, Error = 0.1
+    ##                      , MinMax = ( 0.1, 40. ), Constant = False)
+    ## rest_lambda = RealVar('rest_lambda', Value = -2.5, Error = 0.1, MinMax = ( -10., -0.1 ))
+    ## rest_zeta = RealVar('rest_zeta', Value = 0., Error = 0.2, MinMax = ( -10., 10. ), Constant = True)
+    ## rest_beta = ConstVar(Name = 'rest_beta', Value = 0.)
+    ## rest_alpha_1 = RealVar('rest_alpha_1', Value = 7, Error = 1., MinMax = ( 0.01, 10. ), Constant = True)
+    ## rest_alpha_2 = RealVar('rest_alpha_2', Value = 8, Error = 1., MinMax = ( 0.01, 10. ), Constant = True)
+    ## rest_n_1 = RealVar('rest_order_1', Value = 2, Error = 0.5, MinMax = ( 0., 10. ), Constant = True)
+    ## rest_n_2 = RealVar('rest_order_2', Value = 2, Error = 0.5, MinMax = ( 0., 10. ), Constant = True)
 
-    rest_i = Pdf(Name = 'rest_i', Type = Ipatia2,
-                   Parameters = (time_obs, rest_lambda, rest_zeta, rest_beta, rest_sigma, rest_mean,
-                                 rest_alpha_1, rest_n_1, rest_alpha_2, rest_n_2))
-    rest_ipatia = Component('rest_ipatia', (rest_i,), Yield = (1e4, 1, 1e5))
+    ## rest_i = Pdf(Name = 'rest_i', Type = Ipatia2,
+    ##                Parameters = (time_obs, rest_lambda, rest_zeta, rest_beta, rest_sigma, rest_mean,
+    ##                              rest_alpha_1, rest_n_1, rest_alpha_2, rest_n_2))
+    ## rest_ipatia = Component('rest_ipatia', (rest_i,), Yield = (1e4, 1, 1e5))
 
     ## coefs = [RealVar("coef_%i" % (i + 1), Value = 1, MinMax = (-0.5, 10)) for i in range(2)]
     ## coefs[0].setVal(1)
@@ -584,7 +586,7 @@ if signal_MC and not options.simultaneous:
     ## rest_const = Component('rest_const', (rest_c,), Yield = (1e4, 1, 1e5))
 
 
-    components = [signal, rest_ipatia]
+    components = [signal]
 elif signal_MC:
     components = [signal]
 else:
@@ -753,6 +755,8 @@ constraints = set()
 if options.constrain:
     pdf_vars = time_pdf.getVariables()
     cp = args
+    if cp[1] == 'core':
+        cp[1] = 'double'
     if options.use_refit:
         cp += ['refit']
     dbase = shelve.open('constraints.db')

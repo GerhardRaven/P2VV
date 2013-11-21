@@ -361,7 +361,7 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
                                       , wTagP1SS       = (  1.00,   0.12   )
                                       , wTagDelP0SS    = ( -0.016,  0.002  )
                                       , wTagDelP1SS    = (  0.015,  0.019  )
-                                      , timeResSigmaSF = (  1.45,   0.06   )
+        ##, timeResSigmaSF = (  1.45,   0.06   )
                                      )
 
         from P2VV.Imports import extConstraintValues
@@ -706,45 +706,76 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             # set time resolution models
             splitCat      = self['simulPdf'].indexCat()
             splitCatPars  = self['simulPdf'].getVariables()
-            splitCatIter  = splitCat.typeIterator()
-            splitCatState = splitCatIter.Next()
             inputCats     = [ splitCat ] if splitCat.isFundamental() else splitCat.inputCatList()
-            origResParams = timeResModelsOrig['prototype']['model']._target_()._parameters
-            from P2VV.Utilities.General import getSplitPar
-            while splitCatState :
+            prototype = timeResModelsOrig['prototype']['model']
+            from P2VV.RooFitWrappers import AddModel
+            ## NOTE, this only works for either a single resolution model or an AddModel which does
+            ## not contain further add models
+            if isinstance(prototype, AddModel):
+                origResParams = {}
+                for model in prototype.models():
+                    assert(not isinstance(model, AddModel))
+                    origResParams[model.GetName()] = model['Parameters']
+                origResParams[prototype.GetName()] = prototype.fractions()
+            else:
+                origResParams = {prototype.GetName() : prototype['Parameters']}
+
+            def __find_param(var):
+                splitCats = self['splitParsDict'].get( ws[ var.GetName() ], set() )
+                if not splitCats :
+                    return var
+                else :
+                    catLabels = [(cat.GetName(), cat.getLabel()) for cat in inputCats if cat in splitCats]
+                    catsStr = ';'.join(lab[1] for lab in catLabels)
+                    if len(catLabels) > 1 : catsStr = '{' + catsStr + '}'
+                    splitVar = getSplitPar(var.GetName(), catsStr, splitCatPars)
+                    assert splitVar, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: parameter "%s" is set to be constrained for category "%s", but it is not found in PDF'\
+                           % (var.GetName(), catsStr)
+                    from P2VV.RooFitWrappers import RealVar
+                    return RealVar(Name = splitVar.GetName())
+                
+            def __make_wrapper(orig_params, split_model):
+                from P2VV.Utilities.General import getSplitPar
+                params = [ ]
+                for var in orig_params:
+                    params.append(__find_param(var))
+                from P2VV.RooFitWrappers import ResolutionModel
+                return ResolutionModel(Name = split_model.GetName()), params
+
+            def __orig_params(orig_params, name):
+                params = filter(lambda e: e[0] in name, orig_params.iteritems())
+                assert(len(params) == 1)
+                return params[0][1]
+                
+            from P2VV.Parameterizations.TimeResolution import TimeResolution
+            for splitCatState in splitCat:
                 splitCat.setIndex( splitCatState.getVal() )
                 catPdf = self['simulPdf'].getPdf( splitCatState.GetName() )
                 resModelCount = 0
                 from ROOT import RooBTagDecay
+                from ROOT import RooAddModel
                 for comp in filter( lambda x : isinstance( x, RooBTagDecay ), catPdf.getComponents() ) :
                     # TODO: don't do this with RooBTagDecay, but move RooBTagDecay::resModel() to RooAbsAnaConvPdf
-                    assert resModelCount < 1, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: multiple resolution models found for simultaneous category "%s"'\
-                                              % splitCatState.GetName()
-                    params = [ ]
-                    for var in origResParams :
-                        splitCats = self['splitParsDict'].get( ws[ var.GetName() ], set() )
-                        if not splitCats :
-                            params.append(var)
-                        else :
-                            catLabels = [ ( cat.GetName(), cat.getLabel() ) for cat in inputCats if cat in splitCats ]
-                            catsStr = ';'.join( lab[1] for lab in catLabels )
-                            if len(catLabels) > 1 : catsStr = '{' + catsStr + '}'
-                            splitVar = getSplitPar( var.GetName(), catsStr, splitCatPars )
-                            assert splitVar, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: parameter "%s" is set to be constrainedi for category "%s", but it is not found in PDF'\
-                                   % ( var.GetName(), catsStr )
-                            from P2VV.RooFitWrappers import RealVar
-                            params.append( RealVar( Name = splitVar.GetName() ) )
+                    assert resModelCount < 1, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: multiple resolution models found for simultaneous category "%s"' % splitCatState.GetName()
 
-                    from P2VV.RooFitWrappers import ResolutionModel
-                    from P2VV.Parameterizations.TimeResolution import TimeResolution
-                    timeResModelsOrig[ splitCatState.GetName() ]\
-                        = TimeResolution( Model = ResolutionModel( Name = comp.resolutionModel().GetName() ), Parameters = params )
+                    split_model = comp.resolutionModel()
+                    if isinstance(split_model, RooAddModel):
+                        models = []
+                        for model in split_model.pdfList():
+                            model, params = __make_wrapper(__orig_params(origResParams, model.GetName()), model)
+                            model._target_()._parameters = params
+                            model['ConditionalObservables'] = prototype['ConditionalObservables']
+                            models.append(model)
+                        fractions = [__find_param(f) for f in __orig_params(origResParams, split_model.GetName())]
+                        timeResModelsOrig[splitCatState.GetName()] = TimeResolution(Model = AddModel(split_model.GetName(), Models = models, Fractions = fractions))
+                    else:
+                        model, params = __make_wrapper(origResParams.values()[0], split_model)
+                        timeResModelsOrig[splitCatState.GetName()] = TimeResolution(Model = model, Parameters = params)
+
                     resModelCount += 1
 
                 assert resModelCount > 0, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: no resolution model found for simultaneous category "%s"'\
                                           % splitCatState.GetName()
-
-                splitCatState = splitCatIter.Next()
 
             if paramKKMass == 'simultaneous' and ASParam != 'Mag2ReIm' :
                 # set values for split S-P coupling factors
@@ -754,14 +785,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         print '%d: %.4f%s' % ( iter, fac, '' if iter == len( CSPValues ) - 1 else ',' ),
                     print
 
-                splitCatIter.Reset()
-                splitCatState = splitCatIter.Next()
-                while splitCatState :
+                from P2VV.Utilities.General import getSplitPar                    
+                for splitCatState in splitCat:
                     splitCat.setIndex( splitCatState.getVal() )
                     C_SP = getSplitPar( namePF + 'C_SP', observables['KKMassCat'].getLabel(), splitCatPars )
                     C_SP.setVal( CSPValues[ observables['KKMassCat'].getIndex() ] )
                     C_SP.setConstant(True)
-                    splitCatState = splitCatIter.Next()
 
         else :
             self['simulPdf'] = None
@@ -995,70 +1024,42 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
     if ambiguityPars : self['lifetimeParams']['dGamma'].setVal( -self['lifetimeParams']['dGamma'].getVal() )
 
     if timeResType.startswith('event') :
-        timeResArgs = dict( time = observables['time'], timeResSigma = observables['timeRes'], Cache = False if timeEffType else True )
-        if 'doublegauss' in timeResType.lower():
-            constant = 'constant' in timeResType.lower()
-            timeResArgs['timeResComb'] = dict(Name = 'timeResComb', Value = 1.4918, Error = 4.08e-03, MinMax = ( 0.1, 5. ), Constant = constant)
-            timeResArgs['timeResSigmaSF2'] = dict( Name = 'timeResSigmaSF2', Value = 6.0074, Error = 1.89e-01, MinMax = (1, 10), Constant = constant)
-            timeResArgs['timeResSigmaFrac2'] = dict( Name = 'timeResSigmaFrac2', Value = 1.5818e-02, Error = 1.07e-03, MinMax = (0.001, 0.999), Constant = constant)
-            timeResArgs['Covariance'] = { ('timeResComb',       'timeResComb'       ) :  1.663e-05,
-                                          ('timeResComb',       'timeResSigmaFrac2' ) :  1.322e-06,
-                                          ('timeResComb',       'timeResSigmaSF2'   ) :  0.0001297,
-                                          ('timeResSigmaFrac2', 'timeResSigmaFrac2' ) :  1.146e-06,
-                                          ('timeResSigmaFrac2', 'timeResSigmaSF2'   ) : -0.0001486,
-                                          ('timeResSigmaSF2',   'timeResSigmaSF2'   ) :  0.03556   }
-            timeResArgs['nGauss'] = 2
-            if 'constmean' in timeResType.lower() :
-                timeResArgs['timeResMean'] = dict(Value = -4.0735e-03, Error = 1.33e-04)
-                timeResArgs['timeResMeanConstraint'] = 'constrain'
-            elif 'fixedmean' in timeResType.lower() :
-                timeResArgs['timeResMean'] = dict(Value = -4.0735e-03, Error = 1.33e-04)
-                timeResArgs['timeResMeanConstraint'] = 'fixed'
-            else:
-                timeResArgs['timeResMean'] = dict(Value = 0, Error = 0)
-                timeResArgs['timeResMeanConstraint'] = 'fixed'
-        elif 'nomean' in timeResType.lower() :
+        timeResArgs = dict( time = observables['time'], Cache = False if timeEffType else True )
+        if 'nomean' in timeResType.lower() :
             from P2VV.RooFitWrappers import ConstVar
+            from P2VV.Parameterizations.TimeResolution import Paper2012_TimeResolution as TimeResolution
             timeResArgs['timeResMean']   = ConstVar( Name = namePF + 'timeResMean',   Value = 0. )
             timeResArgs['timeResMeanSF'] = ConstVar( Name = namePF + 'timeResMeanSF', Value = 1. )
             timeResArgs['timeResSFConstraint'] = constrainTResScale
+            timeResArgs['timeResSigma'] = observables['timeRes']
         elif 'constmean' in timeResType.lower() :
             from P2VV.RooFitWrappers import ConstVar
+            from P2VV.Parameterizations.TimeResolution import Paper2012_TimeResolution as TimeResolution
             timeResArgs['timeResMean']   = dict( Value = -0.01, Error = 0.005 )
             timeResArgs['timeResMeanSF'] = ConstVar( Name = namePF + 'timeResMeanSF', Value = 1. )
             timeResArgs['timeResMeanConstraint'] = constrainTResScale
             timeResArgs['timeResSFConstraint'] = constrainTResScale
-        elif 'stlinear' in timeResType.lower():
-            timeResArgs['timeResMeanConstraint'] = 'constrain'
-            timeResArgs['timeResSigmaSF'] = dict(Name = 'timeResSigmaSF', Value = 1.253, Error = 0.014, MinMax = (0.1, 5 ), Constant = True)
-            timeResArgs['timeResSigmaOffset'] = dict(Name = 'timeResSigmaOffset', Value = 0.0153,
-                                                     Error = 0.00011, Constant = True)
-            covariance = {('timeResSigmaOffset', 'timeResSigmaOffset'): 1.301e-08,
-                          ('timeResSigmaOffset', 'timeResSigmaSF'): 5.545e-07,
-                          ('timeResSigmaSF', 'timeResSigmaSF'): 0.0002012}
-            timeResArgs['Covariance'] = covariance
-            timeResArgs['timeResSFModel'] = 'linear'
-        elif 'stquad' in timeResType.lower():
-            timeResArgs['timeResMeanConstraint'] = 'constrain'
-            timeResArgs['timeResSigmaOffset'] = dict( Name = 'timeResSigmaOffset', Value = 0.0159, Error = 0.000148, MinMax = (0.001, 0.1))
-            timeResArgs['timeResSigmaSF'] = dict( Name = 'timeResSigmaSF', Value = 1.245, Error = 0.0143, MinMax = ( 0.1, 5. ))
-            timeResArgs['timeResSigmaSF2'] = dict( Name = 'timeResSigmaSF2', Value = -8.812, Error = 1.507, MinMax = (-11, -1))
-            covariance = {('timeResSigmaOffset', 'timeResSigmaOffset'): 2.178e-08,
-                            ('timeResSigmaOffset', 'timeResSigmaSF'): 4.389e-07,
-                            ('timeResSigmaOffset', 'timeResSigmaSF2'): -0.000141,
-                            ('timeResSigmaSF', 'timeResSigmaSF'): 0.0002041,
-                            ('timeResSigmaSF', 'timeResSigmaSF2'): 0.001858,
-                            ('timeResSigmaSF2', 'timeResSigmaSF2'): 2.271}
-            timeResArgs['Covariance'] = covariance
-            timeResArgs['timeResSFModel'] = 'quadratic'
+            timeResArgs['timeResSigma'] = observables['timeRes']
+        elif '3fb' in timeResType.lower() :
+            from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
+            timeResArgs = dict(time = observables['time'], sigmat = observables['timeRes'], Cache = True,
+                               PerEventError = True, Parameterise = 'RMS',
+                               TimeResSFParam = 'linear', ScaleFactors = [(2, 1.817), (1, 1.131)],
+                               timeResMu = dict(Constant = True, Value = -0.00298),
+                               Fractions = [(2, 0.168)],
+                               timeResFrac2 = dict(Value = 0.24295, Constant = True),
+                               sf_mean_offset = dict(Value = 1.42479, Constant = True),
+                               sf_mean_slope = dict(Value = -0.0526273, Constant = True),
+                               sf_sigma_offset = dict(Value = 0.381861, Constant = True),
+                               sf_sigma_slope = dict(Value = -0.0147151, Constant = True))
         else :
+            from P2VV.Parameterizations.TimeResolution import Paper2012_TimeResolution as TimeResolution
             timeResArgs['timeResMean'] = dict( Value = -4.0735e-03, Error = 1.33e-04 )
             timeResArgs['timeResMeanConstraint'] = constrainTResScale
-            timeResArgs['timeResSFConstraint'] = constrainTResScale
-
-        from P2VV.Parameterizations.TimeResolution import Paper2012_TimeResolution as TimeResolution
+            timeResArgs['timeResSFConstraint'] = constrainTResScale 
+            timeResArgs['timeResSigma'] = observables['timeRes']
+           
         resModel = TimeResolution( **timeResArgs )
-
     else :
         from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
         resModel = TimeResolution(  time          = observables['time']
@@ -1758,7 +1759,8 @@ def multiplyByTimeAcceptance( pdf, self, **kwargs ) :
     from ROOT import RooBTagDecay
     for comp in filter( lambda x : type(x) is RooBTagDecay, pdf.getComponents() ) :
         # TODO: don't do this with RooBTagDecay, but make RooAbsAnaConvPdf::changeModel(const RooResolutionModel& newModel) public
-        change = comp.changeModel( timeResModels[resModelKey]['model']._target_() )
+        new_model = timeResModels[resModelKey]['model']._target_()
+        change = comp.changeModel( new_model )
         if not change :
             accPdfs.append( comp.GetName() )
         else :
