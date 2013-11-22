@@ -213,7 +213,7 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                                                 Formula = formula, ObjectType = 'FormulaVar',
                                                 Arguments = args['mean'])
                 self._sf_sigma = self._parseArg('timeResSFSigma_linear', kwargs,
-                                                Formula = '@0 + @1 * @2', ObjectType = 'FormulaVar',
+                                                Formula = formula, ObjectType = 'FormulaVar',
                                                 Arguments = args['sigma'])
             else:
                 from math import sqrt
@@ -388,7 +388,7 @@ class Paper2012_TimeResolution ( TimeResolution ) :
                              )
         self.__timeResSFConstr = kwargs.pop( 'timeResSFConstraint', None )
 
-        parameters, pc = self.__buildModel(nGauss, sfModel)
+        parameters, pc = self.__buildModel()
         constraints |= pc
 
         models = []

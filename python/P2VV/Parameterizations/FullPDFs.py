@@ -361,7 +361,6 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
                                       , wTagP1SS       = (  1.00,   0.12   )
                                       , wTagDelP0SS    = ( -0.016,  0.002  )
                                       , wTagDelP1SS    = (  0.015,  0.019  )
-        ##, timeResSigmaSF = (  1.45,   0.06   )
                                      )
 
         from P2VV.Imports import extConstraintValues
@@ -733,7 +732,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                            % (var.GetName(), catsStr)
                     from P2VV.RooFitWrappers import RealVar
                     return RealVar(Name = splitVar.GetName())
-                
+
             def __make_wrapper(orig_params, split_model):
                 from P2VV.Utilities.General import getSplitPar
                 params = [ ]
@@ -746,7 +745,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 params = filter(lambda e: e[0] in name, orig_params.iteritems())
                 assert(len(params) == 1)
                 return params[0][1]
-                
+
             from P2VV.Parameterizations.TimeResolution import TimeResolution
             for splitCatState in splitCat:
                 splitCat.setIndex( splitCatState.getVal() )
@@ -785,7 +784,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         print '%d: %.4f%s' % ( iter, fac, '' if iter == len( CSPValues ) - 1 else ',' ),
                     print
 
-                from P2VV.Utilities.General import getSplitPar                    
+                from P2VV.Utilities.General import getSplitPar
                 for splitCatState in splitCat:
                     splitCat.setIndex( splitCatState.getVal() )
                     C_SP = getSplitPar( namePF + 'C_SP', observables['KKMassCat'].getLabel(), splitCatPars )
@@ -1042,24 +1041,26 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
             timeResArgs['timeResSigma'] = observables['timeRes']
         elif '3fb' in timeResType.lower() :
             from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
-            timeResArgs = dict(time = observables['time'], sigmat = observables['timeRes'], Cache = True,
-                               PerEventError = True, Parameterise = 'RMS',
-                               TimeResSFParam = 'linear', ScaleFactors = [(2, 1.817), (1, 1.131)],
-                               timeResMu = dict(Constant = True, Value = -0.00298),
-                               Fractions = [(2, 0.168)],
-                               timeResFrac2 = dict(Value = 0.24295, Constant = True),
-                               sf_mean_offset = dict(Value = 1.42479, Constant = True),
-                               sf_mean_slope = dict(Value = -0.0526273, Constant = True),
-                               sf_sigma_offset = dict(Value = 0.381861, Constant = True),
-                               sf_sigma_slope = dict(Value = -0.0147151, Constant = True))
+            timeResArgs = dict( time = observables['time'], sigmat = observables['timeRes'], Cache = True, PerEventError = True
+                               , Parameterise = 'RMS', TimeResSFParam = 'linear'
+                               , ScaleFactors    = [ ( 2, 1.817 ), ( 1, 1.131 ) ]
+                               , timeResMu       = dict( Value = 0., Constant = True ) #dict( Value = -0.00298, Constant = True )
+                               , Fractions       = [ ( 2, 0.168 ) ]
+                               , timeResFrac2    = dict( Value =  0.4,  Constant = True ) #dict( Value =  0.24295,   Constant = True )
+                               , sf_mean_offset  = dict( Value =  1.45, Constant = True ) #dict( Value =  1.42479,   Constant = True )
+                               , sf_mean_slope   = dict( Value =  0.,   Constant = True ) #dict( Value = -0.0526273, Constant = True )
+                               , sf_sigma_offset = dict( Value =  0.,   Constant = True ) #dict( Value =  0.381861,  Constant = True )
+                               , sf_sigma_slope  = dict( Value =  0.,   Constant = True ) #dict( Value = -0.0147151, Constant = True )
+                              )
         else :
             from P2VV.Parameterizations.TimeResolution import Paper2012_TimeResolution as TimeResolution
             timeResArgs['timeResMean'] = dict( Value = -4.0735e-03, Error = 1.33e-04 )
             timeResArgs['timeResMeanConstraint'] = constrainTResScale
-            timeResArgs['timeResSFConstraint'] = constrainTResScale 
+            timeResArgs['timeResSFConstraint'] = constrainTResScale
             timeResArgs['timeResSigma'] = observables['timeRes']
-           
+
         resModel = TimeResolution( **timeResArgs )
+
     else :
         from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
         resModel = TimeResolution(  time          = observables['time']

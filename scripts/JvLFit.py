@@ -76,7 +76,7 @@ equalAbsLambdaCPs = False
 # PDF options
 pdfConfig['numTimeBins'] = 30
 pdfConfig['numTimeResBins']     = 40
-pdfConfig['timeResType']        = 'eventNoMean' # 'eventDoubleGaussConstantFixedMean' # 'event' # 'eventNoMean'
+pdfConfig['timeResType']        = 'event3fb' # 'eventNoMean'
 pdfConfig['constrainTResScale'] = '' # 'fixed'  # 'constrain'
 pdfConfig['timeEffType']        = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
 pdfConfig['constrainDeltaM']    = ''  # 'constrain' # fixed
@@ -160,6 +160,8 @@ pdfConfig['splitParams'] = dict(  KKMassCat = [ 'f_S', 'ASOddPhase' ]
 
 #pdfConfig['externalConstr']['dM']          = (  17.768, 0.024  )
 #pdfConfig['externalConstr']['betaTimeEff'] = ( -0.0083, 0.004  )
+#pdfConfig['externalConstr']['timeResSigmaSF'] = (  1.45,   0.06   )
+pdfConfig['externalConstr']['sf_mean_offset'] = (  1.45,   0.06   )
 
 dGammaVal = 0.108
 dMVal     = 17.647
