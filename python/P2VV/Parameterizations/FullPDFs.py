@@ -1051,7 +1051,8 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
                                sf_mean_offset = dict(Value = 1.42479, Constant = True),
                                sf_mean_slope = dict(Value = -0.0526273, Constant = True),
                                sf_sigma_offset = dict(Value = 0.381861, Constant = True),
-                               sf_sigma_slope = dict(Value = -0.0147151, Constant = True))
+                               sf_sigma_slope = dict(Value = -0.0147151, Constant = True),
+                               tres_placeholder = dict(Value = 0.032, Constant = True))
         else :
             from P2VV.Parameterizations.TimeResolution import Paper2012_TimeResolution as TimeResolution
             timeResArgs['timeResMean'] = dict( Value = -4.0735e-03, Error = 1.33e-04 )
