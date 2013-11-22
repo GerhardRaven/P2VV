@@ -145,8 +145,8 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         
         sf_param = kwargs.pop('TimeResSFParam', False)
         from P2VV.RooFitWrappers import RealVar
-        self.__placeholder = RealVar(Name = namePF + 'tres_placeholder', Value = 0,
-                                     MinMax = (-1e6, 1e6), Constant = True)
+        self.__placeholder = self._parseArg('tres_placeholder', kwargs, Value = 0,
+                                            MinMax = (-1e6, 1e6), Constant = True)
         
         assert(len(sigmasSFs) - 1 == len(fracs))
 

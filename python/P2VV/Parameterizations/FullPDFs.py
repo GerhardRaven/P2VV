@@ -1043,14 +1043,15 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
             from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
             timeResArgs = dict( time = observables['time'], sigmat = observables['timeRes'], Cache = True, PerEventError = True
                                , Parameterise = 'RMS', TimeResSFParam = 'linear'
-                               , ScaleFactors    = [ ( 2, 1.817 ), ( 1, 1.131 ) ]
-                               , timeResMu       = dict( Value = 0., Constant = True ) #dict( Value = -0.00298, Constant = True )
-                               , Fractions       = [ ( 2, 0.168 ) ]
-                               , timeResFrac2    = dict( Value =  0.4,  Constant = True ) #dict( Value =  0.24295,   Constant = True )
-                               , sf_mean_offset  = dict( Value =  1.45, Constant = True ) #dict( Value =  1.42479,   Constant = True )
-                               , sf_mean_slope   = dict( Value =  0.,   Constant = True ) #dict( Value = -0.0526273, Constant = True )
-                               , sf_sigma_offset = dict( Value =  0.,   Constant = True ) #dict( Value =  0.381861,  Constant = True )
-                               , sf_sigma_slope  = dict( Value =  0.,   Constant = True ) #dict( Value = -0.0147151, Constant = True )
+                               , ScaleFactors     = [ ( 2, 1.817 ), ( 1, 1.131 ) ]
+                               , timeResMu        = dict( Value = 0., Constant = True ) #dict( Value = -0.00298, Constant = True )
+                               , Fractions        = [ ( 2, 0.168 ) ]
+                               , timeResFrac2     = dict( Value =  0.4,  Constant = True ) #dict( Value =  0.24295,   Constant = True )
+                               , sf_mean_offset   = dict( Value =  1.45, Constant = True ) #dict( Value =  1.42479,   Constant = True )
+                               , sf_mean_slope    = dict( Value =  0.,   Constant = True ) #dict( Value = -0.0526273, Constant = True )
+                               , sf_sigma_offset  = dict( Value =  0.,   Constant = True ) #dict( Value =  0.381861,  Constant = True )
+                               , sf_sigma_slope   = dict( Value =  0.,   Constant = True ) #dict( Value = -0.0147151, Constant = True )
+                               , tres_placeholder = dict( Value =  0.,   Constant = True ) #dict( Value =  0.032,     Constant = True )
                               )
         else :
             from P2VV.Parameterizations.TimeResolution import Paper2012_TimeResolution as TimeResolution
