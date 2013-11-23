@@ -1047,7 +1047,7 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
                                , timeResMu        = dict( Value = 0., Constant = True ) #dict( Value = -0.00298, Constant = True )
                                , Fractions        = [ ( 2, 0.168 ) ]
                                , timeResFrac2     = dict( Value =  0.4,  Constant = True ) #dict( Value =  0.24295,   Constant = True )
-                               , sf_mean_offset   = dict( Value =  1.45, Constant = True ) #dict( Value =  1.42479,   Constant = True )
+                               , sf_mean_offset   = dict( Value =  1.45, Constant = False ) #dict( Value =  1.42479,   Constant = True )
                                , sf_mean_slope    = dict( Value =  0.,   Constant = True ) #dict( Value = -0.0526273, Constant = True )
                                , sf_sigma_offset  = dict( Value =  0.,   Constant = True ) #dict( Value =  0.381861,  Constant = True )
                                , sf_sigma_slope   = dict( Value =  0.,   Constant = True ) #dict( Value = -0.0147151, Constant = True )
