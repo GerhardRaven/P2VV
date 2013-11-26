@@ -2,24 +2,26 @@
 ## set script parameters ##
 ###########################
 
-testParNames = [ 'ASOddPhase_bin1' ]
-nllParVals = [ [ 0.5 + 2.5 / 10000. * float(it) ] for it in range(10001) ]
-fitParVals = [ ] #[ 0.5 ], [ 0.8 ], [ 1.3 ], [ 1.8 ], [ 2.3 ], [ 2.5 ]
-outDirPath = './'
-jobID = '12345'
+testParNames = [ 'delSDelta' ]
+nllParVals = [ ] # [ [ -3.8 + 4.3 / 1000. * float(it) ] for it in range(1001) ]
+fitParVals = [ [ -0.7 ], [ -0.6 ], [ -0.5 ], [ -0.4 ], [ -0.3 ] ]
+outDirPath = './nllVals/'
+jobID = 'delSDelta'
+
+indexWidth = 4
+startIndex = 0
 
 from math import pi
 from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_RunIAnalysis as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
-doFit = True
+parFileIn  = '20112012Reco14DataFitValues_4KKMassBins.par'
 
-parFileIn  = '20112012Reco14DataFitValues.par'
-
-dataPath    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/'
+dataPath    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
 dataSetName = 'JpsiKK_sigSWeight'
-dataSetFile = dataPath + 'Reco14/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats.root'
+dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_4KKMassBins_2TagCats.root'
+deltaSDiff  = ( 'ASOddPhase_bin0', 'ASOddPhase_bin3' )
 
 # fit options
 fitOpts = dict(  NumCPU    = 8
@@ -27,17 +29,21 @@ fitOpts = dict(  NumCPU    = 8
                , Minimizer = 'Minuit2'
               )
 pdfConfig['fitOptions'] = fitOpts
-corrSFitErrCats         = [ 'runPeriod', 'hlt1_excl_biased_dec', 'KKMassCat' ]
+corrSFitErrCats         = [ 'runPeriod', 'KKMassCat' ]
 randomParVals           = ( ) # ( 1., 12345 )
 
 # PDF options
+pdfConfig['timeResType'] = 'eventNoMean'
+pdfConfig['externalConstr']['timeResSigmaSF'] = ( 1.45, 0. )
+
 pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file']\
-        = dataPath + 'Reco14/Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
+        = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
 pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] )['file']\
-        = dataPath + 'Reco14/Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
-pdfConfig['angEffMomsFiles'] = dataPath + 'Reco14/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
-pdfConfig['KKMassBinBounds'] = [ 990., 1020. - 12., 1020. -  4., 1020., 1020. +  4., 1020. + 12., 1050. ]
-pdfConfig['CSPValues']       = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
+        = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
+pdfConfig['angEffMomsFiles'] = dataPath + 'Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
+
+pdfConfig['KKMassBinBounds'] = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ]
+pdfConfig['CSPValues']       = [ 0.966, 0.797, 0.797, 0.966 ]
 
 
 ###########################################################################################################################################
@@ -46,7 +52,7 @@ pdfConfig['CSPValues']       = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
 
 # workspace
 from P2VV.RooFitWrappers import RooObject
-worksp = RooObject( workspace = 'JpsiphiWorkspace' ).ws()
+ws = RooObject( workspace = 'JpsiphiWorkspace' ).ws()
 
 # read data set from file
 from P2VV.Utilities.DataHandling import readData
@@ -58,6 +64,15 @@ pdfConfig['readFromWS'] = True
 from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
 pdfBuild = PdfBuilder( **pdfConfig )
 pdf = pdfBuild.pdf()
+
+if deltaSDiff :
+    # replace last S-wave phase by difference with first S-wave phase
+    from P2VV.RooFitWrappers import RealVar, Addition, EditPdf
+    from ROOT import RooNumber
+    RooInf = RooNumber.infinity()
+    delSDelta = RealVar( Name = 'delSDelta', Value = -1.5, Error = 0.3, MinMax = ( -RooInf, +RooInf ) )
+    delSm1New = Addition( Name = 'ASOddPhase_m1', Arguments = [ ws[ deltaSDiff[0] ], ws['delSDelta'] ] )
+    pdf = EditPdf( Name = pdf.GetName() + '_delSDelta', Original = pdf, Rules = { ws[ deltaSDiff[1] ] : delSm1New } )
 
 if not 'Optimize' in fitOpts or fitOpts['Optimize'] < 2 :
     # unset cache-and-track
@@ -177,7 +192,8 @@ for valIt, parVals in enumerate(fitParVals) :
     fitResult.PrintSpecial( text = True, ParNames = parNames, ParValues = parValues )
 
     # write parameters to file
-    filePF = ( '_{0:0%dd}' % len(fitParVals) ).format(valIt)
+    from math import log10
+    filePF = ( '_{0:0%dd}' % indexWidth ).format( startIndex + valIt )
     pdfConfig.getParametersFromPdf( pdf, fitData )
     pdfConfig.writeParametersToFile( filePath = outDirPath + 'fitPars_' + jobID + filePF + '.par'
                                     , FitStatus = ( fitResult.status(), fitResult.minNll(), fitResult.edm() ) )
