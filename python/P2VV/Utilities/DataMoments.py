@@ -353,7 +353,8 @@ def convertEffWeightsToMoments( Weights, **kwargs ) :
                           }
                        )
     pref = kwargs.pop('WeightNamesPrefix', '')
-    for wNam in wNames.keys(): wNames[wNam] = pref + '_' + wNames[wNam]
+    if pref:
+        for wNam in wNames.keys(): wNames[wNam] = pref + '_' + wNames[wNam]
 
     for pol in pols :
         assert pol in wNames.keys()\
