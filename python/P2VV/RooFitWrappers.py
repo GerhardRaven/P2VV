@@ -1704,7 +1704,7 @@ class Customizer(Pdf) :
                 customizer.replaceArg( __dref__(item), __dref__( rep ))
         else:
             for origItem, subsItem in zip( origSet, subsSet ) :
-                if item in pdf.Observables():
+                if origItem in pdf.Observables():
                     self.__transplant_binnings(origItem, subsItem)
                 customizer.replaceArg( __dref__(origItem), __dref__(subsItem) )
 
