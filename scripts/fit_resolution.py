@@ -158,9 +158,10 @@ if args[1] == 'single':
 elif args[1] in ['double', 'core']:
     mu = dict(MinMax = (-0.010, 0.010))
     mu['Constant'] = False
-    mu_values = {'MC11a_incl_Jpsi' : -0.000408, '2011_Reco14' : -0.00298,  
-                 '2011' : -0.00407301, '2012' : -0.00365}
+    mu_values = {'MC11a_incl_Jpsi' : -0.000408, '2011_Reco14' : -0.00259,  
+                 '2011' : -0.00407301, '2012' : -0.00333}
     mu['Value'] = mu_values.get(args[0], 0)
+    mu['Constant'] = options.simultaneous and not (options.split_mean or options.mu_param)
     from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
     tres_args = dict(time = time_obs, sigmat = st, Cache = True,
                      PerEventError = options.pee, Parameterise = options.parameterise,
@@ -204,8 +205,8 @@ bkg_m = Pdf(Name = 'gauss', Type = Gaussian, Parameters = (m, mean, sigma))
 from P2VV.Parameterizations.TimePDFs import LP2011_Background_Time as Background_Time
 psi_t = Background_Time( Name = 'psi_t', time = time_obs, resolutionModel = sig_tres.model()
                          , psi_t_fml    = dict(Name = 'psi_t_fml',    Value = 6.7195e-01)
-                         , psi_t_ll_tau = dict(Name = 'psi_t_ll_tau', Value = 1.3672, MinMax = (0.1,  2.5))
-                         , psi_t_ml_tau = dict(Name = 'psi_t_ml_tau', Value = 1.3405e-01, MinMax = (0.01, 0.5))
+                         , psi_t_ll_tau = dict(Name = 'psi_t_ll_tau', Value = 1.3672, MinMax = (0.01,  2.5))
+                         , psi_t_ml_tau = dict(Name = 'psi_t_ml_tau', Value = 1.3405e-01, MinMax = (0.01, 2.5))
                          )
 psi_t = psi_t.pdf()
 
@@ -556,6 +557,52 @@ elif fit_mass:
         sig_sdata = single_bin_sig_sdata
         bkg_sdata = single_bin_bkg_sdata
 
+# Write the result of the mass fit already at this point
+if options.cache:
+    from P2VV.CacheUtils import WritableCacheFile
+    with WritableCacheFile(cache_files, directory) as cache_file:
+        cache_dir = cache_file.Get(directory)
+        from ROOT import TObjString
+        cut_string = TObjString(cut)
+        cache_dir.WriteTObject(cut_string, 'cut')
+        
+        # Write data to cache file
+        def get_dir(d):
+            tmp = cache_dir.Get(d)
+            if not tmp:
+                cache_dir.mkdir(d)
+                tmp = cache_dir.Get(d)
+            return tmp
+        
+        from ROOT import TObject
+        if (options.write_data or fit_mass):
+            sdata_dir = get_dir('sdata')
+            data_dir = get_dir('data')
+            for name, ds in sdatas_full.iteritems():
+                 sdata_dir.WriteTObject(ds, name, "Overwrite")
+                        
+            sdata_dir.Write(sdata_dir.GetName(), TObject.kOverwrite)
+            data_dir.WriteTObject(data, data.GetName(), "Overwrite")
+            data_dir.Write(data_dir.GetName(), TObject.kOverwrite)
+
+        ## Write PDFs
+        pdf_dir = get_dir('PDFs')
+        if (options.write_data or fit_mass):
+            pdf_dir.WriteTObject(mass_pdf._target_(), 'mass_pdf', "Overwrite")
+            if options.simultaneous:
+                pdf_dir.WriteTObject(sWeight_mass_pdf._target_(), 'sWeight_mass_pdf', "Overwrite")
+
+        if not options.reduce:
+            ## Write mass fit results
+            results_dir = get_dir('results')
+            for r in results:
+                if not 'mass' in r.GetName():
+                    continue
+                results_dir.WriteTObject(r, r.GetName(), "Overwrite")            
+            results_dir.Write(results_dir.GetName(), TObject.kOverwrite)
+                
+        # Delete the input TTree which was automatically attached.
+        cache_file.Delete('%s;*' % tree_name)
         
 # Define default components
 if signal_MC and not options.simultaneous:
@@ -728,7 +775,7 @@ if options.simultaneous:
 elif options.mu_param:
     placeholder = sig_tres.sigmatPlaceHolder()
     placeholder.setVal(sig_sdata.mean(st._target_()))
-    
+
 if options.reuse_result and options.cache:
     # Check if we have a cached time result, if so, use it as initial values for the fit
     time_result = None
@@ -950,16 +997,15 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
         plots.append(ps)
 
 from P2VV.Utilities import Resolution as ResolutionUtils
-time_result.PrintSpecial(LaTeX = True, ParNames = ResolutionUtils.parNames)
+if time_result:
+    time_result.PrintSpecial(LaTeX = True, ParNames = ResolutionUtils.parNames)
 
+# Write the result of the fit to the cache file
 if options.cache:
     from P2VV.CacheUtils import WritableCacheFile
     with WritableCacheFile(cache_files, directory) as cache_file:
         cache_dir = cache_file.Get(directory)
-        from ROOT import TObjString
-        cut_string = TObjString(cut)
-        cache_dir.WriteTObject(cut_string, 'cut')
-        
+
         # Write data to cache file
         def get_dir(d):
             tmp = cache_dir.Get(d)
@@ -967,44 +1013,22 @@ if options.cache:
                 cache_dir.mkdir(d)
                 tmp = cache_dir.Get(d)
             return tmp
-        
-        from ROOT import TObject
-        if (options.write_data or fit_mass):
-            sdata_dir = get_dir('sdata')
-            data_dir = get_dir('data')
-            for name, ds in sdatas_full.iteritems():
-                 sdata_dir.WriteTObject(ds, name, "Overwrite")
-            
-            ## if options.simultaneous:
-            ##     for ct in st_cat:
-            ##         opts = dict(Cut = '{0} == {0}::{1}'.format(st_cat.GetName(), ct.GetName()))
-            ##         bin_data = sig_sdata_full.reduce(**opts)
-            ##         bin_data.SetName('sig_sdata_%s' % ct.GetName())
-            ##         sdata_dir.WriteTObject(bin_data, bin_data.GetName(), "Overwrite")
-            ##         bin_data.Delete()
-            ##         del bin_data
-            
-            sdata_dir.Write(sdata_dir.GetName(), TObject.kOverwrite)
-            data_dir.WriteTObject(data, data.GetName(), "Overwrite")
-            data_dir.Write(data_dir.GetName(), TObject.kOverwrite)
-        
+                
         ## Write PDFs
         pdf_dir = get_dir('PDFs')
         pdf_dir.WriteTObject(time_pdf._target_(), 'time_pdf_' + args[1] + \
                              ('_' + options.parameterise) if options.parameterise else '', "Overwrite")
-        if (options.write_data or fit_mass):
-            pdf_dir.WriteTObject(mass_pdf._target_(), 'mass_pdf', "Overwrite")
-            if options.simultaneous:
-                pdf_dir.WriteTObject(sWeight_mass_pdf._target_(), 'sWeight_mass_pdf', "Overwrite")
-        
+                             
         if not options.reduce and options.fit:
             ## Write fit results
             results_dir = get_dir('results')
             for r in results:
-                results_dir.WriteTObject(r, r.GetName(), "Overwrite")
-            
+                if not 'time' in r.GetName():
+                    continue
+                results_dir.WriteTObject(r, r.GetName(), "Overwrite")            
             results_dir.Write(results_dir.GetName(), TObject.kOverwrite)
-            
+
+        if not options.reduce and options.fit:
             ## Write plots
             plots_dir = get_dir('plots/%s' % '_'.join(extra_name))
             for ps in plots:
@@ -1012,39 +1036,36 @@ if options.cache:
                     plots_dir.WriteTObject(p, p.GetName(), "Overwrite")
             
             plots_dir.Write(plots_dir.GetName(), TObject.kOverwrite)
-        
-        # Delete the input TTree which was automatically attached.
-        cache_file.Delete('%s;*' % tree_name)
 
-ca = RooArgList()
-for p in sorted(list(constraint_pars)):
-    rp = time_result.floatParsFinal().find(p)
-    if rp:
-        ca.add(rp)
+## ca = RooArgList()
+## for p in sorted(list(constraint_pars)):
+##     rp = time_result.floatParsFinal().find(p)
+##     if rp:
+##         ca.add(rp)
 
-cov = time_result.reducedCovarianceMatrix(ca)
-m = []
+## cov = time_result.reducedCovarianceMatrix(ca)
+## m = []
 
-for i in range(cov.GetNrows()):
-    m.append([])
-    row = cov[i]
-    for j in range(cov.GetNcols()):
-        m[i].append(row[j])
+## for i in range(cov.GetNrows()):
+##     m.append([])
+##     row = cov[i]
+##     for j in range(cov.GetNcols()):
+##         m[i].append(row[j])
 
    
-if options.fit and options.simultaneous:
-    dbase = shelve.open('constraints.db')
-    key_pars = args
-    if options.use_refit:
-        key_pars += ['refit']
+## if options.fit and options.simultaneous:
+##     dbase = shelve.open('constraints.db')
+##     key_pars = args
+##     if options.use_refit:
+##         key_pars += ['refit']
     
-    base_key = ' '.join(key_pars)
-    param_key = {'mu' : options.mu_param, 'sf' : options.sf_param}
-    if base_key in dbase:
-        dbase[base_key][str(param_key)] = {'parameters' : dict([(p.GetName(), (p.getVal(), p.getError())) for p in ca]),
-                                           'covariance' : m}
-    else:
-        dbase[base_key] = {str(param_key) : {'parameters' : dict([(p.GetName(), (p.getVal(), p.getError())) for p in ca]),
-                                             'covariance' : m}}
+##     base_key = ' '.join(key_pars)
+##     param_key = {'mu' : options.mu_param, 'sf' : options.sf_param}
+##     if base_key in dbase:
+##         dbase[base_key][str(param_key)] = {'parameters' : dict([(p.GetName(), (p.getVal(), p.getError())) for p in ca]),
+##                                            'covariance' : m}
+##     else:
+##         dbase[base_key] = {str(param_key) : {'parameters' : dict([(p.GetName(), (p.getVal(), p.getError())) for p in ca]),
+##                                              'covariance' : m}}
     
-    dbase.close()
+##     dbase.close()

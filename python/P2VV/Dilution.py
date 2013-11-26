@@ -5,15 +5,18 @@ __keep = []
 __bin_counter = 0
 __histos = []
 
-def dilution_bin(t_var, bin_data, result, bin_name, dilution_binning,
-                 signal = [], subtract_pdf = None, subtract = []):
+def dilution_bin(t_var, bin_data, result, dilution_binning, bin_name = "", 
+                 signal = [], subtract_pdf = None, subtract = [], t_range = None):
     from ROOT import sigmaFromFT
     dms = -17.768 ** 2 / 2
 
     n_bins = 512
-    neg_range = 0 - t_var.getMin()
-    diff = neg_range / float(n_bins)
+    if not t_range:
+        t_range = 0 - t_var.getMin()
+    diff = t_range / float(n_bins)
 
+    dilution_bounds = array('d', [dilution_binning.binLowEdge(i) for i in range(dilution_binning.numBins())])
+    dilution_bounds.append(dilution_binning.binHighEdge(dilution_binning.numBins() - 1))
     from ROOT import TH1D
     data_histo = TH1D('data_histo', 'data_histo', len(dilution_bounds) - 1, dilution_bounds)
     __histos.append(data_histo)
@@ -158,7 +161,7 @@ def dilution_bins(t_var, data, sigmat, sigmat_cat, result, signal = [], subtract
     return total
 
 # Calculate dilution
-def dilution_ft(t_var, data, sigmat = None, result = None, signal = [], subtract = [], raw = False, simultaneous = False, calibration = None):
+def dilution_ft(t_var, data, t_range = None, sigmat = None, result = None, signal = [], subtract = [], raw = False, simultaneous = False, calibration = None):
     __bin_counter = 0
     if calibration:
         assert(sigmat.GetName() in [p.GetName() for p in calibration.getVariables()])
@@ -168,8 +171,9 @@ def dilution_ft(t_var, data, sigmat = None, result = None, signal = [], subtract
 
     from ROOT import RooBinning
     n_bins = 512
-    neg_range = 0 - t_var.getMin()
-    diff = neg_range / float(n_bins)
+    if not t_range:
+        t_range = 0 - t_var.getMin()
+    diff = t_range / float(n_bins)
     dilution_bounds = array('d', (t_var.getMin() + i * diff for i in range(n_bins + 1)))
     b = diff
     t_max = t_var.getMax()
