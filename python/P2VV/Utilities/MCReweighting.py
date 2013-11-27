@@ -315,7 +315,6 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, weightsName, *
     # create 2D histrograms (Kplus_P vs Kminus_P)
     sourceHist  = TH2F('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, binning, nbins, binning )
     targetHist  = TH2F('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, binning, nbins, binning )
-    weightsHist = TH1F('Weights', 'Weights',  2*nbins, -1, 1)
   
     _valX = lambda ev: ev.find(var[0]).getVal() # value getter of the first variable
     _valY = lambda ev: ev.find(var[1]).getVal() # value getter of the first variable
@@ -351,8 +350,8 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, weightsName, *
     weights = map(scaleWeights, weights)
     assert len(weights)==source.numEntries(), 'P2VV - INFO: TwoDimentionalVerticalReweighting: weights list and source dataset do not have the same length'
 
-    # fill weights histogram
-    weightsHist.SetAxisRange(.9*min(weights),1.1*max(weights),'X')
+    # fill the weights to histogram
+    weightsHist = TH1F('Weights', 'Weights',  2*nbins, .9*min(weights), 1.1*min(weights))
     for w in weights: weightsHist.Fill(w)
 
     # combine weights in case source is already weighted
@@ -1010,7 +1009,6 @@ class BuildBs2JpsiKKFit():
             pdfConfig['externalConstr']['timeResSigmaSF'] = (1.45,   0.06 )
         else:
             pdfConfig['externalConstr']['dM'] = ( 17.63, 0.11 )
-            pdfConfig['externalConstr'].pop('betaTimeEff')
 
         from P2VV.Imports import extConstraintValues
         extConstraintValues.setVal( 'DM',      ( 17.63, 0.11 ) )
