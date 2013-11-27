@@ -3,13 +3,13 @@
 #####################
 
 #nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/2011_2012_dv33r6p1_s20_20131031_tupleB_add.root'
-nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_merged.root'
+nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_w0.root'
 nTupleName       = 'DecayTree'
 dataSetsFilePath = 'temp.root' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_6KKMassBins_2TagCats.root'
 appendToFile     = False
-savedObjects     = [ 'main', 'sigSWeight' ]
+savedObjects     = [ 'sigSWeight' ]
 plotsFilePath    = 'temp.ps' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_6KKMassBins_2TagCats.ps'
-parFileIn        = 'eventYields4KKBins.par' #'eventYields6KKBinsNoMC.par' #'eventYields6KKBins.par'
+parFileIn        = 'eventYields6KKBins.par' #'eventYields6KKBinsNoMC.par' #'eventYields6KKBins.par'
 parFileOut       = ''
 
 simulation       = False
@@ -17,17 +17,17 @@ weightName       = 'wMC'
 runPeriods       = [ 2011, 2012 ]
 triggerSel       = 'noSelection' # 'paper2012' # 'HLT1Unbiased' # 'paper2012'
 dataCuts         = 'noSelection' # 'nominal2011'
-addCuts          = '' #'wMC > 0.'
+addCuts          = '' # 'runPeriod == 2011 && hlt1_excl_biased_dec == 1' # 'wMC > 0.'
 dataSample       = '(bkgcat==0 || bkgcat==50)' if simulation else ''
-sWeightName      = 'sigWeight_I2_4KKBins'
-addSWeights      = True
+sWeightName      = 'sigWeight_I2'
+addSWeights      = False
 addKKMassCat     = True
 addTrackMomenta  = False
 addTaggingObs    = ( 2, 2 ) # ( 0, 0 )
 createRangeData  = False
 createNTuple     = False
 splitDataSet     = [ ] #[ 'tagCatP2VVOS', 'tagCatP2VVSS' ]
-KKMassBinBounds  = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ]
+KKMassBinBounds  = [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 1008., 1020., 1032. ]
 
 sigMassModel     = 'Ipatia2'
 cbkgMassModel    = ''
@@ -45,32 +45,45 @@ constSplitCats = [ ]
 constSplitVals = { }
 if sigMassModel == 'Ipatia2' :
     constSplitCats = [ 'hlt1ExclB', 'KKMassCat' ]
+    #constSplitCats = [ 'KKMassCat' ]
     constSplitPars = [ 'm_sig_alpha_1', 'm_sig_alpha_2', 'm_sig_n_1', 'm_sig_n_2', 'm_sig_lambda', 'm_sig_zeta' ]
 
-    ## smeared MC, no truth requirement, 4 KK-mass bins
-    constSplitVals = {  ( 'notExclB', 'bin0' ) : [ 3.090242001004567, 2.448740313493132, 7.865481777002969e-07, 0.3772603020305554, -1.8028256514259358, 0.0032161538679723045 ]
-                      , ( 'notExclB', 'bin1' ) : [ 2.7357926724807715, 2.5325078527657405, 1.410324206500183, 2.1356073743749593, -2.7476260304874316, 3.6501861834237204e-05  ]
-                      , ( 'notExclB', 'bin2' ) : [ 3.0203918214648766, 2.3616839764894775, 1.3457820727430088, 1.7328167019210972, -2.7338157946318313, 0.0005618710817781314  ]
-                      , ( 'notExclB', 'bin3' ) : [ 2.9828710959611295, 3.023748092386514, 0.3922908133091868, 0.4080097456480669, -2.2104022388970668, 0.0071672915683015925   ]
-                      , ( 'exclB',    'bin0' ) : [ 3.0587485511296966, 2.484099316157297, 0.057889921045197745, 0.5528670977674432, -3.007467407061461, 0.1095519817428861     ]
-                      , ( 'exclB',    'bin1' ) : [ 2.5950094079868706, 2.540489018460561, 1.5945389901143097, 2.050949882410599, -2.730273102035722, 0.0004971111831370001     ]
-                      , ( 'exclB',    'bin2' ) : [ 3.0552471411002733, 2.152609753853441, 1.329325140262283, 2.019935753077858, -2.484855452835132, 0.7630080085121052         ]
-                      , ( 'exclB',    'bin3' ) : [ 3.075124852599962, 2.877808057134126, 0.3713565137662156, 0.5448414118880873, -2.316218692561214, 0.0010592756615862564     ]
-                     }
+    if len(KKMassBinBounds) == 5 :
+        # smeared MC, no truth requirement, 4 KK-mass bins
+        constSplitVals = {  ( 'notExclB', 'bin0' ) : [ 3.090242001004567, 2.448740313493132, 7.865481777002969e-07, 0.3772603020305554, -1.8028256514259358, 0.0032161538679723045 ]
+                          , ( 'notExclB', 'bin1' ) : [ 2.7357926724807715, 2.5325078527657405, 1.410324206500183, 2.1356073743749593, -2.7476260304874316, 3.6501861834237204e-05  ]
+                          , ( 'notExclB', 'bin2' ) : [ 3.0203918214648766, 2.3616839764894775, 1.3457820727430088, 1.7328167019210972, -2.7338157946318313, 0.0005618710817781314  ]
+                          , ( 'notExclB', 'bin3' ) : [ 2.9828710959611295, 3.023748092386514, 0.3922908133091868, 0.4080097456480669, -2.2104022388970668, 0.0071672915683015925   ]
+                          , ( 'exclB',    'bin0' ) : [ 3.0587485511296966, 2.484099316157297, 0.057889921045197745, 0.5528670977674432, -3.007467407061461, 0.1095519817428861     ]
+                          , ( 'exclB',    'bin1' ) : [ 2.5950094079868706, 2.540489018460561, 1.5945389901143097, 2.050949882410599, -2.730273102035722, 0.0004971111831370001     ]
+                          , ( 'exclB',    'bin2' ) : [ 3.0552471411002733, 2.152609753853441, 1.329325140262283, 2.019935753077858, -2.484855452835132, 0.7630080085121052         ]
+                          , ( 'exclB',    'bin3' ) : [ 3.075124852599962, 2.877808057134126, 0.3713565137662156, 0.5448414118880873, -2.316218692561214, 0.0010592756615862564     ]
+                         }
 
-    ## smeared MC, no truth requirement, 6 KK-mass bins
-    #constSplitVals = {  ( 'notExclB', 'bin0' ) : [ 3.0322459762528475, 2.447864335272964, 0.010000000234995435, 0.3761600406855794, -1.7819601169940276, 6.59900444615058e-05  ]
-    #                  , ( 'notExclB', 'bin1' ) : [ 2.2345975396331355, 2.2733096038422564, 1.1520163546544167, 1.6942069968363522, -2.66798830193635, 0.20854507860559107      ]
-    #                  , ( 'notExclB', 'bin2' ) : [ 2.866727015029009, 2.52785976502023, 1.9694393775246413, 2.643343246963921, -2.8552062219784524, 9.674595605263514e-05      ]
-    #                  , ( 'notExclB', 'bin3' ) : [ 3.13640772719914, 2.164273316995139, 1.6880545260328532, 2.625937585938297, -2.742728647811494, 0.38557682029282614         ]
-    #                  , ( 'notExclB', 'bin4' ) : [ 2.691388719858974, 2.1765693301510467, 1.1328053404011302, 1.3535888755187133, -2.6834400853733795, 0.006669749679341086    ]
-    #                  , ( 'notExclB', 'bin5' ) : [ 2.985877329806639, 3.1190879158936817, 0.392737190065505, 0.36203589944356046, -2.1461396103494774, 0.0004175978121001567   ]
-    #                  , ( 'exclB',    'bin0' ) : [ 3.042217322789827, 2.4700042960827178, 0.06194035223910982, 0.5597726690852415, -2.928065834264261, 0.0048085653574805876   ]
-    #                  , ( 'exclB',    'bin1' ) : [ 2.2304631405694995, 2.2681661243312385, 1.218192799968996, 1.6767301735939948, -2.641095299127259, 0.14207389372690699      ]
-    #                  , ( 'exclB',    'bin2' ) : [ 2.5697808515643894, 2.5119962645338587, 2.28395543514728, 2.4915556694437684, -2.8809822628631334, 7.761444933496175e-05    ]
-    #                  , ( 'exclB',    'bin3' ) : [ 3.1153599082377905, 2.1319443211850606, 1.6421649419097952, 2.6368700437507004, -2.7839454814253495, 1.5078269163915081e-05 ]
-    #                  , ( 'exclB',    'bin4' ) : [ 2.6456511462439103, 1.9878672383403715, 1.214951242924778, 1.5843436697596214, -2.8417604939372745, 0.06797317803125186     ]
-    #                  , ( 'exclB',    'bin5' ) : [ 3.0757264652220297, 2.8829257202136667, 0.3704700122418063, 0.5435778339755468, -2.3207566521696803, 0.001582721837209422   ]
+    elif len(KKMassBinBounds) == 7 :
+        # smeared MC, no truth requirement, 6 KK-mass bins
+        constSplitVals = {  ( 'notExclB', 'bin0' ) : [ 3.0322459762528475, 2.447864335272964, 0.010000000234995435, 0.3761600406855794, -1.7819601169940276, 6.59900444615058e-05  ]
+                          , ( 'notExclB', 'bin1' ) : [ 2.2345975396331355, 2.2733096038422564, 1.1520163546544167, 1.6942069968363522, -2.66798830193635, 0.20854507860559107      ]
+                          , ( 'notExclB', 'bin2' ) : [ 2.866727015029009, 2.52785976502023, 1.9694393775246413, 2.643343246963921, -2.8552062219784524, 9.674595605263514e-05      ]
+                          , ( 'notExclB', 'bin3' ) : [ 3.13640772719914, 2.164273316995139, 1.6880545260328532, 2.625937585938297, -2.742728647811494, 0.38557682029282614         ]
+                          , ( 'notExclB', 'bin4' ) : [ 2.691388719858974, 2.1765693301510467, 1.1328053404011302, 1.3535888755187133, -2.6834400853733795, 0.006669749679341086    ]
+                          , ( 'notExclB', 'bin5' ) : [ 2.985877329806639, 3.1190879158936817, 0.392737190065505, 0.36203589944356046, -2.1461396103494774, 0.0004175978121001567   ]
+                          , ( 'exclB',    'bin0' ) : [ 3.042217322789827, 2.4700042960827178, 0.06194035223910982, 0.5597726690852415, -2.928065834264261, 0.0048085653574805876   ]
+                          , ( 'exclB',    'bin1' ) : [ 2.2304631405694995, 2.2681661243312385, 1.218192799968996, 1.6767301735939948, -2.641095299127259, 0.14207389372690699      ]
+                          , ( 'exclB',    'bin2' ) : [ 2.5697808515643894, 2.5119962645338587, 2.28395543514728, 2.4915556694437684, -2.8809822628631334, 7.761444933496175e-05    ]
+                          , ( 'exclB',    'bin3' ) : [ 3.1153599082377905, 2.1319443211850606, 1.6421649419097952, 2.6368700437507004, -2.7839454814253495, 1.5078269163915081e-05 ]
+                          , ( 'exclB',    'bin4' ) : [ 2.6456511462439103, 1.9878672383403715, 1.214951242924778, 1.5843436697596214, -2.8417604939372745, 0.06797317803125186     ]
+                          , ( 'exclB',    'bin5' ) : [ 3.0757264652220297, 2.8829257202136667, 0.3704700122418063, 0.5435778339755468, -2.3207566521696803, 0.001582721837209422   ]
+                         }
+
+    #constSplitVals = {  ( 'bin0', ) : [ 3.0, 2.5, 0.1, 0.5, -2.5, 0.01 ]
+    #                  , ( 'bin1', ) : [ 3.0, 2.5, 1.5, 2.0, -2.5, 0.01 ]
+    #                  , ( 'bin2', ) : [ 3.0, 2.5, 1.5, 2.0, -2.5, 0.01 ]
+    #                  , ( 'bin3', ) : [ 3.0, 3.0, 0.5, 0.5, -2.5, 0.01 ]
+    #                 }
+    #constSplitVals = {  ( 'bin0', ) : [ 3.0, 2.5, 0.1, 0.5, -2.5, 0.01 ]
+    #                  , ( 'bin1', ) : [ 3.0, 2.5, 1.5, 2.0, -2.5, 0.01 ]
+    #                  , ( 'bin2', ) : [ 3.0, 3.0, 0.5, 0.5, -2.5, 0.01 ]
     #                 }
 
 numMassBins      = [ 140, 56, 40, 44, 24 ]
@@ -93,14 +106,14 @@ KKMMin  = KKMassBinBounds[0]
 KKMMax  = KKMassBinBounds[-1]
 
 obsKeys = [  'sWeights_ipatia', 'runPeriod'
-           , 'mass', 'KKMass', 'mumuMass'
+           , 'mass', 'KKMass'#, 'mumuMass'
            , 'time', 'timeRes'
            , 'ctk', 'ctl', 'phih'
            #, 'cpsi', 'cttr', 'phitr'
            #, 'wTag', 'tagDec'
            , 'wTagOS'#, 'tagDecOS'
            , 'wTagSS'#, 'tagDecSS'
-           , 'sel'#, 'sel_cleantail', 'selA', 'selB'
+           #, 'sel', 'sel_cleantail', 'selA', 'selB'
            , 'hlt1ExclB', 'hlt2B', 'hlt2UB'#, 'hlt1B', 'hlt1UB'
            #, 'trigDecUnb', 'trigDecExclB'
            #, 'B_P', 'B_Pt'
@@ -398,6 +411,7 @@ if not simulation :
 ## fit J/psiKK mass distributions ##
 ####################################
 
+splitPars = [ ]
 if not simulation :
     # determine mass parameters with a fit
     print 120 * '='
@@ -419,6 +433,10 @@ if not simulation :
         if runPeriods :
             # split yields and background parameters for run period
             splitCats[ observables['runPeriod'].GetName() ] = set( yieldNames + bkgParNames )
+            if sigMassModel.startswith('Ipatia2') :
+                # split signal mean and sigma for run period
+                for parName in sigParNames :
+                    if 'mean' in parName or 'sigma' in parName : splitCats[ observables['runPeriod'].GetName() ].add(parName)
 
         if len(KKMassBinBounds) > 2 :
             # split yields for KK-mass category
@@ -465,7 +483,7 @@ if not simulation :
 
         # build simultaneous mass PDF
         print 'P2VV - INFO: createB2CCDataSet: building simultaneous PDF "%s":' % ( massPdf.GetName() + '_simul' )
-        print 13 * ' ' + 'splitted parameters:'
+        print 13 * ' ' + 'split parameters:'
         for it, pars in enumerate(splitPars) :
             print 13 * ' ' + '%2d: pars: [ %s ]' % ( it, ', '.join( par.GetName() for par in pars[0] ) )
             print 13 * ' ' + '    cats: [ %s ]' % ', '.join( cat.GetName() for cat in pars[1] )
@@ -819,6 +837,12 @@ if addTaggingObs :
     observables['tagCatP2VVOS'] = Category( ws.put( dataSets['preS'][0].get().find('tagCatP2VVOS') ).GetName() )
     observables['tagCatP2VVSS'] = Category( ws.put( dataSets['preS'][0].get().find('tagCatP2VVSS') ).GetName() )
     obsSetNTuple += [ observables['iTagOS'], observables['iTagSS'], observables['tagCatP2VVOS'], observables['tagCatP2VVSS'] ]
+
+    # add OS+SS tagged/untagged category
+    from P2VV.Utilities.DataHandling import addGlobalTagCat
+    addGlobalTagCat( dataSets['preS'][0], observables['tagCatP2VVOS'].GetName(), observables['tagCatP2VVSS'].GetName() )
+    observables['tagCatP2VV'] = Category( ws.put( dataSets['preS'][0].get().find('tagCatP2VV') ).GetName() )
+    obsSetNTuple += [ observables['tagCatP2VV'] ]
 
 
 ###################################################################################################################################

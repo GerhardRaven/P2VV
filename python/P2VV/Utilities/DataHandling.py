@@ -401,6 +401,31 @@ def addTaggingObservables( dataSet, iTagName, tagCatName, tagDecisionName, estim
                 % ( obsSet.getCatIndex(tagDecisionName), obsSet.getCatIndex(tagCatName) )
 
 
+def addGlobalTagCat( dataSet, tagCatOSName, tagCatSSName ) :
+    tagCatOS = dataSet.get().find(tagCatOSName)
+    tagCatSS = dataSet.get().find(tagCatSSName)
+    assert tagCatOS and tagCatSS\
+           , 'P2VV - ERROR: addGlobalTagCat(): one or more tagging categories not found in data set ("%s" and "%s")'\
+             % ( tagCatOSName, tagCatSSName )
+
+    from ROOT import RooMappedCategory, RooMultiCategory, RooArgSet
+    tagCatMult = RooMultiCategory( 'tagCatMult', 'tagCatMult', RooArgSet( tagCatOS, tagCatSS ) )
+    tagCatP2VV = RooMappedCategory( 'tagCatP2VV', 'tagCatP2VV', tagCatMult, 'Tagged', 1 )
+
+    tagCatOS.setIndex(0)
+    tagCatSS.setIndex(0)
+    tagCatP2VV.map( tagCatMult.getLabel(), 'Untagged', 0 )
+
+    tagCatP2VV = dataSet.addColumn(tagCatP2VV)
+
+    for obsSet in dataSet :
+        assert (obsSet.getCatIndex('tagCatP2VV') == 0 and obsSet.getCatIndex(tagCatOSName) == 0 and obsSet.getCatIndex(tagCatSSName) == 0)\
+            or (obsSet.getCatIndex('tagCatP2VV') == 1 and (obsSet.getCatIndex(tagCatOSName) > 0 or obsSet.getCatIndex(tagCatSSName) > 0))\
+            , 'P2VV - ERROR: addGlobalTagCat(): "tagCatP2VV" index (%d) does not correspond to "%s" and "%s" indices (%d and %d)'\
+              % ( obsSet.getCatIndex('tagCatP2VV'), tagCatOSName, tagCatSSName
+                 , obsSet.getCatIndex(tagCatOSName), obsSet.getCatIndex(tagCatSSName) )
+
+
 def addTransversityAngles( dataSet, cpsiName, cthetaTrName, phiTrName, cthetaKName, cthetalName, phiName ) :
     """add transversity angles to data set
     """

@@ -11,7 +11,7 @@ if len(args) != 1:
     print parser.print_usage()
     sys.exit(-2)
 
-from P2VV.Utilities.Resolution import input_data
+from P2VV.Utilities.Resolution import input_data, prefix
 if args[0] not in input_data.keys():
     print parser.print_usage()
     print "Possible samples are: %s" % ' '.join(input_data.keys())
@@ -97,8 +97,8 @@ signal = Component('signal', (sig_m, sig_t.pdf()), Yield= (200000,500,500000) )
 from P2VV.Utilities.DataHandling import readData
 tree_name = 'DecayTree'
 
-## cut = 'runNumber > 0 && sel == 1 && sel_cleantail == 1 && (hlt1_biased == 1 || hlt1_unbiased_dec == 1) && hlt2_biased == 1 && '
-cut = 'runNumber > 0 && sel == 1 && sel_cleantail == 1 && hlt1_unbiased_dec == 1 && hlt2_unbiased == 1 && '
+## cut = 'runNumber > 0 && sel == 1 && (hlt1_biased == 1 || hlt1_unbiased_dec == 1) && hlt2_biased == 1 && '
+cut = 'runNumber > 0 && sel == 1 && hlt1_unbiased_dec == 1 && hlt2_unbiased == 1 && '
 cut += ' && '.join(['%s < 4' % e for e in ['muplus_track_chi2ndof', 'muminus_track_chi2ndof', 'Kplus_track_chi2ndof', 'Kminus_track_chi2ndof']])
 
 from ROOT import RooAbsData
@@ -107,9 +107,12 @@ RooAbsData.setDefaultStorageType(RooAbsData.Tree)
 
 data = readData(input_data[args[0]]['data'], tree_name, ntupleCuts = cut,
                 NTuple = True, observables = observables)
-data_cut = data.reduce("time > 0.3")
 
-RooAbsData.setDefaultStorageType(storage)
+from ROOT import TFile
+tmp_file = TFile.Open(os.path.join(prefix, 'p2vv/data/tmp.root'), 'recreate')
+data.store().tree().SetDirectory(tmp_file)
+data_cut = data.reduce("time > 0.3")
+data_cut.store().tree().SetDirectory(tmp_file)
 
 ## Build PDF
 mass_pdf = buildPdf(Components = (background, signal), Observables = (m, ), Name = 'mass_pdf')
@@ -117,7 +120,7 @@ mass_pdf.Print("t")
 
 ## Fit options
 fitOpts = dict(NumCPU = 4, Timer = 1, Save = True,
-               Verbose = False, Optimize = 2, Minimizer = 'Minuit2')
+               Verbose = False, Optimize = 1, Minimizer = 'Minuit2')
 
 # make sweighted dataset. TODO: use mumu mass as well...
 from P2VV.Utilities.SWeights import SData
@@ -161,7 +164,12 @@ plot_mass(data)
 from P2VV.Utilities.SWeights import SData
 sData = SData(Pdf = mass_pdf, Data = data, Name = 'MassSPlot')
 sig_sdata = sData.data('signal')
+sig_sdata.store().tree().SetDirectory(tmp_file)
+
 bkg_sdata = sData.data('background')
+bkg_sdata.store().tree().SetDirectory(tmp_file)
+
+RooAbsData.setDefaultStorageType(storage)
 
 # Load results from the resolution fit
 from P2VV.CacheUtils import CacheFiles
@@ -191,7 +199,7 @@ wpv_builder = WrongPV.ShapeBuilder(t, masses, UseKeysPdf = True, Weights = weigh
                                    Reweigh = dict(Data = reweigh_data, DataVar = nPV, Binning = PV_bounds),
                                    sigmat = st, MassResult = result_cut)
 wpv_signal = wpv_builder.shape('B')
-sig_wpv = Component('sig_wpv', (wpv_signal, m), Yield = (888, 50, 300000))
+sig_wpv = Component('sig_wpv', (wpv_signal, m), Yield = (888, 1, 300000))
 
 # Build time PDF
 time_pdf = buildPdf(Components = [signal, sig_wpv], Observables = [t], Name = 'time_pdf')
@@ -205,3 +213,7 @@ for p in time_result.floatParsFinal():
         pdf_par.setError(p.getError())
         pdf_par.setConstant(True)
         print 'Set value, error and constant for %s' % pdf_par.GetName()
+
+time_pdf.Print('t')
+
+time_result = time_pdf.fitTo(sig_sdata, SumW2Error = False, **fitOpts)
