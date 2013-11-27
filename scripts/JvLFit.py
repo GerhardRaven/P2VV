@@ -21,8 +21,8 @@ dataPath            = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
 
 plotsFile     = 'temp.ps'   #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.ps'
 plotsROOTFile = 'temp.root' #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.root'
-parFileIn     = '20112012Reco14DataFitValues.par' # '20112012Reco14DataFitValues_4KKMassBins.par' # '20112012Reco14DataFitValues.par'
-parFileOut    = ''
+parFileIn     = '20112012Reco14DataFitValues_6KKMassBins.par' # '20112012Reco14DataFitValues_4KKMassBins.par'
+parFileOut    = ( 'parameterEstimates.par', dict( Format = 'common' ) )
 
 if generateData :
     dataSetName = 'JpsiphiData'
@@ -648,9 +648,12 @@ else :
 
 if parFileOut :
     # write parameters to file
+    filePath = parFileOut[0] if type(parFileOut) != str else parFileOut
+    fileOpts = parFileOut[1] if type(parFileOut) != str else { }
     pdfConfig.getParametersFromPdf( pdf, fitData )
-    pdfConfig.writeParametersToFile(  filePath = parFileOut
+    pdfConfig.writeParametersToFile(  filePath = filePath
                                     , FitStatus = ( fitResult.status(), fitResult.minNll(), fitResult.edm() ) if fitResult else ( )
+                                    , **fileOpts
                                    )
 
 

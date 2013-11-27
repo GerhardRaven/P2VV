@@ -80,7 +80,7 @@ class PdfConfiguration( dict ) :
             if not line : break
 
             # check for empty or comment lines
-            line = line.strip().split()
+            line = line.split()
             if not line :
                 continue
             elif line[0][0] == '#' :
@@ -117,6 +117,11 @@ class PdfConfiguration( dict ) :
         return fitStatus
 
     def writeParametersToFile( self, filePath = 'parameters', **kwargs ) :
+        # get arguments
+        fileFormat = kwargs.pop( 'Format', '' )
+        assert fileFormat in [ '', 'common' ]\
+               , 'P2VV - ERROR: PdfConfiguration.writeParametersToFile(): unknown file format: "%s"' % fileFormat
+
         # get file path and name
         filePath = filePath.strip()
         fileName = filePath.split('/')[-1]
@@ -144,28 +149,36 @@ class PdfConfiguration( dict ) :
         fitStat = kwargs.pop( 'FitStatus', ( -1, 0., 0. ) )
 
         # write parameters to content string
-        cont = '# %s: parameters\n' % fileName\
-             + '# name requirement: \'{0}\'\n'.format( names if names else '' )\
-             + '# floating:         \'{0}\'\n'.format( 'True' if floating == True else ( 'False' if floating == False else '' ) )\
-             + '# fit status:       status = {0:d}; NLL = {1:+.16g}; EDM = {2:.3g}\n'.format( fitStat[0], fitStat[1], fitStat[2] )\
-             + '#\n'\
-             + '# ' + '-' * (79 + maxLenName) + '\n'\
-             + ( '# {0:<%s}   {1:<14}   {2:<13}   {3:<14}   {4:<14}   {5:<}\n' % maxLenName )\
-                 .format( 'parameter', 'value', 'error', 'min', 'max', 'floating?' )\
-             + '# ' + '-' * (79 + maxLenName) + '\n'
+        cont = ''
+        if fileFormat != 'common' :
+            cont += '# %s: parameters\n' % fileName\
+                  + '# name requirement: \'{0}\'\n'.format( names if names else '' )\
+                  + '# floating:         \'{0}\'\n'.format( 'True' if floating == True else ( 'False' if floating == False else '' ) )\
+                  + '# fit status:       status = {0:d}; NLL = {1:+.16g}; EDM = {2:.3g}\n'.format( fitStat[0], fitStat[1], fitStat[2] )\
+                  + '#\n'\
+                  + '# ' + '-' * (79 + maxLenName) + '\n'\
+                  + ( '# {0:<%s}   {1:<14}   {2:<13}   {3:<14}   {4:<14}   {5:<}\n' % maxLenName )\
+                      .format( 'parameter', 'value', 'error', 'min', 'max', 'floating?' )\
+                  + '# ' + '-' * (79 + maxLenName) + '\n'
 
         numPars = 0
+        from P2VV.Imports import commonParNames
         for parName in sorted( self._parameters.keys() ) :
+            if fileFormat == 'common' and parName not in commonParNames : continue
             if nameExpr and not nameExpr.match(parName) : continue
 
             parVals = self._parameters[parName]
             if ( floating == True and not parVals[4] ) or ( floating == False and parVals[4] ) : continue
 
-            cont += ( '  {0:<%s}   {1:<+14.8g}   {2:<13.8g}   {3:<+14.8g}   {4:<+14.8g}   {5:<}\n' % maxLenName )\
-                      .format( parName, parVals[0], parVals[1], parVals[2], parVals[3], 'True' if parVals[4] else 'False' )
+            if fileFormat != 'common' :
+                cont += ( '  {0:<%s}   {1:<+14.8g}   {2:<13.8g}   {3:<+14.8g}   {4:<+14.8g}   {5:<}\n' % maxLenName )\
+                          .format( parName, parVals[0], parVals[1], parVals[2], parVals[3], 'True' if parVals[4] else 'False' )
+            else :
+                cont += '{0:s}\t{1:+.8g}\t{2:.8g}\n'.format( commonParNames[parName], parVals[0], parVals[1] )
             numPars += 1
 
-        cont += '# ' + '-' * (79 + maxLenName) + '\n'
+        if fileFormat != 'common' :
+            cont += '# ' + '-' * (79 + maxLenName) + '\n'
 
         # write content to file
         parFile.write(cont)
