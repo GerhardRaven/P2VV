@@ -1,7 +1,10 @@
-
 ########################################################################################################################
 ## Specify paths and paramters ##
 ################################
+from optparse import OptionParser
+parser = OptionParser()
+parser.add_option('-R', '--KKmomRew', dest='KKmomRew', default = 'vertical', type='str', help='KK momentum reweighting approach (vertical/horizontal)')
+(options, args) = parser.parse_args()
 
 # mc input File    
 mcTuplePath = [ '/project/bfys/vsyropou/data/P2VVDataSetsMC11a_noKKMassBins_2TagCats_forReweighting_part%s.root'%n for n in [1,2] ]
@@ -29,7 +32,7 @@ anglesEffType = 'weights'
 # varius flags / names
 NumbOfIterations     = 7
 physWeightName       = 'weightPhys'
-kinematicRewApproach = 'horizontal' # 'horizontal'
+kinematicRewApproach = options.KKmomRew
 
 initialFitOnData = False
 makePlots        = True
@@ -158,6 +161,7 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
         KinematicReweight.reweight( iterNumb, PhysicsReweight.getDataSet(weighted=True) )
         reweightedData = KinematicReweight.getDataSet()
 
+    assert False
     if makePlots: # plot data after each reweighting step
         compPlots = compareDistributions( mcData          = PhysicsReweight.getDataSet(),
                                           mcDataPhysRew   = PhysicsReweight.getDataSet(weighted=True),
