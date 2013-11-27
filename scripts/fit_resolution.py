@@ -18,6 +18,8 @@ parser.add_option("--verbose", dest = "verbose", default = False,
                   action = 'store_true', help = 'Verbose fitting')
 parser.add_option("--sf-parameterisation", dest = "sf_param", default = '', type = 'string',
                   action = 'store', help = 'Type of model used to scale sigma_t')
+parser.add_option("--mean-parameterisation", dest = "mu_param", default = '', type = 'string',
+                  action = 'store', help = 'Type parameterise the mean of the Gaussians as a function of sigmat')
 parser.add_option('-s', "--simultaneous", dest = "simultaneous", default = False,
                   action = 'store_true', help = 'Use sigmat offset')
 parser.add_option("--plot", dest = "make_plots", default = False,
@@ -56,15 +58,17 @@ parser.add_option("--use-refit", dest = "use_refit", default = False, action = '
                   help = 'Use new PV refitting.')
 parser.add_option("--no-cache", dest = "cache", default = True, action = 'store_false',
                   help = 'Use a cache to store results and reuse them.')
+parser.add_option("--constrain", dest = "constrain", default = '', action = 'store', type = 'string',
+                  help = 'Which parameters to constrain')
 
 (options, args) = parser.parse_args()
 
 if len(args) != 2:
     print parser.print_usage()
     sys.exit(-2)
-elif args[1] not in ['single', 'double', 'triple']:
+elif args[1] not in ['single', 'double', 'triple', 'core']:
     print parser.print_usage()
-    print "Wrong model type; allowed types are: %s." % ' '.join(['single', 'double', 'triple'])
+    print "Wrong model type; allowed types are: %s." % ' '.join(['single', 'double', 'triple', 'core'])
     sys.exit(-2)
 
 signal_MC = args[0] in ['MC11a', 'MC2012', 'MC2011_Sim08a']
@@ -96,7 +100,7 @@ from math import pi
 if options.peak_only:
     if signal_MC:
         t_minmax = (-5, 14)
-        tdiff_minmax = (-0.08, 0.08)
+        tdiff_minmax = (-0.1, 0.1)
     else:
         t_minmax = (-0.08, 0.08)        
 elif options.wpv and options.wpv_type == 'Gauss':
@@ -124,11 +128,14 @@ pt = RealVar('B_Pt', Title = 'B transverse momentum', Unit = 'MeV', Observable =
 nPV = RealVar('nPV', Title = 'Number of PVs', Observable = True, MinMax = (0, 10))
 zerr = RealVar('B_s0_bpv_zerr', Title = 'Best PV Z error', Unit = 'mm', Observable = True, MinMax = (0, 1))
 
-observables = [t, m, mpsi, st, hlt1_unbiased, hlt2_unbiased, selected, nPV, momentum, pt, zerr]
+t_st = RealVar('time_sigmat' if not options.use_refit else 'time_sigmat_refit', Title = 'time / sigmat', Observable = True, MinMax = (-100, 500))
+
+observables = [t, t_st, m, mpsi, st, hlt1_unbiased, hlt2_unbiased, selected, nPV, momentum, pt, zerr]
 if signal_MC:
     t_true = RealVar('truetime', Title = 'true decay time', Unit='ps', Observable = True, MinMax=(-1100, 14))
     t_diff = RealVar('time_diff' if not options.use_refit else 'time_diff_refit', Unit = 'ps', Observable = True, MinMax = (-1, 1) if not options.peak_only else tdiff_minmax)
-    observables.extend([t_true, t_diff])
+    t_diff_st = RealVar('time_diff_sigmat' if not options.use_refit else 'time_diff_sigmat_refit', Title = 'time / sigmat', Observable = True, MinMax = (-30, 40))
+    observables.extend([t_true, t_diff, t_diff_st])
 
 # Define a time_obs symbol to wrap around selection of t or t_diff
 time_obs = t_diff if signal_MC else t
@@ -145,31 +152,41 @@ if args[1] == 'single':
     tres_args = dict(time = t, sigmat = st, PerEventError = options.pee,
                      BiasScaleFactor = False, Cache = True,
                      TimeResSFParam = options.sf_param, SplitMean = options.split_mean)
-    sig_tres = TimeResolution(Name = 'tres', **tres_args)
-    bkg_tres = TimeResolution(Name = 'bkg_tres', ParNamePrefix = 'bkg', **tres_args)
-elif args[1] == 'double':
+    sig_tres = TimeResolution(Name = 'tres', **tres_args) 
+    if options.add_background:
+        bkg_tres = TimeResolution(Name = 'bkg_tres', ParNamePrefix = 'bkg', **tres_args)
+elif args[1] in ['double', 'core']:
     mu = dict(MinMax = (-0.010, 0.010))
-    mu['Constant'] = options.simultaneous and not options.split_mean
-    mu_values = {'MC11a_incl_Jpsi' : -0.000408, '2011_Reco14' : -0.00298,  
-                 '2011' : -0.00407301, '2012' : -0.00365}
+    mu['Constant'] = False
+    mu_values = {'MC11a_incl_Jpsi' : -0.000408, '2011_Reco14' : -0.00259,  
+                 '2011' : -0.00407301, '2012' : -0.00333}
     mu['Value'] = mu_values.get(args[0], 0)
+    mu['Constant'] = options.simultaneous and not (options.split_mean or options.mu_param)
     from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
     tres_args = dict(time = time_obs, sigmat = st, Cache = True,
                      PerEventError = options.pee, Parameterise = options.parameterise,
                      TimeResSFParam = options.sf_param, SplitFracs = options.split_frac,
-                     timeResMu = mu, GExp = {2 : False, 1 : False},
-                     ScaleFactors = [(2, 2.1), (1, 1.26)] if options.pee else [(2, 0.1), (1, 0.06)],
-                     Fractions = [(2, 0.2)], SplitMean = options.split_mean)
+                     timeResMu = mu, Simultaneous = options.simultaneous,
+                     ScaleFactors = [(2, 1.817), (1, 1.131)] if options.pee else [(2, 0.1), (1, 0.06)],
+                     Fractions = [(2, 0.168)], SplitMean = options.split_mean,
+                     MeanParameterisation = options.mu_param)
     sig_tres = TimeResolution(Name = 'sig_tres', **tres_args)
-    bkg_tres = TimeResolution(Name = 'bkg_tres', ParNamePrefix = 'bkg', **tres_args)
+    if options.add_background:
+        bkg_tres = TimeResolution(Name = 'bkg_tres', ParNamePrefix = 'bkg', **tres_args)
 elif args[1] == 'triple':
     from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = time_obs, sigmat = st, Cache = True,
-                              PerEventError = options.pee, GExp = {3 : signal_MC, 2: False, 1 : False},
-                              TimeResSFParam = options.sf_param, Parameterise = options.parameterise,
-                              ScaleFactors = [(3, 1.5), (2, 4), (1, 1.4)], SplitFracs = options.split_frac,
-                              Fractions = [(3, 0.1), (2, 0.2)], SplitMean = options.split_mean)
+                                 PerEventError = options.pee, SplitFracs = options.split_frac,
+                                 TimeResSFParam = options.sf_param, Parameterise = options.parameterise,
+                                 ScaleFactors = [(3, 1.5), (2, 4), (1, 1.4)], MeanParameterisation = options.mu_param,
+                                 Fractions = [(3, 0.1), (2, 0.2)], SplitMean = options.split_mean,
+                                 Simultaneous = options.simultaneous)
 
+if args[1] == 'core':
+    from P2VV.Parameterizations.TimeResolution import Core_Rest_TimeResolution
+    core_tres = Core_Rest_TimeResolution(Name = 'core_tres', CoreModel = sig_tres)
+    sig_tres = core_tres
+    
 # J/psi mass pdf
 from P2VV.Parameterizations.MassPDFs import DoubleCB_Psi_Mass as PsiMassPdf
 psi_m = PsiMassPdf(mpsi, Name = 'psi_m', mpsi_alpha_1 = dict(Value = 2, Constant = '2011' in args[0]))
@@ -188,8 +205,8 @@ bkg_m = Pdf(Name = 'gauss', Type = Gaussian, Parameters = (m, mean, sigma))
 from P2VV.Parameterizations.TimePDFs import LP2011_Background_Time as Background_Time
 psi_t = Background_Time( Name = 'psi_t', time = time_obs, resolutionModel = sig_tres.model()
                          , psi_t_fml    = dict(Name = 'psi_t_fml',    Value = 6.7195e-01)
-                         , psi_t_ll_tau = dict(Name = 'psi_t_ll_tau', Value = 1.3672, MinMax = (0.1,  2.5))
-                         , psi_t_ml_tau = dict(Name = 'psi_t_ml_tau', Value = 1.3405e-01, MinMax = (0.01, 0.5))
+                         , psi_t_ll_tau = dict(Name = 'psi_t_ll_tau', Value = 1.3672, MinMax = (0.01,  2.5))
+                         , psi_t_ml_tau = dict(Name = 'psi_t_ml_tau', Value = 1.3405e-01, MinMax = (0.01, 2.5))
                          )
 psi_t = psi_t.pdf()
 
@@ -198,8 +215,10 @@ psi_ll = Component('psi_ll', (psi_m, bkg_m, psi_t), Yield= (8.5575e+03,100,50000
 
 # Background component
 from P2VV.Parameterizations.TimePDFs import Prompt_Peak
-bkg_t = Prompt_Peak(time_obs, bkg_tres.model(), Name = 'bkg_pdf')
-background = Component('background', (bkg_mpsi.pdf(), bkg_m, bkg_t.pdf()), Yield = (19620,100,500000) )
+background = Component('background', (bkg_mpsi.pdf(), bkg_m), Yield = (19620,100,500000) )
+if options.add_background:
+    bkg_t = Prompt_Peak(time_obs, bkg_tres.model(), Name = 'bkg_pdf')
+    background[t] = bkg_t.pdf()
 
 # B signal component
 sig_t = Prompt_Peak(time_obs, resolutionModel = sig_tres.model(), Name = 'sig_t')
@@ -227,7 +246,10 @@ if options.peak_only:
     cut += ' && %s > %5.3f && %s < %5.3f' % (time_obs.GetName(), time_obs.getMin(), time_obs.GetName(), time_obs.getMax())
 if options.cut:
     cut = options.cut + ' && ' + cut
-hd = ('%d' % hash(cut)).replace('-', 'm')
+hash_str = cut
+if options.use_refit:
+    hash_str = cut + ' PVRefit'
+hd = ('%d' % hash(hash_str)).replace('-', 'm')
 
 if options.simultaneous:
     split_utils = {'sigmat'   : ('Sigmat', [st]),
@@ -255,17 +277,12 @@ if options.cache:
 results = []
 tree_name = 'DecayTree'
 
-## Canvas for correlation histograms
-from ROOT import TCanvas
-corr_canvas = TCanvas('corr_canvas', 'corr_canvas', 1000, 500)
-corr_canvas.Divide(2, 1)
-from ROOT import gStyle
-gStyle.SetPalette(53)
 
 ## Extra name for fit result and plots
 extra_name = [args[1]]
 for a, n in [('parameterise', None), ('wpv', 'wpv_type'), ('sf_param', None),
-             ('peak_only', 'peak'), ('add_background', 'cfit')]:
+             ('peak_only', 'peak'), ('add_background', 'cfit'),
+             ('use_refit', 'PVRefit')]:
     v = getattr(options, a)
     if v:
         if n and n != v and hasattr(options, n):
@@ -353,6 +370,10 @@ plots = []
 from array import array
 PV_bounds = array('d', [-0.5 + i for i in range(12)])
 
+from ROOT import gStyle
+gStyle.SetPalette(53)
+corr_canvas = None
+
 ## Build simple mass pdf
 if fit_mass:
     from P2VV.Utilities.DataHandling import readData
@@ -362,7 +383,9 @@ if fit_mass:
     if options.reduce:
         data = data.reduce(EventRange = (0, int(4e4)))
     elif data.numEntries() > 6e5:
-        data = data.reduce(EventRange = (0, int(6e5)))
+        new_data = data.reduce(EventRange = (0, int(6e5)))
+        data.IsA().Delete()
+        data = new_data
         
     # In case of reweighing 
     sig_mass_pdf = buildPdf(Components = (signal, background), Observables = (m,), Name = 'sig_mass_pdf')
@@ -385,6 +408,11 @@ if fit_mass:
     assert(mass_result.status() == 0)
     mass_result.SetName('mass_result')
     results.append(mass_result)
+
+    ## Canvas for correlation histograms
+    from ROOT import TCanvas
+    corr_canvas = TCanvas('mass_corr_canvas', 'mass_corr_canvas', 1000, 500)
+    corr_canvas.Divide(2, 1)
     
     ## Plot correlation histogram
     corr_canvas.cd(1)
@@ -529,10 +557,84 @@ elif fit_mass:
         sig_sdata = single_bin_sig_sdata
         bkg_sdata = single_bin_bkg_sdata
 
-corr_canvas.Update()
+# Write the result of the mass fit already at this point
+if options.cache:
+    from P2VV.CacheUtils import WritableCacheFile
+    with WritableCacheFile(cache_files, directory) as cache_file:
+        cache_dir = cache_file.Get(directory)
+        from ROOT import TObjString
+        cut_string = TObjString(cut)
+        cache_dir.WriteTObject(cut_string, 'cut')
+        
+        # Write data to cache file
+        def get_dir(d):
+            tmp = cache_dir.Get(d)
+            if not tmp:
+                cache_dir.mkdir(d)
+                tmp = cache_dir.Get(d)
+            return tmp
+        
+        from ROOT import TObject
+        if (options.write_data or fit_mass):
+            sdata_dir = get_dir('sdata')
+            data_dir = get_dir('data')
+            for name, ds in sdatas_full.iteritems():
+                 sdata_dir.WriteTObject(ds, name, "Overwrite")
+                        
+            sdata_dir.Write(sdata_dir.GetName(), TObject.kOverwrite)
+            data_dir.WriteTObject(data, data.GetName(), "Overwrite")
+            data_dir.Write(data_dir.GetName(), TObject.kOverwrite)
 
+        ## Write PDFs
+        pdf_dir = get_dir('PDFs')
+        if (options.write_data or fit_mass):
+            pdf_dir.WriteTObject(mass_pdf._target_(), 'mass_pdf', "Overwrite")
+            if options.simultaneous:
+                pdf_dir.WriteTObject(sWeight_mass_pdf._target_(), 'sWeight_mass_pdf', "Overwrite")
+
+        if not options.reduce:
+            ## Write mass fit results
+            results_dir = get_dir('results')
+            for r in results:
+                if not 'mass' in r.GetName():
+                    continue
+                results_dir.WriteTObject(r, r.GetName(), "Overwrite")            
+            results_dir.Write(results_dir.GetName(), TObject.kOverwrite)
+                
+        # Delete the input TTree which was automatically attached.
+        cache_file.Delete('%s;*' % tree_name)
+        
 # Define default components
-if signal_MC:
+if signal_MC and not options.simultaneous:
+    from ROOT import RooIpatia2 as Ipatia2
+    from P2VV.RooFitWrappers import Pdf
+
+    ## rest_mean = RealVar('rest_mean', Value = 0, MinMax = ( -10, 10 ), Constant = False )
+    ## rest_sigma = RealVar('rest_sigma', Value = 9.678, Error = 0.1
+    ##                      , MinMax = ( 0.1, 40. ), Constant = False)
+    ## rest_lambda = RealVar('rest_lambda', Value = -2.5, Error = 0.1, MinMax = ( -10., -0.1 ))
+    ## rest_zeta = RealVar('rest_zeta', Value = 0., Error = 0.2, MinMax = ( -10., 10. ), Constant = True)
+    ## rest_beta = ConstVar(Name = 'rest_beta', Value = 0.)
+    ## rest_alpha_1 = RealVar('rest_alpha_1', Value = 7, Error = 1., MinMax = ( 0.01, 10. ), Constant = True)
+    ## rest_alpha_2 = RealVar('rest_alpha_2', Value = 8, Error = 1., MinMax = ( 0.01, 10. ), Constant = True)
+    ## rest_n_1 = RealVar('rest_order_1', Value = 2, Error = 0.5, MinMax = ( 0., 10. ), Constant = True)
+    ## rest_n_2 = RealVar('rest_order_2', Value = 2, Error = 0.5, MinMax = ( 0., 10. ), Constant = True)
+
+    ## rest_i = Pdf(Name = 'rest_i', Type = Ipatia2,
+    ##                Parameters = (time_obs, rest_lambda, rest_zeta, rest_beta, rest_sigma, rest_mean,
+    ##                              rest_alpha_1, rest_n_1, rest_alpha_2, rest_n_2))
+    ## rest_ipatia = Component('rest_ipatia', (rest_i,), Yield = (1e4, 1, 1e5))
+
+    ## coefs = [RealVar("coef_%i" % (i + 1), Value = 1, MinMax = (-0.5, 10)) for i in range(2)]
+    ## coefs[0].setVal(1)
+    ## coefs[1].setVal(-0.01)
+    ## from P2VV.RooFitWrappers import Chebychev
+    ## rest_c = Chebychev(Name = 'rest_c', Observable = time_obs, Coefficients = coefs)
+    ## rest_const = Component('rest_const', (rest_c,), Yield = (1e4, 1, 1e5))
+
+
+    components = [signal]
+elif signal_MC:
     components = [signal]
 else:
     components = [prompt, psi_ll]
@@ -558,7 +660,7 @@ if options.wpv and options.wpv_type == 'Mixing':
     wpv_builder = WrongPV.ShapeBuilder(t, masses, UseKeysPdf = True, Weights = weights, Draw = True,
                                        InputFile = input_data[args[0]]['wpv'], Workspace = input_data[args[0]]['workspace'],
                                        Reweigh = dict(Data = reweigh_data, DataVar = nPV, Binning = PV_bounds),
-                                       sigmat = st, MassResult = mass_result, **extra_args)
+                                       MassResult = mass_result, **extra_args)
     if signal_MC:
         if time_obs == t:
             wpv_signal = wpv_builder.shape('B')
@@ -627,7 +729,7 @@ if options.simultaneous:
         split_pars[0].extend([sig_wpv.getYield()])
         ## split_pars[0].extend([wpv_sigma])
 
-    if options.sf_param:
+    if options.sf_param or options.mu_param:
         assert(len(split_cats[0]) == 1)
         split_cat = split_cats[0][0]
         if hasattr(split_cat, '_target_'):
@@ -670,6 +772,10 @@ if options.simultaneous:
                                    , MasterPdf       = time_pdf
                                    , SplitCategories = split_cats
                                    , SplitParameters = split_pars)
+elif options.mu_param:
+    placeholder = sig_tres.sigmatPlaceHolder()
+    placeholder.setVal(sig_sdata.mean(st._target_()))
+
 if options.reuse_result and options.cache:
     # Check if we have a cached time result, if so, use it as initial values for the fit
     time_result = None
@@ -685,8 +791,63 @@ if options.reuse_result and options.cache:
             if pdf_par and not pdf_par.isConstant():
                 pdf_par.setVal(p.getVal())
                 pdf_par.setError(p.getError())
-                
+
+## Constraints
+constraint_pars = set(['sf_mean_offset', 'sf_mean_slope', 'sf_sigma_offset', 'sf_sigma_slope',
+                       'timeResFrac2', 'timeResMu_offset', 'timeResMu_quad', 'timeResMu_slope',
+                       'timeResSFMean', 'timeResSFSigma'])
+
+import shelve
+constraints = set()
+if options.constrain:
+    pdf_vars = time_pdf.getVariables()
+    cp = args
+    if cp[1] == 'core':
+        cp[1] = 'double'
+    if options.use_refit:
+        cp += ['refit']
+    dbase = shelve.open('constraints.db')
+    cid = ' '.join(args)
+    assert(cid in dbase)
+    
+    cinfo = dbase[cid]
+    from ROOT import TMatrixDSym
+    from ROOT import TVectorD
+    param_key = {'mu' : options.mu_param, 'sf' : options.sf_param}
+    cinfo = cinfo[str(param_key)]
+    parameters = cinfo['parameters']
+    if options.constrain != 'all':
+        cpars = set()
+        for exp in options.constrain.split(','):
+            import re
+            exp = re.compile(exp)
+            cpars |= set(filter(exp.match, parameters.keys()))
+    parameters = dict([(p, parameters[p]) for p in cpars])
+
+    ## mu = array('d', [parameters[p][0] for p in sorted(parameters.keys())])
+    ## mu = TVectorD(len(mu), mu)
+    ## m = cinfo['covariance']
+    ## cov = TMatrixDSym(len(m))
+    ## for i, row in enumerate(m):
+    ##     cr = cov[i]
+    ##     for j, e in enumerate(row):
+    ##         cr[j] = e
+    cv = RooArgList()
+    for p in parameters.keys():
+        pdf_par = pdf_vars.find(p)
+        # Set values in pdf
+        pdf_par.setVal(parameters[p][0])
+        pdf_par.setError(parameters[p][1])
+        pdf_par.setConstant(True)
+        assert(pdf_par)
+        cv.add(pdf_par)
+    ## c = MultiVarGaussian(Name = 'constraint', Parameters = cv, CentralValues = mu,
+    ##                      Covariance = cov)
+    ## constraints.add(c)
+    dbase.close()
+
 time_pdf.Print("t")
+
 
 ## Fit
 ## print 'fitting data'
@@ -708,19 +869,19 @@ parameters = dict([(p.GetName(), p) for p in time_pdf.getParameters(obs_arg)])
 
 if options.fit:
     for i in range(3):
-        time_result = time_pdf.fitTo(fit_data, SumW2Error = options.correct_errors, **fitOpts)
+        time_result = time_pdf.fitTo(fit_data, SumW2Error = options.correct_errors, ExternalConstraints = constraints, **fitOpts)
         if time_result.status() == 0:
             break    
     time_result.SetName('_'.join(['time_result'] + extra_name))
     
-    ## Draw correlation histogram
-    corr_canvas.cd(2)
-    ## FIXME
-    corr_hist_time = time_result.correlationHist()
-    corr_hist_time.GetXaxis().SetLabelSize(0.03)
-    corr_hist_time.GetYaxis().SetLabelSize(0.03)
-    corr_hist_time.SetContour(20)
-    corr_hist_time.Draw('colz')
+    ## Draw correlation histogram for decay-time fit
+    from ROOT import TCanvas
+    time_corr_canvas = TCanvas('corr_canvas', 'corr_canvas', 500, 500)
+    time_corr_hist_time = time_result.correlationHist()
+    time_corr_hist_time.GetXaxis().SetLabelSize(0.03)
+    time_corr_hist_time.GetYaxis().SetLabelSize(0.03)
+    time_corr_hist_time.SetContour(20)
+    time_corr_hist_time.Draw('colz')
     
     results.append(time_result)
 
@@ -777,6 +938,7 @@ plotLog = [True, False]
 __canvases = []
 
 from ROOT import SetOwnership
+from ROOT import TCanvas
 
 for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
     if not options.make_plots or not time_result or options.split != 'sigmat':
@@ -798,7 +960,7 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
                       , pdfOpts  = dict(LineWidth = 4, **pdfOpts)
                       , xTitle = 'decay time [ps]'
                       , yTitle = 'Candidates / (XX ps)'
-                      , yTitleOffset = 0.9
+                      , yTitleOffset = 1
                       , logy = pl
                       , plotResidHist = 'BX'
                       ## , components = { 'wpv_*'     : dict( LineColor = kRed,   LineStyle = kDashed )
@@ -824,7 +986,7 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
                   , pdfOpts  = dict(LineWidth = 4, **pdfOpts)
                   , xTitle = 'decay time [ps]'
                   ##, yTitle = 'Candidates / (XX ps)'
-                  , yTitleOffset = 0.9
+                  , yTitleOffset = 1
                   , logy = pl
                   , plotResidHist = 'BX')
         
@@ -835,16 +997,15 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
         plots.append(ps)
 
 from P2VV.Utilities import Resolution as ResolutionUtils
-time_result.PrintSpecial(LaTeX = True, ParNames = ResolutionUtils.parNames)
+if time_result:
+    time_result.PrintSpecial(LaTeX = True, ParNames = ResolutionUtils.parNames)
 
+# Write the result of the fit to the cache file
 if options.cache:
     from P2VV.CacheUtils import WritableCacheFile
     with WritableCacheFile(cache_files, directory) as cache_file:
         cache_dir = cache_file.Get(directory)
-        from ROOT import TObjString
-        cut_string = TObjString(cut)
-        cache_dir.WriteTObject(cut_string, 'cut')
-        
+
         # Write data to cache file
         def get_dir(d):
             tmp = cache_dir.Get(d)
@@ -852,44 +1013,22 @@ if options.cache:
                 cache_dir.mkdir(d)
                 tmp = cache_dir.Get(d)
             return tmp
-        
-        from ROOT import TObject
-        if (options.write_data or fit_mass):
-            sdata_dir = get_dir('sdata')
-            data_dir = get_dir('data')
-            for name, ds in sdatas_full.iteritems():
-                 sdata_dir.WriteTObject(ds, name, "Overwrite")
-            
-            ## if options.simultaneous:
-            ##     for ct in st_cat:
-            ##         opts = dict(Cut = '{0} == {0}::{1}'.format(st_cat.GetName(), ct.GetName()))
-            ##         bin_data = sig_sdata_full.reduce(**opts)
-            ##         bin_data.SetName('sig_sdata_%s' % ct.GetName())
-            ##         sdata_dir.WriteTObject(bin_data, bin_data.GetName(), "Overwrite")
-            ##         bin_data.Delete()
-            ##         del bin_data
-            
-            sdata_dir.Write(sdata_dir.GetName(), TObject.kOverwrite)
-            data_dir.WriteTObject(data, data.GetName(), "Overwrite")
-            data_dir.Write(data_dir.GetName(), TObject.kOverwrite)
-        
+                
         ## Write PDFs
         pdf_dir = get_dir('PDFs')
         pdf_dir.WriteTObject(time_pdf._target_(), 'time_pdf_' + args[1] + \
                              ('_' + options.parameterise) if options.parameterise else '', "Overwrite")
-        if (options.write_data or fit_mass):
-            pdf_dir.WriteTObject(mass_pdf._target_(), 'mass_pdf', "Overwrite")
-            if options.simultaneous:
-                pdf_dir.WriteTObject(sWeight_mass_pdf._target_(), 'sWeight_mass_pdf', "Overwrite")
-        
+                             
         if not options.reduce and options.fit:
             ## Write fit results
             results_dir = get_dir('results')
             for r in results:
-                results_dir.WriteTObject(r, r.GetName(), "Overwrite")
-            
+                if not 'time' in r.GetName():
+                    continue
+                results_dir.WriteTObject(r, r.GetName(), "Overwrite")            
             results_dir.Write(results_dir.GetName(), TObject.kOverwrite)
-            
+
+        if not options.reduce and options.fit:
             ## Write plots
             plots_dir = get_dir('plots/%s' % '_'.join(extra_name))
             for ps in plots:
@@ -897,7 +1036,36 @@ if options.cache:
                     plots_dir.WriteTObject(p, p.GetName(), "Overwrite")
             
             plots_dir.Write(plots_dir.GetName(), TObject.kOverwrite)
-        
-        # Delete the input TTree which was automatically attached.
-        cache_file.Delete('%s;*' % tree_name)
 
+## ca = RooArgList()
+## for p in sorted(list(constraint_pars)):
+##     rp = time_result.floatParsFinal().find(p)
+##     if rp:
+##         ca.add(rp)
+
+## cov = time_result.reducedCovarianceMatrix(ca)
+## m = []
+
+## for i in range(cov.GetNrows()):
+##     m.append([])
+##     row = cov[i]
+##     for j in range(cov.GetNcols()):
+##         m[i].append(row[j])
+
+   
+## if options.fit and options.simultaneous:
+##     dbase = shelve.open('constraints.db')
+##     key_pars = args
+##     if options.use_refit:
+##         key_pars += ['refit']
+    
+##     base_key = ' '.join(key_pars)
+##     param_key = {'mu' : options.mu_param, 'sf' : options.sf_param}
+##     if base_key in dbase:
+##         dbase[base_key][str(param_key)] = {'parameters' : dict([(p.GetName(), (p.getVal(), p.getError())) for p in ca]),
+##                                            'covariance' : m}
+##     else:
+##         dbase[base_key] = {str(param_key) : {'parameters' : dict([(p.GetName(), (p.getVal(), p.getError())) for p in ca]),
+##                                              'covariance' : m}}
+    
+##     dbase.close()
