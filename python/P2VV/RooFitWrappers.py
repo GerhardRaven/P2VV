@@ -931,7 +931,7 @@ class Pdf(RooObject):
             self[d] = kwargs.pop(d)
 
     def _get(self, name):
-        return getattr(self._target_(), '_' + name.lower())
+        return getattr(self._target_(), '_' + name.lower(), None)
 
     def __getitem__(self, k):
         if hasattr(self, '_dict') and self._dict and k in self._dict:
@@ -1769,9 +1769,14 @@ class AddModel(ResolutionModel) :
                 setattr(self._target_(), attr, v)
         else:
             self._init(self._dict['Name'], 'RooAddModel')
-            # Make sure we are the same as last time
+            # set attributes
             for k, v in self._dict.iteritems():
-                assert v == self._get(k)
+                origVal = self._get(k)
+                if origVal :
+                    assert v == origVal
+                else :
+                    attr = '_' + k.lower()
+                    setattr(self._target_(), attr, v)
 
     def _makeRecipe(self):
         models = self._dict['Models']
