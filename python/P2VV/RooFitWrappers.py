@@ -476,20 +476,27 @@ class FormulaVar (RooObject) :
                ,'Dependents' : lambda s : s.dependents()
                ,'Value'      : lambda s : s.getVal()
                }
-    def __init__(self, Name, Formula, Arguments, **kwargs):
-        # construct factory string on the fly...
-        __check_name_syntax__(Name)
-        data = kwargs.pop('data', None)
-        if not data:
-            spec = "expr::%s('%s',{%s})" % (Name, Formula, ','.join(i.GetName() for i in Arguments))
+    def __init__(self, **kwargs):
+        __check_req_kw__( 'Name', kwargs )
+        __check_name_syntax__( kwargs['Name'] )
+        name = kwargs.pop( 'Name' )
+        data = kwargs.pop( 'data', None )
+        form = kwargs.pop( 'Formula', '' )
+        args = kwargs.pop( 'Arguments', [ ] )
+        if name in self.ws() :
+            assert not data and not form and not args\
+                   , 'P2VV - ERROR: FormulaVar: formula arguments specified, while object "%s" is already in workspace' % name
+            self._init(name, 'RooFormulaVar')
+        elif not data:
+            spec = "expr::%s('%s',{%s})" % ( name, form, ','.join( i.GetName() for i in args ) )
             self._declare(spec)
-            self._init(Name, 'RooFormulaVar')
+            self._init(name, 'RooFormulaVar')
         else:
             from ROOT import RooFormulaVar, RooArgList
-            form = RooFormulaVar(Name, Name, Formula, RooArgList(Arguments) )
+            form = RooFormulaVar( name, name, form, RooArgList(args) )
             form = data.addColumn(form)
             form = self._addObject(form)
-            self._init(Name, 'RooRealVar')
+            self._init( name, 'RooRealVar' )
             self.setObservable(True)
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
@@ -2160,7 +2167,8 @@ class MultiHistEfficiencyModel(ResolutionModel):
                 raise RuntimeError("More than one relative efficiency is None")
         # FIXME: perhaps this should be a dedicated class too
         form = '-'.join(['1'] + [e.GetName() for e in self.__relative_efficiencies.itervalues()])
-        self.__relative_efficiencies[remaining] = FormulaVar("remaining_efficiency", form, self.__relative_efficiencies.values())
+        self.__relative_efficiencies[remaining] = FormulaVar( Name = 'remaining_efficiency', Formula = form
+                                                             , Arguments = self.__relative_efficiencies.values() )
 
         efficiency_entries = self.__build_shapes(relative)
 

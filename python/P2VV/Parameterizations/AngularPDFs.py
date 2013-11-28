@@ -162,8 +162,10 @@ class Amplitudes_AngularPdfTerms ( Coefficients_AngularPdfTerms ) :
         # build angular coefficients
         from P2VV.RooFitWrappers import FormulaVar
         angCoefs = { }
-        Re = lambda Ai, Aj : FormulaVar( 'Re_c_%s_%s' % ( Ai, Aj ), '@0*@2 + @1*@3', [ Ai.Re, Ai.Im, Aj.Re, Aj.Im ] )
-        Im = lambda Ai, Aj : FormulaVar( 'Im_c_%s_%s' % ( Ai, Aj ), '@0*@3 - @1*@2', [ Ai.Re, Ai.Im, Aj.Re, Aj.Im ] )
+        Re = lambda Ai, Aj :\
+             FormulaVar( Name = 'Re_c_%s_%s' % ( Ai, Aj ), Formula = '@0*@2 + @1*@3', Arguments = [ Ai.Re, Ai.Im, Aj.Re, Aj.Im ] )
+        Im = lambda Ai, Aj :\
+             FormulaVar( Name = 'Im_c_%s_%s' % ( Ai, Aj ), Formula = '@0*@3 - @1*@2', Arguments = [ Ai.Re, Ai.Im, Aj.Re, Aj.Im ] )
         for key in keys :
             angCoefs[key] = (  Re( self._amplitudes[ key[0] ], self._amplitudes[ key[1] ] )
                              , Im( self._amplitudes[ key[0] ], self._amplitudes[ key[1] ] ) )
