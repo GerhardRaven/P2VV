@@ -357,8 +357,8 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
         Bs2Jpsiphi_PdfConfiguration.__init__( self, **kwargs )
 
         # do Run-I-analysis-specific configuration
-        self['blind'] = {  'phiCP'  : ( 'UnblindUniform', 'BsPhisComb', 0.2  )
-                         , 'dGamma' : ( 'UnblindUniform', 'BsDGsComb',  0.02 )
+        self['blind'] = {  'phiCP'  : ( 'UnblindUniform', 'BsPhis%s' % runPeriods, 0.2  )
+                         , 'dGamma' : ( 'UnblindUniform', 'BsDGs%s'  % runPeriods, 0.02 )
                         }
         self['numEvents']  = 220000
         self['sigFrac']    = 0.43
@@ -404,18 +404,41 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
                                       , dM             = (  17.768, 0.024  )
                                      )
 
-        betaConstr2011 = ( -0.0083, 0.004 )
-        betaConstr2012 = ( -0.0083, None ) if runPeriods == '3fb' else ( 0., 0. )
-        if runPeriods == '2011' :
-            self['externalConstr']['betaTimeEff'] = betaConstr2011
-        elif runPeriods == '2012' :
-            self['externalConstr']['betaTimeEff'] = betaConstr2012
+        splitConstr = dict( betaTimeEff = { }, tres_placeholder = { }, timeResMu = { }, timeResFrac2 = { }, sf_mean_offset = { }
+                           , sf_mean_slope = { }, sf_sigma_offset = { }, sf_sigma_slope = { } )
+        splitConstr['betaTimeEff']['2011']      = ( -0.0083, 0.004 )
+        splitConstr['betaTimeEff']['2012']      = ( -0.0083, None ) if runPeriods == '3fb' else ( 0., 0. )
+        splitConstr['tres_placeholder']['2011'] = ( 0.0352, 0. )
+        splitConstr['tres_placeholder']['2012'] = ( 0.0352, 0. )
+        splitConstr['timeResMu']['2011']        = ( 0.,     0. )
+        splitConstr['timeResMu']['2012']        = ( 0.,     0. )
+        splitConstr['timeResFrac2']['2011']     = ( 0.220,  0. )
+        splitConstr['timeResFrac2']['2012']     = ( 0.248,  0. )
+        splitConstr['sf_mean_offset']['2011']   = ( 1.4761, 0. )
+        splitConstr['sf_mean_offset']['2012']   = ( 1.4877, 0. )
+        splitConstr['sf_mean_slope']['2011']    = ( -0.190, 0. )
+        splitConstr['sf_mean_slope']['2012']    = ( -0.228, 0. )
+        splitConstr['sf_sigma_offset']['2011']  = ( 0.3844, 0. )
+        splitConstr['sf_sigma_offset']['2012']  = ( 0.4118, 0. )
+        splitConstr['sf_sigma_slope']['2011']   = ( -0.117, 0. )
+        splitConstr['sf_sigma_slope']['2012']   = ( -0.172, 0. )
+        if runPeriods in [ '2011', '2012' ] :
+            self['externalConstr']['betaTimeEff']      = splitConstr['betaTimeEff']     [runPeriods]
+            self['externalConstr']['tres_placeholder'] = splitConstr['tres_placeholder'][runPeriods]
+            self['externalConstr']['timeResMu']        = splitConstr['timeResMu']       [runPeriods]
+            self['externalConstr']['timeResFrac2']     = splitConstr['timeResFrac2']    [runPeriods]
+            self['externalConstr']['sf_mean_offset']   = splitConstr['sf_mean_offset']  [runPeriods]
+            self['externalConstr']['sf_mean_slope']    = splitConstr['sf_mean_slope']   [runPeriods]
+            self['externalConstr']['sf_sigma_offset']  = splitConstr['sf_sigma_offset'] [runPeriods]
+            self['externalConstr']['sf_sigma_slope']   = splitConstr['sf_sigma_slope']  [runPeriods]
         else :
-            self['splitParams']['runPeriod'] = [ 'betaTimeEff' ]
-            betaConstr = SimulCatSettings('betaTimeEffConstr')
-            betaConstr.addSettings( [ 'runPeriod' ], [ [ 'p2011' ] ], betaConstr2011 )
-            betaConstr.addSettings( [ 'runPeriod' ], [ [ 'p2012' ] ], betaConstr2012 )
-            self['externalConstr']['betaTimeEff'] = betaConstr
+            self['splitParams']['runPeriod'] = [ ]
+            for par, vals in splitConstr.iteritems() :
+                self['splitParams']['runPeriod'].append(par)
+                constr = SimulCatSettings( '%sConstr' % par )
+                constr.addSettings( [ 'runPeriod' ], [ [ 'p2011' ] ], vals['2011'] )
+                constr.addSettings( [ 'runPeriod' ], [ [ 'p2012' ] ], vals['2012'] )
+                self['externalConstr'][par] = constr
 
         from P2VV.Imports import extConstraintValues
         extConstraintValues.setVal( 'DM',      ( 17.768, 0.024   ) )
@@ -769,9 +792,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                               )
 
             # set time resolution models
-            splitCat      = self['simulPdf'].indexCat()
-            splitCatPars  = self['simulPdf'].getVariables()
-            inputCats     = [ splitCat ] if splitCat.isFundamental() else splitCat.inputCatList()
+            from ROOT import RooArgSet
+            splitCatPars = RooArgSet()
+            self['simulPdf'].treeNodeServerList(splitCatPars)
+            splitCat  = self['simulPdf'].indexCat()
+            inputCats = [ splitCat ] if splitCat.isFundamental() else splitCat.inputCatList()
             prototype = timeResModelsOrig['prototype']['model']
             from P2VV.RooFitWrappers import AddModel
             ## NOTE, this only works for either a single resolution model or an AddModel which does
@@ -787,20 +812,27 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
             def __find_param(var):
                 splitCats = self['splitParsDict'].get( ws[ var.GetName() ], set() )
+                if not var.isFundamental() :
+                    for cats in self['splitParsDict'].itervalues() : splitCats |= cats
                 if not splitCats :
                     return var
                 else :
                     catLabels = [(cat.GetName(), cat.getLabel()) for cat in inputCats if cat in splitCats]
                     catsStr = ';'.join(lab[1] for lab in catLabels)
                     if len(catLabels) > 1 : catsStr = '{' + catsStr + '}'
+                    from P2VV.Utilities.General import getSplitPar
                     splitVar = getSplitPar(var.GetName(), catsStr, splitCatPars)
                     assert splitVar, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: parameter "%s" is set to be constrained for category "%s", but it is not found in PDF'\
                            % (var.GetName(), catsStr)
-                    from P2VV.RooFitWrappers import RealVar
-                    return RealVar(Name = splitVar.GetName())
+                    from ROOT import RooRealVar, RooCategory, RooFormulaVar
+                    from P2VV.RooFitWrappers import RealVar, Category, FormulaVar
+                    wrappers = { RooRealVar : RealVar, RooCategory : Category, RooFormulaVar : FormulaVar }
+                    assert type(splitVar) in wrappers\
+                           , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: wrapping of RooFit object "%s" of type "%s" not implemented (yet)'\
+                             % ( splitVar.GetName(), type(splitVar) )
+                    return wrappers[ type(splitVar) ]( Name = splitVar.GetName() )
 
             def __make_wrapper(orig_params, split_model):
-                from P2VV.Utilities.General import getSplitPar
                 params = [ ]
                 for var in orig_params:
                     params.append(__find_param(var))
