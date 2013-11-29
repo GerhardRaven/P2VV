@@ -205,8 +205,7 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                     args = {'mean'  : [self._sf_mean_offset, self._sf_mean_slope, self.__placeholder],
                             'sigma' : [self._sf_sigma_offset, self._sf_sigma_slope, self.__placeholder]}
                 else:
-                    # FIXME: this 0.06 only works as intended for a parameterisation as a function of sigma_t
-                    formula = '@2 + @3 * (@0 - @1) / 0.06'
+                    formula = '@2 + @3 * (@0 - @1)'
                     args = {'mean'  : [self._sigmat, self.__placeholder, self._sf_mean_offset, self._sf_mean_slope],
                             'sigma' : [self._sigmat, self.__placeholder, self._sf_sigma_offset, self._sf_sigma_slope]}
                 self._sf_mean = self._parseArg('timeResSFMean_linear', kwargs,
