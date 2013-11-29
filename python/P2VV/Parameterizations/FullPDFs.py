@@ -818,7 +818,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             def __find_param(var):
                 splitCats = self['splitParsDict'].get( ws[ var.GetName() ], set() )
                 if not var.isFundamental() :
-                    for cats in self['splitParsDict'].itervalues() : splitCats |= cats
+                    split = False
+                    for splVar, splCats in self['splitParsDict'].iteritems() :
+                        if var.dependsOn(splVar) : split = True
+                        splitCats |= splCats
+                    if not split : splitCats = set()
                 if not splitCats :
                     return var
                 else :
