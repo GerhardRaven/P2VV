@@ -357,8 +357,13 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
         Bs2Jpsiphi_PdfConfiguration.__init__( self, **kwargs )
 
         # do Run-I-analysis-specific configuration
-        self['blind'] = {  'phiCP'  : ( 'UnblindUniform', 'BsPhis%s' % runPeriods, 0.2  )
-                         , 'dGamma' : ( 'UnblindUniform', 'BsDGs%s'  % runPeriods, 0.02 )
+        addStr = '2011' if runPeriods == '2011' else 'NewData' if runPeriods == '2012' else 'Combination'
+        self['blind'] = {  'phiCP'       : ( 'UnblindUniform', 'BsPhis%s' % runPeriods, 0.2  )
+                         , 'phiCP_A0'    : ( 'UnblindUniform', 'BsPhiszero%s' % runPeriods, 0.3  )
+                         , 'phiCP_Apar'  : ( 'UnblindUniform', 'BsPhispara%s' % runPeriods, 0.3  )
+                         , 'phiCP_Aperp' : ( 'UnblindUniform', 'BsPhisperp%s' % runPeriods, 0.3  )
+                         , 'phiCP_AS'    : ( 'UnblindUniform', 'BsPhisS%s' % runPeriods, 0.3  )
+                         , 'dGamma'      : ( 'UnblindUniform', 'BsDGs%s'  % runPeriods, 0.02 )
                         }
         self['numEvents']  = 220000
         self['sigFrac']    = 0.43
@@ -1124,7 +1129,7 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
     dGammaVar = dict( Name = 'dGamma' )
     if blind and 'dGamma' in blind :
         if blind['dGamma'] : dGammaVar['Blind'] = blind['dGamma']
-        else :               dGammaVar['Blind'] = ( 'UnblindUniform', 'BsDGs2013EPS', 0.02 )
+        else :               dGammaVar['Blind'] = ( 'UnblindUniform', 'BsDGs', 0.02 )
     self['lifetimeParams'] = LifetimeParams( dGamma = dGammaVar, dMConstraint = constrainDeltaM, betaConstraint = constrainBeta )
     if ambiguityPars : self['lifetimeParams']['dGamma'].setVal( -self['lifetimeParams']['dGamma'].getVal() )
 
@@ -1211,7 +1216,13 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
                                     )
 
         else :
-            self['lambdaCP'] = CPParam( AmplitudeNames = [ 'A0', 'Apar', 'Aperp', 'AS' ], Amplitudes = self['amplitudes'] )
+            ampNames = [ 'A0', 'Apar', 'Aperp', 'AS' ]
+            phiCPPars = dict( [ ( 'phiCP_%s' % amp, dict( Name = 'phiCP_%s' % amp ) ) for amp in ampNames ] )
+            for name, parDict in phiCPPars.iteritems() :
+                if blind and name in blind :
+                    if blind[name] : parDict['Blind'] = blind[name]
+                    else           : parDict['Blind'] = ( 'UnblindUniform', 'BsPhis',  0.2 )
+            self['lambdaCP'] = CPParam( AmplitudeNames = ampNames, Amplitudes = self['amplitudes'], **phiCPPars )
 
     else :
         if lambdaCPParam == 'lambPhi' :
@@ -1220,14 +1231,10 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
             from P2VV.Parameterizations.CPVParams import LambdaSqArg_CPParam as CPParam
 
         phiCPVar = dict( Name = 'phiCP' )
-        lambdaCPVar = dict( Name = 'lambdaCP' )
         if blind and 'phiCP' in blind :
             if blind['phiCP'] : phiCPVar['Blind'] = blind['phiCP']
-            else              : phiCPVar['Blind'] = ( 'UnblindUniform', 'BsPhis2013EPS',  0.2 )
-        if blind and 'lambdaCP' in blind :
-            if blind['lambdaCP'] : phiCPVar['Blind'] = blind['lambdaCP']
-            else                 : phiCPVar['Blind'] = ( 'UnblindUniform', 'BsLambdas2013EPS', 0.1 )
-        self['lambdaCP'] = CPParam( phiCP = phiCPVar, lambdaCP = lambdaCPVar )
+            else              : phiCPVar['Blind'] = ( 'UnblindUniform', 'BsPhis',  0.2 )
+        self['lambdaCP'] = CPParam( phiCP = phiCPVar )
         if ambiguityPars :
             self['lambdaCP']['phiCP'].setVal( pi - self['lambdaCP']['phiCP'].getVal() )
 
