@@ -384,6 +384,12 @@ if not simulation :
 
     elif sigMassModel.startswith('Ipatia2') :
         from P2VV.Parameterizations.MassPDFs import Ipatia2_Signal_Mass as SignalBMass
+        sigMassArgs['m_sig_lambda']  = -2.5
+        sigMassArgs['m_sig_zeta']    =  0.01
+        sigMassArgs['m_sig_alpha_1'] =  3.0
+        sigMassArgs['m_sig_alpha_2'] =  2.5
+        sigMassArgs['m_sig_n_1']     =  1.5
+        sigMassArgs['m_sig_n_1']     =  2.0
 
     else :
         from P2VV.Parameterizations.MassPDFs import LP2011_Signal_Mass as SignalBMass
