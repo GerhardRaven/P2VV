@@ -1881,6 +1881,10 @@ def multiplyByTimeAcceptance( pdf, self, **kwargs ) :
         new_model = timeResModels[resModelKey]['model']._target_()
         change = comp.changeModel( new_model )
         if not change :
+            # remove ORIGNAME:<"old model name"> attribute; this attribute gives problems with customization of the PDF later on
+            for att in new_model.attributes() :
+                if att == 'ORIGNAME:' + timeResModelsOrig[resModelKey]['model'].GetName() :
+                    new_model.setAttribute( att, False )
             accPdfs.append( comp.GetName() )
         else :
             raise AssertionError, 'P2VV - ERROR: multiplyByTimeAcceptance(): failed to multiply "%s" with acceptace' % comp.GetName()
