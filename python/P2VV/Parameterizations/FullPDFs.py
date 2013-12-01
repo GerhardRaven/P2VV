@@ -358,12 +358,12 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
 
         # do Run-I-analysis-specific configuration
         addStr = '2011' if runPeriods == '2011' else 'NewData' if runPeriods == '2012' else 'Combination'
-        self['blind'] = {  'phiCP'       : ( 'UnblindUniform', 'BsPhis%s' % runPeriods, 0.2  )
-                         , 'phiCP_A0'    : ( 'UnblindUniform', 'BsPhiszero%s' % runPeriods, 0.3  )
-                         , 'phiCP_Apar'  : ( 'UnblindUniform', 'BsPhispara%s' % runPeriods, 0.3  )
-                         , 'phiCP_Aperp' : ( 'UnblindUniform', 'BsPhisperp%s' % runPeriods, 0.3  )
-                         , 'phiCP_AS'    : ( 'UnblindUniform', 'BsPhisS%s' % runPeriods, 0.3  )
-                         , 'dGamma'      : ( 'UnblindUniform', 'BsDGs%s'  % runPeriods, 0.02 )
+        self['blind'] = {  'phiCP'       : ( 'UnblindUniform', 'BsPhis%s' % addStr, 0.2  )
+                         , 'phiCP_A0'    : ( 'UnblindUniform', 'BsPhiszero%s' % addStr, 0.3  )
+                         , 'phiCP_Apar'  : ( 'UnblindUniform', 'BsPhispara%s' % addStr, 0.3  )
+                         , 'phiCP_Aperp' : ( 'UnblindUniform', 'BsPhisperp%s' % addStr, 0.3  )
+                         , 'phiCP_AS'    : ( 'UnblindUniform', 'BsPhisS%s' % addStr, 0.3  )
+                         , 'dGamma'      : ( 'UnblindUniform', 'BsDGs%s'  % addStr, 0.02 )
                         }
         self['numEvents']  = 220000
         self['sigFrac']    = 0.43
