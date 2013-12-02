@@ -5,22 +5,30 @@
 from math import pi, sin, cos, sqrt
 
 # job parameters
-MCProd      = 'Sim08_2011'
+MCProd      = 'Sim08'
 readMoments = False
-makePlots   = True
+makePlots   = False
 transAngles = False
+incSWave    = False
 normPdf     = True
 tResModel   = ''
 trigger     = ''
 timeInt     = False
-addInvPdf   = True
+addInvPdf   = False
+weightVar   = '' # 'sWeights_ipatia'
+doSelection = True
+blind       = { } # { 'phiCP' : ( 'UnblindUniform', 'BsPhisCombination', 0.2 ), 'dGamma' : ( 'UnblindUniform', 'BsDGsCombination', 0.02 ) }
 
-momentsFile = '%s_%s_UB_UT_trueTime_BkgCat050_KK30' % ( MCProd, 'trans' if transAngles else 'hel' )
-plotsFile   = '%s_%s_UB_UT_trueTime_BkgCat050_KK30' % ( MCProd, 'trans' if transAngles else 'hel' ) + '.ps'
-dataSetFile = '%s_%s_UB_UT_trueTime_BkgCat050_KK30' % ( MCProd, 'trans' if transAngles else 'hel' ) + '.root'
+momentsFile = '%s_%s_UB_UT_%s_BkgCat050_KK30'      % ( MCProd, 'trans' if transAngles else 'hel', tResModel if tResModel else 'trueTime' )
+plotsFile   = '%s_%s_UB_UT_%s_BkgCat050_KK30.ps'   % ( MCProd, 'trans' if transAngles else 'hel', tResModel if tResModel else 'trueTime' )
+dataSetFile = '' # '%s_%s_UB_UT_%s_BkgCat050_KK30.root' % ( MCProd, 'trans' if transAngles else 'hel', tResModel if tResModel else 'trueTime' )
 
 nTupleName = 'DecayTree'
-if MCProd == 'Sim08_2011' :
+if MCProd == 'real' :
+    nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_w0_add.root'
+elif MCProd == 'Sim08' :
+    nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_20112012_Sim08_ntupleB_201309_add.root'
+elif MCProd == 'Sim08_2011' :
     nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_MC2011_Sim08a_ntupleB_20130909.root'
 elif MCProd == 'Sim08_2012' :
     nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_MC2012_ntupleB_20130904.root'
@@ -28,22 +36,67 @@ else :
     nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20121010.root'
 
 # transversity amplitudes
-A0Mag2Val    = 0.722**2 / (0.722**2 + 0.480**2 + 0.499**2) if MCProd.startswith('Sim08') else 0.775**2 / (0.775**2 + 0.490**2 + 0.400**2)
-AperpMag2Val = 0.499**2 / (0.722**2 + 0.480**2 + 0.499**2) if MCProd.startswith('Sim08') else 0.400**2 / (0.775**2 + 0.490**2 + 0.400**2)
-AparMag2Val  = 0.480**2 / (0.722**2 + 0.480**2 + 0.499**2) if MCProd.startswith('Sim08') else 0.490**2 / (0.775**2 + 0.490**2 + 0.400**2)
+A0Mag2Val    = 0.722**2 / (0.722**2 + 0.480**2 + 0.499**2) if MCProd.startswith('Sim08') else 0.5208 if MCProd == 'real'\
+               else 0.775**2 / (0.775**2 + 0.490**2 + 0.400**2)
+AperpMag2Val = 0.499**2 / (0.722**2 + 0.480**2 + 0.499**2) if MCProd.startswith('Sim08') else 0.2535 if MCProd == 'real'\
+               else 0.400**2 / (0.775**2 + 0.490**2 + 0.400**2)
+AparMag2Val  = 0.480**2 / (0.722**2 + 0.480**2 + 0.499**2) if MCProd.startswith('Sim08') else 1. - 0.5208 - 0.2535 if MCProd == 'real'\
+               else 0.490**2 / (0.775**2 + 0.490**2 + 0.400**2)
 
-A0PhVal      = 0.
-AperpPhVal   = 3.07 if MCProd.startswith('Sim08') else -0.17
-AparPhVal    = 3.30 if MCProd.startswith('Sim08') else  2.50
+A0PhVal    = 0.
+AperpPhVal = 3.07 if MCProd.startswith('Sim08') else 3.19 if MCProd == 'real' else -0.17
+AparPhVal  = 3.30 if MCProd.startswith('Sim08') else 3.26 if MCProd == 'real' else  2.50
+
+KKMassStates = dict( [ ('bin%d' % i, i) for i in range(6) ] )
+if incSWave :
+    SWaveAmps = dict(  f_S = dict(  bin0 = 0.445  if MCProd == 'real' else 0.
+                                  , bin1 = 0.064  if MCProd == 'real' else 0.
+                                  , bin2 = 0.0087 if MCProd == 'real' else 0.
+                                  , bin3 = 0.0089 if MCProd == 'real' else 0.
+                                  , bin4 = 0.045  if MCProd == 'real' else 0.
+                                  , bin5 = 0.210  if MCProd == 'real' else 0.
+                                 )
+                     , ASOddPhase = dict(  bin0 = +0.80 if MCProd == 'real' else 0.
+                                         , bin1 = +2.32 if MCProd == 'real' else 0.
+                                         , bin2 = +0.46 if MCProd == 'real' else 0.
+                                         , bin3 = -0.36 if MCProd == 'real' else 0.
+                                         , bin4 = -0.68 if MCProd == 'real' else 0.
+                                         , bin5 = -0.82 if MCProd == 'real' else 0.
+                                        )
+                     , C_SP = dict(  bin0 = 0.966 if MCProd == 'real' else 1.
+                                   , bin1 = 0.956 if MCProd == 'real' else 1.
+                                   , bin2 = 0.926 if MCProd == 'real' else 1.
+                                   , bin3 = 0.926 if MCProd == 'real' else 1.
+                                   , bin4 = 0.956 if MCProd == 'real' else 1.
+                                   , bin5 = 0.966 if MCProd == 'real' else 1.
+                                  )
+                    )
+else :
+    SWaveAmps = { }
 
 # CP violation parameters
-phiCPVal      = +0.07 if MCProd.startswith('Sim08') else -0.04
+phiCPVal    = +0.07 if MCProd.startswith('Sim08') else +0.0827 if MCProd == 'real' else -0.04
+lambCPSqVal = 0.964 if MCProd == 'real' else 1.
 
 # B lifetime parameters
-GammaVal  = 1. / 1.503 if MCProd.startswith('Sim08') else 0.679
-dGammaVal = 1. / 1.406 - 1. / 1.614 if MCProd.startswith('Sim08') else 0.060
+GammaVal  = 1. / 1.503 if MCProd.startswith('Sim08') else 0.6606 if MCProd == 'real' else 0.679
+dGammaVal = 1. / 1.406 - 1. / 1.614 if MCProd.startswith('Sim08') else 0.087 if MCProd == 'real' else 0.060
 dMVal     = 17.8
 tResSigma = 0.045
+
+# resolution model parameters
+runPeriodStates = dict( p2011 = 2011, p2012 = 2012 )
+if tResModel == '3fb' :
+    tResPars = dict(  tres_placeholder = dict( p2011 =  0.0349,  p2012 =  0.0347  )
+                    , timeResMu        = dict( p2011 = -0.00259, p2012 = -0.00333 )
+                    , timeResFrac2     = dict( p2011 =  0.242,   p2012 =  0.239   )
+                    , sf_mean_offset   = dict( p2011 =  1.4273,  p2012 =  1.4887  )
+                    , sf_mean_slope    = dict( p2011 = -1.93,    p2012 = -3.88    )
+                    , sf_sigma_offset  = dict( p2011 =  0.3857,  p2012 =  0.4143  )
+                    , sf_sigma_slope   = dict( p2011 = -0.63,    p2012 = -2.80    )
+                   )
+else :
+    tResPars = { }
 
 # plot options
 if transAngles : angleNames = ( 'cos(#psi_{tr})',  'cos(#theta_{tr})',  '#phi_{tr}' )
@@ -77,33 +130,50 @@ else :
 
 # variables in PDF
 from P2VV.RooFitWrappers import RealVar, Category
-time     = RealVar(  'time',     Title = 'Decay time',      Unit = 'ps', Observable = True, Value = 0.5, MinMax = ( 0.3, 14. ) )
-trueTime = RealVar(  'truetime', Title = 'True decay time', Unit = 'ps', Observable = True, Value = 0.,  MinMax = ( 0.,  20. ) )
-iTag     = Category( 'iTag', Title = 'Initial state flavour tag', Observable = True, States = { 'Untagged' : 0 } )
-angles   = [ angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] ]
+time      = RealVar(  'time',      Title = 'Decay time',      Unit = 'ps', Observable = True, Value = 0.5,  MinMax = ( 0.3,    14.  ) )
+trueTime  = RealVar(  'truetime',  Title = 'True decay time', Unit = 'ps', Observable = True, Value = 0.,   MinMax = ( 0.,     20.  ) )
+sigmat    = RealVar(  'sigmat',    Title = 'Time resolution', Unit = 'ps', Observable = True, Value = 0.01, MinMax = ( 0.0001, 0.12 ) )
+iTag      = Category( 'iTag',      Title = 'Initial state flavour tag', Observable = True, States = { 'Untagged' : 0 } )
+runPeriod = Category( 'runPeriod', Title = 'Running period',            Observable = True, States = runPeriodStates )
+KKMassCat = Category( 'KKMassCat', Title = 'KK-mass category',          Observable = True, States = KKMassStates )
+angles    = [ angleFuncs.angles['cpsi'], angleFuncs.angles['ctheta'], angleFuncs.angles['phi'] ]
+if weightVar :
+    weight = RealVar( weightVar, Title = 'Signal weight', Observable = True, Value = 1. )
 
-obsSet = [ time if tResModel in [ 'Gauss', '3Gauss' ] else trueTime ] + angles
+sigmat.setBins( 40, 'cache' )
+
+obsSet = [ time if tResModel in [ 'Gauss', '3fb' ] else trueTime ] + angles + [ runPeriod, KKMassCat ]
+if tResModel == '3fb' : obsSet.append(sigmat)
+if tResPars : obsSet.append(runPeriod)
+if SWaveAmps : obsSet.append(KKMassCat)
+if weightVar : obsSet.append(weight)
 
 # read ntuple
 bkgcatCut      = '(bkgcat == 0 || bkgcat == 50)'
 trackChiSqCuts = 'muplus_track_chi2ndof < 4. && muminus_track_chi2ndof < 4. && Kplus_track_chi2ndof < 4. && Kminus_track_chi2ndof < 4.'
 massCuts       = 'mass > 5200. && mass < 5550. && mdau1 > 3030. && mdau1 < 3150. && mdau2 > 990. && mdau2 < 1050.'
-timeCuts       = 'truetime > 0. && time > 0.3 && time < 14. && sigmat < 0.12'
+trueTimeCut    = 'truetime > 0.'
+timeCuts       = 'time > 0.3 && time < 14. && sigmat < 0.12'
 tagCuts        = '(tagdecision == 0 || tagdecision == -1 || tagdecision == +1)'
 
+cuts = ''
+if doSelection :
+    cuts = trackChiSqCuts + ' && ' + massCuts + ' && ' + timeCuts + ' && ' + tagCuts
+    if MCProd != 'real' :
+        cuts += ' && ' + bkgcatCut + ' && ' + trueTimeCut
+    if trigger == 'ExclBiased' :
+        cuts = 'sel == 1 && sel_cleantail==1 && hlt1_excl_biased_dec == 1 && hlt2_biased == 1 && ' + cuts
+    elif trigger == 'Unbiased' :
+        cuts = 'sel == 1 && sel_cleantail==1 && hlt1_unbiased_dec == 1 && hlt2_biased == 1 && ' + cuts
+    else :
+        cuts = 'sel == 1 && sel_cleantail==1 && (hlt1_unbiased_dec == 1 || hlt1_biased == 1) && hlt2_biased == 1 && ' + cuts
+
+readDataOpts = { }
+if cuts      : readDataOpts['ntupleCuts'] = cuts
+if weightVar : readDataOpts['WeightVar']  = ( weightVar, True )
+
 from P2VV.Utilities.DataHandling import readData
-cuts = bkgcatCut + ' && ' + trackChiSqCuts + ' && ' + massCuts + ' && ' + timeCuts + ' && ' + tagCuts
-if trigger == 'ExclBiased' :
-    cuts  = 'sel == 1 && sel_cleantail==1 && hlt1_excl_biased_dec == 1 && hlt2_biased == 1 && ' + cuts
-    data = readData(  nTupleFile, dataSetName = nTupleName, NTuple = True, observables = obsSet, ntupleCuts = cuts )
-
-elif trigger == 'Unbiased' :
-    cuts = 'sel == 1 && sel_cleantail==1 && hlt1_unbiased_dec == 1 && hlt2_biased == 1 && ' + cuts
-    data = readData(  nTupleFile, dataSetName = nTupleName, NTuple = True, observables = obsSet, ntupleCuts = cuts )
-
-else :
-    cuts = 'sel == 1 && sel_cleantail==1 && (hlt1_unbiased_dec == 1 || hlt1_biased == 1) && hlt2_biased == 1 && ' + cuts
-    data = readData(  nTupleFile, dataSetName = nTupleName, NTuple = True, observables = obsSet, ntupleCuts = cuts )
+data = readData( nTupleFile, dataSetName = nTupleName, NTuple = True, observables = obsSet, **readDataOpts )
 
 
 ###########################################################################################################################################
@@ -112,35 +182,41 @@ else :
 
 if normPdf :
     # transversity amplitudes
-    from P2VV.Parameterizations.DecayAmplitudes import JpsiVCarthesian_AmplitudeSet as Amplitudes
-    amplitudes = Amplitudes(  ReApar  = sqrt(AparMag2Val  / A0Mag2Val) * cos(AparPhVal)
-                            , ImApar  = sqrt(AparMag2Val  / A0Mag2Val) * sin(AparPhVal)
-                            , ReAperp = sqrt(AperpMag2Val / A0Mag2Val) * cos(AperpPhVal)
-                            , ImAperp = sqrt(AperpMag2Val / A0Mag2Val) * sin(AperpPhVal)
-                            , ReAS    = 0.
-                            , ImAS    = 0.
+    from P2VV.Parameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
+    amplitudes = Amplitudes(  A0Mag2 = A0Mag2Val, AperpMag2 = AperpMag2Val
+                            , AparPhase = AparPhVal - A0PhVal, AperpPhase = AperpPhVal - A0PhVal
+                            , f_S = 0., ASOddPhase = 0., C_SP = 1.
                            )
 
     # B lifetime
+    dGammaVar = dict( Value = dGammaVal )
+    if blind and 'dGamma' in blind : dGammaVar['Blind'] = blind['dGamma']
     from P2VV.Parameterizations.LifetimeParams import Gamma_LifetimeParams as LifetimeParams
-    lifetimeParams = LifetimeParams( Gamma = GammaVal, dGamma = dGammaVal, dM = dMVal )
+    lifetimeParams = LifetimeParams( Gamma = GammaVal, dGamma = dGammaVar, dM = dMVal )
 
     tResArgs = { }
     if tResModel == 'Gauss' :
         from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
         tResArgs['time']         = time
         tResArgs['timeResSigma'] = tResSigma
-    elif tResModel == '3Gauss' :
-        from P2VV.Parameterizations.TimeResolution import LP2011_TimeResolution as TimeResolution
+    elif tResModel == '3fb' :
+        from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
         tResArgs['time'] = time
+        tResArgs['sigmat'] = sigmat
+        tResArgs['Cache'] = True
+        tResArgs['PerEventError'] = True
+        tResArgs['Parameterise'] = 'RMS'
+        tResArgs['TimeResSFParam'] = 'linear'
     else :
         from P2VV.Parameterizations.TimeResolution import Truth_TimeResolution as TimeResolution
         tResArgs['time'] = trueTime
     timeResModel = TimeResolution( **tResArgs )
 
     # CP violation parameters
+    phiCPVar = dict( Value = phiCPVal )
+    if blind and 'phiCP' in blind : phiCPVar['Blind'] = blind['phiCP']
     from P2VV.Parameterizations.CPVParams import LambdaSqArg_CPParam as CPParam
-    lambdaCP = CPParam( lambdaCPSq = 1., phiCP = phiCPVal )
+    lambdaCP = CPParam( lambdaCPSq = lambCPSqVal, phiCP = phiCPVar )
 
     # tagging parameters
     from P2VV.Parameterizations.FlavourTagging import Trivial_TaggingParams as TaggingParams
@@ -148,10 +224,10 @@ if normPdf :
 
     # coefficients for time functions
     from P2VV.Parameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients as TimeBasisCoefs
-    timeBasisCoefs = TimeBasisCoefs( angleFuncs.functions, amplitudes, lambdaCP, [ 'A0', 'Apar', 'Aperp' ] )
+    timeBasisCoefs = TimeBasisCoefs( angleFuncs.functions, amplitudes, lambdaCP, [ 'A0', 'Apar', 'Aperp', 'AS' ] )
 
     # build signal PDF
-    args = dict(  time                   = time if tResModel in [ 'Gauss', '3Gauss' ] else trueTime
+    args = dict(  time                   = time if tResModel in [ 'Gauss', '3fb' ] else trueTime
                 , iTag                   = iTag
                 , tau                    = lifetimeParams['MeanLifetime']
                 , dGamma                 = lifetimeParams['dGamma']
@@ -168,14 +244,37 @@ if normPdf :
                )
 
     from P2VV.RooFitWrappers import BTagDecay
-    pdf = BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
+    protoPdf = BTagDecay( 'sig_t_angles_tagCat_iTag', **args )
 
     intSet  = [ ]
     normSet = angleFuncs.angles.values()
     if timeInt :
         # integrate over time, normalize over time + angles
-        intSet.append( time if tResModel in [ 'Gauss', '3Gauss' ] else trueTime )
+        intSet.append( time if tResModel in [ 'Gauss', '3fb' ] else trueTime )
         normSet.append( intSet[-1] )
+
+    splitCats = [ ]
+    splitPars = [ ]
+    if tResPars :
+        splitCats.append( [ runPeriod ] )
+        splitPars.append( [ ws[par] for par in tResPars.iterkeys() ] )
+    if SWaveAmps :
+        splitCats.append( [ KKMassCat ] )
+        splitPars.append( [ ws[par] for par in SWaveAmps.iterkeys() ] )
+    if splitCats :
+        # split PDF for run period and KK-mass bins
+        from P2VV.RooFitWrappers import SimultaneousPdf
+        pdf = SimultaneousPdf( protoPdf.GetName() + '_simul', MasterPdf = protoPdf
+                              , SplitCategories = splitCats, SplitParameters = splitPars )
+
+        # set values of split parameters
+        for par, vals in tResPars.iteritems() :
+            for cat, val in vals.iteritems() : ws[ par + '_' + cat ].setVal(val)
+        for par, vals in SWaveAmps.iteritems() :
+            for cat, val in vals.iteritems() : ws[ par + '_' + cat ].setVal(val)
+
+    else :
+        pdf = protoPdf
 
 
 ###########################################################################################################################################
@@ -310,7 +409,7 @@ if makePlots and normPdf :
     effCanv = TCanvas( 'effCanv', 'Efficiency' )
     for ( pad, obs, func, norm, xTitle )\
             in zip(  effCanv.pads( 2, 2 )
-                   , obsSet[ 1 : 5 ]
+                   , obsSet[ 1 : 4 ]
                    , [ effFuncCtk, effFuncCtl, effFuncPhi ]
                    , [ 1. / 4. / pi, 1. / 4. / pi, 1. / 4. ]
                    , angleNames
@@ -325,9 +424,9 @@ if makePlots and normPdf :
     timeAnglesCanv = TCanvas( 'timeAnglesCanv', 'Lifetime and Decay Angles' )
     for ( pad, obs, nBins, plotTitle, xTitle )\
             in zip(  timeAnglesCanv.pads( 2, 2 )
-                   , obsSet[ 1 : 5 ]
+                   , obsSet[ 1 : 4 ]
                    , numBins
-                   , [ var.GetTitle() for var in obsSet[ 1 : 5 ] ]
+                   , [ var.GetTitle() for var in obsSet[ 1 : 4 ] ]
                    , angleNames
                   ) :
         plot(  pad, obs, data, pdf, xTitle = xTitle
