@@ -503,9 +503,15 @@ RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
     // set branch status
     UInt_t brFound = 0;
     tree.SetBranchStatus(arg->GetName(), kTRUE, &brFound);
-    if (brFound != 1) {
+    if (brFound < 1) {
       cout << "P2VV - WARNING: TreeToRooDataSet(): branch \""
           << arg->GetName() << "\" not found in tree" << endl;
+      obsSet.remove(*arg);
+      continue;
+    } else if (brFound > 1) {
+      cout << "P2VV - WARNING: TreeToRooDataSet(): " << brFound
+          << " branches \"" << arg->GetName()
+          << "\" found in tree: not reading this branch" << endl;
       obsSet.remove(*arg);
       continue;
     }
