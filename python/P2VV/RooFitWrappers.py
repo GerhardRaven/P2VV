@@ -841,6 +841,7 @@ class RealVar (RooObject) :
 
             if 'Blind' in kwargs: # wrap the blinding class around us...
                 b = kwargs.pop('Blind')
+                print 'P2VV - INFO: RealVar: blinding parameters for %s: %s' % ( Name, b )
                 _type = b[0] if type(b[0])==str else b[0].__name__
                 _bs   = b[1]
                 _args = b[2:]
