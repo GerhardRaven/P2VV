@@ -7,7 +7,8 @@ parser.add_option('-R', '--KKmomRew', dest='KKmomRew', default = 'vertical', typ
 (options, args) = parser.parse_args()
 
 # mc input File    
-mcTuplePath = [ '/project/bfys/vsyropou/data/P2VVDataSetsMC11a_noKKMassBins_2TagCats_forReweighting_part%s.root'%n for n in [1,2] ]
+#mcTuplePath = [ '/project/bfys/vsyropou/data/P2VVDataSetsMC11a_noKKMassBins_2TagCats_forReweighting_part%s.root'%n for n in [1,2] ]
+mcTuplePath = '/project/bfys/vsyropou/data/temp.root'
 mcTupleName = 'JpsiKK'
 
 # sData input file
@@ -34,7 +35,7 @@ NumbOfIterations     = 7
 physWeightName       = 'weightPhys'
 kinematicRewApproach = options.KKmomRew
 
-initialFitOnData = False
+initialFitOnData = True
 makePlots        = True
 plotAfterFitting = False
 canvs            = {}
@@ -66,7 +67,8 @@ else:
 ################################
 # import stuff  initialize objects.
 from P2VV.Utilities.MCReweighting import MatchPhysics, MatchWeightedDistributions, compareDistributions,\
-                                         BuildBs2JpsiKKFit, TwoDimentionalVerticalReweighting, cleanP2VVPlotStash
+                                         BuildBs2JpsiKKFit, TwoDimentionalVerticalReweighting, OneDimentionalVerticalReweighting,\
+                                         cleanP2VVPlotStash, destroyRootObject
 from P2VV.Utilities.DataMoments import RealMomentsBuilder
 from P2VV.Utilities.Plotting import plot
 from P2VV.RooFitWrappers import RooObject, RealEffMoment
@@ -110,7 +112,8 @@ KKMassCat  = Bs2JpsiKKFit.getPdf().indexCat()
 condObsSet = Bs2JpsiKKFit.getPdf().ConditionalObservables().union( set([KKMassCat]) )
 
 # get projection dataset for ploting.
-projDataSet = Bs2JpsiKKFit.getDataSet().reduce( RooArgSet(condObsSet) )
+if makePlots==True and plotAfterFitting==True:
+    projDataSet = Bs2JpsiKKFit.getDataSet().reduce( RooArgSet(condObsSet) )
 
 # initialise kinematic reweighting classs
 KinematicReweight = MatchWeightedDistributions( inTree         = None,                      # Source: Distribution to be altered 
@@ -119,7 +122,7 @@ KinematicReweight = MatchWeightedDistributions( inTree         = None,          
                                                 inWeightName   = physWeightName,
                                                 outWeightName  = sWeightsName if not convergeTest else convergeTestWeights,
                                                 observables    = angles + time + mcTime,
-                                                nonObsVars     = muMomenta + Kmomenta + Bmomenta + KKMass,  
+                                                nonObsVars     = muMomenta + Kmomenta + Bmomenta + KKMass,
                                                 nBins          = 1000                       # preceision of the transformation
                                                 ) 
 
@@ -140,13 +143,14 @@ if initialFitOnData:
 for iterNumb in range( 1, NumbOfIterations + 1 ):
     print 'P2VV - INFO: Iteratitive procedure, begining of iteration %s.'%str(iterNumb)
 
+    # save memory
+    cleanP2VVPlotStash()
+    if iterNumb > 1: destroyRootObject(PhysicsReweight.getDataSet(weighted=True))
+
     # match mc physics to sData
     PhysicsReweight.calculateWeights( iterNumb, dataParameters )
-    PhysicsReweight.writeWeights( weightsName=physWeightName)
+    PhysicsReweight.writeWeights( weightsName=physWeightName )
     
-    # clean plot stash to save memory
-    cleanP2VVPlotStash()
-
     # reweight track momenta
     if kinematicRewApproach == 'vertical':
         reweightedData = TwoDimentionalVerticalReweighting(PhysicsReweight.getDataSet(),      # source distribution
@@ -155,13 +159,13 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
                                                            ['Kplus_P','Kminus_P'],            # variables to reweight
                                                            'MomRew',                          # weights name
                                                            SourceWeightName = physWeightName, # weight name of the source if any
+                                                           TargetWeightName = sWeightsName,
                                                            iterationNumber  = iterNumb        
                                                            )
     elif kinematicRewApproach == 'horizontal':
         KinematicReweight.reweight( iterNumb, PhysicsReweight.getDataSet(weighted=True) )
         reweightedData = KinematicReweight.getDataSet()
 
-    assert False
     if makePlots: # plot data after each reweighting step
         compPlots = compareDistributions( mcData          = PhysicsReweight.getDataSet(),
                                           mcDataPhysRew   = PhysicsReweight.getDataSet(weighted=True),
@@ -169,7 +173,6 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
                                           sData           = Bs2JpsiKKFit.getDataSet(),
                                           obsSet          = angles + time + muMomenta + Kmomenta + Bmomenta + KKMass,
                                           itNumb          = iterNumb,
-                                         ## physWeightsName = physWeightName,
                                           nullTest        = True if convergeTest else False 
                                           )
         # plot physics matching weights
@@ -215,6 +218,8 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
     # collect garbage
     import gc
     gc.collect()
+    
+
 
 
 
