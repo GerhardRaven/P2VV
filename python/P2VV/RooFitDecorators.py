@@ -463,7 +463,7 @@ def _RooFitResultPrint( self, **kwargs ) :
             nomErr  = ( 0.5 * ( nomPar[2]        - nomPar[1]        ) ) if nomPar[1] < 0.     else nomPar[1]
             dev = (  ( '{0:<+10.%df}' % ( prec + 1 ) ).format( par.getVal() - nomPar[0] )
 #                   , '{0:<+6.3f}'.format( 2. * ( par.getVal() - nomPar[0] ) / ( thisErr + nomErr ) )
-                   , '{0:<+6.3f}'.format( ( par.getVal() - nomPar[0] ) / thisErr )
+                   , '{0:<+6.3f}'.format( ( par.getVal() - nomPar[0] ) / nomErr )
                   )
 
         else :

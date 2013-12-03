@@ -21,8 +21,8 @@ dataPath            = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
 
 plotsFile     = 'temp.ps'   #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.ps'
 plotsROOTFile = 'temp.root' #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.root'
-parFileIn     = '20112012Reco14DataFitValues.par' # '20112012Reco14DataFitValues_4KKMassBins.par' # '20112012Reco14DataFitValues.par'
-parFileOut    = ''
+parFileIn     = '20112012Reco14DataFitValues_6KKMassBins.par' # '20112012Reco14DataFitValues_4KKMassBins.par'
+parFileOut    = ( 'parameterEstimates.par', dict( Format = 'common' ) )
 
 if generateData :
     dataSetName = 'JpsiphiData'
@@ -35,6 +35,7 @@ elif pdfConfig['sFit'] :
         dataSetFile = dataPath + 'P2VVDataSets2012Reco14_I2DiegoMass_6KKMassBins_2TagCats.root'
     else :
         dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2DiegoMass_6KKMassBins_2TagCats.root'
+        #dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_exclBiased_narrowKKMass_2TagCats.root'
 else :
     dataSetName = 'JpsiKK'
     dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats.root'
@@ -87,7 +88,7 @@ elif pdfConfig['runPeriods'] == [ 2011, 2012 ] :
     pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] )['file'] = timeEffFile2012
 
 pdfConfig['anglesEffType'] = 'weights'  # 'weights' # 'basis012' # 'basisSig4'
-pdfConfig['angEffMomsFiles'] = dataPath + 'Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
+pdfConfig['angEffMomsFiles'] = dataPath + 'Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm' # 'Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_norm'
 #angEffMomsFiles = SimulCatSettings('angEffMomsFiles')
 #angEffMomsFiles.addSettings( [ 'KKMassCat' ], [ [ 'bin0', 'bin1', 'bin2' ] ]
 #                            , dataPath + 'Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK09901020_Phys_moms_norm'
@@ -124,17 +125,16 @@ pdfConfig['obsDict']['KKMass'] = ( KKMassPars[0], KKMassPars[1], KKMassPars[2]
 
 pdfConfig['lambdaCPParam'] = 'lambPhi' # 'lambPhi_CPVDecay_PSWaves'  # 'lambPhi'
 
-#pdfConfig['splitParams'] = dict(  KKMassCat = [ 'f_S', 'ASOddPhase' ]
-#                                , runPeriod = [ 'tagCatCoef0_1' ] # [ 'Gamma' ] # [ 'betaTimeEff' ] # [ 'tagCatCoef0_1' ]
-#                               )
-#pdfConfig['splitParams']['runPeriod'] = [ 'Gamma' ]
-
 #pdfConfig['externalConstr'].pop('dM')
 #pdfConfig['externalConstr']['dM']          = (  17.768, 0.024  )
 #pdfConfig['externalConstr'].pop('betaTimeEff')
 #pdfConfig['externalConstr']['betaTimeEff'] = ( -0.0083, 0.004  )
 #pdfConfig['externalConstr']['timeResSigmaSF'] = (  1.45,   0.06   )
 #pdfConfig['externalConstr']['sf_mean_offset'] = (  1.45,   0.06   )
+
+#for par in [ 'tres_placeholder', 'timeResMu', 'timeResFrac2', 'sf_mean_offset', 'sf_mean_slope', 'sf_sigma_offset', 'sf_sigma_slope' ] :
+#    pdfConfig['splitParams']['runPeriod'].remove(par)
+#    pdfConfig['externalConstr'].pop(par)
 
 dGammaVal = 0.108
 dMVal     = 17.647
@@ -648,9 +648,13 @@ else :
 
 if parFileOut :
     # write parameters to file
+    filePath = parFileOut[0] if type(parFileOut) != str else parFileOut
+    fileOpts = parFileOut[1] if type(parFileOut) != str else { }
     pdfConfig.getParametersFromPdf( pdf, fitData )
-    pdfConfig.writeParametersToFile(  filePath = parFileOut
-                                    , FitStatus = ( fitResult.status(), fitResult.minNll(), fitResult.edm() ) if fitResult else ( )
+    pdfConfig.writeParametersToFile(  filePath = filePath
+                                    , FitStatus = ( fitResult.status(), fitResult.minNll(), fitResult.edm() )\
+                                                  if fitResult else ( -1, 0., 0. )
+                                    , **fileOpts
                                    )
 
 
@@ -688,7 +692,7 @@ if makeObservablePlots or makeKKMassPlots or dllPars :
             projWDataSet += [ cat for cat in pdf.indexCat().inputCatList() ]
 
     if projWDataSet :
-        bulkData = dataSet.reduce( CutRange = 'Bulk' )
+        #bulkData = dataSet.reduce( CutRange = 'Bulk' )
         projWData         = dict( ProjWData = ( dataSet.reduce(  ArgSet = projWDataSet     ), False ) )
         #projWDataBulk     = dict( ProjWData = ( bulkData.reduce( ArgSet = projWDataSet     ), False ) )
         print 'JvLFit: plot projection data sets:'
@@ -786,14 +790,11 @@ if makeObservablePlots :
     SPdfCust.replaceArg( ws['AperpMag2'], zeroCust )
     SPdf = SPdfCust.build()
 
-    polSet = RooArgSet( AparMag2Cust, ws['A0Mag2'], ws['AperpMag2'], ws['AparPhase'], ws['AperpPhase'] )
+    polSet = RooArgSet( zeroCust, AparMag2Cust, ws['A0Mag2'], ws['AperpMag2'] )
     if pdfConfig['paramKKMass'] :
-        for bin in range( pdfBuild['KKMassBinning'].numBins() ) :
-            polSet.add( ws[ 'f_S_bin%d' % bin ] )
-            polSet.add( ws[ 'ASOddPhase_bin%d' % bin ] )
+        for bin in range( pdfBuild['KKMassBinning'].numBins() ) : polSet.add( ws[ 'f_S_bin%d' % bin ] )
     else :
         polSet.add( ws['f_S'] )
-        polSet.add( ws['ASOddPhase'] )
 
     print 'JvLFit: plot PDF polarization parameters:'
     print 'total:'

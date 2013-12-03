@@ -148,15 +148,17 @@ def readData( filePath, dataSetName, NTuple = False, observables = None, **kwarg
     if observables :
         print 'P2VV - INFO: readData: reading data for observables [ %s ]' % ', '.join( obs.GetName() for obs in observables )
 
+    dataSetArgs = { }
+    if 'WeightVar' in kwargs : dataSetArgs['WeightVar'] = kwargs.pop('WeightVar')
     if NTuple :
-      from ROOT import RooDataSet, TChain
+      from ROOT import RooDataSet, TFile
       assert observables != None, 'P2VV - ERROR: readData: set of observables is required for reading an n-tuple'
 
       # create data set from NTuple file(s)
-      print 'P2VV - INFO: readData: reading NTuple(s) "%s" from file(s) "%s"' % ( dataSetName, filePath )
-      chain = TChain(dataSetName)
-      status = chain.Add( filePath, -1 )
-      if status == 0 : raise RuntimeError( 'P2VV - ERROR: could not locate tree "%s" in file "%s"' % ( dataSetName, filePath ) )
+      print 'P2VV - INFO: readData: reading NTuple "%s" from file "%s"' % ( dataSetName, filePath )
+      ntupleFile = TFile.Open(filePath)
+      ntupleOrig = ntupleFile.Get(dataSetName)
+      if not ntupleOrig : raise RuntimeError( 'P2VV - ERROR: could not locate tree "%s" in file "%s"' % ( dataSetName, filePath ) )
 
       if 'ntupleCuts' in kwargs :
           ntupleCuts = kwargs.pop( 'ntupleCuts', '' )
@@ -178,17 +180,20 @@ def readData( filePath, dataSetName, NTuple = False, observables = None, **kwarg
           os.close(fd)
           os.remove(temp_name)
           tmp_file = TFile.Open(temp_name, 'recreate')
-          ntuple = chain.CopyTree(ntupleCuts)
+          ntuple = ntupleOrig.CopyTree(ntupleCuts)
       else :
-          ntuple = chain
+          ntuple = ntupleOrig
 
       if cuts : print 'P2VV - INFO: readData: applying cuts on data set: %s' % cuts
-      data = RooDataSet( dataSetName, dataSetName
+      data = RooDataSet(  dataSetName, dataSetName
                        , [ obs._var for obs in observables ]
                        , Import = ntuple
-                       , Cut = noNAN + ' && ' + cuts if cuts else noNAN )
+                       , Cut = noNAN + ' && ' + cuts if cuts else noNAN
+                       , **dataSetArgs
+                       )
       ntuple.IsA().Destructor(ntuple)
-      if chain : chain.IsA().Destructor(chain)
+      if ntupleOrig : ntupleOrig.IsA().Destructor(ntupleOrig)
+      ntupleFile.Close()
 
     else :
       from ROOT import TFile
@@ -215,6 +220,7 @@ def readData( filePath, dataSetName, NTuple = False, observables = None, **kwarg
                                    , [ obs._var for obs in observables ]
                                    , Import = dataSet
                                    , Cut = noNAN + ' && ' + cuts if cuts else noNAN
+                                   , **dataSetArgs
                                    )
               else :
                   data = dataSet

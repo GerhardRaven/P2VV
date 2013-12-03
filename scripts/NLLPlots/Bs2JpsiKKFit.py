@@ -2,11 +2,13 @@
 ## set script parameters ##
 ###########################
 
-testParNames = [ 'delSDelta' ]
+# NLL parameters
+testParNames = [ 'ASOddPhase_bin2' ]
 nllParVals = [ ] # [ [ -3.8 + 4.3 / 1000. * float(it) ] for it in range(1001) ]
-fitParVals = [ [ -0.7 ], [ -0.6 ], [ -0.5 ], [ -0.4 ], [ -0.3 ] ]
+fitParVals = [ ] # [ [ -0.7 ], [ -0.6 ], [ -0.5 ], [ -0.4 ], [ -0.3 ] ]
 outDirPath = './nllVals/'
 jobID = 'delSDelta'
+deltaSDiff = ( ) # ( 'ASOddPhase_bin0', 'ASOddPhase_bin3' )
 
 indexWidth = 4
 startIndex = 0
@@ -16,12 +18,11 @@ from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_RunIAnalysis as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
-parFileIn  = '20112012Reco14DataFitValues_4KKMassBins.par'
+parFileIn  = ''
 
 dataPath    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
 dataSetName = 'JpsiKK_sigSWeight'
-dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_4KKMassBins_2TagCats.root'
-deltaSDiff  = ( 'ASOddPhase_bin0', 'ASOddPhase_bin3' )
+dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2DiegoMass_6KKMassBins_2TagCats.root'
 
 # fit options
 fitOpts = dict(  NumCPU    = 8
@@ -33,17 +34,11 @@ corrSFitErrCats         = [ 'runPeriod', 'KKMassCat' ]
 randomParVals           = ( ) # ( 1., 12345 )
 
 # PDF options
-pdfConfig['timeResType'] = 'eventNoMean'
-pdfConfig['externalConstr']['timeResSigmaSF'] = ( 1.45, 0. )
-
 pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file']\
         = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
 pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] )['file']\
         = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
 pdfConfig['angEffMomsFiles'] = dataPath + 'Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
-
-pdfConfig['KKMassBinBounds'] = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ]
-pdfConfig['CSPValues']       = [ 0.966, 0.797, 0.797, 0.966 ]
 
 
 ###########################################################################################################################################
@@ -96,8 +91,8 @@ testPars = [ pdfPars.find(name) for name in testParNames ]
 
 
 ###########################################################################################################################################
-## fit data ##
-##############
+## get NLL values ##
+####################
 
 # fix values of some parameters
 for CEvenOdds in pdfBuild['taggingParams']['CEvenOdds'] :
