@@ -878,7 +878,6 @@ if splitDataSet :
         preDS = dataSets['preS'][0].reduce( Cut = sample[1] )
         mainDSList.append( dataTree.buildDataSet( Observables = obsSetMain, Name = 'JpsiKK_' + sample[0], Title = 'JpsiKK'
                                                  , IndexName = 'index', OrigDataSet = preDS ) )
-        preDS.IsA().Destructor(preDS)
         mainDS.append( mainDSList[-1] )
 
 else :
@@ -887,9 +886,6 @@ else :
                                 , OrigDataSet = dataSets['preS'][0] )
 
 dataSets['main'] = ( mainDS, mainDSList )
-if dataSets['preS'][0] : dataSets['preS'][0].IsA().Destructor(dataSets['preS'][0])
-if dataSets['pre'][0]  : dataSets['pre'][0].IsA().Destructor(dataSets['pre'][0])
-if dataTree            : dataTree.IsA().Destructor(dataTree)
 dataSets.pop('pre')
 dataSets.pop('preS')
 dataTreeFile.Close()

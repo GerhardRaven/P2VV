@@ -144,7 +144,6 @@ if nllParVals :
         nllFile.write( ': {0:+.16g}\n'.format( nll.getVal() ) )
 
     nllFile.close()
-    nll.IsA().Destructor(nll)
 
 # fit data in loop
 maxLenFitParName = max( len( par.GetName() ) for par in testPars )
@@ -182,4 +181,3 @@ for valIt, parVals in enumerate(fitParVals) :
     pdfConfig.writeParametersToFile( filePath = outDirPath + 'fitPars_' + jobID + filePF + '.par'
                                     , FitStatus = ( fitResult.status(), fitResult.minNll(), fitResult.edm() ) )
 
-    fitResult.IsA().Destructor(fitResult)

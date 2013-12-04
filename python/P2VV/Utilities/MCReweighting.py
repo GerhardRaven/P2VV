@@ -135,7 +135,7 @@ def compareDistributions( **kwargs ):
         legend.Draw()
     _P2VVPlotStash.append(legend) # keep reference to the legend
     
-    mcAfterPhysRew.IsA().Destructor(mcAfterPhysRew)
+    mcAfterPhysRew.Delete()
     return [obsCanv,KaonCanv,muonCanv,assymKaonCanv,assymMuonCanv,momFrame]
 
 
@@ -229,7 +229,7 @@ def _combineDataSetParts( files, name, weightName='' ):
         if not ws[arg.GetName()]: ws.put(arg) 
 
     # destroy and delete unnecessary stuff
-    for d in dataSets: d.IsA().Destructor(d)
+    for d in dataSets: d.Delete()
     del dataSets
     return data
 
@@ -418,7 +418,7 @@ class MatchPhysics( ):
         print 'P2VV - INFO: Phyisics matching weights added to dataset: '+'MC_physicsReweighted_%s_iteration'%self._iterNumb
 
         del self._physWeights, weightsVar, weightsArgSet, 
-        weightsDataSet.IsA().Destructor(weightsDataSet)
+        weightsDataSet.Delete()
         
     
 
@@ -898,7 +898,7 @@ class BuildBs2JpsiKK2011sFit():
 
         # create fit data
         self._fitData = self._pdfConfig['signalData'].reduce(pdfObs)
-        self._pdfConfig['signalData'].IsA().Destructor(self._pdfConfig['signalData'])
+        self._pdfConfig['signalData'].Delete()
         
         # float/fix values of some parameters
         for CEvenOdds in self._pdfBuild['taggingParams']['CEvenOdds'] :
