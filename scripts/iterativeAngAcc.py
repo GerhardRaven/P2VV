@@ -6,69 +6,55 @@ parser = OptionParser()
 parser.add_option('-R', '--KKmomRew', dest='KKmomRew', default = 'vertical', type='str', help='KK momentum reweighting approach (vertical/horizontal)')
 (options, args) = parser.parse_args()
 
-# mc input File    
-#mcTuplePath = [ '/project/bfys/vsyropou/data/P2VVDataSetsMC11a_noKKMassBins_2TagCats_forReweighting_part%s.root'%n for n in [1,2] ]
-mcTuplePath = '/project/bfys/vsyropou/data/temp.root'
-mcTupleName = 'JpsiKK'
-
-# sData input file
-sDataPath    = '/project/bfys/vsyropou/data/P2VVDataSets2011Reco12_wideKKMass_noKKMassBins_2TagCats_forReweighting.root'
-sDataName    = 'JpsiKK_sigSWeight' # 'DecayTree' # 'JpsiKK_sigSWeight', # JpsiKK
-sWeightsName = 'N_sigMass_sw'      # 'sWeight'   # 'N_sigMass_sw'       # 'weightVar'
-
-# time acceptance
-from P2VV.Parameterizations.FullPDFs import SimulCatSettings
-timeEffType = 'paper2012' 
-timeEffHistFiles = SimulCatSettings('timeEffHistFiles')
-timeEffPath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/'
-timeEffHistFiles.addSettings( '', '', dict(  file      = timeEffPath + 'Bs_HltPropertimeAcceptance_Data-20120816.root'
-                                           , hlt1UB    = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
-                                           , hlt1ExclB = 'Bs_HltPropertimeAcceptance_PhiMassWindow30MeV_NextBestPVCut_Data_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached')
-                              )
-
-# nominal angular acceptance file
-angEffMomentsFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
-anglesEffType = 'weights' 
+MCProd = 'Sim08'
 
 # varius flags / names
 NumbOfIterations     = 7
 physWeightName       = 'weightPhys'
 kinematicRewApproach = options.KKmomRew
 
-initialFitOnData = True
+initialFitOnData = False
 makePlots        = True
 plotAfterFitting = False
 canvs            = {}
 
-# parameters / flags for varius xChecks
-devel        = False
-convergeTest = False
-untaggedFit  = False  
-convergeTestDataFile = '/project/bfys/vsyropou/data/P2VVDataSetsMC2012_wideKKMass_noKKMassBins_2TagCats_TrivialWeights_forReweighting.root'
-convergeTestSourceDataName = 'source'
-convergeTestTargetDataName = 'target'
-convergeTestWeights        = 'trivialWeights'
+# nominal angular acceptance file
+angEffMomentsFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
 
-# import data parameters obtained from an initial fit to data
-if not convergeTest: 
-    from P2VV.Utilities.MCReweighting import parValuesNoKKBinsWideKKWindow as dataParameters,\
-                                             parValuesMc2011Gen as monteCarloParameters
-else: 
-    from P2VV.Utilities.MCReweighting import parValuesMc2012Fit as dataParameters, \
-                                             parValuesMc2012Fit as monteCarloParameters
-    mcTuplePath  = convergeTestDataFile
-    mcTupleName  = convergeTestSourceDataName
-    sDataPath    = convergeTestDataFile
-    sDataName    = convergeTestTargetDataName
-    sWeightsName = convergeTestWeights 
+# set dataset paths and physics and physics parameters parameters for data and mc gen
+if MCProd == 'Sim08':
+    # source distribution
+    mcTuplePath = '/project/bfys/vsyropou/data/iterativeProcedure/Bs2JpsiPhi_20112012_Sim08_ntupleB_201309_add_afterFullSel_trackMom_BMom.root'
+    mcTupleName = 'DecayTree'
+
+    # target distribution
+    sDataPath    = '/project/bfys/vsyropou/data/iterativeProcedure/P2VVDataSets20112012Reco14_I2DiegoMass_6KKMassBins_2TagCats_trackMom_BMom.root'
+    sDataName    = 'JpsiKK_sigSWeight'
+    sWeightsName = 'sWeights_ipatia'
+    
+    from P2VV.Utilities.MCReweighting import parValues6KKmassBins20112012 as dataParameters
+    from P2VV.Utilities.MCReweighting import parValuesMcSim08_6KKmassBins as monteCarloParameters
+
+elif MCProd == 'Sim06':
+    mcTuplePath = [ '/project/bfys/vsyropou/data/iterativeProcedure/P2VVDataSetsMC11a_noKKMassBins_2TagCats_forReweighting_part%s.root'%n for n in [1,2] ]
+    mcTupleName = 'JpsiKK'
+
+    # sData input file
+    sDataPath    = '/project/bfys/vsyropou/data/iterativeProcedure/P2VVDataSets2011Reco12_wideKKMass_noKKMassBins_2TagCats_forReweighting.root'
+    sDataName    = 'JpsiKK_sigSWeight'
+    sWeightsName = 'N_sigMass_sw'
+
+    from P2VV.Utilities.MCReweighting import parValuesNoKKBinsWideKKWindow as dataParameters
+    from P2VV.Utilities.MCReweighting import parValuesMc2011Gen as monteCarloParameters
 
 ###########################################################################################################################
 ## Begin iterative procedure  ##
 ################################
-# import stuff  initialize objects.
-from P2VV.Utilities.MCReweighting import MatchPhysics, MatchWeightedDistributions, compareDistributions,\
-                                         BuildBs2JpsiKKFit, TwoDimentionalVerticalReweighting, OneDimentionalVerticalReweighting,\
-                                         cleanP2VVPlotStash, destroyRootObject
+if kinematicRewApproach == 'vertical':  
+    from P2VV.Utilities.MCReweighting import TwoDimentionalVerticalReweighting, OneDimentionalVerticalReweighting
+elif kinematicRewApproach == 'horizontal': 
+    from P2VV.Utilities.MCReweighting import MatchWeightedDistributions
+from P2VV.Utilities.MCReweighting import MatchPhysics, compareDistributions, BuildBs2JpsiKKFit, cleanP2VVPlotStash, destroyRootObject
 from P2VV.Utilities.DataMoments import RealMomentsBuilder
 from P2VV.Utilities.Plotting import plot
 from P2VV.RooFitWrappers import RooObject, RealEffMoment
@@ -79,62 +65,44 @@ from math import pi, sqrt
 # define a workspace
 worksp = RooObject( workspace = 'iterativeProcedure' ).ws()
 
-# build data pdf and prepare the sFit ( This pdf is not multiplied by the angular acceptance ).
-Bs2JpsiKKFit = BuildBs2JpsiKKFit( dataSetPath     = sDataPath,
-                                  dataSetName     = sDataName,
-                                  weightsName     = sWeightsName,
-                                  timeEffHistFile = timeEffHistFiles, 
-                                  KKmassBins      = None,  
-                                  doUntaggedFit   = True if untaggedFit else False,
-                                  doNullTest      = True if convergeTest else False
-                                  )
+# build data pdf and prepare the sFit ( This pdf will not be multiplied by the angular acceptance ).
+Bs2JpsiKKFit = BuildBs2JpsiKKFit( dataSetPath = sDataPath, dataSetName = sDataName, weightsName = sWeightsName )
 
 # initialise physics matching class and build MC pdf
-PhysicsReweight = MatchPhysics( mcTuplePath, 
-                                nTupleName          = mcTupleName,
-                                mcParameters        = monteCarloParameters, 
-                                timeEffType         = timeEffType,
-                                timeEffHistFiles    = timeEffHistFiles,
-                                anglesEffType       = anglesEffType,
-                                angEffMomsFiles     = angEffMomentsFile,
-                                monteCarloParams    = monteCarloParameters
-                                )
+PhysicsReweight = MatchPhysics( mcTuplePath,  mcTupleName, MonteCarloProduction = MCProd )
 
 # get observables
-angles     = Bs2JpsiKKFit.getObservables('angles') 
-time       = Bs2JpsiKKFit.getObservables('time') # reconstructed decay time
-mcTime     = PhysicsReweight.getMcTime()         # true / reco decay time
+angles     = [worksp[o] for o in ['helcosthetaK','helcosthetaK','helphi']]
+time       = [worksp['time']]
+truetime   = [worksp['truetime']]
 muMomenta  = [worksp[o] for o in [ '%s_%s' % ( part, comp ) for part in ['muplus','muminus'] for comp in ('P','PX','PY','PZ') ]    ]
 Kmomenta   = [worksp[o] for o in [ '%s_%s' % ( part, comp ) for part in ['Kplus','Kminus']   for comp in ('P','PX','PY','PZ') ]    ]
 Bmomenta   = [ worksp['B_P'], worksp['B_Pt'] ]
 KKMass     = [worksp['mdau2']]
 KKMassCat  = Bs2JpsiKKFit.getPdf().indexCat()
-condObsSet = Bs2JpsiKKFit.getPdf().ConditionalObservables().union( set([KKMassCat]) )
-
-# get projection dataset for ploting.
-if makePlots==True and plotAfterFitting==True:
-    projDataSet = Bs2JpsiKKFit.getDataSet().reduce( RooArgSet(condObsSet) )
 
 # initialise kinematic reweighting classs
-KinematicReweight = MatchWeightedDistributions( inTree         = None,                      # Source: Distribution to be altered 
-                                                outTree        = Bs2JpsiKKFit.getDataSet(), # Target: Distribution to be matched with
-                                                reweightVars   = ['Kminus_P'],              # Variables that enter the transformation
-                                                inWeightName   = physWeightName,
-                                                outWeightName  = sWeightsName if not convergeTest else convergeTestWeights,
-                                                observables    = angles + time + mcTime,
-                                                nonObsVars     = muMomenta + Kmomenta + Bmomenta + KKMass,
-                                                nBins          = 1000                       # preceision of the transformation
-                                                ) 
+if kinematicRewApproach == 'horizontal':
+    KinematicReweight = MatchWeightedDistributions( outTree        = Bs2JpsiKKFit.getDataSet(), # Target: Distribution to be matched with
+                                                    reweightVars   = ['Kminus_P'],              # Variables that enter the transformation
+                                                    inWeightName   = physWeightName,
+                                                    outWeightName  = sWeightsName,
+                                                    observables    = angles + time + truetime,
+                                                    nonObsVars     = muMomenta + Kmomenta + Bmomenta + KKMass,
+                                                    nBins          = 1000                       # preceision of the transformation
+                                                    ) 
 
 # perform initial fit on data with the nominal angular acceptance
 if initialFitOnData:
     Bs2JpsiKKFit.doFit( angAccFile=angEffMomentsFile )
     if makePlots and plotAfterFitting:
-            canvs['nomFit'] = TCanvas( 'initFit', 'intFit' )
-            canvs['nomFit'].Divide(2,2)
-            for can, obs, Logy in zip( [ canvs['nomFit'].cd(i) for i in [1,2,3,4]],  angles + time, 3*[False] + [True] ):
-                plot( can, obs,Bs2JpsiKKFit.getDataSet(), Bs2JpsiKKFit.getPdf(), plotResidHist=True, logy=Logy,  
-                      pdfOpts=dict( ProjWData=projDataSet ) )
+        condObsSet = Bs2JpsiKKFit.getPdf().ConditionalObservables().union( set([KKMassCat]) )
+        projDataSet = Bs2JpsiKKFit.getDataSet().reduce( RooArgSet(condObsSet) )
+        canvs['nomFit'] = TCanvas( 'initFit', 'intFit' )
+        canvs['nomFit'].Divide(2,2)
+        for can, obs, Logy in zip( [ canvs['nomFit'].cd(i) for i in [1,2,3,4]],  angles + time, 3*[False] + [True] ):
+            plot( can, obs,Bs2JpsiKKFit.getDataSet(), Bs2JpsiKKFit.getPdf(), plotResidHist=True, logy=Logy,  
+                  pdfOpts=dict( ProjWData=projDataSet ) )
             canvs['nomFit'].Print('sFit_nom.pdf')
     # Update the data parameter values with the ones obtained from the fit 
     Bs2JpsiKKFit.updateDataParameters( dataParameters )
@@ -171,25 +139,22 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
                                           mcDataPhysRew   = PhysicsReweight.getDataSet(weighted=True),
                                           MomRewData      = reweightedData,
                                           sData           = Bs2JpsiKKFit.getDataSet(),
-                                          obsSet          = angles + time + muMomenta + Kmomenta + Bmomenta + KKMass,
+                                          obsSet          = angles + muMomenta + Kmomenta + Bmomenta + KKMass,
                                           itNumb          = iterNumb,
-                                          nullTest        = True if convergeTest else False 
                                           )
         # plot physics matching weights
         PhysicsReweight.plotWeights()
     assert False
     # compute angular efficiency moments for the new reweighted MC sample.##
-    nominalEffMoms = 'hel_UB_UT_trueTime_BkgCat050_KK30' # efficeincy moments output file 
-    effMomentsFile = nominalEffMoms + '_Phys_%s_Iteration'%iterNumb 
+    nominalEffMoms = 'hel_UB_UT_trueTime_BkgCat050_KK30'              # standard eff moments output file 
+    effMomentsFile = nominalEffMoms + '_Phys_%s_Iteration'%iterNumb   # o
     effWeightsFile = nominalEffMoms + '_weights_%s_Iteration'%iterNumb
     
-    angleFuncs  = PhysicsReweight.getAngleFunctions()    # grab angular functions from mc pdf
-    PhysicsReweight.setDataFitParameters(dataParameters) # set data pars to pdf (reweighted data has the data physics.)
-
     # build and write effciency moments.
+    PhysicsReweight.setDataFitParameters(dataParameters) # set data pars to pdf (reweighted data has the data physics.)
     physMoments = RealMomentsBuilder( Moments = ( RealEffMoment( Name = func.GetName(), BasisFunc = func,
                                                                  Norm = 1., PDF = PhysicsReweight.getPdf(), IntSet = [ ], NormSet = angles )\
-                                                      for complexFunc in angleFuncs.functions.itervalues() for func in complexFunc if func )
+                                                      for complexFunc in PhysicsReweight.getAngleFunctions().functions.itervalues() for func in complexFunc if func )
                                       )
     
     scaleFactor = 1 / 16. / sqrt(pi) # scale all efficiency weights 
