@@ -107,23 +107,26 @@ class RooObject(object) :
         if not hasattr(ws, '_mappings') :  ws._mappings    = {}
         if not hasattr(ws, '_spec') :      ws._spec        = {} # factory string -> object
 
-    def _rooobject(self,Name) :
+    @staticmethod
+    def _rooobject(Name) :
         # get name string
         if type(Name) != str : Name = Name.GetName()
 
-        if Name not in self.ws()._rooobjects :
+        if not RooObject._ws : raise RuntimeError('No workspace defined!')
+        ws = RooObject._ws
+        if Name not in ws._rooobjects :
             # object is not in work space dictionary of RooObjects
-            if Name in self.ws() :
+            if Name in ws:
                 # try to create a RooObject wrapper if the requested object exists in work space
                 import ROOT
-                if   isinstance( self.ws()[Name], ROOT.RooRealVar  ) : return RealVar(Name)
-                elif isinstance( self.ws()[Name], ROOT.RooCategory ) : return Category(Name)
+                if   isinstance( ws[Name], ROOT.RooRealVar  ) : return RealVar(Name)
+                elif isinstance( ws[Name], ROOT.RooCategory ) : return Category(Name)
             else :
                 # object does not exist
                 raise KeyError, 'P2VV - ERROR: RooObject._rooobject(): object does not exist (%s)' % Name
 
         # return object
-        return self.ws()._rooobjects[Name]
+        return ws._rooobjects[Name]
 
     # WARNING: the object 'o' given to _addObject should NEVER be used again
     # instead, use the item returned by _addObject
@@ -220,9 +223,9 @@ class RooObject(object) :
         return self.GetName()
 
     def Observables(self) :
-        return set( self._rooobject(i) for i in self._var.getVariables() if i.getAttribute('Observable') )
+        return set( RooObject._rooobject(i) for i in self._var.getVariables() if i.getAttribute('Observable') )
     def Parameters(self) :
-        return set( self._rooobject(i) for i in self._var.getVariables() if not i.getAttribute('Observable') )
+        return set( RooObject._rooobject(i) for i in self._var.getVariables() if not i.getAttribute('Observable') )
 
     ## FIXME: Should these be in RooObject?? Do we need an LValue wrapper and move these there?
     def observable(self) :
