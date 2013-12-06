@@ -77,3 +77,39 @@ def get_creators():
 
 for cl in __creators.keys():
     set_class_creates({}, cl)
+
+def get_roofit_classes(rootmap):
+    classes = []
+    with open(rootmap) as rfile:
+        for line in rfile:
+            cl = line.strip().split()[0].split('.', 1)[1]
+            if not cl.startswith('Roo'):
+                continue
+            
+            cl = cl.strip(':')
+            cl = cl.replace('-', ' ').replace('@', ':')
+            classes.append(cl)
+    return classes
+
+def get_preturn_methods(classes):
+    from ROOT import gInterpreter
+    from ROOT import TDictionary
+
+    ignore = set(['name', 'argName', 'clone', 'Clone', 'Class', 'Class_Name', 'IsA',
+                  'DeclFileName', 'ImplFileName', 'GetName'])
+
+    from collections import defaultdict
+    p_returns = defaultdict(set)
+    for cl in classes:
+        cinfo = gInterpreter.ClassInfo_Factory(cl)
+        minfo = gInterpreter.MethodInfo_Factory(cinfo)
+        while gInterpreter.MethodInfo_Next(minfo):
+            if not bool(gInterpreter.MethodInfo_Property(minfo) & TDictionary.kIsPublic):
+                continue
+            
+            tinfo = gInterpreter.MethodInfo_Type(minfo)
+            name = gInterpreter.MethodInfo_Name(minfo)
+            if ((bool(gInterpreter.TypeInfo_Property(tinfo) & TDictionary.kIsPointer) or
+                bool(gInterpreter.TypeInfo_Property(tinfo) & TDictionary.kIsConstPointer))
+                and not name in ignore):
+                p_returns[cl].add(name)
