@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import gc
 import optparse
 import sys
 import os
@@ -155,9 +156,8 @@ if args[1] == 'single':
     sig_tres = TimeResolution(Name = 'tres', **tres_args) 
     if options.add_background:
         bkg_tres = TimeResolution(Name = 'bkg_tres', ParNamePrefix = 'bkg', **tres_args)
-elif args[1] in ['double', 'core']:
+elif args[1] == 'double':
     mu = dict(MinMax = (-0.010, 0.010))
-    mu['Constant'] = False
     mu_values = {'MC11a_incl_Jpsi' : -0.000408, '2011_Reco14' : -0.00259,  
                  '2011' : -0.00407301, '2012' : -0.00333}
     mu['Value'] = mu_values.get(args[0], 0)
@@ -182,11 +182,6 @@ elif args[1] == 'triple':
                                  Fractions = [(3, 0.1), (2, 0.2)], SplitMean = options.split_mean,
                                  Simultaneous = options.simultaneous)
 
-if args[1] == 'core':
-    from P2VV.Parameterizations.TimeResolution import Core_Rest_TimeResolution
-    core_tres = Core_Rest_TimeResolution(Name = 'core_tres', CoreModel = sig_tres)
-    sig_tres = core_tres
-    
 # J/psi mass pdf
 from P2VV.Parameterizations.MassPDFs import DoubleCB_Psi_Mass as PsiMassPdf
 psi_m = PsiMassPdf(mpsi, Name = 'psi_m', mpsi_alpha_1 = dict(Value = 2, Constant = '2011' in args[0]))
@@ -234,6 +229,9 @@ prompt = Component('prompt', (prompt_pdf.pdf(), psi_m), Yield = (160160, 100, 50
 # Read data
 fit_mass = options.fit_mass or not options.cache
 
+## from profiler import heap_profiler_start, heap_profiler_stop
+## heap_profiler_start("profile.log")
+
 # Tree and cut
 tree_name = 'DecayTree'
 cut = 'sel == 1 && hlt1_unbiased == 1 && hlt2_unbiased == 1 && '
@@ -276,7 +274,6 @@ if options.cache:
     
 results = []
 tree_name = 'DecayTree'
-
 
 ## Extra name for fit result and plots
 extra_name = [args[1]]
@@ -378,15 +375,18 @@ corr_canvas = None
 if fit_mass:
     from P2VV.Utilities.DataHandling import readData
     data = readData(input_data[args[0]]['data'], tree_name, NTuple = True, observables = observables,
-                    ntupleCuts = cut)
+                    ntupleCuts = cut, ImportIntoWS = False)
     data.SetName(tree_name)
     if options.reduce:
-        data = data.reduce(EventRange = (0, int(4e4)))
+        new_data = data.reduce(EventRange = (0, int(4e4)))
+        data = new_data
     elif data.numEntries() > 6e5:
         new_data = data.reduce(EventRange = (0, int(6e5)))
-        data.IsA().Delete()
+        print ROOT.GetOwnership(data), ROOT.GetOwnership(new_data)
         data = new_data
-        
+
+    gc.collect()
+    
     # In case of reweighing 
     sig_mass_pdf = buildPdf(Components = (signal, background), Observables = (m,), Name = 'sig_mass_pdf')
     psi_mass_pdf = buildPdf(Components = (psi_ll, background), Observables = (mpsi,), Name='psi_mass_pdf')
@@ -398,13 +398,13 @@ if fit_mass:
         psi_mass_pdf.Print('t')
         signal_name = psi_ll.GetName()
         mass_pdf = psi_mass_pdf
-        
+
     ## Fit mass pdf
     for i in range(3):
         mass_result = mass_pdf.fitTo(data, **fitOpts)
         if mass_result.status() == 0:
             break
-    
+
     assert(mass_result.status() == 0)
     mass_result.SetName('mass_result')
     results.append(mass_result)
@@ -447,15 +447,19 @@ if fit_mass:
                                }
               )
     plots.append(ps)
-    
+
     from P2VV.Utilities.SWeights import SData
     data_clone = data.Clone(data.GetName())
     sData = SData(Pdf = mass_pdf, Data = data_clone, Name = 'MassSPlot')
     single_bin_sig_sdata = sData.data(signal_name)
     single_bin_bkg_sdata = sData.data('background')
-    
+    del sData
     sdatas_full = {'full_sig_sdata' : single_bin_sig_sdata,
                    'full_bkg_sdata' : single_bin_bkg_sdata}
+    ## Mass PDF is still connected to data_clone, redirect and delete data_clone
+    mass_pdf.recursiveRedirectServers(data.get())
+    del data_clone
+    gc.collect()
 
 if fit_mass and options.simultaneous:
     from P2VV.Utilities.General import getSplitPar
@@ -491,7 +495,8 @@ if fit_mass and options.simultaneous:
     sData = SData(Pdf = sWeight_mass_pdf, Data = data, Name = 'SimulMassSPlot')
     sig_sdata_full = sData.data(signal_name)
     bkg_sdata_full = sData.data('background')
-    
+    mass_pdf.recursiveRedirectServers(data.get())
+    del sData
     if (signal_MC or prompt_MC) and options.reweigh:
         if cut.find('trueid') != -1:
             cut = cut.rsplit('&&', 1)[0]
@@ -504,6 +509,7 @@ if fit_mass and options.simultaneous:
         reco_mass_result = reco_mass_pdf.fitTo(reco_data, **fitOpts)
         reco_mass_result.SetName('reco_mass_result')
         reco_sData = SData(Pdf = reco_mass_pdf, Data = reco_data, Name = 'RecoMassSPlot')
+        del reco_sData
         reco_sig_sdata = reco_sData.data(psi_ll.GetName())
         reco_bkg_sdata = reco_sData.data('background')
         from P2VV.Reweighing import reweigh
@@ -545,6 +551,7 @@ elif fit_mass:
         reco_sData = SData(Pdf = reco_mass_pdf, Data = reco_data, Name = 'RecoMassSPlot')
         reco_sig_sdata = reco_sData.data(psi_ll.GetName())
         reco_bkg_sdata = reco_sData.data('background')
+        del reco_sData
         from P2VV.Reweighing import reweigh
         reweigh_sdatas = {}
         for target, source, n in [(single_bin_sig_sdata, reco_sig_sdata, 'sig_sdata'),
@@ -603,37 +610,24 @@ if options.cache:
                 
         # Delete the input TTree which was automatically attached.
         cache_file.Delete('%s;*' % tree_name)
+
+## from profiler import heap_profiler_start
+## from profiler import heap_profiler_stop
+## heap_profiler_start("profile.log")
         
 # Define default components
 if signal_MC and not options.simultaneous:
     from ROOT import RooIpatia2 as Ipatia2
     from P2VV.RooFitWrappers import Pdf
 
-    ## rest_mean = RealVar('rest_mean', Value = 0, MinMax = ( -10, 10 ), Constant = False )
-    ## rest_sigma = RealVar('rest_sigma', Value = 9.678, Error = 0.1
-    ##                      , MinMax = ( 0.1, 40. ), Constant = False)
-    ## rest_lambda = RealVar('rest_lambda', Value = -2.5, Error = 0.1, MinMax = ( -10., -0.1 ))
-    ## rest_zeta = RealVar('rest_zeta', Value = 0., Error = 0.2, MinMax = ( -10., 10. ), Constant = True)
-    ## rest_beta = ConstVar(Name = 'rest_beta', Value = 0.)
-    ## rest_alpha_1 = RealVar('rest_alpha_1', Value = 7, Error = 1., MinMax = ( 0.01, 10. ), Constant = True)
-    ## rest_alpha_2 = RealVar('rest_alpha_2', Value = 8, Error = 1., MinMax = ( 0.01, 10. ), Constant = True)
-    ## rest_n_1 = RealVar('rest_order_1', Value = 2, Error = 0.5, MinMax = ( 0., 10. ), Constant = True)
-    ## rest_n_2 = RealVar('rest_order_2', Value = 2, Error = 0.5, MinMax = ( 0., 10. ), Constant = True)
+    from P2VV.Parameterizations.TimeResolution import Rest_TimeResolution
+    rest_tres = Rest_TimeResolution(Name = 'rest_tres', CoreModel = sig_tres)
+    
+    rest_t = Prompt_Peak(time_obs, resolutionModel = rest_tres.model(), Name = 'rest_t')
 
-    ## rest_i = Pdf(Name = 'rest_i', Type = Ipatia2,
-    ##                Parameters = (time_obs, rest_lambda, rest_zeta, rest_beta, rest_sigma, rest_mean,
-    ##                              rest_alpha_1, rest_n_1, rest_alpha_2, rest_n_2))
-    ## rest_ipatia = Component('rest_ipatia', (rest_i,), Yield = (1e4, 1, 1e5))
-
-    ## coefs = [RealVar("coef_%i" % (i + 1), Value = 1, MinMax = (-0.5, 10)) for i in range(2)]
-    ## coefs[0].setVal(1)
-    ## coefs[1].setVal(-0.01)
-    ## from P2VV.RooFitWrappers import Chebychev
-    ## rest_c = Chebychev(Name = 'rest_c', Observable = time_obs, Coefficients = coefs)
-    ## rest_const = Component('rest_const', (rest_c,), Yield = (1e4, 1, 1e5))
-
-
-    components = [signal]
+    rest = Component('rest', (rest_t.pdf(),), Yield = (1e4, 1, 1e5))
+    
+    components = [signal, rest]
 elif signal_MC:
     components = [signal]
 else:
@@ -757,16 +751,13 @@ if options.simultaneous:
         means = [sig_sdata.mean(split_obs._target_(), '{0} == {0}::{1}'.format(split_cat.GetName(), s.GetName())) for s in split_cat]
         split_obs_mean = sig_sdata.mean(split_obs._target_())
 
-        ## Use the center of the first and the last bin as min/max.
-        minmax = [means[0], means[-1]]
-
         ## Set the split parameters to their calculated value and make
         ## them constant.
         pars = time_pdf.getParameters(RooArgSet())
         for m, s in zip(means, split_cat):
             p = pars.find(placeholder.GetName() + '_' + s.GetName())
             p.setConstant(True)
-            p.setVal((m - split_obs_mean) / (minmax[1] - minmax[0]))
+            p.setVal(m - split_obs_mean)
     else:
         time_pdf = SimultaneousPdf(time_pdf.GetName() + '_simul'
                                    , MasterPdf       = time_pdf
@@ -802,8 +793,6 @@ constraints = set()
 if options.constrain:
     pdf_vars = time_pdf.getVariables()
     cp = args
-    if cp[1] == 'core':
-        cp[1] = 'double'
     if options.use_refit:
         cp += ['refit']
     dbase = shelve.open('constraints.db')
@@ -1037,35 +1026,35 @@ if options.cache:
             
             plots_dir.Write(plots_dir.GetName(), TObject.kOverwrite)
 
-## ca = RooArgList()
-## for p in sorted(list(constraint_pars)):
-##     rp = time_result.floatParsFinal().find(p)
-##     if rp:
-##         ca.add(rp)
+ca = RooArgList()
+for p in sorted(list(constraint_pars)):
+    rp = time_result.floatParsFinal().find(p)
+    if rp:
+        ca.add(rp)
 
-## cov = time_result.reducedCovarianceMatrix(ca)
-## m = []
+cov = time_result.reducedCovarianceMatrix(ca)
+m = []
 
-## for i in range(cov.GetNrows()):
-##     m.append([])
-##     row = cov[i]
-##     for j in range(cov.GetNcols()):
-##         m[i].append(row[j])
-
+for i in range(cov.GetNrows()):
+    m.append([])
+    row = cov[i]
+    for j in range(cov.GetNcols()):
+        m[i].append(row[j])
    
-## if options.fit and options.simultaneous:
-##     dbase = shelve.open('constraints.db')
-##     key_pars = args
-##     if options.use_refit:
-##         key_pars += ['refit']
+if options.fit and options.simultaneous:
+    dbase = shelve.open('constraints.db')
+    key_pars = args
+    if options.use_refit:
+        key_pars += ['refit']
     
-##     base_key = ' '.join(key_pars)
-##     param_key = {'mu' : options.mu_param, 'sf' : options.sf_param}
-##     if base_key in dbase:
-##         dbase[base_key][str(param_key)] = {'parameters' : dict([(p.GetName(), (p.getVal(), p.getError())) for p in ca]),
-##                                            'covariance' : m}
-##     else:
-##         dbase[base_key] = {str(param_key) : {'parameters' : dict([(p.GetName(), (p.getVal(), p.getError())) for p in ca]),
-##                                              'covariance' : m}}
-    
-##     dbase.close()
+    base_key = ' '.join(key_pars)
+    param_key = {'mu' : options.mu_param, 'sf' : options.sf_param}
+    if base_key in dbase:
+        d = dbase[base_key]
+        d.update({str(param_key) : {'parameters' : dict([(p.GetName(), (p.getVal(), p.getError())) for p in ca]),
+                                    'covariance' : m}})
+        dbase[base_key] = d
+    else:
+        dbase[base_key] = {str(param_key) : {'parameters' : dict([(p.GetName(), (p.getVal(), p.getError())) for p in ca]),
+                                             'covariance' : m}}    
+    dbase.close()
