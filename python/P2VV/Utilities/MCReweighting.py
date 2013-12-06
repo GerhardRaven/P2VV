@@ -52,12 +52,14 @@ def compareDistributions( **kwargs ):
 
     # make canvases
     obsCanv       = TCanvas('anglesTime_%s'%itNumb,'anglesTime_%s'%itNumb)
+    assymObsCanv  = TCanvas('assymAnglesTime_%s'%itNumb,'assymAnglesTime_%s'%itNumb)
     KaonCanv      = TCanvas('KaonMomenta_%s'%itNumb,'KaonMomenta_%s'%itNumb)
     muonCanv      = TCanvas('muonMomenta_%s'%itNumb,'muonMomenta_%s'%itNumb)    
     assymKaonCanv = TCanvas('assymKaonMomenta_%s'%itNumb,'assymKaonMomenta_%s'%itNumb)
     assymMuonCanv = TCanvas('assymmuonMomenta_%s'%itNumb,'assymmuonMomenta_%s'%itNumb)
     KKMassCanv    = TCanvas('KKMass_%s'%itNumb,'KKMass_%s'%itNumb)
     obsCanv.Divide(2,2)
+    assymObsCanv.Divide(2,2)
     KaonCanv.Divide(4,2)
     muonCanv.Divide(4,2)
     assymKaonCanv.Divide(4,2)
@@ -74,15 +76,19 @@ def compareDistributions( **kwargs ):
         
     # plot angles and decay time
     print 'P2VV - INFO: compareDistributions: Plotting decay angles and time.'
-    for canv, obs, logY, rangeX in zip( [obsCanv.cd(i+1) for i in range(len(observables))], 
-                                        observables,
-                                        3 * [False] + [True],
-                                        [ (-1.,1.), (-1.,1.), (-pi,pi), (0.,14.) ] if not nullTest else \
-                                            [ (-pi,pi), (-1.,1.), (-1.,1), (0.,14.) ]
-                                        ): 
-        compareDataSets( canv, obs, data = data, dataOpts = dataOpts, logy = logY,
-                                    frameOpts = dict( Bins = 30, Range=rangeX ),
-                         )
+    for canv, assymCanv, obs, logY, rangeX in zip( 
+        [obsCanv.cd(i+1) for i in range(len(observables))], 
+        [assymObsCanv.cd(i+1) for i in range(len(observables))], 
+        observables,
+        3 * [False] + [True],
+        [ (-1.,1.), (-1.,1.), (-pi,pi), (0.,14.) ] if not nullTest else \
+            [ (-pi,pi), (-1.,1.), (-1.,1), (0.,14.) ]
+        ): 
+        anglesFrames= compareDataSets( canv, obs, data = data, dataOpts = dataOpts, logy = logY,
+                                       frameOpts = dict( Bins = 30, Range=rangeX ),
+                                       )
+        # make assymetry plots 
+        makeAssymetryPlot(assymCanv, anglesFrames, referenceHistName ) 
 
     # plot Kaon and muon momenta
     print 'P2VV - INFO: compareDistributions: Plotting track momenta.'
@@ -92,7 +98,7 @@ def compareDistributions( **kwargs ):
         Kmomenta + muMomenta,
         ): 
         momFrame = compareDataSets( canv, obs, data = data, dataOpts = dataOpts,
-                                               frameOpts = dict( Bins = 30, Range=trackMomRangeX[obs.GetName()] )
+                                    frameOpts = dict( Bins = 30, Range=trackMomRangeX[obs.GetName()] )
                                     )
         # make assymetry plots 
         makeAssymetryPlot( assymCanv, momFrame, referenceHistName ) 
@@ -122,8 +128,8 @@ def compareDistributions( **kwargs ):
     _P2VVPlotStash.append(assym_legend)
     
     # print canvases in file
-    for canv in [obsCanv,KaonCanv,muonCanv,assymKaonCanv,assymMuonCanv,KKMassCanv]: canv.Print(canv.GetName()+'.pdf')
-    return [obsCanv,KaonCanv,muonCanv,assymKaonCanv,assymMuonCanv,KKMassCanv]
+    for canv in [obsCanv,KaonCanv,muonCanv,assymKaonCanv,assymMuonCanv,KKMassCanv,assymObsCanv]: canv.Print(canv.GetName()+'.pdf')
+    return [obsCanv,KaonCanv,muonCanv,assymKaonCanv,assymMuonCanv,KKMassCanv,assymObsCanv]
 
 # clean P2VVPlotStash to save memory
 def cleanP2VVPlotStash():
@@ -133,7 +139,7 @@ def cleanP2VVPlotStash():
     print 'P2VV - INFO: cleanP2VVPlotStash: Emptied P2VVplotStash.'
 
 def destroyRootObject(obj):
-    if obj: obj.IsA().Destructor(obj)
+    if obj: obj.Delete()
 
 # combine datasets
 def _combineDataSetParts( files, name, weightName='' ):
@@ -508,7 +514,11 @@ def writeWeights(dataset, weights, weightsName, writeDatasetName=''):
                           Import=dataset,
                           WeightVar = (weightsName, True)
                           )
-    for d in [dataset,weightsDataSet]: d.IsA().Destructor(d)
+    for d in [dataset,weightsDataSet]: 
+        d.Print()
+        #d.IsA().Destructor(d)
+        d.Delete()
+        d.Print()
     del weights
     return _dataset
 
@@ -516,8 +526,13 @@ def writeWeights(dataset, weights, weightsName, writeDatasetName=''):
 class BuildBs2JpsiKKFit():
     def __init__(self,**kwargs):
         print 'P2VV - INFO: Initialised physics reweighting class: BuildBs2JpsiKKFit().'
+        
         from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_RunIAnalysis as PdfConfig
-        pdfConfig = PdfConfig()
+        MCProd = kwargs.pop('MonteCarloProduction', 'Sim08')
+        if   '2011' in MCProd: runPeriod = '2011'
+        elif '2012' in MCProd: runPeriod = '2012'
+        else: runPeriod = '3fb'
+        pdfConfig = PdfConfig(RunPeriods = runPeriod)
 
         self._dataSetPath = kwargs.pop('dataSetPath', None)
         self._dataSetName = kwargs.pop('dataSetName', None)
@@ -525,32 +540,40 @@ class BuildBs2JpsiKKFit():
     
         self._doUntaggedFit = kwargs.pop('doUntaggedFit', '')        
         self._doNullTest    = kwargs.pop('doNullTest',    '')
-   
-        dataPath    = self._dataSetPath
-        dataSetName = self._dataSetName
-        dataSetFile =  self._dataSetPath
-        # dataPath + 'P2VVDataSets20112012Reco14_I2DiegoMass_6KKMassBins_2TagCats.root'
-
+     
         # fit options
-        fitOpts = dict(  NumCPU    = 8
-                         , Optimize  = 2
-                         , Minimizer = 'Minuit2'
-                         )
+        fitOpts = dict( NumCPU = 8, Optimize  = 2, Minimizer = 'Minuit2' )
         pdfConfig['fitOptions'] = fitOpts
-        corrSFitErrCats         = [ 'runPeriod', 'KKMassCat' ]
+        corrSFitErrCats         = [ 'runPeriod', 'KKMassCat' ] if ('2011' not in MCProd or '2012' not in MCProd) else [ 'KKMassCat' ]
         randomParVals           = ( ) # ( 1., 12345 )
 
         # PDF options
-        pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file']\
-            = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
-        pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] )['file']\
-            = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
-        pdfConfig['angEffMomsFiles'] = '' #dataPath + 'Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
+        # time acceptance
+        if '2011' not in MCProd and '2012' not in MCProd:
+            pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file']\
+                = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
+            pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] )['file']\
+                = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
+        elif '2011' in MCProd:
+            pdfConfig['timeEffHistFiles'] = dict(  
+                file  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
+                , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+                , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+                )
+        elif '2012' in MCProd:
+            pdfConfig['timeEffHistFiles'] = dict(  
+                file = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
+                , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
+                , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+                )
+            
+        # angular acceptance
+        pdfConfig['angEffMomsFiles'] = ''
         pdfConfig['anglesEffType']   = ''
-
+        
         # read data set from file
         from P2VV.Utilities.DataHandling import readData
-        dataSet = readData( filePath = dataSetFile, dataSetName = dataSetName,  NTuple = False )
+        dataSet = readData( filePath = self._dataSetPath, dataSetName = self._dataSetName,  NTuple = False )
         pdfConfig['signalData'] = dataSet
         pdfConfig['readFromWS'] = True
         
@@ -657,9 +680,12 @@ class BuildBs2JpsiKKFit():
 
 # Vertical reweighting class to match physics of weighted distribution using a pdf
 class MatchPhysics( ):
-    def __init__( self, nTupleFile, nTupleName, **kwargs ):
-        print 'P2VV - INFO: Initialised physics reweighting class: matchMCphysics2Data().'
-        
+    def __init__( self, nTupleFile, nTupleName, **kwargs ):      
+        # monte carlo gen conditions specifier
+        MCProd = kwargs.pop('MonteCarloProduction', 'Sim08')        
+        print 'P2VV - INFO: Initialised physics reweighting class: matchMCphysics2Data().'        
+        print 'P2VV - INFO: Matching physics on %s mc sample.'%MCProd
+
         # set global object name prefix
         from P2VV.Parameterizations.GeneralUtils import setParNamePrefix
         setParNamePrefix( 'mc' )
@@ -712,24 +738,27 @@ class MatchPhysics( ):
 
         # get observables
         trueTime  = _createGetObservable('truetime') # get the wrapper instead of the base object !!
+        time      = _createGetObservable('time')
         angles    = [_createGetObservable(o) for o in ['helcosthetaK','helcosthetaL','helphi'] ]
         iTag      = _createGetObservable('iTag')
         KKMass = _createGetObservable('KKMass')
         KKMassCat = RooObject._rooobject('KKMassCat')
         runPeriod = RooObject._rooobject('runPeriod')
-        self._obsSet = [ trueTime, KKMass ] + angles + [ runPeriod, KKMassCat ]
+        self._obsSet = [ trueTime, time, KKMass ] + angles + [ runPeriod, KKMassCat ]
         
         # add track momenta and B momenta
         self._obsSet += [ RooObject._rooobject('%s_%s'%( part, comp )) for part in [ 'Kplus', 'Kminus', 'muplus', 'muminus' ] for comp in ( 'PX', 'PY', 'PZ', 'P' ) ]
         self._obsSet += [ RooObject._rooobject('B_%s'%comp) for comp in [ 'P', 'Pt' ] ]
 
         # read ntuple
-        cuts = '(runNumber<2524e3) || (runNumber>2546e3)'
-        if cuts: print 'P2VV - INFO: MatchPhysics: Accelerate developing precces by cutting on run time ' 
-
-        # read into dataset
         from P2VV.Utilities.DataHandling import readData
-        self._data = readData( nTupleFile, dataSetName = nTupleName, NTuple = True, observables = self._obsSet, ntupleCuts = cuts )
+        if   MCProd == 'Sim08_2011':         cuts = 'runPeriod==2011'
+        elif MCProd == 'Sim08_2012':         cuts = 'runPeriod==2012'
+        elif MCProd == 'Sim08_2011_reduced': cuts = 'runPeriod==2011 && runNumber>2542e3 && runNumber<2544e3'
+        elif MCProd == 'Sim08_2012_reduced': cuts = 'runPeriod==2012 && runNumber>2523e3 && runNumber<2525.35e3'
+        elif MCProd == 'Sim08_reduced':      cuts = '(runNumber<2524e3) || (runNumber>2546e3)'
+        else: cuts = ''
+        self._data = readData( nTupleFile, dataSetName=nTupleName, NTuple=True, observables=self._obsSet, ntupleCuts=cuts)
 
         # build pdf
         from P2VV.Parameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
@@ -794,9 +823,8 @@ class MatchPhysics( ):
             for cat, val in vals.iteritems() : ws[ par + '_' + cat ].setVal(val)
 
         # monte carlo gen paramters
-        MCProd = kwargs.pop('MonteCarloProduction')
-        if MCProd == 'Sim08':
-            from P2VV.Utilities.MCReweighting import parValuesMcSim08_6KKmassBins as mcPars
+        if 'Sim08' in MCProd: from P2VV.Utilities.MCReweighting import parValuesMcSim08_6KKmassBins as mcPars
+        if 'Sim06' in MCProd: from P2VV.Utilities.MCReweighting import parValuesMcSim06_6KKmassBins as mcPars
         self._mcPhysParsSet = mcPars
         
         # create pdf physics parameters dictionary
@@ -868,6 +896,7 @@ class MatchPhysics( ):
         
         print 'P2VV - INFO: Calculating phyisics matching weights'
         calculatePhysicsWeights(nom=nominators, den=denominators)
+
         
     def writeWeights(self, weightsName='weightPhys'):
         from ROOT import RooArgSet, RooRealVar, RooDataSet
@@ -890,12 +919,14 @@ class MatchPhysics( ):
                                          Import    = self._data,
                                          WeightVar = (self._weightsName, True)
                                          )
-               
-        weightsDataSet.IsA().Destructor(weightsDataSet)
+        weightsDataSet.Print()        
+        #weightsDataSet.IsA().Destructor(weightsDataSet)
+        weightsDataSet.Delete()
+        weightsDataSet.Print()
         del self._physWeights
 
     def getPdf(self):               return self._pdf
-    def getAngleFunctions(self):    return angleFuncs
+    def getAngleFunctions(self):    return self._angleFuncs
     def getMcTime(self):            return  [ o for o in self._pdf.Observables() if 'time' in o.GetName() ]
     def getParNamePrefix(self):     return 'mc'
     def getDataSet(self, weighted=False):          
@@ -1140,136 +1171,212 @@ class MatchWeightedDistributions():
             if noPhysWeights: return self._recalculatedDataNoPhysWeights
             else:             return self._recalculatedData
 
+
+
 # physics parameter imports
-parValues6KKmassBins20112012 = dict( # sFit in 2011 + 2012 data  
-                                      A0Mag2            = 5.2085e-01
-                                     ,A0Phase           = 0. 
-                                     ,ASOddPhase_bin0   = 8.0380e-01 
-                                     ,ASOddPhase_bin1   = 2.3096e+00
-                                     ,ASOddPhase_bin2   = 4.5944e-01
-                                     ,ASOddPhase_bin3   =-3.6016e-01
-                                     ,ASOddPhase_bin4   =-6.7912e-01
-                                     ,ASOddPhase_bin5   =-8.2363e-01
-                                     ,AparPhase         = 3.2547e+00 
-                                     ,AperpMag2         = 2.5354e-01
-                                     ,AperpPhase        = 3.1874e+00
-                                     ,Gamma             = 6.6062e-01
-                                     ,dGamma            = 8.7053e-02
-                                     ,phiCP             = 8.2805e-02
-                                     ,betaTimeEff_p2011 =-8.2950e-03
-                                     ,betaTimeEff_p2012 =-1.3746e-02
-                                     ,dM                = 1.7765e+01 
-                                     ,f_S_bin0          = 4.4442e-01 
-                                     ,f_S_bin1          = 6.3233e-02
-                                     ,f_S_bin2          = 8.6777e-03
-                                     ,f_S_bin3          = 8.8876e-03
-                                     ,f_S_bin4          = 4.4337e-02
-                                     ,f_S_bin5          = 2.0997e-01
-                                     ,lambdaCP          = 9.6384e-01
-                                     ,wTagDelP0OS       = 1.3725e-02
-                                     ,wTagDelP0SS       =-1.5955e-02
-                                     ,wTagDelP1OS       = 6.9765e-02
-                                     ,wTagDelP1SS       = 1.5007e-02
-                                     ,wTagP0OS          = 3.9049e-01
-                                     ,wTagP0SS          = 4.4015e-01
-                                     ,wTagP1OS          = 1.0363e+00
-                                     ,wTagP1SS          = 9.4426e-01
-                                     )
 
-parValuesNoKKBinsWideKKWindow = dict(  # sFit in 2011 data
-                                       AperpMag2        = 0.24663
-                                      ,AperpPhase       = 3.0232
-                                      ,A0Mag2           = 0.52352
-                                      ,A0Phase          = 0 # cosntrained
-                                      ,AparPhase        = 3.2144
-                                      ,f_S              = 0.0463
-                                      ,ASOddPhase       = -0.0666
-                                      ,dM               = 17.6739
-                                      ,dGamma           = 0.1021
-                                      ,Gamma            = 0.6728
-                                      ,phiCP            = 0.0847
-                                      ,lambdaCP         = 0.9275
-                                       )
+# sFit in 2011 + 2012 data  
+parValues6KKmassBins20112012 = dict(
+    A0Mag2            = 5.2085e-01
+    ,A0Phase           = 0. 
+    ,ASOddPhase_bin0   = 8.0380e-01 
+    ,ASOddPhase_bin1   = 2.3096e+00
+    ,ASOddPhase_bin2   = 4.5944e-01
+    ,ASOddPhase_bin3   =-3.6016e-01
+    ,ASOddPhase_bin4   =-6.7912e-01
+    ,ASOddPhase_bin5   =-8.2363e-01
+    ,AparPhase         = 3.2547e+00 
+    ,AperpMag2         = 2.5354e-01
+    ,AperpPhase        = 3.1874e+00
+    ,Gamma             = 6.6062e-01
+    ,dGamma            = 8.7053e-02
+    ,phiCP             = 8.2805e-02
+    ,betaTimeEff_p2011 =-8.2950e-03
+    ,betaTimeEff_p2012 =-1.3746e-02
+    ,dM                = 1.7765e+01 
+    ,f_S_bin0          = 4.4442e-01 
+    ,f_S_bin1          = 6.3233e-02
+    ,f_S_bin2          = 8.6777e-03
+    ,f_S_bin3          = 8.8876e-03
+    ,f_S_bin4          = 4.4337e-02
+    ,f_S_bin5          = 2.0997e-01
+    ,lambdaCP          = 9.6384e-01
+    ,wTagDelP0OS       = 1.3725e-02
+    ,wTagDelP0SS       =-1.5955e-02
+    ,wTagDelP1OS       = 6.9765e-02
+    ,wTagDelP1SS       = 1.5007e-02
+    ,wTagP0OS          = 3.9049e-01
+    ,wTagP0SS          = 4.4015e-01
+    ,wTagP1OS          = 1.0363e+00
+    ,wTagP1SS          = 9.4426e-01
+    )
 
-parValuesMcSim08_6KKmassBins = dict(  # Sim08 generating conditions  
-                                      A0Mag2            = 0.722**2 / (0.722**2 + 0.480**2 + 0.499**2)
-                                     ,A0Phase           = 0. 
-                                     ,ASOddPhase_bin0   = 0.
-                                     ,ASOddPhase_bin1   = 0.
-                                     ,ASOddPhase_bin2   = 0.
-                                     ,ASOddPhase_bin3   = 0.
-                                     ,ASOddPhase_bin4   = 0.
-                                     ,ASOddPhase_bin5   = 0.
-                                     ,AparPhase         = 3.30
-                                     ,AperpMag2         = 0.499**2 / (0.722**2 + 0.480**2 + 0.499**2) 
-                                     ,AperpPhase        = 3.07
-                                     ,Gamma             = 1. / 1.503 
-                                     ,dGamma            = 1. / 1.406 - 1. / 1.614
-                                     ,phiCP             = +0.07 
-                                     ,dM                = 17.8
-                                     ,f_S_bin0          = 0.
-                                     ,f_S_bin1          = 0.
-                                     ,f_S_bin2          = 0.
-                                     ,f_S_bin3          = 0.
-                                     ,f_S_bin4          = 0.
-                                     ,f_S_bin5          = 0.
-                                     ,lambdaCP          = 1.
-                                      )
+ # sFit in 2011 data  
+parValues6KKmassBins2011 = dict(
+     A0Mag2          = 0.530647
+    ,A0Phase         = 0.
+    ,ASOddPhase_bin0 = 0.646488	
+    ,ASOddPhase_bin1 = 0.970226	
+    ,ASOddPhase_bin2 = 0.424538	
+    ,ASOddPhase_bin3 = -0.394219	
+    ,ASOddPhase_bin4 = -0.854113	
+    ,ASOddPhase_bin5 = -0.607166	
+    ,AparPhase	     = 3.32684	
+    ,AperpMag2	     = 0.246338	
+    ,AperpPhase	     = 3.39293	
+    ,Gamma	     = 0.657435	
+    ,dGamma	     = 0.122035	
+    ,phiCP	     = -0.133016	
+    ,betaTimeEff     = -0.00830863	
+    ,dM	             = 17.7666	 
+    ,f_S_bin0	     = 0.39986	
+    ,f_S_bin1	     = 0.0538139	
+    ,f_S_bin2	     = 0.0112028	
+    ,f_S_bin3	     = 0.0149245	
+    ,f_S_bin4	     = 0.0247391	
+    ,f_S_bin5	     = 0.203116	
+    ,lambdaCP	     = 0.951561	
+    ,wTagDelP0OS     = 0.0137092	
+    ,wTagDelP0SS     = -0.0159789	
+    ,wTagDelP1OS     = 0.0698641	
+    ,wTagDelP1SS     = 0.0149033	
+    ,wTagP0OS	     = 0.379543	
+    ,wTagP0SS	     = 0.435735	
+    ,wTagP1OS	     = 1.02522	
+    ,wTagP1SS	     = 0.979372	
+     )
 
-parValuesMc2011Gen =  dict( AperpMag2        = 0.16
-                           ,AperpPhase       = -0.17
-                           ,A0Mag2           =  0.6
-                           ,A0Phase          = 0 # cosntrained
-                           ,AparPhase        = 2.50
-                           ,f_S         = 0
-                           ,ASOddPhase  = 0
-                           ,dM               = 17.8
-                           ,dGamma           = 0.06
-                           ,Gamma            = 0.679
-                           ,phiCP            = -0.04
-                           ,lambdaCP         = 1.
-                            )
-parValuesMc2012Gen =  dict( AperpMag2        = 0.2488
-                           ,AperpPhase       = 3.07
-                           ,A0Mag2           = 0.5209
-                           ,A0Phase          = 0. # cosntrained
-                           ,AparPhase        = 3.30
-                           ,f_S         = 0.
-                           ,ASOddPhase  = 0.
-                           ,dM               = 17.8
-                           ,dGamma           = 0.0917
-                           ,Gamma            = 0.6653
-                           ,phiCP            = 0.07
-                           ,lambdaCP         = 1.
-                            )
-parValuesMc2012Fit =  dict(# '/project/bfys/vsyropou/data/P2VVDataSetsMC2012_wideKKMass_noKKMassBins_2TagCats_TrivialWeights_forReweighting_part1.root'
-                           #  AperpMag2        =  2.5628e-01 
-                           # ,AperpPhase       = -2.8377e+00 
-                           # ,A0Mag2           =  5.1761e-01
-                           # ,A0Phase          =  0. # cosntrained
-                           # ,AparPhase        =  3.2728e+00 
-                           # ,f_S_bin0         =  0.
-                           # ,ASOddPhase_bin0  =  0.
-                           # ,dM               =  1.7630e+01 
-                           # ,dGamma           =  8.0522e-02 
-                           # ,Gamma            =  6.8023e-01
-                           # ,phiCP            = -1.2965e-01
-                           # ,lambdaCP         =  1.0684e+00
-                           
-                           # For null test
-                           #'/project/bfys/vsyropou/data/P2VVDataSetsMC2012_wideKKMass_noKKMassBins_2TagCats_TrivialWeights_forReweighting.root'
-                           # using 2012 angular acceptance weights
-                            AperpMag2        = 2.4841e-01
-                           ,AperpPhase       = 3.4126e+00
-                           ,A0Mag2           = 5.2148e-01
-                           ,A0Phase          = 0. # fixed
-                           ,AparPhase        = 3.2927e+00
-                           ,f_S         =  0.
-                           ,ASOddPhase  =  0.
-                           ,dM               = 1.7629e+01
-                           ,dGamma           = 9.3441e-02
-                           ,Gamma            = 6.7722e-01
-                           ,phiCP            = 0.07 # fixed to MC12Gen, not enough sensitivity
-                           ,lambdaCP         = 1.   # fixed to Mc12Gen, not enough sensitivity
-                            )
+ # sFit in 2012 data  
+parValues6KKmassBins2011 = dict(
+    A0Mag2	  = 0.516663
+    ,A0Phase         = 0.
+    ,ASOddPhase_bin0	= 0.880057
+    ,ASOddPhase_bin1	= 2.40856
+    ,ASOddPhase_bin2	= 0.691195
+    ,ASOddPhase_bin3	= -0.447733
+    ,ASOddPhase_bin4	= -0.615622
+    ,ASOddPhase_bin5	= -0.902559
+    ,AparPhase	= 3.15983
+    ,AperpMag2	= 0.257204
+    ,AperpPhase	= 3.02308
+    ,Gamma	        = 0.675951
+    ,dGamma          = 0.0600561
+    ,phiCP           = -0.121879
+    ,dM	        = 17.7657
+    ,f_S_bin0	= 0.459275
+    ,f_S_bin1        = 0.0712949
+    ,f_S_bin2	= 0.00404748
+    ,f_S_bin3	= 0.00334672
+    ,f_S_bin4	= 0.0579512
+    ,f_S_bin5	= 0.214111
+    ,lambdaCP	= 0.981036
+    ,wTagDelP0OS	= 0.0137176
+    ,wTagDelP0SS	= -0.0159754
+    ,wTagDelP1OS	= 0.0698766
+    ,wTagDelP1SS	= 0.0151004
+    ,wTagP0OS	= 0.388797
+    ,wTagP0SS	= 0.440893
+    ,wTagP1OS	= 1.01434
+    ,wTagP1SS	= 0.964957
+)
+
+# sFit in 2011 data
+parValuesNoKKBinsWideKKWindow = dict(  
+    AperpMag2        = 0.24663
+    ,AperpPhase       = 3.0232
+    ,A0Mag2           = 0.52352
+    ,A0Phase          = 0 # cosntrained
+    ,AparPhase        = 3.2144
+    ,f_S              = 0.0463
+    ,ASOddPhase       = -0.0666
+    ,dM               = 17.6739
+    ,dGamma           = 0.1021
+    ,Gamma            = 0.6728
+    ,phiCP            = 0.0847
+    ,lambdaCP         = 0.9275
+    )
+
+# Sim08 generating conditions  
+parValuesMcSim08_6KKmassBins = dict(  
+     A0Mag2            = 0.722**2 / (0.722**2 + 0.480**2 + 0.499**2)
+    ,A0Phase           = 0. 
+    ,ASOddPhase_bin0   = 0.
+    ,ASOddPhase_bin1   = 0.
+    ,ASOddPhase_bin2   = 0.
+    ,ASOddPhase_bin3   = 0.
+    ,ASOddPhase_bin4   = 0.
+    ,ASOddPhase_bin5   = 0.
+    ,AparPhase         = 3.30
+    ,AperpMag2         = 0.499**2 / (0.722**2 + 0.480**2 + 0.499**2) 
+    ,AperpPhase        = 3.07
+    ,Gamma             = 1. / 1.503 
+    ,dGamma            = 1. / 1.406 - 1. / 1.614
+    ,phiCP             = +0.07 
+    ,dM                = 17.8
+    ,f_S_bin0          = 0.
+    ,f_S_bin1          = 0.
+    ,f_S_bin2          = 0.
+    ,f_S_bin3          = 0.
+    ,f_S_bin4          = 0.
+    ,f_S_bin5          = 0.
+    ,lambdaCP          = 1.
+    )
+
+# Sim06 generating conditions  
+parValuesMcSim06_6KKmassBins = dict(
+     A0Mag2            = 0.6
+    ,A0Phase           = 0. 
+    ,ASOddPhase_bin0   = 0.
+    ,ASOddPhase_bin1   = 0.
+    ,ASOddPhase_bin2   = 0.
+    ,ASOddPhase_bin3   = 0.
+    ,ASOddPhase_bin4   = 0.
+    ,ASOddPhase_bin5   = 0.
+    ,AparPhase         = 2.5
+    ,AperpMag2         = 0.16
+    ,AperpPhase        = -0.17
+    ,Gamma             = 0.679
+    ,dGamma            = 0.06
+    ,phiCP             = -0.04
+    ,dM                = 17.8
+    ,f_S_bin0          = 0.
+    ,f_S_bin1          = 0.
+    ,f_S_bin2          = 0.
+    ,f_S_bin3          = 0.
+    ,f_S_bin4          = 0.
+    ,f_S_bin5          = 0.
+    ,lambdaCP          = 1.
+    )
+
+# For null test
+parValuesMc2012Fit =  dict(
+    # sFit on '/project/bfys/vsyropou/data/P2VVDataSetsMC2012_wideKKMass_noKKMassBins_2TagCats_TrivialWeights_forReweighting_part1.root'
+    #  AperpMag2        =  2.5628e-01 
+    # ,AperpPhase       = -2.8377e+00 
+    # ,A0Mag2           =  5.1761e-01
+    # ,A0Phase          =  0. # cosntrained
+    # ,AparPhase        =  3.2728e+00 
+    # ,f_S_bin0         =  0.
+    # ,ASOddPhase_bin0  =  0.
+    # ,dM               =  1.7630e+01 
+    # ,dGamma           =  8.0522e-02 
+    # ,Gamma            =  6.8023e-01
+    # ,phiCP            = -1.2965e-01
+    # ,lambdaCP         =  1.0684e+00
+    
+    # sFit on '/project/bfys/vsyropou/data/P2VVDataSetsMC2012_wideKKMass_noKKMassBins_2TagCats_TrivialWeights_forReweighting.root'
+    # using 2012 angular acceptance weights
+     AperpMag2        = 2.4841e-01
+    ,AperpPhase       = 3.4126e+00
+    ,A0Mag2           = 5.2148e-01
+    ,A0Phase          = 0. # fixed
+    ,AparPhase        = 3.2927e+00
+    ,f_S         =  0.
+    ,ASOddPhase  =  0.
+    ,dM               = 1.7629e+01
+    ,dGamma           = 9.3441e-02
+    ,Gamma            = 6.7722e-01
+    ,phiCP            = 0.07 # fixed to MC12Gen, not enough sensitivity
+    ,lambdaCP         = 1.   # fixed to Mc12Gen, not enough sensitivity
+    )
 
