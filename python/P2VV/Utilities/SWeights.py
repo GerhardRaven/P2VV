@@ -25,26 +25,23 @@ class SData( object ) :
         self._observables = self._pdf.Observables()
 
         # calculate sWeights
+        self._sData = None
         from ROOT import RooStats, RooArgList, RooSimultaneous
         if isinstance( self._pdf._var, RooSimultaneous ) and kwargs.pop( 'Simultaneous', True ) :
+            import gc
             # split data set in categories of the simultaneous PDF
             splitCat        = self._pdf.indexCat()
             splitData       = self._inputData.split(splitCat)
-            self._sPlots    = [ ]
-            self._sDataSets = [ ]
-            sDataVars       = None
             from ROOT import RooFormulaVar
             for splitCatState in splitCat:
                 # calculate sWeights per category
                 cat = splitCatState.GetName()
-                data = splitData.FindObject(cat)
+                data = filter(lambda d: d.GetName() == cat, splitData)[0]
 
                 origYieldVals = [ ( par.GetName(), par.getVal(), par.getError() ) for par in self._yields if par.GetName().endswith(cat) ]
-                self._sPlots.append(  RooStats.SPlot( self._name + '_sData_' + cat, self._name + '_sData_' + cat
-                                                     , data, self._pdf.getPdf(cat)
-                                                     , RooArgList( par._var for par in self._yields if par.GetName().endswith(cat) ) )
-                                   )
-                self._sDataSets.append( self._sPlots[-1].GetSDataSet() )
+                splot = RooStats.SPlot( self._name + '_sData_' + cat, self._name + '_sData_' + cat, data, self._pdf.getPdf(cat)
+                                        , RooArgList( par._var for par in self._yields if par.GetName().endswith(cat)))
+                sdata = splot.GetSDataSet()
 
                 print 'P2VV - INFO: SData.__init__(): yields category %s:' % cat
                 print '    original:',
@@ -61,38 +58,40 @@ class SData( object ) :
                 __dref = lambda o : o._target_() if hasattr(o,'_target_') else o
                 if isinstance( __dref(splitCat), RooSuperCategory ) :
                     for fundCat in splitCat.inputCatList() :
-                        if not self._sDataSets[-1].get().find( fundCat.GetName() ) : self._sDataSets[-1].addColumn(fundCat)
-                elif splitCat.isFundamental() and not self._sDataSets[-1].get().find( splitCat.GetName() ) :
-                    self._sDataSets[-1].addColumn(splitCat)
+                        if not sdata.get().find( fundCat.GetName() ) : sdata.addColumn(fundCat)
+                elif splitCat.isFundamental() and not sdata.get().find( splitCat.GetName() ) :
+                    sdata.addColumn(splitCat)
 
                 # add general sWeight and PDF value columns (it must be possible to simplify this...)
                 # FIXME: in some cases "par.GetName().strip( '_' + cat )" goes wrong:
                 # use "par.GetName()[ : par.GetName().find(cat) - 1 ]" instead
                 # (case: 'N_bkgMass_notExclBiased'.strip('_notExclBiased') --> 'N_bkgM' ?!!!!!!)
                 weightVars = [ (  RooFormulaVar( par.GetName()[ : par.GetName().find(cat) - 1 ] + '_sw', '', '@0'
-                                                , RooArgList( self._sDataSets[-1].get().find( par.GetName() + '_sw' ) ) )
+                                                , RooArgList( sdata.get().find( par.GetName() + '_sw' ) ) )
                                 , RooFormulaVar( 'L_' + par.GetName()[ : par.GetName().find(cat) - 1 ], '', '@0'
-                                                , RooArgList( self._sDataSets[-1].get().find( 'L_' + par.GetName() ) ) )
+                                                , RooArgList( sdata.get().find( 'L_' + par.GetName() ) ) )
                                ) for par in self._yields if par.GetName().endswith(cat)
                              ]
 
                 for weight, pdfVal in weightVars :
-                    self._sDataSets[-1].addColumn(weight)
-                    self._sDataSets[-1].addColumn(pdfVal)
+                    sdata.addColumn(weight)
+                    sdata.addColumn(pdfVal)
 
-                if not sDataVars :
+                if not self._sData:
                     # get set of variables in data
-                    sDataVars = self._sDataSets[-1].get()
+                    sDataVars = sdata.get()
                     for par in self._yields :
                         if cat in par.GetName() :
                             sDataVars.remove( sDataVars.find( par.GetName() + '_sw' ) )
                             sDataVars.remove( sDataVars.find( 'L_' + par.GetName()  ) )
+                    from ROOT import RooDataSet
+                    self._sData = RooDataSet( self._name + '_splotdata', self._name + '_splotdata', sDataVars )
 
-            # merge data sets from categories
-            from ROOT import RooDataSet
-            self._sData = RooDataSet( self._name + '_splotdata', self._name + '_splotdata', sDataVars )
-            for data in self._sDataSets : self._sData.append(data)
-
+                self._sData.append(sdata)
+                splitData.remove(data)
+                del data
+                del splot
+                gc.collect()
         else :
             # calculate sWeights with full data set
             if isinstance( self._pdf._var, RooSimultaneous ) :

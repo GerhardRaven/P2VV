@@ -1,21 +1,19 @@
+import ROOT
 from ROOT import (RooArgSet, RooArgList, RooDataSet,
                   RooWorkspace, RooFitResult, RooFit,
                   RooDataHist, RooLinkedList, RooCmdArg)
 
 import P2VV.ROOTDecorators
 
-import ROOT
-from ROOT import TList
-TList.MakeIterator._creates = True
 def __TList_manager(l):
-    it = l.MakeIterator()
-    entry = it.Next()
-    while entry:
-        ROOT.SetOwnership(True)
-        entry = entry.Next()
+    entries = []
+    for entry in l:
+        ROOT.SetOwnership(entry, True)
+        entries.append(entry)
+    return entries
 
-def __wrap_kw_subs( fun, creates = False, containerManager = None ) :
-    if hasattr(fun, '_creates'):
+def __wrap_kw_subs( fun, creates = None, containerManager = None ) :
+    if hasattr(fun, '_creates') and creates != None:
         fun._creates = creates
     if containerManager == None:
         containerManager = lambda x: x
@@ -49,13 +47,22 @@ def __wrap_kw_subs( fun, creates = False, containerManager = None ) :
         # convert any named keywords into RooCmdArgs if possible...
         args += tuple(RooCmdArg(__disp(k,kwargs.pop(k))) for k in kwargs.keys() if hasattr(RooFit,k) )
         try:
-            return containerManager(fun(self, *args, **kwargs))
+            r = containerManager(fun(self, *args, **kwargs))
+            if creates:
+                ROOT.SetOwnership(self, True)
+            return r
         except TypeError as terr:
             fun_args = [ a for a in args if not isinstance(a, RooCmdArg) ]
             otr_args = [ a for a in args if     isinstance(a, RooCmdArg) ]
             l = RooLinkedList()
             for a in otr_args: l += a
-            return containerManager(fun(self, *tuple(fun_args + [l] if l.GetSize() else fun_args), **kwargs))
+            try:
+                r = containerManager(fun(self, *tuple(fun_args + [l] if l.GetSize() else fun_args), **kwargs))
+                if creates:
+                    ROOT.SetOwnership(self, True)
+                return r
+            except TypeError as terr1:
+                raise terr
     return _fun
 
 def __convert_init_kw_to_setter( cl ) :
@@ -70,6 +77,7 @@ def __convert_init_kw_to_setter( cl ) :
                     calls += (methodcaller( m+i, kwargs.pop(i) ),)
                     break
         init(self,*args,**kwargs)
+        ROOT.SetOwnership(self, True)
         for c in calls : c(self)
     cl.__init__ =  _init
 
@@ -111,7 +119,9 @@ def __wrapRooDataSetInit( init ) :
     from functools import wraps
     @wraps(init)
     def _init( self, *args ) :
-        return init(self,*tuple( cnvrt(i) for i in args ))
+        r = init(self, *tuple( cnvrt(i) for i in args ) )
+        ROOT.SetOwnership(self, True)
+        return r
     return _init
 RooDataSet.__init__ = __wrapRooDataSetInit( RooDataSet.__init__ )
 
@@ -172,8 +182,13 @@ def __create_RooAbsCollectionInit(t) :
             assert( isinstance(j,RooAbsArg) )
             _i.add( j )
         return _i
+    from functools import wraps
     __init = t.__init__
-    return lambda self,*args : __init(self, *tuple(cnvrt(i) for i in args))
+    def _init(self, *args):
+        r = __init(self, *tuple(cnvrt(i) for i in args))
+        ROOT.SetOwnership(self, True)
+        return r
+    return _init
 
 def _RooTypedUnary2Binary( t,op ) :
     return lambda x,y : getattr(t,op)(t(x),y)
@@ -282,7 +297,7 @@ RooDataSet.split            = __wrap_kw_subs( RooDataSet.split, True, __TList_ma
 #from ROOT import RooDataHist
 from ROOT import RooDataSet, RooChi2Var, RooProdPdf, RooMCStudy
 for i in  [ RooDataSet, RooChi2Var, RooProdPdf, RooMCStudy ] :
-    i.__init__ = __wrap_kw_subs( i.__init__ )
+    i.__init__ = __wrap_kw_subs( i.__init__, True )
 
 
 from ROOT import RooAbsRealLValue
@@ -536,7 +551,6 @@ def _RooFitResultPrint( self, **kwargs ) :
 RooFitResult.PrintSpecial = _RooFitResultPrint
 
 ## set _creates on class methods which we know create objects
-from ROOT import gInterpreter
 creators = {'RooAbsAnaConvPdf' : ['coefVars'],
             'RooAbsArg' : ['cloneTree', 'getVariables', 'getObservables', 'getComponents',
                            'getDependents', 'createFundamental', 'getParameters', 'shapeClientIterator'],
@@ -555,8 +569,7 @@ creators = {'RooAbsAnaConvPdf' : ['coefVars'],
                             'asTF', 'bindVars', 'createFundamental', 'sigma', 'mean'],
             'RooAbsRealLValue' : ['frame'],
             'RooDataSet' : ['binnedClone'],
-            'RooWorkspace' : ['getSnapshot']
-            }
+            'RooWorkspace' : ['getSnapshot']}
 
 extra = ['RooAbsBinning', 'RooAbsCachedPdf', 'RooAbsCategoryLValue', 'RooAbsDataStore',
          'RooAbsEffResModel', 'RooAbsFunc', 'RooAbsGenContext', 'RooAbsIntegrator', 'RooAbsLValue',
@@ -593,29 +606,6 @@ extra = ['RooAbsBinning', 'RooAbsCachedPdf', 'RooAbsCategoryLValue', 'RooAbsData
 for cl in extra:
     creators[cl] = []
 
-def __creates(method):
-    if hasattr(method, 'im_func'):
-        method = RooDataSet.reduce.im_func.func_closure[-1].cell_contents
-    method._creates = True
-
-def __decorate_class(cl):
-    _temp = __import__('ROOT', globals(), locals(), [cl], -1)
-    cl_type = getattr(_temp, cl)
-    bm = set()
-    __get_base_methods(cl, bm)
-    for method in set(creators[cl]) | bm:
-        method = getattr(cl_type, method)
-        __creates(method)
-    
-def __get_base_methods(cl, methods):
-    cinfo = gInterpreter.ClassInfo_Factory(cl)
-    binfo = gInterpreter.BaseClassInfo_Factory(cinfo)
-    ## Loop over base classes
-    while gInterpreter.BaseClassInfo_Next(binfo):
-        bname = gInterpreter.BaseClassInfo_Name(binfo)
-        if bname in creators:
-            methods |= set(creators[bname])
-        __get_base_methods(bname, methods)
-        
+from ROOTDecorators import set_class_creates
 for cl in creators.keys():
-    __decorate_class(cl)
+    set_class_creates(creators, cl)

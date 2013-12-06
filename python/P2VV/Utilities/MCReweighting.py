@@ -135,10 +135,8 @@ def compareDistributions( **kwargs ):
         legend.Draw()
     _P2VVPlotStash.append(legend) # keep reference to the legend
     
-    mcAfterPhysRew.Delete()
+    del mcAfterPhysRew
     return [obsCanv,KaonCanv,muonCanv,assymKaonCanv,assymMuonCanv,momFrame]
-
-
 
 class UniFunc(object):
     """ Diego's Uniform Function: A function that transform a variable into a flat distribution
@@ -217,10 +215,16 @@ def _combineDataSetParts( files, name, weightName='' ):
     print 'P2VV - INFO: combineDataSetParts: Combining the following datasets with common name, %s'%name
     for f in files: print f
  
+    import ROOT 
     from ROOT import TFile
     dataSets = [ TFile.Open(f,'READ').Get(name) for f in files ]
+    for d in dataSets:
+        ROOT.SetOwnership(d, True)
     data = dataSets.pop()
-    for d in dataSets: data.append(d)
+    for i in range(len(dataSets)):
+        d = dataSets.pop()
+        data.append(d)
+        del d
 
     # import args into current workspace
     from P2VV.RooFitWrappers import RooObject
@@ -228,9 +232,6 @@ def _combineDataSetParts( files, name, weightName='' ):
     for arg in data.get():
         if not ws[arg.GetName()]: ws.put(arg) 
 
-    # destroy and delete unnecessary stuff
-    for d in dataSets: d.Delete()
-    del dataSets
     return data
 
 
@@ -418,9 +419,7 @@ class MatchPhysics( ):
         print 'P2VV - INFO: Phyisics matching weights added to dataset: '+'MC_physicsReweighted_%s_iteration'%self._iterNumb
 
         del self._physWeights, weightsVar, weightsArgSet, 
-        weightsDataSet.Delete()
-        
-    
+        del weightsDataSet
 
     def getPdf(self):               return self._pdf
     def getAngleFunctions(self):    return self._pdfBuilder['angleFuncs']
@@ -898,7 +897,7 @@ class BuildBs2JpsiKK2011sFit():
 
         # create fit data
         self._fitData = self._pdfConfig['signalData'].reduce(pdfObs)
-        self._pdfConfig['signalData'].Delete()
+        self._pdfConfig['signalData'] = None
         
         # float/fix values of some parameters
         for CEvenOdds in self._pdfBuild['taggingParams']['CEvenOdds'] :

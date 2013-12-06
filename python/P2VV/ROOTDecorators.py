@@ -42,3 +42,38 @@ TFile.__enter__ = lambda self : self
 def __TFile__exit__(self,*args) : 
     if self : self.Close()
 TFile.__exit__ = __TFile__exit__
+
+__creators = {'TTree'  : ['CopyTree'],
+              'TChain' : []}
+
+def __creates(method):
+    if hasattr(method, 'im_func') and method.im_func.func_closure:
+        method = method.im_func.func_closure[-1].cell_contents
+    method._creates = True
+
+def __get_base_methods(cl, methods):
+    from ROOT import gInterpreter
+    cinfo = gInterpreter.ClassInfo_Factory(cl)
+    binfo = gInterpreter.BaseClassInfo_Factory(cinfo)
+    ## Loop over base classes
+    while gInterpreter.BaseClassInfo_Next(binfo):
+        bname = gInterpreter.BaseClassInfo_Name(binfo)
+        if bname in __creators:
+            methods |= set(__creators[bname])
+        __get_base_methods(bname, methods)
+
+def set_class_creates(creators, cl):
+    __creators.update(creators)
+    _temp = __import__('ROOT', globals(), locals(), [cl], -1)
+    cl_type = getattr(_temp, cl)
+    bm = set()
+    __get_base_methods(cl, bm)
+    for method in set(__creators[cl]) | bm:
+        method = getattr(cl_type, method)
+        __creates(method)
+    
+def get_creators():
+    return __creators
+
+for cl in __creators.keys():
+    set_class_creates({}, cl)
