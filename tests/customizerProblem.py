@@ -16,15 +16,15 @@ makeObservablePlots     = False
 makeKKMassPlots         = False
 plotAnglesNoEff         = False
 pdfConfig['makePlots']  = False
-pdfConfig['SFit']       = True
+pdfConfig['sFit']       = True
 pdfConfig['blind']      = False
 corrSFitErr             = 'sumWeight' # [ 1., 0.700, 0.952, 0.938, 0.764 ] # '' / 'matrix' / 'sumWeight'
 randomParVals           = ( ) # ( 1., 12346 ) # ( 2., 12345 )
 
 plotsFile = 'plots/paper2012_SFit.ps'
-#plotsFile = 'plots/JvLSFit.ps' if pdfConfig['SFit']\
+#plotsFile = 'plots/JvLSFit.ps' if pdfConfig['sFit']\
 #       else 'plots/JvLCFit.ps'
-parameterFile = None # 'JvLSFit.par' if pdfConfig['SFit'] else 'JvLCFit.par'
+parameterFile = None # 'JvLSFit.par' if pdfConfig['sFit'] else 'JvLCFit.par'
 
 if readData :
     pdfConfig['nTupleName'] = 'DecayTree'
@@ -45,7 +45,7 @@ else :
 
 if generateData :
     dataSetName = 'JpsiphiData'
-    dataSetFile = 'JvLSFit.root' if pdfConfig['SFit'] else 'JvLCFit.root'
+    dataSetFile = 'JvLSFit.root' if pdfConfig['sFit'] else 'JvLCFit.root'
 
 MinosPars = [  #'AparPhase'
              #, 'ASOddPhase_bin0', 'ASOddPhase_bin1',                    'ASOddPhase_bin3', 'ASOddPhase_bin4', 'ASOddPhase_bin5'
@@ -233,7 +233,7 @@ KKMass     = pdfBuild['observables']['KKMass']
 estWTagOS  = pdfBuild['observables']['estWTagOS']
 timeRes    = pdfBuild['observables']['timeRes']
 
-if not pdfConfig['SFit'] : obsSetP2VV.append(BMass)
+if not pdfConfig['sFit'] : obsSetP2VV.append(BMass)
 
 if not pdfBuild['iTagZeroTrick'] :
     tagCatP2VVOS = pdfBuild['observables']['tagCatP2VVOS']
@@ -273,7 +273,7 @@ if generateData :
     print 120 * '='
 
     # generate data
-    nEvents = int( pdfConfig['numEvents'] * ( pdfConfig['signalFraction'] if pdfConfig['SFit'] else 1. ) )
+    nEvents = int( pdfConfig['numEvents'] * ( pdfConfig['signalFraction'] if pdfConfig['sFit'] else 1. ) )
     print 'JvLFit: generating %d events' % nEvents
     fitData = pdf.generate( obsSetP2VV, nEvents )
 
@@ -287,7 +287,7 @@ if generateData :
     from P2VV.Utilities.DataHandling import writeData
     writeData( dataSetFile, dataSetName, fitData )
 
-elif pdfConfig['SFit'] :
+elif pdfConfig['sFit'] :
     defData = pdfBuild['sigSWeightData']
     sigData = pdfBuild['sigSWeightData']
     bkgData = pdfBuild['bkgSWeightData']

@@ -166,10 +166,10 @@ bkg_sdata = sData.data('background')
 
 # Plot mass pdf
 
-paper_calibration = FormulaVar('st_calibration', '1.45 * @0', [st])
-dg_calibration = FormulaVar('dg_calibration', "-6.81838 * @0 * @0 + 1.72 * @0", [st])
-sg_calibration = FormulaVar('sg_calibration', "-0.00455 + 1.92 * @0-9.9352 * @0 * @0", [st])
-linear_calibration = FormulaVar('linear_calibration', "0.00555 + 1.267 * @0", [st])
+paper_calibration = FormulaVar(Name = 'st_calibration', Formula = '1.45 * @0', Arguments = [st])
+dg_calibration = FormulaVar(Name = 'dg_calibration', Formula = "-6.81838 * @0 * @0 + 1.72 * @0", Arguments = [st])
+sg_calibration = FormulaVar(Name = 'sg_calibration', Formula = "-0.00455 + 1.92 * @0-9.9352 * @0 * @0", Arguments = [st])
+linear_calibration = FormulaVar(Name = 'linear_calibration', Formula = "0.00555 + 1.267 * @0", Arguments = [st])
 from P2VV.Dilution import dilution
 r = signal_dilution(psi_sdata, st, paper_calibration)
 r = signal_dilution(psi_sdata, st, dg_calibration)

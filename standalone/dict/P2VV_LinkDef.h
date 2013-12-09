@@ -45,7 +45,8 @@
 #pragma link C++ function RooDataSetToTree;
 #pragma link C++ function TreeToRooDataSet;
 #pragma link C++ function addSWeightToTree;
-#pragma link C++ function addRunPeriodToTree;
+#pragma link C++ function addIntegerToTree;
+#pragma link C++ function addCategoryToTree;
 #pragma link C++ function addVertexErrors;
 #pragma link C++ function sigmaFromFT;
 #pragma link C++ function hessian;

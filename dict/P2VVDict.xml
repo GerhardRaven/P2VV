@@ -70,7 +70,8 @@
         <function name = "RooDataSetToTree" />
         <function name = "TreeToRooDataSet" />
         <function name = "addSWeightToTree" />
-        <function name = "addRunPeriodToTree" />
+        <function name = "addIntegerToTree" />
+        <function name = "addCategoryToTree" />
         <function name = "addVertexErrors" />
         <function name = "sigmaFromFT" />
         <function name = "hessian" />

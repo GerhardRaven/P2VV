@@ -27,7 +27,7 @@ makeObservablePlots     = False
 makeKKMassPlots         = False
 plotAnglesNoEff         = False
 pdfConfig['makePlots']  = False
-pdfConfig['SFit']       = True
+pdfConfig['sFit']       = True
 corrSFitErr             = 'sumWeight' # '' / 'sumWeight' / ( 0.887, [ 0.566, 0.863, 0.956, 0.948, 0.855, 0.662 ] ) / 'matrix'
 randomParVals           = ( ) #( 0.2, 12345 )
 pdfConfig['blind']      = {#  'phiCP'  : ( 'UnblindUniform', 'BsPhis2013EPS',  0.2  )
@@ -41,8 +41,8 @@ parFileOut    = ''
 
 if generateData :
     dataSetName = 'JpsiphiData'
-    dataSetFile = 'paper2012_SFit.root' if pdfConfig['SFit'] else 'paper2012_CFit.root'
-elif pdfConfig['SFit'] :
+    dataSetFile = 'paper2012_SFit.root' if pdfConfig['sFit'] else 'paper2012_CFit.root'
+elif pdfConfig['sFit'] :
     dataSetName = 'JpsiKK_sigSWeight'
     #dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_4KKMassBins_2TagCats.root'
     #dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_unbiased_4KKMassBins_2TagCats.root'
@@ -288,7 +288,7 @@ KKMass     = pdfBuild['observables']['KKMass']
 estWTagOS  = pdfBuild['observables']['wTagOS']
 timeRes    = pdfBuild['observables']['timeRes']
 
-if not pdfConfig['SFit'] : obsSetP2VV.append(BMass)
+if not pdfConfig['sFit'] : obsSetP2VV.append(BMass)
 
 tagCatP2VVOS = pdfBuild['observables']['tagCatOS']
 tagCatP2VVSS = pdfBuild['observables']['tagCatSS']
@@ -316,7 +316,7 @@ if generateData :
     print 120 * '='
 
     # generate data
-    nEvents = int( pdfConfig['numEvents'] * ( pdfConfig['signalFraction'] if pdfConfig['SFit'] else 1. ) )
+    nEvents = int( pdfConfig['numEvents'] * ( pdfConfig['signalFraction'] if pdfConfig['sFit'] else 1. ) )
     print 'JvLFit: generating %d events' % nEvents
     dataSet = pdf.generate( obsSetP2VV, nEvents )
 
@@ -330,7 +330,7 @@ if generateData :
     from P2VV.Utilities.DataHandling import writeData
     writeData( dataSetFile, dataSetName, dataSet )
 
-elif pdfConfig['SFit'] :
+elif pdfConfig['sFit'] :
     if corrSFitErr == 'sumWeight'\
             or ( type(corrSFitErr) != str and hasattr( corrSFitErr, '__iter__' ) and hasattr( corrSFitErr, '__getitem__' ) ) :
         from P2VV.Utilities.DataHandling import correctWeights
@@ -386,7 +386,7 @@ if constWTagAsyms and constWTagAsyms != 'P0' :
 
 if pdfConfig['parameterizeKKMass'] == 'amplitudes' :
     for par in pdfBuild['signalKKMass'].pdf().getParameters(fitData) : par.setConstant(True)
-    if not pdfConfig['SFit'] :
+    if not pdfConfig['sFit'] :
         for par in pdfBuild['backgroundKKMass'].pdf().getParameters(fitData) : par.setConstant(True)
 
 if constCSP : pdfBuild['amplitudes'].setConstant('C_SP')
@@ -425,7 +425,7 @@ if fastFit :
     pdfBuild['lifetimeParams'].parameter('dGamma').setVal(dGammaVal)
     pdfBuild['timeResModel'].setConstant('.*')
     pdfBuild['signalBMass'].setConstant('.*')
-    if not pdfConfig['SFit'] :
+    if not pdfConfig['sFit'] :
         pdfBuild['backgroundBMass'].setConstant('.*')
         pdfBuild['backgroundTime'].setConstant('.*')
         if hasattr( pdfBuild, '_bkgTaggingPdf' ) : pdfBuild['bkgTaggingPdf'].setConstant('.*')
@@ -557,7 +557,7 @@ if doFit :
                                )
 
     else :
-        if pdfConfig['SFit'] :
+        if pdfConfig['sFit'] :
             fitResult = pdf.fitTo( fitData, SumW2Error = True if corrSFitErr == 'matrix' else False
                                   , Minos = RooMinPars, Save = True, Range = fitRange
                                   , **fitOpts
@@ -714,7 +714,7 @@ if makeObservablePlots or pdfConfig['makePlots'] or makeKKMassPlots or dllPars :
     dataSet.Print()
 
     # create projection data set for conditional observables
-    if pdfConfig['SFit'] :
+    if pdfConfig['sFit'] :
         comps = None
     else :
         comps = {  'sig*' : dict( LineColor = kRed,       LineStyle = kDashed )
@@ -1270,7 +1270,7 @@ if makeObservablePlots and not pdfBuild['iTagZeroTrick'] :
 
     ## plot angles
     #print 'JvLFit: plotting angular distributions'
-    #if plotAnglesNoEff and pdfConfig['SFit'] and pdfConfig['multiplyByTimeEff'] not in [ 'all', 'signal' ]\
+    #if plotAnglesNoEff and pdfConfig['sFit'] and pdfConfig['multiplyByTimeEff'] not in [ 'all', 'signal' ]\
     #        and not pdfConfig['conditionalTagging'] :
     #    addPDFs = [ ws['sig_t_angles_tagCat_iTag'] ]
     #else :
@@ -1421,7 +1421,7 @@ if dllPars :
     ##pdfBuild['lifetimeParams'].setConstant('dM|Gamma')
     #pdfBuild['timeResModel'].setConstant('.*')
     #pdfBuild['signalBMass'].setConstant('.*')
-    #if not pdfConfig['SFit'] :
+    #if not pdfConfig['sFit'] :
     #    pdfBuild['backgroundBMass'].setConstant('.*')
     #    pdfBuild['backgroundTime'].setConstant('.*')
 

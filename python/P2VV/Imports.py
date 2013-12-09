@@ -110,39 +110,122 @@ parNames = {  'phiCP'                     : ( 'phi_s',                       '$\
             , 'm_bkg_arg_bin5'            : ( 'alpha_mass_5',                '${\\alpha_\\text{mass}}_5$'                 )
            }
 
+# common parameter names dictionary:  'P2VV internal name' : 'common name'
+commonParNames = {  'phiCP'             : 'phis'
+                  , '__phiCP__'         : 'phis'
+                  , 'phiCP_A0'          : 'phiszero'
+                  , '__phiCP_A0__'      : 'phiszero'
+                  , 'phiCP_Apar'        : 'phispara'
+                  , '__phiCP_Apar__'    : 'phispara'
+                  , 'phiCP_Aperp'       : 'phisperp'
+                  , '__phiCP_Aperp__'   : 'phisperp'
+                  , 'phiCP_AS'          : 'phisS'
+                  , '__phiCP_AS__'      : 'phisS'
+                  , 'lambdaCP'          : 'lambda'
+                  , '__lambdaCP__'      : 'lambda'
+                  , 'rhoCP_A0'          : 'lambdazero'
+                  , '__rhoCP_A0__'      : 'lambdazero'
+                  , 'rhoCP_Apar'        : 'lambdapara'
+                  , '__rhoCP_Apar__'    : 'lambdapara'
+                  , 'rhoCP_Aperp'       : 'lambdaperp'
+                  , '__rhoCP_Aperp__'   : 'lambdaperp'
+                  , 'rhoCP_AS'          : 'lambdaS'
+                  , '__rhoCP_AS__'      : 'lambdaS'
+                  , 'Gamma'             : 'Gamma'
+                  , 'Gamma_p2011'       : 'Gamma_2011'
+                  , 'Gamma_p2012'       : 'Gamma_2012'
+                  , 'dGamma'            : 'DelGam'
+                  , '__dGamma__'        : 'DelGam'
+                  , 'dM'                : 'Delm'
+                  , 'A0Mag2'            : 'AzeroSq'
+                  , 'AperpMag2'         : 'AperpSq'
+                  , 'f_S'               : 'FS'
+                  , 'f_S_bin0'          : 'FS1'
+                  , 'f_S_bin1'          : 'FS2'
+                  , 'f_S_bin2'          : 'FS3'
+                  , 'f_S_bin3'          : 'FS4'
+                  , 'f_S_bin4'          : 'FS5'
+                  , 'f_S_bin5'          : 'FS6'
+                  , 'AparPhase'         : 'delpara'
+                  , 'AperpPhase'        : 'delperp'
+                  , 'ASOddPhase'        : 'delS'
+                  , 'ASOddPhase_bin0'   : 'delS1'
+                  , 'ASOddPhase_bin1'   : 'delS2'
+                  , 'ASOddPhase_bin2'   : 'delS3'
+                  , 'ASOddPhase_bin3'   : 'delS4'
+                  , 'ASOddPhase_bin4'   : 'delS5'
+                  , 'ASOddPhase_bin5'   : 'delS6'
+                  , 'betaTimeEff'       : 'beta'
+                  , 'betaTimeEff_p2011' : 'beta_2011'
+                  , 'betaTimeEff_p2012' : 'beta_2012'
+                 }
+
 # nominal values of physics parameters
-parValues = {  'A0Mag2'          : (  5.2080e-01, 3.44e-03, -1. )
-             , 'ASOddPhase_bin0' : (  7.9980e-01, 1.85e-01, -1. )
-             , 'ASOddPhase_bin1' : (  2.3164e+00, 1.95e-01, -1. )
-             , 'ASOddPhase_bin2' : (  4.5893e-01, 2.26e-01, -1. )
-             , 'ASOddPhase_bin3' : ( -3.5668e-01, 1.82e-01, -1. )
-             , 'ASOddPhase_bin4' : ( -6.7661e-01, 1.83e-01, -1. )
-             , 'ASOddPhase_bin5' : ( -8.2082e-01, 1.22e-01, -1. )
-             , 'AparPhase'       : (  3.2584e+00, 1.24e-01, -1. )
-             , 'AperpMag2'       : (  2.5357e-01, 4.92e-03, -1. )
-             , 'AperpPhase'      : (  3.1070e+00, 1.46e-01, -1. )
-             , 'Gamma_p2011'     : (  6.6899e-01, 4.45e-03, -1. )
-             , 'Gamma_p2012'     : (  6.7440e-01, 3.20e-03, -1. )
-             , '__dGamma__'      : (  6.7225e-02, 9.14e-03, -1. )
-             , '__phiCP__'       : ( -1.2092e-01, 5.06e-02, -1. )
-             , 'dM'              : (  1.7750e+01, 5.77e-02, -1. )
-             , 'f_S_bin0'        : (  4.4395e-01, 5.49e-02, -1. )
-             , 'f_S_bin1'        : (  6.3547e-02, 1.77e-02, -1. )
-             , 'f_S_bin2'        : (  8.6392e-03, 6.49e-03, -1. )
-             , 'f_S_bin3'        : (  8.9849e-03, 5.82e-03, -1. )
-             , 'f_S_bin4'        : (  4.4404e-02, 1.56e-02, -1. )
-             , 'f_S_bin5'        : (  2.0902e-01, 2.61e-02, -1. )
-             , 'lambdaCP'        : (  9.6566e-01, 1.84e-02, -1. )
-             , 'timeResSigmaSF'  : (  1.4672e+00, 5.83e-02, -1. )
-             , 'wTagDelP0OS'     : (  1.3724e-02, 1.20e-03, -1. )
-             , 'wTagDelP0SS'     : ( -1.5953e-02, 2.00e-03, -1. )
-             , 'wTagDelP1OS'     : (  6.9740e-02, 1.20e-02, -1. )
-             , 'wTagDelP1SS'     : (  1.5026e-02, 1.90e-02, -1. )
-             , 'wTagP0OS'        : (  3.8930e-01, 9.16e-03, -1. )
-             , 'wTagP0SS'        : (  4.4068e-01, 6.70e-03, -1. )
-             , 'wTagP1OS'        : (  1.0299e+00, 5.71e-02, -1. )
-             , 'wTagP1SS'        : (  9.4439e-01, 1.03e-01, -1. )
+parValues = {  'A0Mag2'            : (  5.2081e-01, 3.45e-03, -1. )
+             , 'ASOddPhase_bin0'   : (  7.9966e-01, 1.84e-01, -1. )
+             , 'ASOddPhase_bin1'   : (  2.3149e+00, 1.97e-01, -1. )
+             , 'ASOddPhase_bin2'   : (  4.5852e-01, 2.24e-01, -1. )
+             , 'ASOddPhase_bin3'   : ( -3.6057e-01, 1.84e-01, -1. )
+             , 'ASOddPhase_bin4'   : ( -6.7543e-01, 1.82e-01, -1. )
+             , 'ASOddPhase_bin5'   : ( -8.2100e-01, 1.22e-01, -1. )
+             , 'AparPhase'         : (  3.2610e+00, 1.22e-01, -1. )
+             , 'AperpMag2'         : (  2.5352e-01, 4.93e-03, -1. )
+             , 'AperpPhase'        : (  3.1897e+00, 1.13e-01, -1. )
+             , 'Gamma'             : (  6.6069e-01, 5.98e-03, -1. )
+             , '__dGamma__'        : (  8.7021e-02, 9.14e-03, -1. )
+             , '__phiCP__'         : (  8.2756e-02, 5.09e-02, -1. )
+             , 'betaTimeEff_p2011' : ( -8.3000e-03, 4.00e-03, -1. )
+             , 'betaTimeEff_p2012' : ( -1.3749e-02, 6.53e-03, -1. )
+             , 'dM'                : (  1.7765e+01, 2.21e-02, -1. )
+             , 'f_S_bin0'          : (  4.4454e-01, 5.50e-02, -1. )
+             , 'f_S_bin1'          : (  6.3524e-02, 1.77e-02, -1. )
+             , 'f_S_bin2'          : (  8.7002e-03, 6.49e-03, -1. )
+             , 'f_S_bin3'          : (  8.8951e-03, 5.80e-03, -1. )
+             , 'f_S_bin4'          : (  4.4555e-02, 1.55e-02, -1. )
+             , 'f_S_bin5'          : (  2.1030e-01, 2.61e-02, -1. )
+             , 'lambdaCP'          : (  9.6372e-01, 1.76e-02, -1. )
+             , 'wTagDelP0OS'       : (  1.3725e-02, 1.20e-03, -1. )
+             , 'wTagDelP0SS'       : ( -1.5954e-02, 2.00e-03, -1. )
+             , 'wTagDelP1OS'       : (  6.9761e-02, 1.20e-02, -1. )
+             , 'wTagDelP1SS'       : (  1.5002e-02, 1.90e-02, -1. )
+             , 'wTagP0OS'          : (  3.9056e-01, 9.08e-03, -1. )
+             , 'wTagP0SS'          : (  4.4014e-01, 6.69e-03, -1. )
+             , 'wTagP1OS'          : (  1.0364e+00, 5.72e-02, -1. )
+             , 'wTagP1SS'          : (  9.4522e-01, 1.03e-01, -1. )
             }
+
+parValues20131203 = {  'A0Mag2'            : (  5.2080e-01, 3.45e-03, -1 )
+                     , 'ASOddPhase_bin0'   : (  8.2353e-01, 1.85e-01, -1 )
+                     , 'ASOddPhase_bin1'   : (  2.2694e+00, 2.22e-01, -1 )
+                     , 'ASOddPhase_bin2'   : (  4.2763e-01, 1.90e-01, -1 )
+                     , 'ASOddPhase_bin3'   : ( -3.6125e-01, 1.86e-01, -1 )
+                     , 'ASOddPhase_bin4'   : ( -6.2751e-01, 1.65e-01, -1 )
+                     , 'ASOddPhase_bin5'   : ( -8.9047e-01, 1.38e-01, -1 )
+                     , 'AparPhase'         : (  3.2492e+00, 1.29e-01, -1 )
+                     , 'AperpMag2'         : (  2.5361e-01, 4.92e-03, -1 )
+                     , 'AperpPhase'        : (  3.1662e+00, 1.17e-01, -1 )
+                     , 'Gamma'             : (  6.6112e-01, 6.00e-03, -1 )
+                     , '__dGamma__'        : (  8.6749e-02, 9.16e-03, -1 )
+                     , '__phiCP__'         : (  7.0521e-02, 5.14e-02, -1 )
+                     , 'betaTimeEff_p2011' : ( -8.2819e-03, 4.00e-03, -1 )
+                     , 'betaTimeEff_p2012' : ( -1.3524e-02, 6.54e-03, -1 )
+                     , 'dM'                : (  1.7762e+01, 2.21e-02, -1 )
+                     , 'f_S_bin0'          : (  4.4391e-01, 5.47e-02, -1 )
+                     , 'f_S_bin1'          : (  6.0500e-02, 1.79e-02, -1 )
+                     , 'f_S_bin2'          : (  1.0335e-02, 6.74e-03, -1 )
+                     , 'f_S_bin3'          : (  8.7773e-03, 5.82e-03, -1 )
+                     , 'f_S_bin4'          : (  4.8669e-02, 1.61e-02, -1 )
+                     , 'f_S_bin5'          : (  1.9547e-01, 2.58e-02, -1 )
+                     , 'lambdaCP'          : (  9.6630e-01, 1.78e-02, -1 )
+                     , 'wTagDelP0OS'       : (  1.3722e-02, 1.20e-03, -1 )
+                     , 'wTagDelP0SS'       : ( -1.5989e-02, 2.00e-03, -1 )
+                     , 'wTagDelP1OS'       : (  6.9705e-02, 1.20e-02, -1 )
+                     , 'wTagDelP1SS'       : (  1.5208e-02, 1.90e-02, -1 )
+                     , 'wTagP0OS'          : (  3.9250e-01, 9.06e-03, -1 )
+                     , 'wTagP0SS'          : (  4.3908e-01, 6.69e-03, -1 )
+                     , 'wTagP1OS'          : (  1.0296e+00, 5.69e-02, -1 )
+                     , 'wTagP1SS'          : (  9.3231e-01, 1.03e-01, -1 )
+                    }
 
 parValues2011 = {  'phiCP'           : (  6.9616e-02, 9.09e-02, -1. )
                  , 'lambdaCP'        : (  9.4368e-01, 3.04e-02, -1. )
@@ -165,13 +248,6 @@ parValues2011 = {  'phiCP'           : (  6.9616e-02, 9.09e-02, -1. )
                  , 'ASOddPhase_bin3' : ( -5.0928e-01, 2.55e-01, -1. )
                  , 'ASOddPhase_bin4' : ( -4.5728e-01, 2.08e-01, -1. )
                  , 'ASOddPhase_bin5' : ( -6.5000e-01, 1.98e-01, -1. )
-                 , 'timeResSigmaSF'  : (  1.4506e+00, 5.93e-02, -1. )
-                 , 'wTagP0OS'        : (  3.9065e-01, 7.69e-03, -1. )
-                 , 'wTagP0SS'        : (  3.6119e-01, 1.59e-02, -1. )
-                 , 'wTagP1OS'        : (  1.0001e+00, 2.29e-02, -1. )
-                 , 'wTagP1SS'        : (  1.0184e+00, 1.57e-01, -1. )
-                 , 'wTagDelP0OS'     : (  1.1002e-02, 3.40e-03, -1. )
-                 , 'wTagDelP0SS'     : ( -1.9038e-02, 5.00e-03, -1. )
                  , 'm_sig_frac'      : (  7.5966e-01, 3.49e-02, -1. )
                  , 'm_sig_mean'      : (  5.3682e+03, 4.84e-02, -1. )
                  , 'm_sig_sigma_1'   : (  6.0797e+00, 1.33e-01, -1. )

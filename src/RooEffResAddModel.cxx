@@ -64,6 +64,13 @@ RooEffResAddModel::~RooEffResAddModel( )
 RooResolutionModel* RooEffResAddModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
 {
    _addModel = static_cast<RooAddModel*>(RooAddModel::convolution(inBasis, owner));
+   if (_addModel == 0) {
+     coutE(InputArguments) << "RooEffResAddModel(" << GetName()
+         << "): convolution of RooAddModel with basis function \""
+         << inBasis->GetName() << "\" failed" << std::endl;
+     assert(_addModel != 0);
+     return 0;
+   }
    return new RooEffResAddModel(*_addModel);
 }
    

@@ -123,10 +123,41 @@ void addSWeightToTree(const RooDataSet& ds, TTree& tree, const std::string& bran
    addSWeightToTree(weights, tree, branch_name);
 }
 
-void addRunPeriodToTree(TTree& tree, Int_t period, const char* branchName) {
+void addIntegerToTree(TTree& tree, Int_t value, const char* branchName) {
   TString branchNameStr(branchName);
-  TBranch* branch = tree.Branch(branchNameStr, &period, branchNameStr + "/I");
+  Int_t* output = new Int_t(value);
+  TBranch* branch = tree.Branch(branchNameStr, output, branchNameStr + "/I");
   for (Long64_t it = 0; it < tree.GetEntries(); ++it) branch->Fill();
+  tree.FlushBaskets();
+}
+
+void addCategoryToTree(TTree& tree, const char* floatBranch,
+    const char* catBranch, std::vector<Double_t> boundaries,
+    std::vector<Int_t> indices) {
+  if (indices.size() != boundaries.size() + 1) {
+    std::cerr << "ERROR: addCategoryToTree(): number of boundaries ("
+        << boundaries.size() << ") and number of indices (" << indices.size()
+        << ") do not match" << std::endl;
+    assert(indices.size() == boundaries.size() + 1);
+  }
+
+  TString branchNameStr(catBranch);
+  Double_t* input = new Double_t(0.);
+  Int_t* output = new Int_t(0);
+  tree.SetBranchAddress(floatBranch, input);
+  TBranch* branch = tree.Branch(branchNameStr, output, branchNameStr + "/I");
+
+  for (Long64_t it = 0; it < tree.GetEntries(); ++it) {
+    tree.GetEntry(it);
+    Int_t pos(0);
+    for (std::vector<Double_t>::const_iterator boundIt = boundaries.begin();
+        boundIt != boundaries.end(); ++boundIt) {
+      if (*input < *boundIt) break;
+      ++pos;
+    }
+    *output = indices[pos];
+    branch->Fill();
+  }
   tree.FlushBaskets();
 }
 
@@ -475,9 +506,15 @@ RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
     // set branch status
     UInt_t brFound = 0;
     tree.SetBranchStatus(arg->GetName(), kTRUE, &brFound);
-    if (brFound != 1) {
+    if (brFound < 1) {
       cout << "P2VV - WARNING: TreeToRooDataSet(): branch \""
           << arg->GetName() << "\" not found in tree" << endl;
+      obsSet.remove(*arg);
+      continue;
+    } else if (brFound > 1) {
+      cout << "P2VV - WARNING: TreeToRooDataSet(): " << brFound
+          << " branches \"" << arg->GetName()
+          << "\" found in tree: not reading this branch" << endl;
       obsSet.remove(*arg);
       continue;
     }
