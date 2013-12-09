@@ -188,7 +188,7 @@ def readData( filePath, dataSetName, NTuple = False, observables = None, **kwarg
       data = RooDataSet(  dataSetName, dataSetName
                        , [ obs._var for obs in observables ]
                        , Import = ntuple
-                       , Cut = noNAN + ' && ' + cuts if cuts else noNAN )
+                       , Cut = noNAN + ' && ' + cuts if cuts else noNAN
                        , **dataSetArgs
                        )
 
