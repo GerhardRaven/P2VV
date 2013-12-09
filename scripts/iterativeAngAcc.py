@@ -9,12 +9,15 @@ parser.add_option('-n', '--numIters', dest='numIters',  default = 7, type=int,  
 parser.add_option('-f', '--InitFit',  dest='InitFit',   default = False,            help='Initial fit on data')
 (options, args) = parser.parse_args()
 
-NumbOfIterations     = options.numIters
-kinematicRewApproach = options.KKmomRew
-MCProd               = options.MCProd
-physWeightName       = 'weightPhys'
-initialFitOnData     = options.InitFit
-makePlots            = True
+NumbOfIterations      = options.numIters
+kinematicRewApproach  = options.KKmomRew
+MCProd                = options.MCProd
+initialFitOnData      = options.InitFit
+physWeightName        = 'weightPhys'
+
+# plotig control
+makePlots        = True 
+plotAtTheseSteps = [ 1, NumbOfIterations ]  # [ i for i in xrange(1,NumbOfIterations+1) ]
 
 # specify datasets, sim. conditions, nominal accceptance weights and data physics parameters
 from P2VV.Utilities.MCReweighting import parValuesMcSim08_6KKmassBins as monteCarloParameters
@@ -123,7 +126,7 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
         KinematicReweight.reweight( iterNumb, PhysicsReweight.getDataSet(weighted=True) )
         reweightedData = KinematicReweight.getDataSet()
 
-    if makePlots: # plot data after each reweighting step
+        if makePlots and iterNumb in plotAtTheseSteps: # plot data after each reweighting step
         compPlots = compareDistributions( mcData          = PhysicsReweight.getDataSet(),
                                           mcDataPhysRew   = PhysicsReweight.getDataSet(weighted=True),
                                           MomRewData      = reweightedData,
