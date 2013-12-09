@@ -11,13 +11,14 @@ makePlots   = False
 transAngles = False
 incSWave    = False
 normPdf     = True
-tResModel   = ''
+tResModel   = '' # '3fb'
 trigger     = ''
 timeInt     = False
 addInvPdf   = False
 weightVar   = '' # 'sWeights_ipatia'
 doSelection = True
 blind       = { } # { 'phiCP' : ( 'UnblindUniform', 'BsPhisCombination', 0.2 ), 'dGamma' : ( 'UnblindUniform', 'BsDGsCombination', 0.02 ) }
+parFileIn   = '' # '../it6/fitPars.par'
 
 momentsFile = '%s_%s_UB_UT_%s_BkgCat050_KK30'      % ( MCProd, 'trans' if transAngles else 'hel', tResModel if tResModel else 'trueTime' )
 plotsFile   = '%s_%s_UB_UT_%s_BkgCat050_KK30.ps'   % ( MCProd, 'trans' if transAngles else 'hel', tResModel if tResModel else 'trueTime' )
@@ -75,8 +76,8 @@ else :
     SWaveAmps = { }
 
 # CP violation parameters
-phiCPVal    = +0.07 if MCProd.startswith('Sim08') else +0.0827 if MCProd == 'real' else -0.04
-lambCPSqVal = 0.964 if MCProd == 'real' else 1.
+phiCPVal  = +0.07 if MCProd.startswith('Sim08') else +0.0827 if MCProd == 'real' else -0.04
+lambCPVal = 0.964 if MCProd == 'real' else 1.
 
 # B lifetime parameters
 GammaVal  = 1. / 1.503 if MCProd.startswith('Sim08') else 0.6606 if MCProd == 'real' else 0.679
@@ -215,8 +216,8 @@ if normPdf :
     # CP violation parameters
     phiCPVar = dict( Value = phiCPVal )
     if blind and 'phiCP' in blind : phiCPVar['Blind'] = blind['phiCP']
-    from P2VV.Parameterizations.CPVParams import LambdaSqArg_CPParam as CPParam
-    lambdaCP = CPParam( lambdaCPSq = lambCPSqVal, phiCP = phiCPVar )
+    from P2VV.Parameterizations.CPVParams import LambdaAbsArg_CPParam as CPParam
+    lambdaCP = CPParam( lambdaCP = lambCPVal, phiCP = phiCPVar )
 
     # tagging parameters
     from P2VV.Parameterizations.FlavourTagging import Trivial_TaggingParams as TaggingParams
@@ -275,6 +276,13 @@ if normPdf :
 
     else :
         pdf = protoPdf
+
+if parFileIn :
+    # read parameter values from file
+    from P2VV.Parameterizations.FullPDFs import PdfConfiguration
+    pdfConfig = PdfConfiguration()
+    pdfConfig.readParametersFromFile( filePath = parFileIn )
+    pdfConfig.setParametersInPdf(pdf)
 
 
 ###########################################################################################################################################

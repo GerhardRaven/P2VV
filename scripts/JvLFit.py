@@ -988,7 +988,7 @@ if makeObservablePlots :
 
         obs = obsSetP2VV[ 1 if obsName == 'ctk' else 2 if obsName == 'ctl' else 3 if obsName == 'phi' else 0 ]
         plotRange = 'Bulk' if obsName == 'timeLin' else ''
-        binWidth = ( obs.getMax(plotRange) - obs.getMin(plotRange) ) / float(numBins[obsName]) / ( pi if iter == 4 else 1. )
+        binWidth = ( obs.getMax(plotRange) - obs.getMin(plotRange) ) / float(numBins[obsName]) / ( pi if obsName == 'phi' else 1. )
         plots = plot(  pad, obs, dataSet, totPdf, addPDFs = [ pdfList[iter] for pdfList in [ phiPdfs, evenPdfs, oddPdfs, SPdfs ] if pdfList ]
                      , xTitle       = obsNames[obsName][1]
                      , yTitle       = obsYTitles[obsName] % binWidth, logy = True if obsName == 'timeLog' else False
