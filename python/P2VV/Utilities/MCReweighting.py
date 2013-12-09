@@ -524,15 +524,23 @@ def writeWeights(dataset, weights, weightsName, writeDatasetName=''):
 
 # Class for multipling a pdf with an angular acceptance and performs an sFit 
 class BuildBs2JpsiKKFit():
-    def __init__(self,**kwargs):
+    def __init__( self,**kwargs ):
         print 'P2VV - INFO: Initialised physics reweighting class: BuildBs2JpsiKKFit().'
-        
         from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_RunIAnalysis as PdfConfig
+        
+        # specify running period
         MCProd = kwargs.pop('MonteCarloProduction', 'Sim08')
         if   '2011' in MCProd: runPeriod = '2011'
         elif '2012' in MCProd: runPeriod = '2012'
         else: runPeriod = '3fb'
-        pdfConfig = PdfConfig(RunPeriods = runPeriod)
+        self._pdfConfig = PdfConfig( RunPeriods = runPeriod )
+        
+        # blind / unblind (phi_s,dGama)
+        #self._pdfConfig['blind'] = {}
+        
+        # give parameters of the pdf a prefix
+        self._pdfConfig['parNamePrefix'] = 'data' 
+        namePF = self._pdfConfig['parNamePrefix']
 
         self._dataSetPath = kwargs.pop('dataSetPath', None)
         self._dataSetName = kwargs.pop('dataSetName', None)
@@ -543,79 +551,84 @@ class BuildBs2JpsiKKFit():
      
         # fit options
         fitOpts = dict( NumCPU = 8, Optimize  = 2, Minimizer = 'Minuit2' )
-        pdfConfig['fitOptions'] = fitOpts
+        self._pdfConfig['fitOptions'] = fitOpts
         corrSFitErrCats         = [ 'runPeriod', 'KKMassCat' ] if ('2011' not in MCProd or '2012' not in MCProd) else [ 'KKMassCat' ]
         randomParVals           = ( ) # ( 1., 12345 )
 
         # PDF options
         # time acceptance
-        if '2011' not in MCProd and '2012' not in MCProd:
-            pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file']\
+        if runPeriod=='3fb':
+            self._pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file']\
                 = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
-            pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] )['file']\
+            self._pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] )['file']\
                 = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
-        elif '2011' in MCProd:
-            pdfConfig['timeEffHistFiles'] = dict(  
+        elif runPeriod=='2011':
+            self._pdfConfig['timeEffHistFiles'] = dict(  
                 file  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
                 , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
                 , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
                 )
-        elif '2012' in MCProd:
-            pdfConfig['timeEffHistFiles'] = dict(  
+        elif runPeriod=='2012':
+            self._pdfConfig['timeEffHistFiles'] = dict(  
                 file = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
                 , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
                 , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
                 )
             
         # angular acceptance
-        pdfConfig['angEffMomsFiles'] = ''
-        pdfConfig['anglesEffType']   = ''
+        self._pdfConfig['angEffMomsFiles'] = ''
+        self._pdfConfig['anglesEffType']   = ''
         
         # read data set from file
         from P2VV.Utilities.DataHandling import readData
         dataSet = readData( filePath = self._dataSetPath, dataSetName = self._dataSetName,  NTuple = False )
-        pdfConfig['signalData'] = dataSet
-        pdfConfig['readFromWS'] = True
+        self._pdfConfig['signalData'] = dataSet
+        self._pdfConfig['readFromWS'] = True
         
         # build the PDF
         from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
-        pdfBuild = PdfBuilder( **pdfConfig )
-        pdf = pdfBuild.pdf()
-
+        self._pdfBuild = PdfBuilder( **self._pdfConfig )
+        self._pdf = self._pdfBuild.pdf()
+        
         # data set with weights corrected for background dilution: for phi_s fit only!
         from P2VV.Utilities.DataHandling import correctWeights
         self._fitData = correctWeights( dataSet, corrSFitErrCats )
 
         # fix values of some parameters
-        for CEvenOdds in pdfBuild['taggingParams']['CEvenOdds'] :
-            if not pdfConfig['SSTagging'] :
-                CEvenOdds.setConstant('avgCEven.*')
-                CEvenOdds.setConstant( 'avgCOdd.*', True )
+        for CEvenOdds in self._pdfBuild['taggingParams']['CEvenOdds'] :
+            if not self._pdfConfig['SSTagging'] :
+                if namePF:
+                    CEvenOdds.setConstant( self._pdfConfig['parNamePrefix'] + '_' + 'avgCEven.*')
+                    CEvenOdds.setConstant( self._pdfConfig['parNamePrefix'] + '_' + 'avgCOdd.*', True )
+                else: 
+                    CEvenOdds.setConstant( 'avgCEven.*')
+                    CEvenOdds.setConstant( 'avgCOdd.*', True )
             else :
                 for CEvenOdd in CEvenOdds :
-                    CEvenOdd.setConstant('avgCEven.*')
-                    CEvenOdd.setConstant( 'avgCOdd.*', True )
-
-        pdfBuild['amplitudes'].setConstant('C_SP')
+                    if namePF:
+                        CEvenOdd.setConstant( self._pdfConfig['parNamePrefix'] + '_' + 'avgCEven.*')
+                        CEvenOdd.setConstant( self._pdfConfig['parNamePrefix'] + '_' + 'avgCOdd.*', True )
+                    else: 
+                        CEvenOdd.setConstant('avgCEven.*')
+                        CEvenOdd.setConstant( 'avgCOdd.*', True )
+        for par in self._pdf.getParameters(self._fitData):
+            if 'C_SP' in par: par.setConstant()
+            #self._pdfBuild['amplitudes'].setConstant('C_SP')
 
         # print parameters
         print 120 * '='
         print 'Bs2JpsiKKFit: fit data:'
         self._fitData.Print()
-        #print 'Bs2JpsiKKFit: observables in PDF:'
-        #pdfObs.Print('v')
-        #print 'Bs2JpsiKKFit: parameters in PDF:'
-        #pdfPars.Print('v')
+        print 'Bs2JpsiKKFit: observables in PDF:'
+        self._pdf.getObservables(self._fitData).Print('v')
+        print 'Bs2JpsiKKFit: parameters in PDF:'
+        self._pdf.getParameters(self._fitData).Print('v')
         print 'Bs2JpsiKKFit: constraints in PDF:'
-        for constr in pdf.ExternalConstraints() : constr.Print()
+        for constr in self._pdf.ExternalConstraints() : constr.Print()
 
         self._FitResults  = {} # collect all the fit results
         self._Moments     = {} # collect all moments
        
-        self._pdfConfig = pdfConfig
-        self._pdfBuild  = pdfBuild
-        self._pdf = pdf
-
     def doFit( self, itNum=0, angAccFile=None ):
         pref = self._pdfConfig['parNamePrefix'] + '_'
         
@@ -640,7 +653,6 @@ class BuildBs2JpsiKKFit():
         fitResult.Write()
         resultFile.Close()
         self._FitResults['iter_%s'%itNum] = fitResult 
-    
         print 120 * '=' + '\n'        
 
     def updateDataParameters(self, oldPars, itNum=0):
@@ -649,10 +661,15 @@ class BuildBs2JpsiKKFit():
         parkeys = oldPars.keys()
         parkeys.remove('A0Phase')
         for par in parkeys:
-            try: oldPars[par] = fitResult.floatParsFinal().find( self._pdfConfig['parNamePrefix'] + '_' + par).getVal()
-            except AttributeError: print 'P2VV - WARNING: updateDataParameters: Parameter %s not found in fit result %s using, parameter value will not change.'\
-                    %( self._pdfConfig['parNamePrefix'] + '_' + par, fitResult.GetName() )
-        print 'P2VV - INFO: updateDataParameters: Data physics parameters updated from sFit.'
+            if par.startswith('__'):
+                fitResultParKey = '__%s_'%self._pdfConfig['parNamePrefix'] + par.partition('__')[2]
+            else:
+                fitResultParKey =  self._pdfConfig['parNamePrefix'] + '_' + par
+            try: oldPars[par] = fitResult.floatParsFinal().find(fitResultParKey).getVal()
+            except AttributeError: 
+                print 'P2VV - WARNING: updateDataParameters: Parameter %s not found in fit result %s, parameter value will not change.'\
+                    %( fitResultParKey, fitResult.GetName() )
+        print 'P2VV - INFO: updateDataParameters: Updating physics parameters from sFit.'
         for k in parkeys: print '%20s  %.4f --> %.4f'%(k,cloneOldPars[k],oldPars[k])
         
     def _multiplyPdfWithAcc( self, effFile, iterNumb=None ):
@@ -673,6 +690,7 @@ class BuildBs2JpsiKKFit():
     def getPdfBuilderObject(self) : return self._pdfBuild
     def getFitResults(self):        return self._FitResults
     def getMomentsDict(self):       return self._Moments['%s_iteration'%itNum]
+    def getBlindString(self):       return self._pdfConfig['blind']
     def getObservables(self,which=None):
         if   which=='angles': return [o for o in self._pdfBuild['obsSetP2VV'] if o.GetName().startswith('hel') ]
         elif which=='time':   return [o for o in self._pdfBuild['obsSetP2VV'] if o.GetName()==('time')         ]
@@ -688,7 +706,11 @@ class MatchPhysics( ):
 
         # set global object name prefix
         from P2VV.Parameterizations.GeneralUtils import setParNamePrefix
-        setParNamePrefix( 'mc' )
+        self._namePF = 'mc'
+        setParNamePrefix( self._namePF )
+        
+        # blind parameters in MC pdf
+        blindStr = kwargs.pop( 'BlindPdf', {} )
 
         # transversity amplitudes
         A0Mag2Val    = 0.722**2 / (0.722**2 + 0.480**2 + 0.499**2)
@@ -768,8 +790,10 @@ class MatchPhysics( ):
                                   )
 
         # B lifetime
+        if blindStr and 'dGamma' in blindStr: dGammaVar = dict( Value = dGammaVal, Blind = blindStr['dGamma']  )
+        else: dGammaVar = dict( Value = dGammaVal )
         from P2VV.Parameterizations.LifetimeParams import Gamma_LifetimeParams as LifetimeParams
-        lifetimeParams = LifetimeParams( Gamma = GammaVal, dGamma = dGammaVal, dM = dMVal )
+        lifetimeParams = LifetimeParams( Gamma = GammaVal, dGamma = dGammaVar, dM = dMVal )
         
         # resolution model
         tResArgs = { }
@@ -778,8 +802,10 @@ class MatchPhysics( ):
         timeResModel = TimeResolution( **tResArgs )
 
         # CP violation parameters
+        if blindStr and 'phiCP' in blindStr: phiCPVar = dict( Value = phiCPVal, Blind = blindStr['phiCP']  )
+        else: phiCPVar = dict( Value = phiCPVal )
         from P2VV.Parameterizations.CPVParams import LambdaAbsArg_CPParam as CPParam
-        lambdaCP = CPParam( lambdaCP = lambCPVal, phiCP = phiCPVal )
+        lambdaCP = CPParam( lambdaCP = lambCPVal, phiCP = phiCPVar )
         
         # tagging parameters
         from P2VV.Parameterizations.FlavourTagging import Trivial_TaggingParams as TaggingParams
@@ -843,14 +869,16 @@ class MatchPhysics( ):
     def setMonteCarloParameters(self, pars=None):
         print 'P2VV - INFO: setMonteCarloParameters: Setting the following parameters to the monte carlo pdf, named %s.'%self._pdf.GetName()
         for key in self._pdfPhysPars.keys():
-            self._pdfPhysPars[key].setVal( self._mcPhysParsSet[ key.partition('_')[2]] ) 
+            if key.startswith('__'): self._pdfPhysPars[key].setVal( self._mcPhysParsSet['_' + key.partition('__mc')[2]]  )
+            else:                    self._pdfPhysPars[key].setVal( self._mcPhysParsSet[      key.partition('_')[2]]     ) 
         for k in self._pdfPhysPars.keys(): 
             print '%20s %.4f'%(self._pdfPhysPars[k].GetName(), self._pdfPhysPars[k].getVal())
                     
     def setDataFitParameters(self, dataPars, KKmassCat=None):
         print 'P2VV - INFO: setDataFitParameters: Setting the following parameters to the monte carlo pdf, named %s.'%self._pdf.GetName()
         for key in self._pdfPhysPars.keys():
-            self._pdfPhysPars[key].setVal( dataPars[ key.partition('_')[2]] ) 
+            if key.startswith('__'): self._pdfPhysPars[key].setVal( dataPars[ '_' + key.partition('__mc')[2]]  ) 
+            else:                    self._pdfPhysPars[key].setVal( dataPars[ key.partition('_')[2]] ) 
         for k in self._pdfPhysPars.keys(): 
             print '%20s %.4f'%(self._pdfPhysPars[k].GetName(), self._pdfPhysPars[k].getVal())
         else: print ' ' # TODO: LoopOver the KKbins and set f_S_i and ASOddPhase_i
@@ -919,16 +947,16 @@ class MatchPhysics( ):
                                          Import    = self._data,
                                          WeightVar = (self._weightsName, True)
                                          )
-        weightsDataSet.Print()        
-        #weightsDataSet.IsA().Destructor(weightsDataSet)
+        print weightsDataSet        
+
         weightsDataSet.Delete()
-        weightsDataSet.Print()
+        print weightsDataSet
         del self._physWeights
 
     def getPdf(self):               return self._pdf
     def getAngleFunctions(self):    return self._angleFuncs
     def getMcTime(self):            return  [ o for o in self._pdf.Observables() if 'time' in o.GetName() ]
-    def getParNamePrefix(self):     return 'mc'
+    def getParNamePrefix(self):     return self._namePF
     def getDataSet(self, weighted=False):          
         if weighted: return self._weightedData
         else:        return self._data
@@ -1177,38 +1205,11 @@ class MatchWeightedDistributions():
 
 # sFit in 2011 + 2012 data  
 parValues6KKmassBins20112012 = dict(
-    A0Mag2            = 5.2085e-01
-    ,A0Phase           = 0. 
-    ,ASOddPhase_bin0   = 8.0380e-01 
-    ,ASOddPhase_bin1   = 2.3096e+00
-    ,ASOddPhase_bin2   = 4.5944e-01
-    ,ASOddPhase_bin3   =-3.6016e-01
-    ,ASOddPhase_bin4   =-6.7912e-01
-    ,ASOddPhase_bin5   =-8.2363e-01
-    ,AparPhase         = 3.2547e+00 
-    ,AperpMag2         = 2.5354e-01
-    ,AperpPhase        = 3.1874e+00
-    ,Gamma             = 6.6062e-01
-    ,dGamma            = 8.7053e-02
-    ,phiCP             = 8.2805e-02
-    ,betaTimeEff_p2011 =-8.2950e-03
-    ,betaTimeEff_p2012 =-1.3746e-02
-    ,dM                = 1.7765e+01 
-    ,f_S_bin0          = 4.4442e-01 
-    ,f_S_bin1          = 6.3233e-02
-    ,f_S_bin2          = 8.6777e-03
-    ,f_S_bin3          = 8.8876e-03
-    ,f_S_bin4          = 4.4337e-02
-    ,f_S_bin5          = 2.0997e-01
-    ,lambdaCP          = 9.6384e-01
-    ,wTagDelP0OS       = 1.3725e-02
-    ,wTagDelP0SS       =-1.5955e-02
-    ,wTagDelP1OS       = 6.9765e-02
-    ,wTagDelP1SS       = 1.5007e-02
-    ,wTagP0OS          = 3.9049e-01
-    ,wTagP0SS          = 4.4015e-01
-    ,wTagP1OS          = 1.0363e+00
-    ,wTagP1SS          = 9.4426e-01
+# redo the fit
+    )
+
+parValues6KKmassBins20112012_reduced = dict(
+# make a fit on the reduced sample 
     )
 
  # sFit in 2011 data  
@@ -1225,8 +1226,8 @@ parValues6KKmassBins2011 = dict(
     ,AperpMag2	     = 0.246338	
     ,AperpPhase	     = 3.39293	
     ,Gamma	     = 0.657435	
-    ,dGamma	     = 0.122035	
-    ,phiCP	     = -0.133016	
+    ,__dGamma__	     = 0.122035	
+    ,__phiCP__	     = -0.133016	
     ,betaTimeEff     = -0.00830863	
     ,dM	             = 17.7666	 
     ,f_S_bin0	     = 0.39986	
@@ -1246,41 +1247,76 @@ parValues6KKmassBins2011 = dict(
     ,wTagP1SS	     = 0.979372	
      )
 
- # sFit in 2012 data  
-parValues6KKmassBins2011 = dict(
-    A0Mag2	  = 0.516663
+ # sFit in 2011 reduced data sample  
+parValues6KKmassBins2011_reduced = dict(
+    A0Mag2	     = 0.530141
     ,A0Phase         = 0.
-    ,ASOddPhase_bin0	= 0.880057
-    ,ASOddPhase_bin1	= 2.40856
-    ,ASOddPhase_bin2	= 0.691195
-    ,ASOddPhase_bin3	= -0.447733
-    ,ASOddPhase_bin4	= -0.615622
-    ,ASOddPhase_bin5	= -0.902559
-    ,AparPhase	= 3.15983
-    ,AperpMag2	= 0.257204
-    ,AperpPhase	= 3.02308
-    ,Gamma	        = 0.675951
-    ,dGamma          = 0.0600561
-    ,phiCP           = -0.121879
-    ,dM	        = 17.7657
-    ,f_S_bin0	= 0.459275
+    ,ASOddPhase_bin0 = 0.64447
+    ,ASOddPhase_bin1 = 0.958849
+    ,ASOddPhase_bin2 = 0.411171
+    ,ASOddPhase_bin3 = -0.395949
+    ,ASOddPhase_bin4 = -0.859725
+    ,ASOddPhase_bin5 = -0.599493
+    ,AparPhase	     = 3.31748
+    ,AperpMag2	     = 0.245888
+    ,AperpPhase	     = 3.39694
+    ,Gamma	     = 0.657411
+    ,__dGamma__	     = 0.12224
+    ,__phiCP__	     = -0.13062
+    ,betaTimeEff     = -0.00830066
+    ,dM	             = 17.7666
+    ,f_S_bin0	     = 0.400578
+    ,f_S_bin1	     = 0.0549151
+    ,f_S_bin2	     = 0.0122189
+    ,f_S_bin3	     = 0.014571
+    ,f_S_bin4	     = 0.0244505
+    ,f_S_bin5	     = 0.204648
+    ,lambdaCP	     = 0.962228
+    ,wTagDelP0OS     = 0.0137092
+    ,wTagDelP0SS     = -0.0159797
+    ,wTagDelP1OS     = 0.0698618
+    ,wTagDelP1SS     = 0.0149051
+    ,wTagP0OS	     = 0.379598
+    ,wTagP0SS	     = 0.435766
+    ,wTagP1OS	     = 1.02458
+    ,wTagP1SS	     = 0.978629
+    )
+
+ # sFit in 2012 data  
+parValues6KKmassBins2012 = dict(
+     A0Mag2	      = 0.516663
+    ,A0Phase         = 0.
+    ,ASOddPhase_bin0 = 0.880057
+    ,ASOddPhase_bin1 = 2.40856
+    ,ASOddPhase_bin2 = 0.691195
+    ,ASOddPhase_bin3 = -0.447733
+    ,ASOddPhase_bin4 = -0.615622
+    ,ASOddPhase_bin5 = -0.902559
+    ,AparPhase	     = 3.15983
+    ,AperpMag2	     = 0.257204
+    ,AperpPhase	     = 3.02308
+    ,Gamma	     = 0.675951
+    ,__dGamma__       = 0.0600561
+    ,__phiCP__       = -0.121879
+    ,dM	             = 17.7657
+    ,f_S_bin0	     = 0.459275
     ,f_S_bin1        = 0.0712949
-    ,f_S_bin2	= 0.00404748
-    ,f_S_bin3	= 0.00334672
-    ,f_S_bin4	= 0.0579512
-    ,f_S_bin5	= 0.214111
-    ,lambdaCP	= 0.981036
-    ,wTagDelP0OS	= 0.0137176
-    ,wTagDelP0SS	= -0.0159754
-    ,wTagDelP1OS	= 0.0698766
-    ,wTagDelP1SS	= 0.0151004
-    ,wTagP0OS	= 0.388797
-    ,wTagP0SS	= 0.440893
-    ,wTagP1OS	= 1.01434
-    ,wTagP1SS	= 0.964957
+    ,f_S_bin2	     = 0.00404748
+    ,f_S_bin3	     = 0.00334672
+    ,f_S_bin4	     = 0.0579512
+    ,f_S_bin5	     = 0.214111
+    ,lambdaCP	     = 0.981036
+    ,wTagDelP0OS     = 0.0137176
+    ,wTagDelP0SS     = -0.0159754
+    ,wTagDelP1OS     = 0.0698766
+    ,wTagDelP1SS     = 0.0151004
+    ,wTagP0OS        = 0.388797
+    ,wTagP0SS	     = 0.440893
+    ,wTagP1OS	     = 1.01434
+    ,wTagP1SS	     = 0.964957
 )
 
-# sFit in 2011 data
+# sFit in 2011 data no KK mass bins
 parValuesNoKKBinsWideKKWindow = dict(  
     AperpMag2        = 0.24663
     ,AperpPhase       = 3.0232
@@ -1290,13 +1326,13 @@ parValuesNoKKBinsWideKKWindow = dict(
     ,f_S              = 0.0463
     ,ASOddPhase       = -0.0666
     ,dM               = 17.6739
-    ,dGamma           = 0.1021
+    ,__dGamma__       = 0.1021
     ,Gamma            = 0.6728
-    ,phiCP            = 0.0847
+    ,__phiCP__        = 0.0847
     ,lambdaCP         = 0.9275
     )
 
-# Sim08 generating conditions  
+# MC generating conditions  
 parValuesMcSim08_6KKmassBins = dict(  
      A0Mag2            = 0.722**2 / (0.722**2 + 0.480**2 + 0.499**2)
     ,A0Phase           = 0. 
@@ -1310,8 +1346,8 @@ parValuesMcSim08_6KKmassBins = dict(
     ,AperpMag2         = 0.499**2 / (0.722**2 + 0.480**2 + 0.499**2) 
     ,AperpPhase        = 3.07
     ,Gamma             = 1. / 1.503 
-    ,dGamma            = 1. / 1.406 - 1. / 1.614
-    ,phiCP             = +0.07 
+    ,__dGamma__        = 1. / 1.406 - 1. / 1.614
+    ,__phiCP__         = +0.07 
     ,dM                = 17.8
     ,f_S_bin0          = 0.
     ,f_S_bin1          = 0.
@@ -1336,8 +1372,8 @@ parValuesMcSim06_6KKmassBins = dict(
     ,AperpMag2         = 0.16
     ,AperpPhase        = -0.17
     ,Gamma             = 0.679
-    ,dGamma            = 0.06
-    ,phiCP             = -0.04
+    ,__dGamma__        = 0.06
+    ,__phiCP__         = -0.04
     ,dM                = 17.8
     ,f_S_bin0          = 0.
     ,f_S_bin1          = 0.
@@ -1359,9 +1395,9 @@ parValuesMc2012Fit =  dict(
     # ,f_S_bin0         =  0.
     # ,ASOddPhase_bin0  =  0.
     # ,dM               =  1.7630e+01 
-    # ,dGamma           =  8.0522e-02 
+    # ,__dGamma__           =  8.0522e-02 
     # ,Gamma            =  6.8023e-01
-    # ,phiCP            = -1.2965e-01
+    # ,__phiCP__            = -1.2965e-01
     # ,lambdaCP         =  1.0684e+00
     
     # sFit on '/project/bfys/vsyropou/data/P2VVDataSetsMC2012_wideKKMass_noKKMassBins_2TagCats_TrivialWeights_forReweighting.root'
@@ -1374,9 +1410,8 @@ parValuesMc2012Fit =  dict(
     ,f_S         =  0.
     ,ASOddPhase  =  0.
     ,dM               = 1.7629e+01
-    ,dGamma           = 9.3441e-02
+    ,__dGamma__           = 9.3441e-02
     ,Gamma            = 6.7722e-01
-    ,phiCP            = 0.07 # fixed to MC12Gen, not enough sensitivity
+    ,__phiCP__            = 0.07 # fixed to MC12Gen, not enough sensitivity
     ,lambdaCP         = 1.   # fixed to Mc12Gen, not enough sensitivity
     )
-
