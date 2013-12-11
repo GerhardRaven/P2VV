@@ -62,21 +62,23 @@ def __get_base_methods(cl, methods):
             methods |= set(__creators[bname])
         __get_base_methods(bname, methods)
 
-def set_class_creates(creators, cl):
+def set_classes_creates(creators, classes = None):
     __creators.update(creators)
-    _temp = __import__('ROOT', globals(), locals(), [cl], -1)
-    cl_type = getattr(_temp, cl)
-    bm = set()
-    __get_base_methods(cl, bm)
-    for method in set(__creators[cl]) | bm:
-        method = getattr(cl_type, method)
-        __creates(method)
+    if classes == None:
+        classes = creators.iterkeys()
+    for cl in classes:    
+        _temp = __import__('ROOT', globals(), locals(), [cl], -1)
+        cl_type = getattr(_temp, cl)
+        bm = set()
+        __get_base_methods(cl, bm)
+        for method in set(__creators[cl]) | bm:
+            method = getattr(cl_type, method)
+            __creates(method)
     
 def get_creators():
     return __creators
 
-for cl in __creators.keys():
-    set_class_creates({}, cl)
+set_classes_creates({}, __creators.iterkeys())
 
 def get_roofit_classes(rootmap):
     classes = []

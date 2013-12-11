@@ -572,40 +572,36 @@ creators = {'RooAbsAnaConvPdf' : ['coefVars'],
             'RooWorkspace' : ['getSnapshot']}
 
 extra = ['RooAbsBinning', 'RooAbsCachedPdf', 'RooAbsCategoryLValue', 'RooAbsDataStore',
-         'RooAbsEffResModel', 'RooAbsFunc', 'RooAbsGenContext', 'RooAbsIntegrator', 'RooAbsLValue',
+         'RooAbsFunc', 'RooAbsGenContext', 'RooAbsIntegrator', 'RooAbsLValue',
          'RooAbsMCStudyModule', 'RooAbsNumGenerator', 'RooAbsOptTestStatistic', 'RooAbsPdf',
          'RooAbsProxy', 'RooAbsReal', 'RooAbsRealLValue', 'RooAbsString', 'RooAbsStudy',
          'RooAbsTestStatistic', 'RooAcceptReject', 'RooAddModel', 'RooAddPdf', 'RooAddition',
-         'RooArgList', 'RooArgProxy', 'RooArgSet', 'RooBDecay', 'RooBTagDecay', 'RooBinnedFun',
-         'RooBinnedGenContext', 'RooBinnedPdf', 'RooBinning', 'RooBlindTools',
-         'RooCacheManager<RooAbsCacheElement>', 'RooCacheManager<std::vector<double> >',
-         'RooCategory', 'RooCategoryProxy', 'RooChi2MCSModule', 'RooChi2Var', 'RooClassFactory',
-         'RooCmdArg', 'RooCmdConfig', 'RooCompositeDataStore', 'RooCurve', 'RooCustomizer',
-         'RooDLLSignificanceMCSModule', 'RooDataHist', 'RooDataHistSliceIter', 'RooDataSet',
-         'RooDataWeightedAverage', 'RooEffProd', 'RooEffResAddModel', 'RooEffResModel',
-         'RooExpensiveObjectCache', 'RooExpensiveObjectCache::ExpensiveObject', 'RooExplicitNormPdf',
-         'RooFIter', 'RooFactoryWSTool', 'RooFit', 'RooFitResult', 'RooFoamGenerator', 'RooFormula',
-         'RooFormulaVar', 'RooGaussEfficiencyModel', 'RooGrid', 'RooHashTable', 'RooHist',
-         'RooHistError', 'RooHistFunc', 'RooHistPdf', 'RooLinTransBinning', 'RooLinkedList',
-         'RooLinkedListIter', 'RooList', 'RooMCStudy', 'RooMinimizer', 'RooMinimizerFcn',
-         'RooMinuit', 'RooMoment', 'RooMomentMorph', 'RooMsgService', 'RooMultiCatGenerator',
-         'RooMultiCatIter', 'RooMultiEffResModel', 'RooNLLVar', 'RooNameReg', 'RooNameSet',
+         'RooArgList', 'RooArgProxy', 'RooArgSet', 'RooBDecay', 'RooBinnedGenContext',
+         'RooBinning', 'RooBlindTools', 'RooCacheManager<RooAbsCacheElement>',
+         'RooCacheManager<std::vector<double> >', 'RooCategory', 'RooCategoryProxy',
+         'RooChi2MCSModule', 'RooChi2Var', 'RooClassFactory', 'RooCmdArg', 'RooCmdConfig',
+         'RooCompositeDataStore', 'RooCurve', 'RooCustomizer', 'RooDLLSignificanceMCSModule',
+         'RooDataHist', 'RooDataHistSliceIter', 'RooDataSet', 'RooDataWeightedAverage', 'RooEffProd',
+         'RooExpensiveObjectCache', 'RooExpensiveObjectCache::ExpensiveObject', 'RooFIter',
+         'RooFactoryWSTool', 'RooFit', 'RooFitResult', 'RooFoamGenerator', 'RooFormula',
+         'RooFormulaVar', 'RooGrid', 'RooHashTable', 'RooHist', 'RooHistError', 'RooHistFunc',
+         'RooHistPdf', 'RooLinTransBinning', 'RooLinkedList', 'RooLinkedListIter', 'RooList',
+         'RooMCStudy', 'RooMinimizer', 'RooMinimizerFcn', 'RooMinuit', 'RooMoment', 'RooMomentMorph',
+         'RooMsgService', 'RooMultiCatIter', 'RooNLLVar', 'RooNameReg', 'RooNameSet',
          'RooNormSetCache', 'RooNumConvPdf', 'RooNumConvolution', 'RooNumGenFactory',
-         'RooNumIntFactory', 'RooP2VVAngleBasis', 'RooParamBinning', 'RooParamHistFunc',
-         'RooParametricStepFunction', 'RooPlot', 'RooPlotable', 'RooProdPdf', 'RooProduct',
-         'RooProfileLL', 'RooProjectedPdf', 'RooProofDriverSelector', 'RooRandom',
-         'RooRandomizeParamMCSModule', 'RooRangeBinning', 'RooRangeBoolean', 'RooRealBinding',
-         'RooRealEffMoment', 'RooRealIntegral', 'RooRealMoment', 'RooRealSumPdf', 'RooRealVar',
+         'RooNumIntFactory', 'RooParamBinning', 'RooParamHistFunc', 'RooParametricStepFunction',
+         'RooPlot', 'RooPlotable', 'RooProdPdf', 'RooProduct', 'RooProfileLL', 'RooProjectedPdf',
+         'RooProofDriverSelector', 'RooRandom', 'RooRandomizeParamMCSModule', 'RooRangeBinning',
+         'RooRangeBoolean', 'RooRealBinding', 'RooRealIntegral', 'RooRealSumPdf', 'RooRealVar',
          'RooResolutionModel', 'RooScaledFunc', 'RooSetProxy', 'RooSharedPropertiesList',
          'RooSimPdfBuilder', 'RooSimSplitGenContext', 'RooSimWSTool', 'RooSimultaneous',
          'RooStringVar', 'RooSuperCategory', 'RooTObjWrap', 'RooTreeData', 'RooTreeDataStore',
-         'RooTrivialTagDecay', 'RooTruthModel', 'RooUniformBinning', 'RooUnitTest',
-         'RooVectorDataStore', 'RooVectorDataStore::CatVector', 'RooVectorDataStore::RealVector',
-         'RooWorkspace', 'RooXYChi2Var']
+         'RooTruthModel', 'RooUniformBinning', 'RooUnitTest', 'RooVectorDataStore',
+         'RooVectorDataStore::CatVector', 'RooVectorDataStore::RealVector', 'RooWorkspace',
+         'RooXYChi2Var']
 
 for cl in extra:
     creators[cl] = []
 
-from ROOTDecorators import set_class_creates
-for cl in creators.keys():
-    set_class_creates(creators, cl)
+from ROOTDecorators import set_classes_creates
+set_classes_creates(creators)
