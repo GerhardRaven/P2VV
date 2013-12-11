@@ -126,7 +126,7 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
         KinematicReweight.reweight( iterNumb, PhysicsReweight.getDataSet(weighted=True) )
         reweightedData = KinematicReweight.getDataSet()
 
-        if makePlots and iterNumb in plotAtTheseSteps: # plot data after each reweighting step
+    if makePlots and iterNumb in plotAtTheseSteps: # plot data after each reweighting step
         compPlots = compareDistributions( mcData          = PhysicsReweight.getDataSet(),
                                           mcDataPhysRew   = PhysicsReweight.getDataSet(weighted=True),
                                           MomRewData      = reweightedData,
@@ -159,7 +159,7 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
     
     gc.collect() # save memory
 
-
+assert False
 # observables plot with the corrected angular acceptance
 if makePlots:
     from ROOT import RooAbsData 
