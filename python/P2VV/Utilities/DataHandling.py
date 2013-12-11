@@ -191,9 +191,6 @@ def readData( filePath, dataSetName, NTuple = False, observables = None, **kwarg
                        , Cut = noNAN + ' && ' + cuts if cuts else noNAN
                        , **dataSetArgs
                        )
-      ntuple.IsA().Destructor(ntuple)
-      if ntupleOrig : ntupleOrig.IsA().Destructor(ntupleOrig)
-      ntupleFile.Close()
 
     else :
       from ROOT import TFile
@@ -224,7 +221,6 @@ def readData( filePath, dataSetName, NTuple = False, observables = None, **kwarg
                                    )
               else :
                   data = dataSet
-
           else :
               data.append(dataSet)
 
@@ -234,13 +230,21 @@ def readData( filePath, dataSetName, NTuple = False, observables = None, **kwarg
 
     # import data set into current workspace
     from P2VV.RooFitWrappers import RooObject
-    wsData = RooObject().ws().put( data, **kwargs )
-    data.IsA().Destructor(data)
+    importIntoWS = kwargs.pop( 'ImportIntoWS', True )
+    rData = None
+    if importIntoWS :
+        # import data set into current workspace
+        from P2VV.RooFitWrappers import RooObject
+        wsData = RooObject().ws().put( data, **kwargs )
+        rData = wsData
+    else :
+        rData = data
+
     if tmp_file:
         tmp_file.Close()
         os.remove(tmp_file.GetName())
         if orig_file: orig_file.cd()
-    return wsData
+    return rData
 
 
 def writeData( filePath, dataSetName, data, NTuple = False ) :

@@ -2,15 +2,13 @@ from array import array
 from math import exp, log, sqrt
 
 __keep = []
-__bin_counter = 0
 __histos = []
 
 def dilution_bin(t_var, bin_data, result, dilution_binning, bin_name = "", 
-                 signal = [], subtract_pdf = None, subtract = [], t_range = None):
+                 signal = [], subtract_pdf = None, subtract = [], t_range = None, n_bins = 512):
+    from P2VV.Load import P2VVLibrary
     from ROOT import sigmaFromFT
-    dms = -17.768 ** 2 / 2
 
-    n_bins = 512
     if not t_range:
         t_range = 0 - t_var.getMin()
     diff = t_range / float(n_bins)
@@ -99,8 +97,7 @@ def dilution_bin(t_var, bin_data, result, dilution_binning, bin_name = "",
     return sigmaFromFT(ft_histo, 17.768, 0.024)
 
 # Calculate dilution
-def dilution_bins(t_var, data, sigmat, sigmat_cat, result, signal = [], subtract = [], raw = False, calibration = None):
-    __bin_counter = 0
+def dilution_bins(t_var, data, sigmat, sigmat_cat, result, signal = [], subtract = [], raw = False, calibration = None, n_bins = 512):
     if calibration:
         assert(sigmat.GetName() in [p.GetName() for p in calibration.getVariables()])
         calibration.redirectServers(data.get())
@@ -108,7 +105,6 @@ def dilution_bins(t_var, data, sigmat, sigmat_cat, result, signal = [], subtract
     assert(t_var.getMin() < 0)
 
     from ROOT import RooBinning
-    n_bins = 512
     neg_range = 0 - t_var.getMin()
     diff = neg_range / float(n_bins)
     dilution_bounds = array('d', (t_var.getMin() + i * diff for i in range(n_bins + 1)))
@@ -125,9 +121,8 @@ def dilution_bins(t_var, data, sigmat, sigmat_cat, result, signal = [], subtract
     if not subtract:
         for ct in sigmat_cat:
             bin_data = data.reduce('{0} == {0}::{1}'.format(st_cat.GetName(), ct.GetName()))
-            d = dilution_bin(t_var, bin_data, result, signal, ct.GetName(), dilution_binning)
-
-
+            d = dilution_bin(t_var, bin_data, result, signal, ct.GetName(), dilution_binning,
+                             n_bins = n_bins)
         
     subtract_pdf = buildPdf(Components = subtract, Observables = (t_var,),
                             Name='subtract_%s_pdf' % '_'.join(c.GetName() for c in subtract))    
@@ -155,33 +150,36 @@ def dilution_bins(t_var, data, sigmat, sigmat_cat, result, signal = [], subtract
         bin_data = data.reduce('{0} == {0}::{1}'.format(st_cat.GetName(), ct.GetName()))
         bin_name = ct.GetName()
         d = dilution_bin(t_var, bin_data, result, bin_name, dilution_binning,
-                         signal, subtract_pdf, subtract)
+                         signal, subtract_pdf, subtract, n_bins = n_bins)
         total += sum(signal_yields[ct.GetName()]) * d ** 2
     total /= signal_yield
     return total
 
 # Calculate dilution
-def dilution_ft(t_var, data, t_range = None, sigmat = None, result = None, signal = [], subtract = [], raw = False, simultaneous = False, calibration = None):
-    __bin_counter = 0
-    if calibration:
-        assert(sigmat.GetName() in [p.GetName() for p in calibration.getVariables()])
-        calibration.redirectServers(data.get())
-
-    assert(t_var.getMin() < 0)
+def dilution_ft(t_var, data, t_range = None, parameters = None, signal = [], subtract = [], raw = False, simultaneous = False, n_bins = 512):
 
     from ROOT import RooBinning
-    n_bins = 512
     if not t_range:
-        t_range = 0 - t_var.getMin()
-    diff = t_range / float(n_bins)
-    dilution_bounds = array('d', (t_var.getMin() + i * diff for i in range(n_bins + 1)))
-    b = diff
-    t_max = t_var.getMax()
-    while b < t_max:
-        dilution_bounds.append(b)
-        b += diff
-    if dilution_bounds[-1] != t_max:
-        dilution_bounds.append(t_max)
+        ft_left = 0
+        t_range = ft_left - t_var.getMin()
+        diff = t_range / float(n_bins)
+        dilution_bounds = array('d', (t_var.getMin() + i * diff for i in range(n_bins + 1)))
+        b = diff
+        t_max = t_var.getMax()
+        while b < t_max:
+            dilution_bounds.append(b)
+            b += diff
+        if dilution_bounds[-1] != t_max:
+            dilution_bounds.append(t_max)
+    else:
+        diff = t_range / float(n_bins)
+        ft_left = t_var.getMin()
+        dilution_bounds = array('d', (t_var.getMin() + i * diff for i in range(n_bins + 1)))
+
+    for i in range(len(dilution_bounds) -1):
+        if dilution_bounds[i + 1] <= dilution_bounds[i]:
+            print i
+
     dilution_binning = RooBinning(len(dilution_bounds) - 1, dilution_bounds)
     dilution_binning.SetName('dilution_binning')
     ## t_var.setBinning(dilution_binning)
@@ -190,12 +188,6 @@ def dilution_ft(t_var, data, t_range = None, sigmat = None, result = None, signa
     data_histo = TH1D('data_histo', 'data_histo', len(dilution_bounds) - 1, dilution_bounds)
     data_histo.Sumw2()
     time_var = data.get().find(t_var.GetName())
-    if sigmat:
-        res_var = data.get().find(sigmat.GetName())
-    else:
-        res_var = None
-
-    dms = -17.768 ** 2 / 2
 
     weights = []
     weighted = data.isWeighted()
@@ -211,8 +203,8 @@ def dilution_ft(t_var, data, t_range = None, sigmat = None, result = None, signa
         weights.append(w)
         r = data_histo.Fill(value, w)
 
-    if not subtract or raw:
-        ft_bounds = array('d', (0. + i * diff for i in range(n_bins + 1)))
+    def __make_ft_histo(data_histo):
+        ft_bounds = array('d', (ft_left + i * diff for i in range(n_bins + 1)))
         ft_histo = TH1D('ft_histo', 'ft_histo', len(ft_bounds) - 1, ft_bounds)
 
         # Fill the FT histogram
@@ -224,7 +216,11 @@ def dilution_ft(t_var, data, t_range = None, sigmat = None, result = None, signa
             ft_histo.SetBinContent(n_bins + 1 - i, d)
             ft_histo.SetBinError(n_bins + 1 - i, e)        
         ft_histo.SetEntries(total)
-
+        return ft_histo
+    
+    if not subtract or raw:
+        ft_histo = __make_ft_histo(data_histo)
+        
         from ROOT import TCanvas
         ft_canvas = TCanvas('ft_canvas', 'ft_canvas', 800, 400)
         ft_canvas.Divide(2, 1)
@@ -239,9 +235,9 @@ def dilution_ft(t_var, data, t_range = None, sigmat = None, result = None, signa
         __keep.append(data_histo)
 
         # Calculate the dilution using Wouter's macro
+        from P2VV.Load import P2VVLibrary
         from ROOT import sigmaFromFT
-        D = sigmaFromFT(ft_histo, 17.768, 0.024)
-        return D, weights
+        return sigmaFromFT(ft_histo, 17.768, 0.024)
     else:
         from ROOT import TCanvas
         ft_canvas = TCanvas('ft_canvas', 'ft_canvas', 1200, 400)
@@ -258,7 +254,7 @@ def dilution_ft(t_var, data, t_range = None, sigmat = None, result = None, signa
     from P2VV.RooFitWrappers import buildPdf
 
     sig_yield_names = [s.getYield().GetName() if type(s) != str else s for s in signal]
-    signal_yields = [p for p in result.floatParsFinal() if any([p.GetName().startswith(s) for s in sig_yield_names])]
+    signal_yields = [p for p in parameters if any([p.GetName().startswith(s) for s in sig_yield_names])]
     data_int = data_histo.Integral()
 
     # Set the correct yields in the pdf
@@ -266,7 +262,7 @@ def dilution_ft(t_var, data, t_range = None, sigmat = None, result = None, signa
     subtract_pdf = buildPdf(Components = subtract, Observables = (t_var,),
                             Name='subtract_%s_pdf' % '_'.join(c.GetName() for c in subtract))    
     sub_pars = subtract_pdf.getVariables()
-    for res_par in result.floatParsFinal():
+    for res_par in parameters:
         sub_par = sub_pars.find(res_par.GetName())
         if sub_par:
             print 'setting value of subtract pdf parameter %s' % sub_par.GetName()
@@ -275,7 +271,7 @@ def dilution_ft(t_var, data, t_range = None, sigmat = None, result = None, signa
 
     subtract_yields = {}
     for b in subtract:
-        subtract_yields[b] = [p for p in result.floatParsFinal() if p.GetName().startswith(b.getYield().GetName())]
+        subtract_yields[b] = [p for p in parameters if p.GetName().startswith(b.getYield().GetName())]
 
     for c in subtract:
         y = c.getYield()
@@ -298,24 +294,13 @@ def dilution_ft(t_var, data, t_range = None, sigmat = None, result = None, signa
     scale =  (data_int * n_subtract) / (sub_int * total)
     subtract_histo.Scale(scale)
 
-    # Create the histogram to be transformed
-    ft_bounds = array('d', (0. + i * diff for i in range(n_bins + 1)))
-    ft_histo = TH1D('ft_histo', 'ft_histo', len(ft_bounds) - 1, ft_bounds)
-
     # Add like this to preserve errors
     tmp_histo = data_histo.Clone('tmp_histo')
     tmp_histo.Add(subtract_histo, -1)
 
     # Fill the FT histogram
-    total = 0
-    for i in range(1, n_bins + 1):
-        d = tmp_histo.GetBinContent(i)
-        total += d
-        e = tmp_histo.GetBinError(i)
-        ft_histo.SetBinContent(n_bins + 1 - i, d)
-        ft_histo.SetBinError(n_bins + 1 - i, e)        
-    ft_histo.SetEntries(total)
-
+    ft_histo = __make_ft_histo(tmp_histo)
+    
     pad = ft_canvas.cd(2)
     pad.SetLogy()
     subtract_histo.Draw()
@@ -328,9 +313,9 @@ def dilution_ft(t_var, data, t_range = None, sigmat = None, result = None, signa
     __keep.append(subtract_histo)
 
     # Calculate the dilution using Wouter's macro
+    from P2VV.Load import P2VVLibrary
     from ROOT import sigmaFromFT
-    D = sigmaFromFT(ft_histo, 17.68, 0.024)
-    return D
+    return sigmaFromFT(ft_histo, 17.768, 0.024)
 
 def dilution(data, sfs, calib = None, error_fun = None):
     """
@@ -422,7 +407,7 @@ def signal_dilution_dg(data, sigmat, sf1, frac, sf2):
         res = res_var.getVal()
         values.append((res, w))
         
-    return dilution(data, [((0, sf1), 1 - frac), ((0, sf2), frac)])
+    return dilution(values, [((0., sf1), 1 - frac), ((0., sf2), frac)])
 
 class SolveSF(object):
     def __init__(self, data, sigmat):

@@ -58,6 +58,7 @@
 #pragma link C++ function cross_with_errors;
 #pragma link C++ function initial_stepsizes;
 #pragma link C++ function HelicityAngles;
+#pragma link C++ function GetOwnership;
 
 #pragma link C++ class std::map<RooAbsCategory*, std::string>;
 #pragma link C++ class std::map<RooCategoryProxy*, std::string>;

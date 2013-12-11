@@ -274,9 +274,9 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
     from ROOT import TF1
     fit_funcs = {'pol1' : ('pol1', 'S0+'),
                  'pol2' : ('pol2', 'S0+'),
-                 'pol1_mean_param' : ('[1] + [2] * ((x - [0]) / [3])', 'S0+'),
+                 'pol1_mean_param' : ('[1] + [2] * (x - [0])', 'S0+'),
                  'pol2_no_offset' : ('x ++ x * x', 'S0+'),
-                 'pol2_mean_param' : ('[1] + [2] * ((x - [0]) / [3]) + [4] * ((x - [0]) / [3])^2', 'S0+')}
+                 'pol2_mean_param' : ('[1] + [2] * (x - [0]) + [3] * (x - [0])^2', 'S0+')}
     print titles[key]
     st_mean = full_sdata.mean(st)
     graphs = [res_graph, sfo_graph]
@@ -288,7 +288,6 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
             fit_func = TF1(name, func, split_bounds[0], split_bounds[-1])
             if name.endswith('mean_param'):
                 fit_func.FixParameter(0, st_mean)
-                fit_func.FixParameter(3, res_x[-1] - res_x[0])
             print name
             fit_result = g.Fit(fit_func, opts, "L")
             fit_result.SetName('result_' + name)
@@ -307,7 +306,6 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
         calib_fpf = dict([(p.GetName(), [p.getVal(), p.getError()]) for p in calib_result.floatParsFinal()])
         offset = calib_fpf['_'.join((prefix, 'offset'))]
         slope = calib_fpf['_'.join((prefix, 'slope'))]
-        slope[0] /= (split_bounds[-1] - split_bounds[0])
         calib_func = TF1(prefix + '_simul', '[0] + [1] * (x - [2])',
                          (split_bounds[0] + split_bounds[1]) / 2.,
                          (split_bounds[-2] + split_bounds[-1]) / 2.)

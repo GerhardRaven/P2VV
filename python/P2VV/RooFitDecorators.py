@@ -1,10 +1,22 @@
+import ROOT
 from ROOT import (RooArgSet, RooArgList, RooDataSet,
                   RooWorkspace, RooFitResult, RooFit,
                   RooDataHist, RooLinkedList, RooCmdArg)
 
 import P2VV.ROOTDecorators
 
-def __wrap_kw_subs( fun ) :
+def __TList_manager(l):
+    entries = []
+    for entry in l:
+        ROOT.SetOwnership(entry, True)
+        entries.append(entry)
+    return entries
+
+def __wrap_kw_subs( fun, creates = None, containerManager = None ) :
+    if hasattr(fun, '_creates') and creates != None:
+        fun._creates = creates
+    if containerManager == None:
+        containerManager = lambda x: x
     from ROOT import RooFit, RooAbsCollection, TObject
     __doNotConvert = [ RooAbsCollection, TObject ]
     __tbl  = lambda k : getattr(RooFit, k)
@@ -35,13 +47,22 @@ def __wrap_kw_subs( fun ) :
         # convert any named keywords into RooCmdArgs if possible...
         args += tuple(RooCmdArg(__disp(k,kwargs.pop(k))) for k in kwargs.keys() if hasattr(RooFit,k) )
         try:
-            return fun(self, *args, **kwargs)
+            r = containerManager(fun(self, *args, **kwargs))
+            if creates:
+                ROOT.SetOwnership(self, True)
+            return r
         except TypeError as terr:
             fun_args = [ a for a in args if not isinstance(a, RooCmdArg) ]
             otr_args = [ a for a in args if     isinstance(a, RooCmdArg) ]
             l = RooLinkedList()
             for a in otr_args: l += a
-            return fun(self, *tuple(fun_args + [l] if l.GetSize() else fun_args), **kwargs)
+            try:
+                r = containerManager(fun(self, *tuple(fun_args + [l] if l.GetSize() else fun_args), **kwargs))
+                if creates:
+                    ROOT.SetOwnership(self, True)
+                return r
+            except TypeError as terr1:
+                raise terr
     return _fun
 
 def __convert_init_kw_to_setter( cl ) :
@@ -56,6 +77,7 @@ def __convert_init_kw_to_setter( cl ) :
                     calls += (methodcaller( m+i, kwargs.pop(i) ),)
                     break
         init(self,*args,**kwargs)
+        ROOT.SetOwnership(self, True)
         for c in calls : c(self)
     cl.__init__ =  _init
 
@@ -97,7 +119,9 @@ def __wrapRooDataSetInit( init ) :
     from functools import wraps
     @wraps(init)
     def _init( self, *args ) :
-        return init(self,*tuple( cnvrt(i) for i in args ))
+        r = init(self, *tuple( cnvrt(i) for i in args ) )
+        ROOT.SetOwnership(self, True)
+        return r
     return _init
 RooDataSet.__init__ = __wrapRooDataSetInit( RooDataSet.__init__ )
 
@@ -158,8 +182,13 @@ def __create_RooAbsCollectionInit(t) :
             assert( isinstance(j,RooAbsArg) )
             _i.add( j )
         return _i
+    from functools import wraps
     __init = t.__init__
-    return lambda self,*args : __init(self, *tuple(cnvrt(i) for i in args))
+    def _init(self, *args):
+        r = __init(self, *tuple(cnvrt(i) for i in args))
+        ROOT.SetOwnership(self, True)
+        return r
+    return _init
 
 def _RooTypedUnary2Binary( t,op ) :
     return lambda x,y : getattr(t,op)(t(x),y)
@@ -261,13 +290,14 @@ RooMCStudy.plotParam        = __wrap_kw_subs( RooMCStudy.plotParam)
 RooMCStudy.plotParamOn      = __wrap_kw_subs( RooMCStudy.plotParamOn)
 from ROOT import RooDataSet
 RooDataSet.plotOnXY         = __wrap_kw_subs( RooDataSet.plotOnXY )
+RooDataSet.split            = __wrap_kw_subs( RooDataSet.split, True, __TList_manager )
 
 #from ROOT import RooSimCloneTool
 #RooSimCloneTool.build = __wrap_kw_subs(RooSimCloneTool.build )
 #from ROOT import RooDataHist
 from ROOT import RooDataSet, RooChi2Var, RooProdPdf, RooMCStudy
 for i in  [ RooDataSet, RooChi2Var, RooProdPdf, RooMCStudy ] :
-    i.__init__ = __wrap_kw_subs( i.__init__ )
+    i.__init__ = __wrap_kw_subs( i.__init__, True )
 
 
 from ROOT import RooAbsRealLValue
@@ -519,3 +549,63 @@ def _RooFitResultPrint( self, **kwargs ) :
         self.Print()
 
 RooFitResult.PrintSpecial = _RooFitResultPrint
+
+## set _creates on class methods which we know create objects
+creators = {'RooAbsAnaConvPdf' : ['coefVars'],
+            'RooAbsArg' : ['cloneTree', 'getVariables', 'getObservables', 'getComponents',
+                           'getDependents', 'createFundamental', 'getParameters', 'shapeClientIterator'],
+            'RooAbsCategory': ['createFundamental', 'typeIterator', 'createTable'],
+            'RooAbsCollection': ['createIterator', 'create', 'snapshot'],
+            'RooAbsData': ['rmsVar', 'correlationMatrix', 'covarianceMatrix', 'meanVar',
+                           'reduce', 'emptyClone', 'table', 'createHistogram'],
+            'RooAbsGenContext' : ['generate'],
+            'RooAbsPdf'  : ['createChi2', 'createNLL', 'getConstraints', 'chi2FitTo',
+                            'getAllConstraints', 'generateSimGlobal', 'generateBinned',
+                            'prepareMultiGen', 'createProjection', 'createScanCdf',
+                            'fitTo','createCdf'],
+            'RooAbsReal' : ['createScanRI', 'functor', 'createHistogram', 'createIntRI',
+                            'createRunningIntegral', 'createChi2', 'plotSamplingHint', 'derivative',
+                            'chi2FitTo', 'moment', 'binBoundaries', 'createProfile', 'createIntegral',
+                            'asTF', 'bindVars', 'createFundamental', 'sigma', 'mean'],
+            'RooAbsRealLValue' : ['frame'],
+            'RooDataSet' : ['binnedClone'],
+            'RooWorkspace' : ['getSnapshot']}
+
+extra = ['RooAbsBinning', 'RooAbsCachedPdf', 'RooAbsCategoryLValue', 'RooAbsDataStore',
+         'RooAbsEffResModel', 'RooAbsFunc', 'RooAbsGenContext', 'RooAbsIntegrator', 'RooAbsLValue',
+         'RooAbsMCStudyModule', 'RooAbsNumGenerator', 'RooAbsOptTestStatistic', 'RooAbsPdf',
+         'RooAbsProxy', 'RooAbsReal', 'RooAbsRealLValue', 'RooAbsString', 'RooAbsStudy',
+         'RooAbsTestStatistic', 'RooAcceptReject', 'RooAddModel', 'RooAddPdf', 'RooAddition',
+         'RooArgList', 'RooArgProxy', 'RooArgSet', 'RooBDecay', 'RooBTagDecay', 'RooBinnedFun',
+         'RooBinnedGenContext', 'RooBinnedPdf', 'RooBinning', 'RooBlindTools',
+         'RooCacheManager<RooAbsCacheElement>', 'RooCacheManager<std::vector<double> >',
+         'RooCategory', 'RooCategoryProxy', 'RooChi2MCSModule', 'RooChi2Var', 'RooClassFactory',
+         'RooCmdArg', 'RooCmdConfig', 'RooCompositeDataStore', 'RooCurve', 'RooCustomizer',
+         'RooDLLSignificanceMCSModule', 'RooDataHist', 'RooDataHistSliceIter', 'RooDataSet',
+         'RooDataWeightedAverage', 'RooEffProd', 'RooEffResAddModel', 'RooEffResModel',
+         'RooExpensiveObjectCache', 'RooExpensiveObjectCache::ExpensiveObject', 'RooExplicitNormPdf',
+         'RooFIter', 'RooFactoryWSTool', 'RooFit', 'RooFitResult', 'RooFoamGenerator', 'RooFormula',
+         'RooFormulaVar', 'RooGaussEfficiencyModel', 'RooGrid', 'RooHashTable', 'RooHist',
+         'RooHistError', 'RooHistFunc', 'RooHistPdf', 'RooLinTransBinning', 'RooLinkedList',
+         'RooLinkedListIter', 'RooList', 'RooMCStudy', 'RooMinimizer', 'RooMinimizerFcn',
+         'RooMinuit', 'RooMoment', 'RooMomentMorph', 'RooMsgService', 'RooMultiCatGenerator',
+         'RooMultiCatIter', 'RooMultiEffResModel', 'RooNLLVar', 'RooNameReg', 'RooNameSet',
+         'RooNormSetCache', 'RooNumConvPdf', 'RooNumConvolution', 'RooNumGenFactory',
+         'RooNumIntFactory', 'RooP2VVAngleBasis', 'RooParamBinning', 'RooParamHistFunc',
+         'RooParametricStepFunction', 'RooPlot', 'RooPlotable', 'RooProdPdf', 'RooProduct',
+         'RooProfileLL', 'RooProjectedPdf', 'RooProofDriverSelector', 'RooRandom',
+         'RooRandomizeParamMCSModule', 'RooRangeBinning', 'RooRangeBoolean', 'RooRealBinding',
+         'RooRealEffMoment', 'RooRealIntegral', 'RooRealMoment', 'RooRealSumPdf', 'RooRealVar',
+         'RooResolutionModel', 'RooScaledFunc', 'RooSetProxy', 'RooSharedPropertiesList',
+         'RooSimPdfBuilder', 'RooSimSplitGenContext', 'RooSimWSTool', 'RooSimultaneous',
+         'RooStringVar', 'RooSuperCategory', 'RooTObjWrap', 'RooTreeData', 'RooTreeDataStore',
+         'RooTrivialTagDecay', 'RooTruthModel', 'RooUniformBinning', 'RooUnitTest',
+         'RooVectorDataStore', 'RooVectorDataStore::CatVector', 'RooVectorDataStore::RealVector',
+         'RooWorkspace', 'RooXYChi2Var']
+
+for cl in extra:
+    creators[cl] = []
+
+from ROOTDecorators import set_class_creates
+for cl in creators.keys():
+    set_class_creates(creators, cl)

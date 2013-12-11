@@ -11,18 +11,18 @@ parser = optparse.OptionParser(usage = '%prog data_type')
 prefix = '/stuff/PhD' if os.path.exists('/stuff') else '/bfys/raaij'
 input_data = {'2011' : {'data' : os.path.join(prefix, 'p2vv/data/P2VVDataSets2011Reco12_4KKMassBins_2TagCats.root'),
                         'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Prescaled_cache.root'),
-                        'result_dir' : {'simple' : '1bin_15500.00fs_simple/m934737057402830078/results',
-                                        'simul'  : '9bins_14.10fs_simul/m934737057402830078/results'},
+                        'result_dir' : {'simple' : '1bin_15500.00fs_simple/2027465761870101697/results',
+                                        'simul'  : '9bins_14.10fs_simul/2027465761870101697/results'},
                         'dataset' : 'JpsiKK_sigSWeight'},
               '2011_Reco14' : {'data' : os.path.join(prefix, 'p2vv/data/P2VVDataSets2011Reco14_4KKMassBins_2TagCats.root'),
                                'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Reco14_Prescaled_cache.root'),
-                               'result_dir' : {'simple' : '1bin_15500.00fs_simple/m934737057402830078/results',
-                                               'simul'  : '9bins_14.10fs_simul/m934737057402830078/results'},
+                               'result_dir' : {'simple' : '1bin_15500.00fs_simple/2027465761870101697/results',
+                                               'simul'  : '9bins_14.10fs_simul/2027465761870101697/results'},
                                'dataset' : 'JpsiKK_sigSWeight'},
               '2012' : {'data' : os.path.join(prefix, 'p2vv/data/P2VVDataSets2012Reco14_4KKMassBins_2TagCats.root'),
                                'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2012_Prescaled_cache.root'),
-                               'result_dir' : {'simple' : '1bin_15500.00fs_simple/m934737057402830078/results',
-                                               'simul'  : '9bins_14.10fs_simul/m934737057402830078/results'},
+                               'result_dir' : {'simple' : '1bin_15500.00fs_simple/2027465761870101697/results',
+                                               'simul'  : '9bins_14.10fs_simul/2027465761870101697/results'},
                                'dataset' : 'JpsiKK_sigSWeight'}              
               }
 
