@@ -730,7 +730,6 @@ class ComplementCoef( RooObject ) :
 		coefList = RooArgList( coefs )
 		complCoef = RooComplementCoef( name, name, coefList )
 		self._addObject(complCoef)
-		complCoef.IsA().Destructor(complCoef)
 
         # initialize
         self._init( name, 'RooComplementCoef' )
@@ -1185,7 +1184,6 @@ class SimultaneousPdf( Pdf ) :
             for s, pdf in kwargs.pop('States').iteritems():
                 simul.addPdf(pdf, s)
             self._addObject(simul)
-            simul.IsA().Destructor(simul)
         elif 'SplitParameters' in kwargs :
             args['Master']     = kwargs.pop('MasterPdf')
             args['SplitCats']  = [ kwargs.pop('SplitCategory').GetName() ] if 'SplitCategory' in kwargs\
@@ -1488,7 +1486,6 @@ class BTagDecay( Pdf ) :
                                  , int( argDict['checkVars'] )
                                 )
             self._addObject(decay)
-            decay.IsA().Destructor(decay)
 
         elif 'tagCat' in kwargs :
             # one tagging category
@@ -1675,7 +1672,6 @@ class BinnedPdf( Pdf ) :
         if bPdf :
             # import the BinnedPdf in the workspace
             self._addObject(bPdf)
-            bPdf.IsA().Destructor(bPdf)
 
         # initialize PDF
         self._init( Name, 'RooBinnedPdf' )
@@ -2183,7 +2179,6 @@ class MultiHistEfficiencyModel(ResolutionModel):
         from ROOT import RooMultiEffResModel
         mhe = RooMultiEffResModel(self.__pdf_name, self.__pdf_name, efficiency_entries)
         self._addObject(mhe)
-        mhe.IsA().Destructor(mhe)
 
         extraOpts = dict()
         if self.__conditionals: extraOpts['ConditionalObservables'] = self.__conditionals

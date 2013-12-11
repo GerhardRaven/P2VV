@@ -1,3 +1,6 @@
+// low level stuff
+#include <sys/types.h>
+
 // STD & STL
 #include <memory>
 #include <iostream>
@@ -772,4 +775,8 @@ std::vector<double> HelicityAngles(TLorentzVector Kplus_P, TLorentzVector Kminus
     angles[2] = - TMath::ACos( eta_KK.Dot(eta_mm) ) ;}
 
   return angles;
+}
+
+bool GetOwnership(_object* obj) {
+   return (reinterpret_cast<TFakeObjectProxy*>(obj))->fFlags & 0x0001;
 }

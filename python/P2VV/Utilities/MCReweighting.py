@@ -123,6 +123,7 @@ def compareDistributions( **kwargs ):
     
     # print canvases in file
     for canv in [obsCanv,KaonCanv,muonCanv,assymKaonCanv,assymMuonCanv,KKMassCanv]: canv.Print(canv.GetName()+'.pdf')
+    del mcAfterPhysRew
     return [obsCanv,KaonCanv,muonCanv,assymKaonCanv,assymMuonCanv,KKMassCanv]
 
 # clean P2VVPlotStash to save memory
@@ -132,31 +133,30 @@ def cleanP2VVPlotStash():
         for plot in _P2VVPlotStash: _P2VVPlotStash.remove(plot)
     print 'P2VV - INFO: cleanP2VVPlotStash: Emptied P2VVplotStash.'
 
-def destroyRootObject(obj):
-    if obj: obj.IsA().Destructor(obj)
-
 # combine datasets
 def _combineDataSetParts( files, name, weightName='' ):
     print 'P2VV - INFO: combineDataSetParts: Combining the following datasets with common name, %s'%name
     for f in files: print f
- 
-    from ROOT import TFile
-    dataSets = [ TFile.Open(f,'READ').Get(name) for f in files ]
-    data = dataSets.pop()
-    for d in dataSets: data.append(d)
 
     # import args into current workspace
     from P2VV.RooFitWrappers import RooObject
     ws = RooObject().ws()
+        
+    import ROOT 
+    from ROOT import TFile
+    dataSets = [ TFile.Open(f,'READ').Get(name) for f in files ]
+    for d in dataSets:
+        ROOT.SetOwnership(d, True)
+    data = dataSets.pop()
     for arg in data.get():
         if not ws[arg.GetName()]: ws.put(arg) 
+    for i in range(len(dataSets)):
+        d = dataSets.pop()
+        data.append(d)
+        del d
 
-    print 'P2VV - INFO: combineDataSetParts: Read combined dataset with entries %s respectively.'%str( tuple(d.numEntries() for d in [data] + dataSets))
-    # destroy and delete unnecessary stuff
-    for d in dataSets: d.IsA().Destructor(d)
-    del dataSets
-    return data
-
+    print 'P2VV - INFO: combineDataSetParts: Read combined dataset with %d entries.'% data.numEntries()
+    
 # easily create an observable using information from the PdfConfig class
 def _createGetObservable(name):
     from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_2011Analysis
@@ -332,6 +332,7 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, weightsName, *
     if not source.isWeighted() and sourWnam:
         print 'P2VV - INFO: TwoDimentionalVerticalReweighting: Source distribution is already weighted, combining weights.'
         from ROOT import RooArgSet
+##>>>>>>> 0a01510b8be7c2f8ef7fe4644810931421e4a46a
 
         # put all source weights into a list
         sourceWeightList = []
@@ -374,7 +375,6 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, weightsName, *
     #for tree in [s,t]: tree.IsA().Destructor(tree)
     del weights, combinedWeights, sourceWeightList
     return source
-
 
 # function that reweighits a single source distribution to match a given target using a histogram
 def OneDimentionalVerticalReweighting(source, target, nbins, var, weightsName, **kwargs):
@@ -882,18 +882,18 @@ class MatchPhysics( ):
             weightsVar.setVal( weight )
             weightsDataSet.add( weightsArgSet )
         
+        del self._physWeights
+
         self._data.merge( weightsDataSet )
+        del weightsDataSet
+
         self._data.SetName('MC_AfterPhysRew_%s_iteration'%self._iterNumb )
         print 'P2VV - INFO: Phyisics matching weights added to dataset: MC_AfterPhysRew_%s_iteration'%self._iterNumb
         self._weightedData = RooDataSet( self._data.GetName(),self._data.GetTitle(),
                                          self._data.get(), 
                                          Import    = self._data,
-                                         WeightVar = (self._weightsName, True)
-                                         )
+                                         WeightVar = (self._weightsName, True) )
                
-        weightsDataSet.IsA().Destructor(weightsDataSet)
-        del self._physWeights
-
     def getPdf(self):               return self._pdf
     def getAngleFunctions(self):    return angleFuncs
     def getMcTime(self):            return  [ o for o in self._pdf.Observables() if 'time' in o.GetName() ]
