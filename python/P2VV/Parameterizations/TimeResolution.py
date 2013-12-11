@@ -164,7 +164,7 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                 formula = '@0 + @1 * @2'
                 args = [self._mu_offset, self._mu_slope, self.__placeholder]
             else:
-                formula = '@0 + @1 * (@2 - @3) / 0.06'
+                formula = '@0 + @1 * (@2 - @3)'
                 args = [self._mu_offset, self._mu_slope, self._sigmat, self.__placeholder]
             self._timeResMu = self._parseArg('timeResMu_linear', kwargs, Formula = formula,
                                              ObjectType = 'FormulaVar', Arguments = args)
@@ -177,7 +177,7 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                 formula = '@1 + @2 * @0 + @3 * @0 * @0'
                 args = [self.__placeholder, self._mu_offset, self._mu_slope, self._mu_quad]
             else:
-                formula = '@2 + @3 * (@0 - @1) / 0.06 + @4 * (@0 - @1) * (@0 - @1) / 0.0036'
+                formula = '@2 + @3 * (@0 - @1) + @4 * (@0 - @1) * (@0 - @1)'
                 args = [self._sigmat, self.__placeholder, self._mu_offset, self._mu_slope, self._mu_quad]
             self._timeResMu = self._parseArg('timeResMu_quadratic', kwargs, Formula = formula,
                                              ObjectType = 'FormulaVar', Arguments = args)
@@ -205,8 +205,7 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                     args = {'mean'  : [self._sf_mean_offset, self._sf_mean_slope, self.__placeholder],
                             'sigma' : [self._sf_sigma_offset, self._sf_sigma_slope, self.__placeholder]}
                 else:
-                    # FIXME: this 0.06 only works as intended for a parameterisation as a function of sigma_t
-                    formula = '@2 + @3 * (@0 - @1) / 0.06'
+                    formula = '@2 + @3 * (@0 - @1)'
                     args = {'mean'  : [self._sigmat, self.__placeholder, self._sf_mean_offset, self._sf_mean_slope],
                             'sigma' : [self._sigmat, self.__placeholder, self._sf_sigma_offset, self._sf_sigma_slope]}
                 self._sf_mean = self._parseArg('timeResSFMean_linear', kwargs,
@@ -246,15 +245,15 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                     args = {'mean'  : [self._sf_mean_offset, self._sf_mean_slope, self.__placeholder],
                             'sigma' : [self._sf_sigma_offset, self._sf_sigma_slope, self.__placeholder]}
                 else:
-                    formula = '@2 + @3 * (@0 - @1) / 0.06'
+                    formula = '@2 + @3 * (@0 - @1)'
                     args = {'mean'  : [self._sigmat, self.__placeholder, self._sf_mean_offset, self._sf_mean_slope],
                             'sf2' : [self._sigmat, self.__placeholder, self._sf2_offset, self._sf2_slope]}
                 self._sf2_original = self._timeResSigmasSFs[-2]
                 self._timeResSigmasSFs[-2] = self._parseArg( self._sf2_original.GetName() + '_linear', kwargs,
-                                                             Formula = '@0 + @1 * @2', ObjectType = 'FormulaVar',
+                                                             Formula = formula, ObjectType = 'FormulaVar',
                                                              Arguments = args['sf2'])
                 self._sf_mean = self._parseArg( 'timeResSFMean_linear', kwargs,
-                                                Formula = '@0 + @1 * @2', ObjectType = 'FormulaVar', 
+                                                Formula = formula, ObjectType = 'FormulaVar', 
                                                 Arguments = [ self._sf_mean_offset, self._sf_mean_slope, self.__placeholder] )
             else:
                 self._sf_mean = self._parseArg('timeResSFMean', kwargs
