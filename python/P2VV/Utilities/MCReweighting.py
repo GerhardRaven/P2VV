@@ -550,7 +550,7 @@ class BuildBs2JpsiKKFit():
         self._doNullTest    = kwargs.pop('doNullTest',    '')
      
         # fit options
-        fitOpts = dict( NumCPU = 8, Optimize  = 2, Minimizer = 'Minuit2' )
+        fitOpts = dict( NumCPU = 2, Optimize  = 2, Minimizer = 'Minuit2' )
         self._pdfConfig['fitOptions'] = fitOpts
         corrSFitErrCats         = [ 'runPeriod', 'KKMassCat' ] if ('2011' not in MCProd or '2012' not in MCProd) else [ 'KKMassCat' ]
         randomParVals           = ( ) # ( 1., 12345 )
