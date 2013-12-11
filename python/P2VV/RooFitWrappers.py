@@ -107,23 +107,26 @@ class RooObject(object) :
         if not hasattr(ws, '_mappings') :  ws._mappings    = {}
         if not hasattr(ws, '_spec') :      ws._spec        = {} # factory string -> object
 
-    def _rooobject(self,Name) :
+    @staticmethod
+    def _rooobject(Name) :
         # get name string
         if type(Name) != str : Name = Name.GetName()
 
-        if Name not in self.ws()._rooobjects :
+        if not RooObject._ws : raise RuntimeError('No workspace defined!')
+        ws = RooObject._ws
+        if Name not in ws._rooobjects :
             # object is not in work space dictionary of RooObjects
-            if Name in self.ws() :
+            if Name in ws:
                 # try to create a RooObject wrapper if the requested object exists in work space
                 import ROOT
-                if   isinstance( self.ws()[Name], ROOT.RooRealVar  ) : return RealVar(Name)
-                elif isinstance( self.ws()[Name], ROOT.RooCategory ) : return Category(Name)
+                if   isinstance( ws[Name], ROOT.RooRealVar  ) : return RealVar(Name)
+                elif isinstance( ws[Name], ROOT.RooCategory ) : return Category(Name)
             else :
                 # object does not exist
                 raise KeyError, 'P2VV - ERROR: RooObject._rooobject(): object does not exist (%s)' % Name
 
         # return object
-        return self.ws()._rooobjects[Name]
+        return ws._rooobjects[Name]
 
     # WARNING: the object 'o' given to _addObject should NEVER be used again
     # instead, use the item returned by _addObject
@@ -220,9 +223,9 @@ class RooObject(object) :
         return self.GetName()
 
     def Observables(self) :
-        return set( self._rooobject(i) for i in self._var.getVariables() if i.getAttribute('Observable') )
+        return set( RooObject._rooobject(i) for i in self._var.getVariables() if i.getAttribute('Observable') )
     def Parameters(self) :
-        return set( self._rooobject(i) for i in self._var.getVariables() if not i.getAttribute('Observable') )
+        return set( RooObject._rooobject(i) for i in self._var.getVariables() if not i.getAttribute('Observable') )
 
     ## FIXME: Should these be in RooObject?? Do we need an LValue wrapper and move these there?
     def observable(self) :
@@ -476,20 +479,27 @@ class FormulaVar (RooObject) :
                ,'Dependents' : lambda s : s.dependents()
                ,'Value'      : lambda s : s.getVal()
                }
-    def __init__(self, Name, Formula, Arguments, **kwargs):
-        # construct factory string on the fly...
-        __check_name_syntax__(Name)
-        data = kwargs.pop('data', None)
-        if not data:
-            spec = "expr::%s('%s',{%s})" % (Name, Formula, ','.join(i.GetName() for i in Arguments))
+    def __init__(self, **kwargs):
+        __check_req_kw__( 'Name', kwargs )
+        __check_name_syntax__( kwargs['Name'] )
+        name = kwargs.pop( 'Name' )
+        data = kwargs.pop( 'data', None )
+        form = kwargs.pop( 'Formula', '' )
+        args = kwargs.pop( 'Arguments', [ ] )
+        if name in self.ws() :
+            assert not data and not form and not args\
+                   , 'P2VV - ERROR: FormulaVar: formula arguments specified, while object "%s" is already in workspace' % name
+            self._init(name, 'RooFormulaVar')
+        elif not data:
+            spec = "expr::%s('%s',{%s})" % ( name, form, ','.join( i.GetName() for i in args ) )
             self._declare(spec)
-            self._init(Name, 'RooFormulaVar')
+            self._init(name, 'RooFormulaVar')
         else:
             from ROOT import RooFormulaVar, RooArgList
-            form = RooFormulaVar(Name, Name, Formula, RooArgList(Arguments) )
+            form = RooFormulaVar( name, name, form, RooArgList(args) )
             form = data.addColumn(form)
             form = self._addObject(form)
-            self._init(Name, 'RooRealVar')
+            self._init( name, 'RooRealVar' )
             self.setObservable(True)
         for (k,v) in kwargs.iteritems() : self.__setitem__(k,v)
 
@@ -720,7 +730,6 @@ class ComplementCoef( RooObject ) :
 		coefList = RooArgList( coefs )
 		complCoef = RooComplementCoef( name, name, coefList )
 		self._addObject(complCoef)
-		complCoef.IsA().Destructor(complCoef)
 
         # initialize
         self._init( name, 'RooComplementCoef' )
@@ -834,6 +843,7 @@ class RealVar (RooObject) :
 
             if 'Blind' in kwargs: # wrap the blinding class around us...
                 b = kwargs.pop('Blind')
+                print 'P2VV - INFO: RealVar: blinding parameters for %s: %s' % ( Name, b )
                 _type = b[0] if type(b[0])==str else b[0].__name__
                 _bs   = b[1]
                 _args = b[2:]
@@ -931,7 +941,7 @@ class Pdf(RooObject):
             self[d] = kwargs.pop(d)
 
     def _get(self, name):
-        return getattr(self._target_(), '_' + name.lower())
+        return getattr(self._target_(), '_' + name.lower(), None)
 
     def __getitem__(self, k):
         if hasattr(self, '_dict') and self._dict and k in self._dict:
@@ -1174,7 +1184,6 @@ class SimultaneousPdf( Pdf ) :
             for s, pdf in kwargs.pop('States').iteritems():
                 simul.addPdf(pdf, s)
             self._addObject(simul)
-            simul.IsA().Destructor(simul)
         elif 'SplitParameters' in kwargs :
             args['Master']     = kwargs.pop('MasterPdf')
             args['SplitCats']  = [ kwargs.pop('SplitCategory').GetName() ] if 'SplitCategory' in kwargs\
@@ -1477,7 +1486,6 @@ class BTagDecay( Pdf ) :
                                  , int( argDict['checkVars'] )
                                 )
             self._addObject(decay)
-            decay.IsA().Destructor(decay)
 
         elif 'tagCat' in kwargs :
             # one tagging category
@@ -1664,7 +1672,6 @@ class BinnedPdf( Pdf ) :
         if bPdf :
             # import the BinnedPdf in the workspace
             self._addObject(bPdf)
-            bPdf.IsA().Destructor(bPdf)
 
         # initialize PDF
         self._init( Name, 'RooBinnedPdf' )
@@ -1704,7 +1711,7 @@ class Customizer(Pdf) :
                 customizer.replaceArg( __dref__(item), __dref__( rep ))
         else:
             for origItem, subsItem in zip( origSet, subsSet ) :
-                if item in pdf.Observables():
+                if origItem in pdf.Observables():
                     self.__transplant_binnings(origItem, subsItem)
                 customizer.replaceArg( __dref__(origItem), __dref__(subsItem) )
 
@@ -1769,9 +1776,14 @@ class AddModel(ResolutionModel) :
                 setattr(self._target_(), attr, v)
         else:
             self._init(self._dict['Name'], 'RooAddModel')
-            # Make sure we are the same as last time
+            # set attributes
             for k, v in self._dict.iteritems():
-                assert v == self._get(k)
+                origVal = self._get(k)
+                if origVal :
+                    assert v == origVal
+                else :
+                    attr = '_' + k.lower()
+                    setattr(self._target_(), attr, v)
 
     def _makeRecipe(self):
         models = self._dict['Models']
@@ -2155,7 +2167,8 @@ class MultiHistEfficiencyModel(ResolutionModel):
                 raise RuntimeError("More than one relative efficiency is None")
         # FIXME: perhaps this should be a dedicated class too
         form = '-'.join(['1'] + [e.GetName() for e in self.__relative_efficiencies.itervalues()])
-        self.__relative_efficiencies[remaining] = FormulaVar("remaining_efficiency", form, self.__relative_efficiencies.values())
+        self.__relative_efficiencies[remaining] = FormulaVar( Name = 'remaining_efficiency', Formula = form
+                                                             , Arguments = self.__relative_efficiencies.values() )
 
         efficiency_entries = self.__build_shapes(relative)
 
@@ -2166,7 +2179,6 @@ class MultiHistEfficiencyModel(ResolutionModel):
         from ROOT import RooMultiEffResModel
         mhe = RooMultiEffResModel(self.__pdf_name, self.__pdf_name, efficiency_entries)
         self._addObject(mhe)
-        mhe.IsA().Destructor(mhe)
 
         extraOpts = dict()
         if self.__conditionals: extraOpts['ConditionalObservables'] = self.__conditionals

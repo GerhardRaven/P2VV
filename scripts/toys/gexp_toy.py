@@ -32,7 +32,7 @@ if not generate:
     from P2VV.Utilities.DataHandling import readData
     data = readData(filename, "DecayTree", NTuple = True, observables = observables, ntupleCuts = cut)
 
-    t_diff = FormulaVar('time_diff', '@1 > -900 ? @0 - @1 : @0', [t, t_true], data = data)
+    t_diff = FormulaVar(Name = 'time_diff', Formula = '@1 > -900 ? @0 - @1 : @0', Arguments = [t, t_true], data = data)
     t_diff.setMin(-10)
     t_diff.setMax(10)
 else:

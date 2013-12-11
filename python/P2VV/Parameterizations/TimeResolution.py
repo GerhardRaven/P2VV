@@ -172,7 +172,7 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
             self._mu = self._timeResMu
             self._mu_offset = self._parseArg( 'timeResMu_offset', kwargs, Value = -0.001723, MinMax = (-2, 2))
             self._mu_slope = self._parseArg( 'timeResMu_slope', kwargs, Value = -0.00431, MinMax = (-2, 2))
-            self._mu_quad = self._parseArg( 'timeResMu_quad', kwargs, Value = -0.00380, MinMax = (-2, 2))
+            self._mu_quad = self._parseArg( 'timeResMu_quad', kwargs, Value = -0.00380, MinMax = (-50, 50))
             if self.__simultaneous:
                 formula = '@1 + @2 * @0 + @3 * @0 * @0'
                 args = [self.__placeholder, self._mu_offset, self._mu_slope, self._mu_quad]
@@ -311,15 +311,14 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
     def sigmatPlaceHolder(self):
         return self.__placeholder
 
-class Core_Rest_TimeResolution( TimeResolution ):
+class Rest_TimeResolution( TimeResolution ):
     def __init__(self, **kwargs):
         self._core_model = kwargs.pop('CoreModel')
-        Name = kwargs.pop('Name', 'timeResModelCR')
+        Name = kwargs.pop('Name', 'timeResModelRest')
         namePF = self.getNamePrefix(kwargs)
 
         self._sigmat = self._core_model._sigmat
         self._time = self._core_model._time
-        ## self._timeResMu = self._parseArg( 'timeResRestMu', kwargs, Value = 0, MinMax = (-1, 1))
         self._timeResMu = self._core_model._timeResMu
         self._timeResMuSF = self._core_model._timeResMuSF
 
@@ -334,17 +333,17 @@ class Core_Rest_TimeResolution( TimeResolution ):
 
         from P2VV.RooFitWrappers import ResolutionModel, AddModel
         from ROOT import RooGExpModel
-        gexps = []
+        self._gexps = []
         for side, pars in (('right', [self._right_sigmaSF, self._right_rlifeSF, 'false', 'Flipped']),
                            ('left',  [self._left_sigmaSF, self._left_rlifeSF, 'false', 'Normal'])):
             gexp = ResolutionModel(Name = '%sgexp_%s' % (namePF, side), Type = RooGExpModel,
-                                     Parameters = [self._time, self._timeResMu, self._sigmat, self._sigmat, self._timeResMuSF] + pars,
+                                     Parameters = [self._time, self._timeResMu, self._sigmat,
+                                                   self._sigmat, self._timeResMuSF] + pars,
                                      ConditionalObservables = [self._sigmat])
-            gexps.append(gexp)
-        gexps = AddModel("%stimeResModelRest" % namePF, Models = gexps, Fractions = [self._frac_left])
+            self._gexps.append(gexp)
         TimeResolution.__init__(self, Name = Name,
-                                Model = AddModel(Name, Models = [gexps, self._core_model.model()],
-                                                 Fractions = [self._timeResFracRest]),
+                                Model = AddModel("%stimeResModelRest" % namePF, Models = self._gexps,
+                                                 Fractions = [self._frac_left]),
                                 Cache = self._core_model._cache)
 
     def splitVars(self):

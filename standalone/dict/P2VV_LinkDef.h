@@ -45,7 +45,8 @@
 #pragma link C++ function RooDataSetToTree;
 #pragma link C++ function TreeToRooDataSet;
 #pragma link C++ function addSWeightToTree;
-#pragma link C++ function addRunPeriodToTree;
+#pragma link C++ function addIntegerToTree;
+#pragma link C++ function addCategoryToTree;
 #pragma link C++ function addVertexErrors;
 #pragma link C++ function sigmaFromFT;
 #pragma link C++ function hessian;
@@ -57,6 +58,7 @@
 #pragma link C++ function cross_with_errors;
 #pragma link C++ function initial_stepsizes;
 #pragma link C++ function HelicityAngles;
+#pragma link C++ function GetOwnership;
 
 #pragma link C++ class std::map<RooAbsCategory*, std::string>;
 #pragma link C++ class std::map<RooCategoryProxy*, std::string>;

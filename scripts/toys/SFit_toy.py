@@ -17,7 +17,7 @@ pdfConfig = PdfConfig()
 readData                = True
 pdfConfig['selection']  = 'HLT1Unbiased' # 'paper2012' # 'HLT1Unbiased'
 pdfConfig['makePlots']  = False
-pdfConfig['SFit']       = True
+pdfConfig['sFit']       = True
 pdfConfig['blind']      = False
 corrSFitErr             = 'sumWeight'     # '' / 'matrix' / 'sumWeight'
 
@@ -167,7 +167,7 @@ timeRes    = pdfBuild['observables']['timeRes']
 
 gen_observables = [time] + angles
 
-if not pdfConfig['SFit'] : obsSetP2VV.append(BMass)
+if not pdfConfig['sFit'] : obsSetP2VV.append(BMass)
 
 if not pdfBuild['iTagZeroTrick'] :
     tagCatP2VVOS = pdfBuild['observables']['tagCatP2VVOS']

@@ -1,3 +1,4 @@
+
 ###########################################################################################################################################
 ## Utilities.Plotting: P2VV utilities for making plots                                                                                   ##
 ##                                                                                                                                       ##
@@ -335,7 +336,7 @@ def compareDataSets( canv, obs, data={}, dataOpts={}, frameOpts={}, logy=False, 
                                                            """
     # get dataset scales (scale down the largest samples)
     entries = [ data[k].sumEntries() for k in data.keys() ]
-    for k in data.keys(): dataOpts[k]['Rescale'] = min(entries) / data[k].sumEntries() 
+    for k in data.keys(): dataOpts[k]['Rescale'] = min(entries) / data[k].sumEntries()
         
     # create frame
     obsFrame = obs.frame(**frameOpts)
@@ -344,20 +345,28 @@ def compareDataSets( canv, obs, data={}, dataOpts={}, frameOpts={}, logy=False, 
     # plot data on frame
     if data:
         assert data.keys()==dataOpts.keys(), 'must have same keys'
+        YaxisMaxima, YaxisMinima = [], []
         for d in data.keys():
-            data[d].plotOn( obsFrame, **dataOpts[d] ) 
-    
-    # start drawing
-    if logy: 
-        canv.SetLogy(1)
-        if obsFrame.GetMinimum() <= 0: 
-            obsFrame.SetMinimum(0.1)
-
+            frame = data[d].plotOn( obsFrame, **dataOpts[d] )
+            YaxisMaxima += [frame.GetMaximum()]
+            YaxisMinima += [frame.GetMinimum()]
+            del frame
     # title and axis ranges
     if RangeY: obsFrame.SetAxisRange( RangeY[0], RangeY[1], 'Y' )
+    else:
+        scales = []
+        for k in data.keys(): scales += [dataOpts[k]['Rescale']]
+        obsFrame.SetAxisRange( min(YaxisMinima),  1.15 * min(scales) * max(YaxisMaxima) , 'Y' )
     obsFrame.SetYTitle(titleY)
     obsFrame.SetTitle('')
+
+    # set logy
+    if logy:
+        if obsFrame.GetMinimum() <= 0:
+            obsFrame.SetMinimum(.1)
+        canv.SetLogy(1)
     
+    # draw
     canv.cd()
     obsFrame.Draw()
     return obsFrame

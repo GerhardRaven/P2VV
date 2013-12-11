@@ -45,6 +45,7 @@ constSplitCats = [ ]
 constSplitVals = { }
 if sigMassModel == 'Ipatia2' :
     constSplitCats = [ 'hlt1ExclB', 'KKMassCat' ]
+    #constSplitCats = [ 'KKMassCat' ]
     constSplitPars = [ 'm_sig_alpha_1', 'm_sig_alpha_2', 'm_sig_n_1', 'm_sig_n_2', 'm_sig_lambda', 'm_sig_zeta' ]
 
     if len(KKMassBinBounds) == 5 :
@@ -74,6 +75,16 @@ if sigMassModel == 'Ipatia2' :
                           , ( 'exclB',    'bin4' ) : [ 2.6456511462439103, 1.9878672383403715, 1.214951242924778, 1.5843436697596214, -2.8417604939372745, 0.06797317803125186     ]
                           , ( 'exclB',    'bin5' ) : [ 3.0757264652220297, 2.8829257202136667, 0.3704700122418063, 0.5435778339755468, -2.3207566521696803, 0.001582721837209422   ]
                          }
+
+    #constSplitVals = {  ( 'bin0', ) : [ 3.0, 2.5, 0.1, 0.5, -2.5, 0.01 ]
+    #                  , ( 'bin1', ) : [ 3.0, 2.5, 1.5, 2.0, -2.5, 0.01 ]
+    #                  , ( 'bin2', ) : [ 3.0, 2.5, 1.5, 2.0, -2.5, 0.01 ]
+    #                  , ( 'bin3', ) : [ 3.0, 3.0, 0.5, 0.5, -2.5, 0.01 ]
+    #                 }
+    #constSplitVals = {  ( 'bin0', ) : [ 3.0, 2.5, 0.1, 0.5, -2.5, 0.01 ]
+    #                  , ( 'bin1', ) : [ 3.0, 2.5, 1.5, 2.0, -2.5, 0.01 ]
+    #                  , ( 'bin2', ) : [ 3.0, 3.0, 0.5, 0.5, -2.5, 0.01 ]
+    #                 }
 
 numMassBins      = [ 140, 56, 40, 44, 24 ]
 massLogPlotRange = ( 5.e2, 2.e4 ) # ( 1.e2, 6.e3 ) # ( 4.e2, 1.3e4 )
@@ -373,6 +384,12 @@ if not simulation :
 
     elif sigMassModel.startswith('Ipatia2') :
         from P2VV.Parameterizations.MassPDFs import Ipatia2_Signal_Mass as SignalBMass
+        sigMassArgs['m_sig_lambda']  = -2.5
+        sigMassArgs['m_sig_zeta']    =  0.01
+        sigMassArgs['m_sig_alpha_1'] =  3.0
+        sigMassArgs['m_sig_alpha_2'] =  2.5
+        sigMassArgs['m_sig_n_1']     =  1.5
+        sigMassArgs['m_sig_n_1']     =  2.0
 
     else :
         from P2VV.Parameterizations.MassPDFs import LP2011_Signal_Mass as SignalBMass
@@ -878,7 +895,6 @@ if splitDataSet :
         preDS = dataSets['preS'][0].reduce( Cut = sample[1] )
         mainDSList.append( dataTree.buildDataSet( Observables = obsSetMain, Name = 'JpsiKK_' + sample[0], Title = 'JpsiKK'
                                                  , IndexName = 'index', OrigDataSet = preDS ) )
-        preDS.IsA().Destructor(preDS)
         mainDS.append( mainDSList[-1] )
 
 else :
@@ -887,9 +903,6 @@ else :
                                 , OrigDataSet = dataSets['preS'][0] )
 
 dataSets['main'] = ( mainDS, mainDSList )
-if dataSets['preS'][0] : dataSets['preS'][0].IsA().Destructor(dataSets['preS'][0])
-if dataSets['pre'][0]  : dataSets['pre'][0].IsA().Destructor(dataSets['pre'][0])
-if dataTree            : dataTree.IsA().Destructor(dataTree)
 dataSets.pop('pre')
 dataSets.pop('preS')
 dataTreeFile.Close()

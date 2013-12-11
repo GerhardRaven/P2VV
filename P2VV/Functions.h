@@ -20,7 +20,10 @@ void addSWeightToTree(const std::vector<double>& weights, TTree& tree, const std
 void addSWeightToTree(double* weights, size_t n, TTree& tree, const std::string& branch_name);
 void addSWeightToTree(const RooDataSet& ds, TTree& tree, const std::string& branchname,
                       const std::string& cut = std::string("1"));
-void addRunPeriodToTree(TTree& tree, Int_t period, const char* branchName);
+void addIntegerToTree(TTree& tree, Int_t period, const char* branchName);
+void addCategoryToTree(TTree& tree, const char* floatBranch,
+    const char* catBranch, std::vector<Double_t> boundaries,
+    std::vector<Int_t> indices);
 
 void addVertexErrors(TTree* tree, const std::list<RooDataSet*>& dss, const std::string& cut);
 
@@ -35,5 +38,17 @@ RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
 
 std::vector<double> HelicityAngles(TLorentzVector Kplus_P, TLorentzVector Kminus_P, 
 				   TLorentzVector muplus_P, TLorentzVector muminus_P);
+
+
+struct _object;
+
+struct TFakeObjectProxy {
+   ssize_t fRefCnt;          // PyObject_HEAD
+   void* fPyType;            // PyObject_HEAD
+   void* fRootObj;
+   int fFlags;
+};
+
+bool GetOwnership(_object* obj);
 
 #endif // FUNCTIONS_H

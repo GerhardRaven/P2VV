@@ -933,10 +933,6 @@ class Linear_TaggingCategories( TaggingCategories ) :
                                             )
                             )
 
-        # adjust errors on calibration parameters
-        if not wTagP0Constraint : self._wTagP0.setError(  3. * self._wTagP0.getError() )
-        if not wTagP1Constraint : self._wTagP1.setError( 17. * self._wTagP1.getError() )
-
         # check for remaining arguments and initialize
         self._check_extraneous_kw( kwargs )
         TaggingCategories.__init__( self, NumTagCats = len(self._tagCats), tagCat = tagCat

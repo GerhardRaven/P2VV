@@ -80,7 +80,7 @@ class PdfConfiguration( dict ) :
             if not line : break
 
             # check for empty or comment lines
-            line = line.strip().split()
+            line = line.split()
             if not line :
                 continue
             elif line[0][0] == '#' :
@@ -117,6 +117,11 @@ class PdfConfiguration( dict ) :
         return fitStatus
 
     def writeParametersToFile( self, filePath = 'parameters', **kwargs ) :
+        # get arguments
+        fileFormat = kwargs.pop( 'Format', '' )
+        assert fileFormat in [ '', 'common' ]\
+               , 'P2VV - ERROR: PdfConfiguration.writeParametersToFile(): unknown file format: "%s"' % fileFormat
+
         # get file path and name
         filePath = filePath.strip()
         fileName = filePath.split('/')[-1]
@@ -144,28 +149,36 @@ class PdfConfiguration( dict ) :
         fitStat = kwargs.pop( 'FitStatus', ( -1, 0., 0. ) )
 
         # write parameters to content string
-        cont = '# %s: parameters\n' % fileName\
-             + '# name requirement: \'{0}\'\n'.format( names if names else '' )\
-             + '# floating:         \'{0}\'\n'.format( 'True' if floating == True else ( 'False' if floating == False else '' ) )\
-             + '# fit status:       status = {0:d}; NLL = {1:+.16g}; EDM = {2:.3g}\n'.format( fitStat[0], fitStat[1], fitStat[2] )\
-             + '#\n'\
-             + '# ' + '-' * (79 + maxLenName) + '\n'\
-             + ( '# {0:<%s}   {1:<14}   {2:<13}   {3:<14}   {4:<14}   {5:<}\n' % maxLenName )\
-                 .format( 'parameter', 'value', 'error', 'min', 'max', 'floating?' )\
-             + '# ' + '-' * (79 + maxLenName) + '\n'
+        cont = ''
+        if fileFormat != 'common' :
+            cont += '# %s: parameters\n' % fileName\
+                  + '# name requirement: \'{0}\'\n'.format( names if names else '' )\
+                  + '# floating:         \'{0}\'\n'.format( 'True' if floating == True else ( 'False' if floating == False else '' ) )\
+                  + '# fit status:       status = {0:d}; NLL = {1:+.16g}; EDM = {2:.3g}\n'.format( fitStat[0], fitStat[1], fitStat[2] )\
+                  + '#\n'\
+                  + '# ' + '-' * (79 + maxLenName) + '\n'\
+                  + ( '# {0:<%s}   {1:<14}   {2:<13}   {3:<14}   {4:<14}   {5:<}\n' % maxLenName )\
+                      .format( 'parameter', 'value', 'error', 'min', 'max', 'floating?' )\
+                  + '# ' + '-' * (79 + maxLenName) + '\n'
 
         numPars = 0
+        from P2VV.Imports import commonParNames
         for parName in sorted( self._parameters.keys() ) :
+            if fileFormat == 'common' and parName not in commonParNames : continue
             if nameExpr and not nameExpr.match(parName) : continue
 
             parVals = self._parameters[parName]
             if ( floating == True and not parVals[4] ) or ( floating == False and parVals[4] ) : continue
 
-            cont += ( '  {0:<%s}   {1:<+14.8g}   {2:<13.8g}   {3:<+14.8g}   {4:<+14.8g}   {5:<}\n' % maxLenName )\
-                      .format( parName, parVals[0], parVals[1], parVals[2], parVals[3], 'True' if parVals[4] else 'False' )
+            if fileFormat != 'common' :
+                cont += ( '  {0:<%s}   {1:<+14.8g}   {2:<13.8g}   {3:<+14.8g}   {4:<+14.8g}   {5:<}\n' % maxLenName )\
+                          .format( parName, parVals[0], parVals[1], parVals[2], parVals[3], 'True' if parVals[4] else 'False' )
+            else :
+                cont += '{0:s}\t{1:+.8g}\t{2:.8g}\n'.format( commonParNames[parName], parVals[0], parVals[1] )
             numPars += 1
 
-        cont += '# ' + '-' * (79 + maxLenName) + '\n'
+        if fileFormat != 'common' :
+            cont += '# ' + '-' * (79 + maxLenName) + '\n'
 
         # write content to file
         parFile.write(cont)
@@ -177,16 +190,18 @@ class PdfConfiguration( dict ) :
 
 # B_s^0 -> J/psi phi analysis configuration
 class Bs2Jpsiphi_PdfConfiguration( PdfConfiguration ) :
-    def __init__( self ) :
+    def __init__( self, **kwargs ) :
         from math import pi
 
+        # get keyword arguments
+        sFit = kwargs.pop( 'sFit', True )
+
         # job parameters
-        self['SFit']          = True            # fit only signal?
+        self['sFit']          = sFit            # fit only signal?
         self['blind']         = { }             # { 'phiCP' : ( 'UnblindUniform', 'myString', 0.2 ) }
         self['numEvents']     = 60000           # sum of event yields
         self['sigFrac']       = 0.5             # fraction of signal events
         self['parNamePrefix'] = ''              # prefix for parameter names
-        self['runPeriods']    = [ 2011, 2012 ]  # run periods
 
         self['obsDict'] = dict(  runPeriod = ( 'runPeriod',            'run period',              { }                                   )
                                , mass      = ( 'mass',                 'm(J/#psi K^{+}K^{-})',    'MeV/c^{2}', 5368.,  5200.,   5550.   )
@@ -215,11 +230,10 @@ class Bs2Jpsiphi_PdfConfiguration( PdfConfiguration ) :
         # PDF parameters
         self['numTimeBins']        = 30               # number of bins for the decay time observable
         self['numTimeResBins']     = 40               # number of bins for the decay-time resolution observable (used for caching)
-        self['timeResType']        = 'eventNoMean'    # '' / 'event' / 'eventNoMean' / 'eventConstMean' / '3Gauss'
+        self['timeResType']        = ''               # '' / 'event' / 'eventNoMean' / 'eventConstMean' / '3Gauss' / 'event3fb'
         self['constrainTResScale'] = ''               # '' / 'constrain' / 'fixed'
         self['timeEffType']        = 'paper2012'      # 'HLT1Unbiased' / 'HLT1ExclBiased' / 'paper2012' / 'fit'
         self['constrainDeltaM']    = ''               # '' / 'constrain' / 'fixed'
-        self['constrainBeta']      = 'noBeta'         # '' / 'constrain' / 'fixed' / 'noBeta'
 
         self['timeEffHistFiles']  = { }
         self['timeEffParameters'] = { }
@@ -247,17 +261,24 @@ class Bs2Jpsiphi_PdfConfiguration( PdfConfiguration ) :
         self['KKMassBinBounds'] = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ]    # KK-mass bin boundaries
         self['CSPValues']       = [ 0.959, 0.770, 0.824, 0.968 ]                      # S-P coupling factors for KK-mass bins
 
+        if not sFit :
+            self['bkgAnglePdfType'] = 'hybrid'
+            self['numAngleBins']    = ( 10, 24, 5 )
+
         self['lambdaCPParam'] = 'lambPhi'    # 'ReIm' / 'lambSqPhi' / 'lambPhi' / 'lambPhi_CPVDecay' / 'lambPhiRel_CPVDecay'
 
         self['splitParams'] = dict( KKMassCat = [ 'f_S', 'ASOddPhase' ] )
 
         self['externalConstr'] = { }
 
+        # check for remaining keyword arguments
+        assert not kwargs, 'P2VV - ERROR: Bs2Jpsiphi_PdfConfiguration: superfluous keyword arguments found: %s' % kwargs
+
         # initialize PdfConfiguration object
         PdfConfiguration.__init__( self )
 
     def __setitem__( self, key, val ) :
-        if key == 'SFit' :
+        if key == 'sFit' :
             if not val : self.addBkgParams()
             else       : self.rmBkgParams()
 
@@ -273,12 +294,17 @@ class Bs2Jpsiphi_PdfConfiguration( PdfConfiguration ) :
 
 # B_s^0 -> J/psi phi analysis of 1 fb^-1 2011 data (paper) configuration
 class Bs2Jpsiphi_2011Analysis( Bs2Jpsiphi_PdfConfiguration ) :
-    def __init__( self ) :
-        Bs2Jpsiphi_PdfConfiguration.__init__(self)
+    def __init__( self, **kwargs ) :
+        # initialize PDF configuration
+        Bs2Jpsiphi_PdfConfiguration.__init__( self, **kwargs )
 
+        # do 1/fb-analysis-specific configuration
         self['numEvents']  = 54755
         self['sigFrac']    = 0.51
         self['runPeriods'] = [ ]
+
+        self['timeResType']   = 'eventNoMean'
+        self['constrainBeta'] = 'noBeta'
 
         self['obsDict']['wTagOS'] = ( 'tagomega_os', 'OS est. wrong-tag prob.', '', 0.25, 0., 0.50001 )
         self['obsDict']['wTagSS'] = ( 'tagomega_ss', 'SS est. wrong-tag prob.', '', 0.25, 0., 0.50001 )
@@ -315,43 +341,62 @@ class Bs2Jpsiphi_2011Analysis( Bs2Jpsiphi_PdfConfiguration ) :
         extConstraintValues.setVal( 'DelP0SS', ( -0.019,  0.005  ) )
         extConstraintValues.setVal( 'DelP1SS', (  0.,     0.     ) )
 
+        # check for remaining keyword arguments
+        assert not kwargs, 'P2VV - ERROR: Bs2Jpsiphi_2011Analysis: superfluous keyword arguments found: %s' % kwargs
+
 
 # B_s^0 -> J/psi phi analysis of 3 fb^-1 run-I data configuration
 class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
-    def __init__( self ) :
-        Bs2Jpsiphi_PdfConfiguration.__init__(self)
+    def __init__( self, **kwargs ) :
+        # get Run-I-analysis-specific keyword arguments
+        runPeriods = kwargs.pop( 'RunPeriods', '3fb' )
+        assert runPeriods in [ '2011', '2012', '3fb' ]\
+               , 'P2VV - ERROR: Bs2Jpsiphi_RunIAnalysis: "RunPeriod" can be "2011", "2012" or "3fb" (found "%s")' % runPeriod
 
-        self['blind'] = {  'phiCP'  : ( 'UnblindUniform', 'BsPhisComb', 0.2  )
-                         , 'dGamma' : ( 'UnblindUniform', 'BsDGsComb',  0.02 )
+        # initialize PDF configuration
+        Bs2Jpsiphi_PdfConfiguration.__init__( self, **kwargs )
+
+        # do Run-I-analysis-specific configuration
+        addStr = '2011' if runPeriods == '2011' else 'NewData' if runPeriods == '2012' else 'Combination'
+        self['blind'] = {  'phiCP'       : ( 'UnblindUniform', 'BsPhis%s' % addStr, 0.2  )
+                         , 'phiCP_A0'    : ( 'UnblindUniform', 'BsPhiszero%s' % addStr, 0.3  )
+                         , 'phiCP_Apar'  : ( 'UnblindUniform', 'BsPhispara%s' % addStr, 0.3  )
+                         , 'phiCP_Aperp' : ( 'UnblindUniform', 'BsPhisperp%s' % addStr, 0.3  )
+                         , 'phiCP_AS'    : ( 'UnblindUniform', 'BsPhisS%s' % addStr, 0.3  )
+                         , 'dGamma'      : ( 'UnblindUniform', 'BsDGs%s'  % addStr, 0.02 )
                         }
         self['numEvents']  = 220000
         self['sigFrac']    = 0.43
-        self['runPeriods'] = [ 2011, 2012 ]
+        self['runPeriods'] = [ 2011 ] if runPeriods == '2011' else [ 2012 ] if runPeriods == '2012' else [ 2011, 2012 ]
+
+        self['timeResType']   = 'event3fb'
+        self['constrainBeta'] = ''
 
         self['obsDict']['wTagOS'] = ( 'tagomega_os_cb', 'OS est. wrong-tag prob.', '', 0.25, 0., 0.50001 )
         self['obsDict']['wTagSS'] = ( 'tagomega_ss_nn', 'SS est. wrong-tag prob.', '', 0.25, 0., 0.50001 )
 
-        timeEffHistFiles = SimulCatSettings('timeEffHistFiles')
-        timeEffHistFiles.addSettings( [ 'runPeriod' ], [ [ 'p2011' ] ]
-                                     , dict(  file      = 'data/Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
-                                            , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
-                                            , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
-                                           )
-                                    )
-        timeEffHistFiles.addSettings( [ 'runPeriod' ], [ [ 'p2012' ] ]
-                                     , dict(  file      = 'data/Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
-                                            , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
-                                            , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
-                                           )
-                                    )
-        self['timeEffHistFiles'] = timeEffHistFiles
+        timeEff2011 = dict(  file      = 'data/Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
+                           , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+                           , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+                          )
+        timeEff2012 = dict(  file      = 'data/Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
+                           , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
+                           , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+                          )
+        if runPeriods == '2011' :
+            self['timeEffHistFiles'] = timeEff2011
+        elif runPeriods == '2012' :
+            self['timeEffHistFiles'] = timeEff2012
+        else :
+            timeEffHistFiles = SimulCatSettings('timeEffHistFiles')
+            timeEffHistFiles.addSettings( [ 'runPeriod' ], [ [ 'p2011' ] ], timeEff2011 )
+            timeEffHistFiles.addSettings( [ 'runPeriod' ], [ [ 'p2012' ] ], timeEff2012 )
+            self['timeEffHistFiles'] = timeEffHistFiles
 
         self['angEffMomsFiles'] = 'data/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
 
         self['KKMassBinBounds'] = [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ]
         self['CSPValues']       = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
-
-        self['splitParams']['runPeriod'] = [ 'Gamma' ]
 
         self['externalConstr'] = dict(  wTagP0OS       = (  0.379,  0.011  )
                                       , wTagP1OS       = (  1.00,   0.06   )
@@ -361,8 +406,44 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
                                       , wTagP1SS       = (  1.00,   0.12   )
                                       , wTagDelP0SS    = ( -0.016,  0.002  )
                                       , wTagDelP1SS    = (  0.015,  0.019  )
-        ##, timeResSigmaSF = (  1.45,   0.06   )
+                                      , dM             = (  17.768, 0.024  )
                                      )
+
+        splitConstr = dict( betaTimeEff = { }, tres_placeholder = { }, timeResMu = { }, timeResFrac2 = { }, sf_mean_offset = { }
+                           , sf_mean_slope = { }, sf_sigma_offset = { }, sf_sigma_slope = { } )
+        splitConstr['betaTimeEff']['2011']      = ( -0.0083,  0.004 )
+        splitConstr['betaTimeEff']['2012']      = ( -0.0083,  None ) if runPeriods == '3fb' else ( 0., 0. )
+        splitConstr['tres_placeholder']['2011'] = (  0.0349,  0. ) #( 0.0352, 0. )
+        splitConstr['tres_placeholder']['2012'] = (  0.0347,  0. ) #( 0.0352, 0. )
+        splitConstr['timeResMu']['2011']        = ( -0.00259, 0. ) #( 0.,     0. )
+        splitConstr['timeResMu']['2012']        = ( -0.00333, 0. ) #( 0.,     0. )
+        splitConstr['timeResFrac2']['2011']     = (  0.242,   0. ) #( 0.220,  0. )
+        splitConstr['timeResFrac2']['2012']     = (  0.239,   0. ) #( 0.248,  0. )
+        splitConstr['sf_mean_offset']['2011']   = (  1.4273,  0. ) #( 1.4761, 0. )
+        splitConstr['sf_mean_offset']['2012']   = (  1.4887,  0. ) #( 1.4877, 0. )
+        splitConstr['sf_mean_slope']['2011']    = ( -1.93,    0. ) #( -0.190, 0. )
+        splitConstr['sf_mean_slope']['2012']    = ( -3.88,    0. ) #( -0.228, 0. )
+        splitConstr['sf_sigma_offset']['2011']  = (  0.3857,  0. ) #( 0.3844, 0. )
+        splitConstr['sf_sigma_offset']['2012']  = (  0.4143,  0. ) #( 0.4118, 0. )
+        splitConstr['sf_sigma_slope']['2011']   = ( -0.63,    0. ) #( -0.117, 0. )
+        splitConstr['sf_sigma_slope']['2012']   = ( -2.80,    0. ) #( -0.172, 0. )
+        if runPeriods in [ '2011', '2012' ] :
+            self['externalConstr']['betaTimeEff']      = splitConstr['betaTimeEff']     [runPeriods]
+            self['externalConstr']['tres_placeholder'] = splitConstr['tres_placeholder'][runPeriods]
+            self['externalConstr']['timeResMu']        = splitConstr['timeResMu']       [runPeriods]
+            self['externalConstr']['timeResFrac2']     = splitConstr['timeResFrac2']    [runPeriods]
+            self['externalConstr']['sf_mean_offset']   = splitConstr['sf_mean_offset']  [runPeriods]
+            self['externalConstr']['sf_mean_slope']    = splitConstr['sf_mean_slope']   [runPeriods]
+            self['externalConstr']['sf_sigma_offset']  = splitConstr['sf_sigma_offset'] [runPeriods]
+            self['externalConstr']['sf_sigma_slope']   = splitConstr['sf_sigma_slope']  [runPeriods]
+        else :
+            self['splitParams']['runPeriod'] = [ ]
+            for par, vals in splitConstr.iteritems() :
+                self['splitParams']['runPeriod'].append(par)
+                constr = SimulCatSettings( '%sConstr' % par )
+                constr.addSettings( [ 'runPeriod' ], [ [ 'p2011' ] ], vals['2011'] )
+                constr.addSettings( [ 'runPeriod' ], [ [ 'p2012' ] ], vals['2012'] )
+                self['externalConstr'][par] = constr
 
         from P2VV.Imports import extConstraintValues
         extConstraintValues.setVal( 'DM',      ( 17.768, 0.024   ) )
@@ -374,6 +455,9 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
         extConstraintValues.setVal( 'P1SS',    (  1.00,   0.12   ) )
         extConstraintValues.setVal( 'DelP0SS', ( -0.016,  0.002  ) )
         extConstraintValues.setVal( 'DelP1SS', (  0.015,  0.019  ) )
+
+        # check for remaining keyword arguments
+        assert not kwargs, 'P2VV - ERROR: Bs2Jpsiphi_RunIAnalysis: superfluous keyword arguments found: %s' % kwargs
 
 
 class SimulCatSettings(list) :
@@ -484,7 +568,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         self['kwargs'] = kwargs
 
         # get some build parameters
-        for par in [ 'SFit', 'KKMassBinBounds', 'obsDict', 'CSPValues', 'condTagging', 'contEstWTag', 'SSTagging', 'transAngles'
+        for par in [ 'sFit', 'KKMassBinBounds', 'obsDict', 'CSPValues', 'condTagging', 'contEstWTag', 'SSTagging', 'transAngles'
                     , 'numEvents', 'sigFrac', 'paramKKMass', 'amplitudeParam', 'ASParam', 'signalData', 'fitOptions', 'parNamePrefix'
                     , 'tagPdfType', 'timeEffType', 'timeEffHistFiles', 'timeEffParameters', 'anglesEffType', 'angEffMomsFiles'
                     , 'readFromWS', 'splitParams', 'externalConstr', 'runPeriods' ] :
@@ -524,7 +608,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         self['pdfComps'][0] += buildBs2JpsiphiSignalPdf(self)
         if self['tagPdfType'] or not self['condTagging'] : self['pdfComps'][0] += buildTaggingPdf( self, data = self['signalData'] )
 
-        if not self['SFit'] : 
+        if not self['sFit'] :
             # build background PDFs
             self['pdfComps'].append( Component( namePF + 'bkg', [ ]
                                     , Yield = ( self['numEvents'] * ( 1. - self['sigFrac'] ), 0., self['numEvents'] ) ) )
@@ -535,7 +619,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         # build full PDF
         from P2VV.RooFitWrappers import buildPdf
         print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: requesting %s PDF for observables [%s]'\
-              % ( 'signal' if self['SFit'] else 'signal + background', ', '.join( str(obs) for obs in self['obsSetP2VV'] ) )
+              % ( 'signal' if self['sFit'] else 'signal + background', ', '.join( str(obs) for obs in self['obsSetP2VV'] ) )
         self['fullPdf'] = buildPdf( self['pdfComps'], Observables = self['obsSetP2VV'], Name = 'Jpsiphi' )
 
         # build simultaneous PDF by splitting parameters
@@ -565,7 +649,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         CSPValues        = getKWArg( self, kwargs, 'CSPValues' )
         tagPdfType       = getKWArg( self, kwargs, 'tagPdfType' )
         condTagging      = getKWArg( self, kwargs, 'condTagging' )
-        SFit             = getKWArg( self, kwargs, 'SFit' )
+        sFit             = getKWArg( self, kwargs, 'sFit' )
         numTimeBins      = getKWArg( self, kwargs, 'numTimeBins' )
         numTimeResBins   = getKWArg( self, kwargs, 'numTimeResBins' )
         angularRanges    = getKWArg( self, kwargs, 'angularRanges' )
@@ -585,6 +669,15 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         for ran in angularRanges.get( 'cpsi',   [ ] ) : observables['cpsi'].setRange(   ran[0], ran[ 1 : 3 ] )
         for ran in angularRanges.get( 'ctheta', [ ] ) : observables['ctheta'].setRange( ran[0], ran[ 1 : 3 ] )
         for ran in angularRanges.get( 'phi',    [ ] ) : observables['phi'].setRange(    ran[0], ran[ 1 : 3 ] )
+
+        if self['runPeriods'] :
+            # check run-period category
+            assert len( self['obsDict']['runPeriod'][2] ) == observables['runPeriod'].numTypes()\
+                   , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: number of run periods specified (%d) does not match number of types of run-period category (%d)'\
+                   % ( len( self['obsDict']['runPeriod'][2] ), observables['runPeriod'].numTypes() )
+            for name, index in self['obsDict']['runPeriod'][2].iteritems() :
+                assert observables['runPeriod'].isValidLabel(name) and observables['runPeriod'].isValidIndex(index)\
+                       , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: run period "%s" ("%d") not found in run-period category' % ( name, index )
 
         # check KK mass bin parameters
         assert obsDict['KKMass'][4] == KKMassBinBounds[0] and obsDict['KKMass'][5] == KKMassBinBounds[-1]\
@@ -616,7 +709,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         if tagPdfType or not condTagging :
             self['obsSetP2VV'].append( observables['iTagOS'] )
             if SSTagging : self['obsSetP2VV'].append( observables['iTagSS'] )
-        if not SFit :
+        if not sFit :
             self['obsSetP2VV'].append( observables['mass'] )
 
 
@@ -704,9 +797,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                               )
 
             # set time resolution models
-            splitCat      = self['simulPdf'].indexCat()
-            splitCatPars  = self['simulPdf'].getVariables()
-            inputCats     = [ splitCat ] if splitCat.isFundamental() else splitCat.inputCatList()
+            from ROOT import RooArgSet
+            splitCatPars = RooArgSet()
+            self['simulPdf'].treeNodeServerList(splitCatPars)
+            splitCat  = self['simulPdf'].indexCat()
+            inputCats = [ splitCat ] if splitCat.isFundamental() else splitCat.inputCatList()
             prototype = timeResModelsOrig['prototype']['model']
             from P2VV.RooFitWrappers import AddModel
             ## NOTE, this only works for either a single resolution model or an AddModel which does
@@ -722,20 +817,31 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
             def __find_param(var):
                 splitCats = self['splitParsDict'].get( ws[ var.GetName() ], set() )
+                if not var.isFundamental() :
+                    split = False
+                    for splVar, splCats in self['splitParsDict'].iteritems() :
+                        if var.dependsOn(splVar) : split = True
+                        splitCats |= splCats
+                    if not split : splitCats = set()
                 if not splitCats :
                     return var
                 else :
                     catLabels = [(cat.GetName(), cat.getLabel()) for cat in inputCats if cat in splitCats]
                     catsStr = ';'.join(lab[1] for lab in catLabels)
                     if len(catLabels) > 1 : catsStr = '{' + catsStr + '}'
+                    from P2VV.Utilities.General import getSplitPar
                     splitVar = getSplitPar(var.GetName(), catsStr, splitCatPars)
                     assert splitVar, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: parameter "%s" is set to be constrained for category "%s", but it is not found in PDF'\
                            % (var.GetName(), catsStr)
-                    from P2VV.RooFitWrappers import RealVar
-                    return RealVar(Name = splitVar.GetName())
-                
+                    from ROOT import RooRealVar, RooCategory, RooFormulaVar
+                    from P2VV.RooFitWrappers import RealVar, Category, FormulaVar
+                    wrappers = { RooRealVar : RealVar, RooCategory : Category, RooFormulaVar : FormulaVar }
+                    assert type(splitVar) in wrappers\
+                           , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: wrapping of RooFit object "%s" of type "%s" not implemented (yet)'\
+                             % ( splitVar.GetName(), type(splitVar) )
+                    return wrappers[ type(splitVar) ]( Name = splitVar.GetName() )
+
             def __make_wrapper(orig_params, split_model):
-                from P2VV.Utilities.General import getSplitPar
                 params = [ ]
                 for var in orig_params:
                     params.append(__find_param(var))
@@ -746,7 +852,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 params = filter(lambda e: e[0] in name, orig_params.iteritems())
                 assert(len(params) == 1)
                 return params[0][1]
-                
+
             from P2VV.Parameterizations.TimeResolution import TimeResolution
             for splitCatState in splitCat:
                 splitCat.setIndex( splitCatState.getVal() )
@@ -785,7 +891,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                         print '%d: %.4f%s' % ( iter, fac, '' if iter == len( CSPValues ) - 1 else ',' ),
                     print
 
-                from P2VV.Utilities.General import getSplitPar                    
+                from P2VV.Utilities.General import getSplitPar
                 for splitCatState in splitCat:
                     splitCat.setIndex( splitCatState.getVal() )
                     C_SP = getSplitPar( namePF + 'C_SP', observables['KKMassCat'].getLabel(), splitCatPars )
@@ -879,19 +985,27 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         constraints = set()
         def buildConstraint( par, constrVals ) :
             par.setVal( constrVals[0] )
-            if type(constrVals[1]) == float and constrVals[1] > 0. :
+            try :
+                constrErr = float(constrVals[1])
+            except :
+                constrErr = None
+
+            if constrErr == None :
+                par.setConstant(False)
+            elif constrErr <= 0. :
+                par.setConstant(True)
+            else :
+                par.setConstant(False)
                 from P2VV.RooFitWrappers import Pdf, ConstVar
                 from ROOT import RooGaussian as Gaussian
                 constrName = par.GetName().replace( '{', '' ).replace( '}', '' ).replace( ';', '_' )
                 constraints.add( Pdf(  Name = constrName + '_constraint', Type = Gaussian
                                      , Parameters = [  par
                                                      , ConstVar( Name = constrName + '_mean',  Value = constrVals[0] )
-                                                     , ConstVar( Name = constrName + '_sigma', Value = constrVals[1] )
+                                                     , ConstVar( Name = constrName + '_sigma', Value = constrErr     )
                                                     ]
                                     )
                                )
-            else :
-                par.setConstant(True)
 
         ws = pdf.ws()
         pdfVars = pdf.getVariables()
@@ -1019,7 +1133,7 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
     dGammaVar = dict( Name = 'dGamma' )
     if blind and 'dGamma' in blind :
         if blind['dGamma'] : dGammaVar['Blind'] = blind['dGamma']
-        else :               dGammaVar['Blind'] = ( 'UnblindUniform', 'BsDGs2013EPS', 0.02 )
+        else :               dGammaVar['Blind'] = ( 'UnblindUniform', 'BsDGs', 0.02 )
     self['lifetimeParams'] = LifetimeParams( dGamma = dGammaVar, dMConstraint = constrainDeltaM, betaConstraint = constrainBeta )
     if ambiguityPars : self['lifetimeParams']['dGamma'].setVal( -self['lifetimeParams']['dGamma'].getVal() )
 
@@ -1042,25 +1156,27 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
             timeResArgs['timeResSigma'] = observables['timeRes']
         elif '3fb' in timeResType.lower() :
             from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
-            timeResArgs = dict(time = observables['time'], sigmat = observables['timeRes'], Cache = True,
-                               PerEventError = True, Parameterise = 'RMS',
-                               TimeResSFParam = 'linear', ScaleFactors = [(2, 1.817), (1, 1.131)],
-                               timeResMu = dict(Constant = True, Value = -0.00298),
-                               Fractions = [(2, 0.168)],
-                               timeResFrac2 = dict(Value = 0.24295, Constant = True),
-                               sf_mean_offset = dict(Value = 1.42479, Constant = True),
-                               sf_mean_slope = dict(Value = -0.0526273, Constant = True),
-                               sf_sigma_offset = dict(Value = 0.381861, Constant = True),
-                               sf_sigma_slope = dict(Value = -0.0147151, Constant = True),
-                               tres_placeholder = dict(Value = 0.032, Constant = True))
+            timeResArgs = dict( time = observables['time'], sigmat = observables['timeRes'], Cache = True, PerEventError = True
+                               , Parameterise = 'RMS', TimeResSFParam = 'linear'
+                               , ScaleFactors     = [ ( 2, 1.817 ), ( 1, 1.131 ) ]
+                               , timeResMu        = dict( Value = 0., Constant = True ) #dict( Value = -0.00298, Constant = True )
+                               , Fractions        = [ ( 2, 0.168 ) ]
+                               , timeResFrac2     = dict( Value =  0.4,  Constant = True ) #dict( Value =  0.24295,   Constant = True )
+                               , sf_mean_offset   = dict( Value =  1.45, Constant = True ) #dict( Value =  1.42479,   Constant = True )
+                               , sf_mean_slope    = dict( Value =  0.,   Constant = True ) #dict( Value = -0.0526273, Constant = True )
+                               , sf_sigma_offset  = dict( Value =  0.,   Constant = True ) #dict( Value =  0.381861,  Constant = True )
+                               , sf_sigma_slope   = dict( Value =  0.,   Constant = True ) #dict( Value = -0.0147151, Constant = True )
+                               , tres_placeholder = dict( Value =  0.,   Constant = True ) #dict( Value =  0.032,     Constant = True )
+                              )
         else :
             from P2VV.Parameterizations.TimeResolution import Paper2012_TimeResolution as TimeResolution
             timeResArgs['timeResMean'] = dict( Value = -4.0735e-03, Error = 1.33e-04 )
             timeResArgs['timeResMeanConstraint'] = constrainTResScale
-            timeResArgs['timeResSFConstraint'] = constrainTResScale 
+            timeResArgs['timeResSFConstraint'] = constrainTResScale
             timeResArgs['timeResSigma'] = observables['timeRes']
-           
+
         resModel = TimeResolution( **timeResArgs )
+
     else :
         from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
         resModel = TimeResolution(  time          = observables['time']
@@ -1104,7 +1220,13 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
                                     )
 
         else :
-            self['lambdaCP'] = CPParam( AmplitudeNames = [ 'A0', 'Apar', 'Aperp', 'AS' ], Amplitudes = self['amplitudes'] )
+            ampNames = [ 'A0', 'Apar', 'Aperp', 'AS' ]
+            phiCPPars = dict( [ ( 'phiCP_%s' % amp, dict( Name = 'phiCP_%s' % amp ) ) for amp in ampNames ] )
+            for name, parDict in phiCPPars.iteritems() :
+                if blind and name in blind :
+                    if blind[name] : parDict['Blind'] = blind[name]
+                    else           : parDict['Blind'] = ( 'UnblindUniform', 'BsPhis',  0.2 )
+            self['lambdaCP'] = CPParam( AmplitudeNames = ampNames, Amplitudes = self['amplitudes'], **phiCPPars )
 
     else :
         if lambdaCPParam == 'lambPhi' :
@@ -1113,14 +1235,10 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
             from P2VV.Parameterizations.CPVParams import LambdaSqArg_CPParam as CPParam
 
         phiCPVar = dict( Name = 'phiCP' )
-        lambdaCPVar = dict( Name = 'lambdaCP' )
         if blind and 'phiCP' in blind :
             if blind['phiCP'] : phiCPVar['Blind'] = blind['phiCP']
-            else              : phiCPVar['Blind'] = ( 'UnblindUniform', 'BsPhis2013EPS',  0.2 )
-        if blind and 'lambdaCP' in blind :
-            if blind['lambdaCP'] : phiCPVar['Blind'] = blind['lambdaCP']
-            else                 : phiCPVar['Blind'] = ( 'UnblindUniform', 'BsLambdas2013EPS', 0.1 )
-        self['lambdaCP'] = CPParam( phiCP = phiCPVar, lambdaCP = lambdaCPVar )
+            else              : phiCPVar['Blind'] = ( 'UnblindUniform', 'BsPhis',  0.2 )
+        self['lambdaCP'] = CPParam( phiCP = phiCPVar )
         if ambiguityPars :
             self['lambdaCP']['phiCP'].setVal( pi - self['lambdaCP']['phiCP'].getVal() )
 
@@ -1763,6 +1881,10 @@ def multiplyByTimeAcceptance( pdf, self, **kwargs ) :
         new_model = timeResModels[resModelKey]['model']._target_()
         change = comp.changeModel( new_model )
         if not change :
+            # remove ORIGNAME:<"old model name"> attribute; this attribute gives problems with customization of the PDF later on
+            for att in new_model.attributes() :
+                if att == 'ORIGNAME:' + timeResModelsOrig[resModelKey]['model'].GetName() :
+                    new_model.setAttribute( att, False )
             accPdfs.append( comp.GetName() )
         else :
             raise AssertionError, 'P2VV - ERROR: multiplyByTimeAcceptance(): failed to multiply "%s" with acceptace' % comp.GetName()
