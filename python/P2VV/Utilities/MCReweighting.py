@@ -512,11 +512,8 @@ def writeWeights(dataset, weights, weightsName, writeDatasetName=''):
                           Import=dataset,
                           WeightVar = (weightsName, True)
                           )
-    for d in [dataset,weightsDataSet]: 
-        d.Print()
-        #d.IsA().Destructor(d)
-        d.Delete()
-        d.Print()
+    del weightsDataSet
+    del dataset
     del weights
     return _dataset
 
@@ -919,7 +916,6 @@ class MatchPhysics( ):
         for nev in xrange(self._data.numEntries()):
             self._data.get(nev)
             nominators.append( self._pdf.getVal(normVars) )
-        
         print 'P2VV - INFO: Calculating phyisics matching weights'
         calculatePhysicsWeights(nom=nominators, den=denominators)
 
@@ -936,8 +932,6 @@ class MatchPhysics( ):
         for weight in self._physWeights:
             weightsVar.setVal( weight )
             weightsDataSet.add( weightsArgSet )
-        
-        del self._physWeights
 
         self._data.merge( weightsDataSet )
         del weightsDataSet
@@ -1203,7 +1197,37 @@ class MatchWeightedDistributions():
 
 # sFit in 2011 + 2012 data  
 parValues6KKmassBins20112012 = dict(
-# redo the fit
+    __dGamma__	       = 0.086993
+    ,__phiCP__	       = 0.0830558
+    ,A0Mag2	       = 0.5208
+    ,ASOddPhase_bin0   = 0.803468
+    ,ASOddPhase_bin1   = 2.3092
+    ,ASOddPhase_bin2   = 0.460888
+    ,ASOddPhase_bin3   = -0.360896
+    ,ASOddPhase_bin4   = -0.679218
+    ,ASOddPhase_bin5   = -0.824088
+    ,AparPhase	       = 3.25566
+    ,AperpMag2	       = 0.253554
+    ,AperpPhase	       = 3.18827
+    ,Gamma	       = 0.660572
+    ,betaTimeEff_p2011 = -0.00832011
+    ,betaTimeEff_p2012 = -0.0137996
+    ,dM	               = 17.7651
+    ,f_S_bin0	       = 0.444554
+    ,f_S_bin1	       = 0.0632622
+    ,f_S_bin2	       = 0.00864546
+    ,f_S_bin3	       = 0.00887104
+    ,f_S_bin4	       = 0.0443292
+    ,f_S_bin5	       = 0.210105
+    ,lambdaCP	       = 0.963988
+    ,wTagDelP0OS       = 0.0137251
+    ,wTagDelP0SS       = -0.0159546
+    ,wTagDelP1OS       = 0.0697653
+    ,wTagDelP1SS       = 0.0150089
+    ,wTagP0OS	       = 0.39053
+    ,wTagP0SS	       = 0.440126
+    ,wTagP1OS	       = 1.03623
+    ,wTagP1SS	       = 0.944176
     )
 
 parValues6KKmassBins20112012_reduced = dict(
