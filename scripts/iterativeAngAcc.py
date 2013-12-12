@@ -16,8 +16,8 @@ initialFitOnData      = options.InitFit
 physWeightName        = 'weightPhys'
 
 # plotig control
-makePlots        = True 
-plotAtTheseSteps = [ 1, NumbOfIterations ]  # [ i for i in xrange(1,NumbOfIterations+1) ]
+makePlots        = True
+plotAtTheseSteps = [ NumbOfIterations ]  # [ i for i in xrange(1,NumbOfIterations+1) ]
 
 # specify datasets, sim. conditions, nominal accceptance weights and data physics parameters
 from P2VV.Utilities.MCReweighting import parValuesMcSim08_6KKmassBins as monteCarloParameters
@@ -56,7 +56,7 @@ if kinematicRewApproach == 'vertical':
     from P2VV.Utilities.MCReweighting import TwoDimentionalVerticalReweighting, OneDimentionalVerticalReweighting
 elif kinematicRewApproach == 'horizontal': 
     from P2VV.Utilities.MCReweighting import MatchWeightedDistributions
-from P2VV.Utilities.MCReweighting import MatchPhysics, compareDistributions, BuildBs2JpsiKKFit, cleanP2VVPlotStash, destroyRootObject
+from P2VV.Utilities.MCReweighting import MatchPhysics, compareDistributions, BuildBs2JpsiKKFit, cleanP2VVPlotStash #, destroyRootObject
 from P2VV.Utilities.DataMoments import RealMomentsBuilder
 from P2VV.Utilities.Plotting import plot
 from P2VV.RooFitWrappers import RooObject, RealEffMoment
@@ -70,6 +70,9 @@ worksp = RooObject( workspace = 'iterativeProcedure' ).ws()
 
 # build data pdf and prepare the sFit ( This pdf will not be multiplied by the angular acceptance ).
 Bs2JpsiKKFit = BuildBs2JpsiKKFit( dataSetPath = sDataPath, dataSetName = sDataName, weightsName = sWeightsName, MonteCarloProduction = MCProd  )
+if initialFitOnData:
+    Bs2JpsiKKFit.doFit( angAccFile=nomAngEffMomentsFile )
+    assert False
 
 # initialise physics matching class and build MC pdf
 PhysicsReweight = MatchPhysics( mcTuplePath,  mcTupleName, MonteCarloProduction = MCProd, BlindPdf = Bs2JpsiKKFit.getBlindString() )
@@ -95,17 +98,23 @@ if kinematicRewApproach == 'horizontal':
                                                     nBins          = 1000                       # preceision of the transformation
                                                     ) 
 
-if initialFitOnData: # initial fit on data with the nominal angular acceptance 
-    Bs2JpsiKKFit.doFit( angAccFile=nomAngEffMomentsFile )
-    assert False
-
+c = OneDimentionalVerticalReweighting(PhysicsReweight.getDataSet(),      # source distribution
+                                      Bs2JpsiKKFit.getDataSet(),         # target distribution
+                                      1000,
+                                      'mdau2',
+                                      'KKMass',
+                                      #SourceWeightName = physWeightName, # weight name of the source if any
+                                      TargetWeightName = sWeightsName,
+                                      iterationNumber  = 0
+                                      )
+assert False
 # start looping.
 for iterNumb in range( 1, NumbOfIterations + 1 ):
     print 'P2VV - INFO: Iteratitive procedure, begining of iteration %s.'%str(iterNumb)
 
     # save memory
     cleanP2VVPlotStash()
-    if iterNumb > 1: destroyRootObject(PhysicsReweight.getDataSet(weighted=True))
+    #if iterNumb > 1: destroyRootObject(PhysicsReweight.getDataSet(weighted=True))
 
     # match mc physics to sData
     PhysicsReweight.calculateWeights( iterNumb, dataParameters )
@@ -157,7 +166,11 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
     Bs2JpsiKKFit.doFit( itNum=iterNumb, angAccFile= outputEffMomentsFileName + '_weights_%s_Iteration'%iterNumb )
     Bs2JpsiKKFit.updateDataParameters( dataParameters, itNum=iterNumb ) 
     
-    gc.collect() # save memory
+    # save memory
+    del PhysicsReweight._weightedData
+    del reweightedData
+    del physMoments
+    gc.collect() 
 
 assert False
 # observables plot with the corrected angular acceptance
