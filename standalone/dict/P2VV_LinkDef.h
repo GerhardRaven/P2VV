@@ -48,7 +48,6 @@
 #pragma link C++ function addIntegerToTree;
 #pragma link C++ function addCategoryToTree;
 #pragma link C++ function addVertexErrors;
-#pragma link C++ function sigmaFromFT;
 #pragma link C++ function hessian;
 #pragma link C++ function hessian_with_errors;
 #pragma link C++ function gradient;
