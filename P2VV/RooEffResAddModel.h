@@ -31,6 +31,10 @@ public:
       return new RooEffResAddModel(*this, name);
    }
 
+   virtual RooAbsGenContext* modelGenContext(const RooAbsAnaConvPdf& convPdf, const RooArgSet &vars,
+                                             const RooDataSet *prototype=0, const RooArgSet* auxProto=0,
+                                             Bool_t verbose= kFALSE) const;
+
    /** 
     * Get a RooArgSet of all observables, caller takes ownership.
     * (pointer because genreflex dictionaries can't handle value)
