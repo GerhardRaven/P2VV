@@ -7,6 +7,7 @@
 
 #include <P2VV/RooAbsEffResModel.h>
 #include <P2VV/RooEffResAddModel.h>
+#include <P2VV/RooEffConvGenContext.h>
 
 //_____________________________________________________________________________R
 RooEffResAddModel::RooEffResAddModel()
@@ -61,19 +62,19 @@ RooEffResAddModel::~RooEffResAddModel( )
 }
 
 //_____________________________________________________________________________
-RooResolutionModel* RooEffResAddModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
+RooAbsGenContext* RooEffResAddModel::modelGenContext
+(const RooAbsAnaConvPdf& convPdf, const RooArgSet &vars, const RooDataSet *prototype,
+ const RooArgSet* auxProto, Bool_t verbose) const
 {
-   _addModel = static_cast<RooAddModel*>(RooAddModel::convolution(inBasis, owner));
-   if (_addModel == 0) {
-     coutE(InputArguments) << "RooEffResAddModel(" << GetName()
-         << "): convolution of RooAddModel with basis function \""
-         << inBasis->GetName() << "\" failed" << std::endl;
-     assert(_addModel != 0);
-     return 0;
-   }
-   return new RooEffResAddModel(*_addModel);
+   return new RooEffConvGenContext(convPdf, vars, prototype, auxProto, verbose);
 }
-   
+
+//_____________________________________________________________________________
+RooArgSet* RooEffResAddModel::observables() const {
+   // Return pointer to pdf in product
+   return new RooArgSet(RooAddModel::convVar());
+}
+
 //_____________________________________________________________________________
 const RooAbsReal* RooEffResAddModel::efficiency() const
 {
@@ -89,7 +90,15 @@ const RooAbsReal* RooEffResAddModel::efficiency() const
 }
 
 //_____________________________________________________________________________
-RooArgSet* RooEffResAddModel::observables() const {
-   // Return pointer to pdf in product
-   return new RooArgSet(RooAddModel::convVar());
+RooResolutionModel* RooEffResAddModel::convolution(RooFormulaVar* inBasis, RooAbsArg* owner) const
+{
+   _addModel = static_cast<RooAddModel*>(RooAddModel::convolution(inBasis, owner));
+   if (_addModel == 0) {
+     coutE(InputArguments) << "RooEffResAddModel(" << GetName()
+         << "): convolution of RooAddModel with basis function \""
+         << inBasis->GetName() << "\" failed" << std::endl;
+     assert(_addModel != 0);
+     return 0;
+   }
+   return new RooEffResAddModel(*_addModel);
 }

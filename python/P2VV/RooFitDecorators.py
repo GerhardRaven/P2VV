@@ -10,6 +10,7 @@ def __TList_manager(l):
     for entry in l:
         ROOT.SetOwnership(entry, True)
         entries.append(entry)
+    del l
     return entries
 
 def __wrap_kw_subs( fun, creates = None, containerManager = None ) :
@@ -49,7 +50,12 @@ def __wrap_kw_subs( fun, creates = None, containerManager = None ) :
         try:
             r = containerManager(fun(self, *args, **kwargs))
             if creates:
-                ROOT.SetOwnership(self, True)
+                import ROOT
+                from P2VV.Load import P2VVLibrary
+                if fun.__name__ == '__init__':
+                    ROOT.SetOwnership(self, True)
+                elif not ROOT.GetOwnership(r):
+                    ROOT.SetOwnership(r, True)
             return r
         except TypeError as terr:
             fun_args = [ a for a in args if not isinstance(a, RooCmdArg) ]
@@ -183,9 +189,11 @@ def __create_RooAbsCollectionInit(t) :
             _i.add( j )
         return _i
     from functools import wraps
-    __init = t.__init__
+    init = t.__init__
+    from functools import wraps
+    @wraps(init)
     def _init(self, *args):
-        r = __init(self, *tuple(cnvrt(i) for i in args))
+        r = init(self, *tuple(cnvrt(i) for i in args))
         ROOT.SetOwnership(self, True)
         return r
     return _init
@@ -290,7 +298,7 @@ RooMCStudy.plotParam        = __wrap_kw_subs( RooMCStudy.plotParam)
 RooMCStudy.plotParamOn      = __wrap_kw_subs( RooMCStudy.plotParamOn)
 from ROOT import RooDataSet
 RooDataSet.plotOnXY         = __wrap_kw_subs( RooDataSet.plotOnXY )
-RooDataSet.split            = __wrap_kw_subs( RooDataSet.split, True, __TList_manager )
+RooDataSet.split            = __wrap_kw_subs( RooDataSet.split, False, __TList_manager )
 
 #from ROOT import RooSimCloneTool
 #RooSimCloneTool.build = __wrap_kw_subs(RooSimCloneTool.build )

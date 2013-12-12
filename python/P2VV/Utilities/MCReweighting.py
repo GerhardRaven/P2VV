@@ -911,6 +911,7 @@ class MatchPhysics( ):
                                          )
         del self._physWeights
 
+
     def getPdf(self):               return self._pdf
     def getAngleFunctions(self):    return self._angleFuncs
     def getMcTime(self):            return  [ o for o in self._pdf.Observables() if 'time' in o.GetName() ]

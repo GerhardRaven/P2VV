@@ -1796,7 +1796,7 @@ def multiplyByTimeAcceptance( pdf, self, **kwargs ) :
         indexCat = motherPdf.indexCat()
         indexCatNames = [ indexCat.GetName() ] if indexCat.isFundamental() else [ cat.GetName() for cat in indexCat.inputCatList() ]
     else :
-        indexCats = [ ]
+        indexCatNames = [ ]
 
     # build new decay-time resolution model that includes the decay-time acceptance function
     print 'P2VV - INFO: multiplyByTimeAcceptance(): multiplying PDF "%s" with decay-time acceptance function' % pdf.GetName()
