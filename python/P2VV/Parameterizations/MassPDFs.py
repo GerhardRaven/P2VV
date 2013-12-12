@@ -341,26 +341,39 @@ class DoubleCB_Psi_Mass ( MassPdf ) :
         self._parseArg( 'mpsi_alpha_sf', kwargs, Title = 'psi Mass tail parameter 2:1 scale factor', Value = 1., ObjectType = 'ConstVar' )
         self._parseArg( 'mpsi_n_1', kwargs, Title = 'psi Mass tail order 1', Value = 2., ObjectType = 'ConstVar' )
         self._parseArg( 'mpsi_n_2', kwargs, Title = 'psi Mass tail order 2', Value = 2.,    ObjectType = 'ConstVar' )
-        self._parseArg( 'mpsi_frac', kwargs, Title = 'psi mass fraction first CB', Value = 0.8, Error = 0.03, MinMax = ( 0., 1. ) )
 
+        self._parseArg( 'mpsi_frac', kwargs, Title = 'psi mass fraction second CB', Value = 0.8, Error = 0.03, MinMax = ( 0., 1. ) )
+        self._parseArg( 'mpsi_sigma_2', kwargs, Formula = '@0*@1', Arguments = ( self._mpsi_sigma_sf, self._mpsi_sigma_1 ), ObjectType = 'FormulaVar' ),
+        self._parseArg( 'mpsi_alpha_2', kwargs, Formula = '@0*@1', Arguments = ( self._mpsi_alpha_sf, self._mpsi_alpha_1 ), ObjectType = 'FormulaVar' )
+        
+        name = kwargs.pop( 'Name', 'DoubleCB_Psi_Mass' )
+        param_sigma = kwargs.pop('ParameteriseSigma', None)
+
+        if param_sigma == 'MeanSigma':
+            from math import sqrt
+            f2 = self._mpsi_frac.getVal()
+            s1 = self._mpsi_sigma_1.getVal()
+            s2 = self._mpsi_sigma_sf.getVal() * s1
+            self._sigma_mean = self._parseArg('mpsi_sigma_mean', kwargs, MinMax = (5, 20),
+                                              Value = (( 1. - f2 ) * s1 + f2 * s2))
+            self._sigma_sigma = self._parseArg('mpsi_sigma_sigma', kwargs, MinMax = (0.01, 10),
+                                               Value = sqrt((1 - f2) * s1 ** 2 + f2 * s2 ** 2 -
+                                                            self._sigma_mean.getVal() ** 2))
+            self._mpsi_sigma_1 = self._parseArg('%ssigma_1_param' % namePF, kwargs, Formula = '- sqrt(@0 / (1 - @0)) * @1 + @2',
+                                                Arguments = (self._mpsi_frac, self._sigma_sigma, self._sigma_mean),
+                                                ObjectType = 'FormulaVar')
+            self._mpsi_sigma_2 = self._parseArg('%ssigma_2_param' % namePF, kwargs, Formula = 'sqrt((1 - @0) / @0) * @1 + @2',
+                                                Arguments = (self._mpsi_frac, self._sigma_sigma, self._sigma_mean),
+                                                ObjectType = 'FormulaVar')
+            
         from ROOT import RooCBShape as CrystalBall
         from P2VV.RooFitWrappers import Pdf, SumPdf
-        CB1 = Pdf( Name = '%smpsi_1' % namePF, Type = CrystalBall
-                  , Parameters = ( mass, self._mpsi_mean, self._mpsi_sigma_1, self._mpsi_alpha_1, self._mpsi_n_1 )
-                 )
-        CB2 = Pdf( Name = '%smpsi_2' % namePF, Type = CrystalBall
-                  , Parameters = (  mass, self._mpsi_mean
-                                  , self._parseArg( 'mpsi_sigma_2', kwargs, Formula = '@0*@1'
-                                                   , Arguments = ( self._mpsi_sigma_sf, self._mpsi_sigma_1 ), ObjectType = 'FormulaVar' )
-                                  , self._parseArg( 'mpsi_alpha_2', kwargs, Formula = '@0*@1'
-                                                   , Arguments = ( self._mpsi_alpha_sf, self._mpsi_alpha_1 ), ObjectType = 'FormulaVar' )
-                                  , self._mpsi_n_2
-                                 )
-                 )
-        MassPdf.__init__( self, pdf = SumPdf( Name = kwargs.pop( 'Name', 'DoubleCB_Psi_Mass' ), PDFs = (CB1, CB2)
-                                             , Yields = { CB1.GetName() : self._mpsi_frac } )
-                        )
-        self._check_extraneous_kw( kwargs )
+        CB1 = Pdf(Name = '%smpsi_1' % namePF, Type = CrystalBall,
+                  Parameters = (mass, self._mpsi_mean, self._mpsi_sigma_1, self._mpsi_alpha_1, self._mpsi_n_1))
+        CB2 = Pdf(Name = '%smpsi_2' % namePF, Type = CrystalBall, Parameters = (mass, self._mpsi_mean, self._mpsi_sigma_2,
+                                                                                self._mpsi_alpha_2, self._mpsi_n_2))
+        MassPdf.__init__( self, pdf = SumPdf(Name = name, PDFs = (CB1, CB2), Yields = {CB2.GetName() : self._mpsi_frac}))
+        self._check_extraneous_kw(kwargs)
 
 class Background_PsiMass ( MassPdf ) :
     def __init__(self, mass, **kwargs ) :
