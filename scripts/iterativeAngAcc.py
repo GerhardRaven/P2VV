@@ -98,6 +98,16 @@ if kinematicRewApproach == 'horizontal':
                                                     nBins          = 1000                       # preceision of the transformation
                                                     ) 
 
+c = OneDimentionalVerticalReweighting(PhysicsReweight.getDataSet(),      # source distribution
+                                      Bs2JpsiKKFit.getDataSet(),         # target distribution
+                                      1000,
+                                      'mdau2',
+                                      'KKMass',
+                                      #SourceWeightName = physWeightName, # weight name of the source if any
+                                      TargetWeightName = sWeightsName,
+                                      iterationNumber  = 0
+                                      )
+assert False
 # start looping.
 for iterNumb in range( 1, NumbOfIterations + 1 ):
     print 'P2VV - INFO: Iteratitive procedure, begining of iteration %s.'%str(iterNumb)

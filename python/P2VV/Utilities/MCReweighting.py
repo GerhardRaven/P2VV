@@ -279,8 +279,9 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, weightsName, *
     sourWnam = kwargs.pop('SourceWeightName', '')
     targWnam = kwargs.pop('TargetWeightName', '')
     iterIdx  = kwargs.pop('iterationNumber' ,  0)
-    
-    from ROOT import TH2F, TH1F, TCanvas, gROOT
+    plot     = kwargs.pop('xCheckPlots', False  )
+
+    from ROOT import TH2F, TH1F, TCanvas
   
     _valX = lambda ev: ev.find(var[0]).getVal() # value getter of the first variable
     _valY = lambda ev: ev.find(var[1]).getVal() # value getter of the first variable
@@ -330,8 +331,9 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, weightsName, *
     if count>0: print 'P2VV - INFO: TwoDimentionalVerticalReweighting: %s out of %s events are not weighted.'%(count,source.numEntries())
     
     # fill weights to histogram
-    weightsHist = TH1F('Weights', 'Weights',  2*nbins, .9*min(weights), 1.1*min(weights))
-    for w in weights: weightsHist.Fill(w)
+    if plot: 
+        weightsHist = TH1F('Weights', 'Weights',  2*nbins, .9*min(weights), 1.1*min(weights))
+        for w in weights: weightsHist.Fill(w)
 
     # combine weights in case source is already weighted
     if not source.isWeighted() and sourWnam:
@@ -364,17 +366,18 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, weightsName, *
     source = writeWeights(source, combinedWeights, weightsName, writeDatasetName=source.GetName() + '_' +weightsName)
       
     # plot and print the 2d histograms
-    canvSourc, canvTarg, canvWeights = [ TCanvas(n,n) for n in ['source','target','momWeights'] ]
-    for hist, canv in zip([sourceHist,targetHist], [canvSourc,canvTarg]): 
-        hist.SetStats(False)
-        hist.SetAxisRange(0,4.9e4,'Y')
-        hist.SetAxisRange(0,4.9e4,'X')
-        canv.cd()
-        hist.Draw('LEGO')
-        canv.Print(canv.GetName() + '_%s.pdf'%iterIdx)
-    canvWeights.cd()
-    weightsHist.Draw()
-    canvWeights.Print(canvWeights.GetName() + '_%s.pdf'%iterIdx )
+    if plot:
+        canvSourc, canvTarg, canvWeights = [ TCanvas(n,n) for n in ['source','target','momWeights'] ]
+        for hist, canv in zip([sourceHist,targetHist], [canvSourc,canvTarg]): 
+            hist.SetStats(False)
+            hist.SetAxisRange(0,4.9e4,'Y')
+            hist.SetAxisRange(0,4.9e4,'X')
+            canv.cd()
+            hist.Draw('LEGO')
+            canv.Print(canv.GetName() + '_%s.pdf'%iterIdx)
+        canvWeights.cd()
+        weightsHist.Draw()
+        canvWeights.Print(canvWeights.GetName() + '_%s.pdf'%iterIdx )
     
     #for tree in [s,t]: tree.IsA().Destructor(tree)
     del weights, combinedWeights, sourceWeightList
@@ -386,25 +389,29 @@ def OneDimentionalVerticalReweighting(source, target, nbins, var, weightsName, *
     sourWnam = kwargs.pop('SourceWeightName', '')
     targWnam = kwargs.pop('TargetWeightName', '') 
     iterIdx  = kwargs.pop('iterationNumber' ,  0)
+    plot     = kwargs.pop('xCheckPlots', False  )
 
-    from ROOT import TH1F, TCanvas, gROOT
+    from ROOT import TH1F, TCanvas
     
+    # dataset value getter 
+    _valX = lambda ev: ev.find(var).getVal() 
+
     # get axis ranges
-    gROOT.cd('PyROOT:/')
-    s,t = source.buildTree(), target.buildTree(WeightName=targWnam)
-    xMin = min( s.GetMinimum(var), t.GetMinimum(var) )
-    xMax = max( s.GetMaximum(var), t.GetMaximum(var) )
+    sourceVar, targetVar = [],[]
+    for event in source: sourceVar += [_valX(event)] 
+    for event in target: targetVar += [_valX(event)]
+    xMin, xMax = min(min(sourceVar),min(targetVar)), max(max(sourceVar),max(targetVar))
+    for l in [ sourceVar, targetVar ]: del l
      
     # create 2D histrograms (Kplus_P vs Kminus_P)
     sourceHist  = TH1F('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, xMin, xMax )
     targetHist  = TH1F('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, xMin, xMax )
   
     # value and weight getters of source distribution
-    _valX = lambda ev: ev.find(var).getVal()
     if sourWnam: source_weight = lambda ev: ev.find(sourWnam).getVal() 
     else:        source_weight = lambda ev: source.weight()
 
-    # fill rewweighting histograms
+    # fill reweighting histograms
     for evnt in source: sourceHist.Fill( _valX(evnt), source_weight(evnt) )
     for evnt in target: targetHist.Fill( _valX(evnt), target.weight()     )
        
@@ -417,7 +424,7 @@ def OneDimentionalVerticalReweighting(source, target, nbins, var, weightsName, *
     weights = []
     count = 0 # count how many events have a problematic weight
     for event in source:
-        bin = sourceHist.FindFixBin( _valX(event) ) # get the bin with given (Kplus_P,Kminus_P)
+        bin = sourceHist.FindFixBin( _valX(event) ) # get the bin with given var value
         if targetHist.GetBinContent(bin)==0 or sourceHist.GetBinContent(bin)==0:# do not weight the event if not possible with current binning
             weights += [1] 
             count += 1
@@ -425,76 +432,35 @@ def OneDimentionalVerticalReweighting(source, target, nbins, var, weightsName, *
             weights += [targetHist.GetBinContent(bin) / sourceHist.GetBinContent(bin)] # calculate weight
     if count>0: print 'P2VV - INFO: OneDimentionalVerticalReweighting: %s out of %s events are not weighted.'%(count,source.numEntries())
     
-    # scale weights to preserve number of events 
-    print 'P2VV - INFO: OneDimentionalVerticalReweighting: Scaling sum of weights to the number of entries'
-    n_events = source.numEntries()
-    sumW = sum(weights)
-    scaleWeights = lambda(weight): weight * n_events / sumW 
-    weights = map(scaleWeights, weights)
-    assert len(weights)==source.numEntries(), 'P2VV - INFO: TwoDimentionalVerticalReweighting: weights list and source dataset do not have the same length.'
+    if plot: 
+        weightsHist = TH1F('Weights', 'Weights',  2*nbins, .9*min(weights), 1.1*min(weights))
+        for w in weights: weightsHist.Fill(w)
 
-    # fill the weights to a histogram
-    weightsHist = TH1F('Weights', 'Weights',  2*nbins, .9*min(weights), 1.1*min(weights))
-    for w in weights: weightsHist.Fill(w)
-
-    # combine weights in case source is already weighted
-    if not source.isWeighted() and sourWnam:
-        print 'P2VV - INFO: OneDimentionalVerticalReweighting: Source distribution is already weighted, combining weights.'
-        from ROOT import RooArgSet
-        # put all source weights into a list
-        sourceWeightList = []
-        for event in source: sourceWeightList += [ source_weight(event) ]
-        
-        # combine the weights
-        combinedWeights  = []
-        for sourceWeight, weight in zip(sourceWeightList,weights): combinedWeights += [ sourceWeight * weight ]
-        
-        # remove initial weights source dataset before writting the combined ones 
-        sourceColumns = RooArgSet(source.get())
-        sourceColumns.remove( source.get().find(sourWnam) )
-        source = source.reduce(sourceColumns)
-        weightsName = sourWnam + '_' + weightsName  
-    elif source.isWeighted(): print 'P2VV - INFO: TwoDimentionalVerticalReweighting: Cannot write weights if RooDataSet is already set as weighted.'
-    
     # # # test
-    # test_s = TH1F('test_s','test_s',3*nbins, xMin,xMax)
-    # test_t = TH1F('test_t','test_t',3*nbins, xMin,xMax)
-    # sourceEvtList, targetEvtList = [],[]
-    # for ev in source: sourceEvtList+=[ _valX(ev) ]
-    # for ev in target: targetEvtList+=[ _valX(ev) ]
-    # for ev, w in zip(sourceEvtList,combinedWeights): test_s.Fill(ev,w)
-    # for evnt in target: test_t.Fill( _valX(evnt), target.weight()     )
+    if plot: 
+        test_s = TH1F('test_s','test_s',3*nbins, xMin,xMax)
+        test_t = TH1F('test_t','test_t',3*nbins, xMin,xMax)
+        sourceEvtList, targetEvtList = [],[]
+        for ev in source: sourceEvtList+=[ _valX(ev) ]
+        for ev in target: targetEvtList+=[ _valX(ev) ]
+        for ev, w in zip(sourceEvtList,weights): test_s.Fill(ev,w)
+        for evnt in target: test_t.Fill(_valX(evnt), target.weight())
+        # plot and print the histograms
+        testCanv = TCanvas('test','test')
+        test_t.Draw()
+        test_s.Scale(target.sumEntries() / source.sumEntries())
+        test_s.Draw('same err')
+       
+        from P2VV.Utilities.Plotting import _P2VVPlotStash
+        _P2VVPlotStash += [test_s,test_t]
+        return testCanv
 
 
-    # write weights to a new dataset
-    source = writeWeights(source, combinedWeights, weightsName, writeDatasetName=source.GetName() + '_' +weightsName)
-
-   # plot and print the histograms
-    # testCanv = TCanvas('test','test')
-    # test_t.Draw()
-    # test_s.Scale(target.sumEntries() / source.sumEntries())
-    # test_s.Draw('same err')
+# del source 
+# del target
+# return weights
     
-    # from P2VV.Utilities.Plotting import _P2VVPlotStash
-    # _P2VVPlotStash += [test_s,test_t]
-    # return testCanv
-    
-    # canvSourc, canvTarg, canvWeights = [ TCanvas(n,n) for n in ['source','target','momWeights'] ]
-    # for hist, canv in zip([sourceHist,targetHist], [canvSourc,canvTarg]): 
-    #     hist.SetStats(False)
-    #     #hist.SetAxisRange(0,4.9e4,'Y')
-    #     #hist.SetAxisRange(0,4.9e4,'X')
-    #     canv.cd()
-    #     hist.Draw()
-    #     canv.Print(canv.GetName() + '_%s.pdf'%iterIdx)
-    # canvWeights.cd()
-    # weightsHist.Draw()
-    # canvWeights.Print(canvWeights.GetName() + '_%s.pdf'%iterIdx )
-    
-    # for tree in [s,t]: tree.IsA().Destructor(tree)
-    # del weights, combinedWeights, sourceWeightList
-    return source
-
+ 
 # write weights to a RooDataSet
 def writeWeights(dataset, weights, weightsName, writeDatasetName=''):
     print 'P2VV - INFO: writeWeights: Creating dataset with name %s and weight name %s:'%(writeDatasetName,weightsName)
