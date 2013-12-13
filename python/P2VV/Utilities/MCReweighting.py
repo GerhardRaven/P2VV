@@ -123,7 +123,6 @@ def compareDistributions( **kwargs ):
     
     # print canvases in file
     for canv in [obsCanv,KaonCanv,muonCanv,assymKaonCanv,assymMuonCanv,KKMassCanv]: canv.Print(canv.GetName()+'.pdf')
-    del mcAfterPhysRew
     return [obsCanv,KaonCanv,muonCanv,assymKaonCanv,assymMuonCanv,KKMassCanv]
 
 # clean P2VVPlotStash to save memory
@@ -901,6 +900,13 @@ class MatchPhysics( ):
     def getDataSet(self, weighted=False):          
         if weighted: return self._weightedData
         else:        return self._data
+
+    def deleteDataSet(self, weighted = False):
+        if weighted:
+            del self._weightedData
+        else:
+            del self._data
+
     def getProjDataset(self): return getDataset.reduce(getPdf.ConditionalObservables() + self.pdf.indexCat())
     def plotWeights(self, Range=() ):
         from ROOT import TCanvas
