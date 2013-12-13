@@ -24,10 +24,10 @@ class PdfConfiguration( dict ) :
     def parameters( self ) : return self._parameters
 
     def addParameter( self, name, values ) :
-        if hasattr( values, '__iter__' ) and len(values) == 5 :
+        if hasattr( values, '__iter__' ) and len(values) == 7 :
             self._parameters[name] = tuple( [ val for val in values ] )
         else :
-            raise KeyError('PdfConfiguration.addParameter(): format of "values" argument should be ( value, error, min, max, floating? )')
+            raise KeyError('PdfConfiguration.addParameter(): format of "values" argument should be ( value, error, error low, error high, min, max, floating? )')
 
     def addParameters( self, parameters ) :
         if type(parameters) == dict :
@@ -40,6 +40,8 @@ class PdfConfiguration( dict ) :
             if par.ClassName() != 'RooRealVar' : continue
             self.addParameter( par.GetName(), (  par.getVal()
                                                , par.getError()
+                                               , par.getAsymErrorLo() if par.hasAsymError() else +1.
+                                               , par.getAsymErrorHi() if par.hasAsymError() else -1.
                                                , par.getMin()
                                                , par.getMax()
                                                , False if par.isConstant() else True
@@ -49,11 +51,13 @@ class PdfConfiguration( dict ) :
     def setParametersInPdf( self, pdf ) :
         for par in pdf.getVariables() :
             if not par.GetName() in self._parameters.keys() : continue
-            par.setVal(      self._parameters[ par.GetName() ][0]                    )
-            par.setError(    self._parameters[ par.GetName() ][1]                    )
-            par.setMin(      self._parameters[ par.GetName() ][2]                    )
-            par.setMax(      self._parameters[ par.GetName() ][3]                    )
-            par.setConstant( False if self._parameters[ par.GetName() ][4] else True )
+            par.setVal( self._parameters[ par.GetName() ][0] )
+            par.setError( self._parameters[ par.GetName() ][1] )
+            if self._parameters[ par.GetName() ][2] < 0. :
+                par.setError( self._parameters[ par.GetName() ][2], self._parameters[ par.GetName() ][3] )
+            par.setMin( self._parameters[ par.GetName() ][4] )
+            par.setMax( self._parameters[ par.GetName() ][5] )
+            par.setConstant( False if self._parameters[ par.GetName() ][6] else True )
 
     def readParametersFromFile( self, filePath = 'parameters', **kwargs ) :
         verb = kwargs.pop( 'Verbose', True )
@@ -105,7 +109,7 @@ class PdfConfiguration( dict ) :
               continue
 
             # set parameter values
-            self.addParameter( line[0], ( parVal, parErr, parMin, parMax, parFloat ) )
+            self.addParameter( line[0], ( parVal, parErr, +1., -1., parMin, parMax, parFloat ) )
             numPars += 1
 
         parFile.close()
@@ -168,13 +172,14 @@ class PdfConfiguration( dict ) :
             if nameExpr and not nameExpr.match(parName) : continue
 
             parVals = self._parameters[parName]
-            if ( floating == True and not parVals[4] ) or ( floating == False and parVals[4] ) : continue
+            if ( floating == True and not parVals[6] ) or ( floating == False and parVals[6] ) : continue
 
             if fileFormat != 'common' :
                 cont += ( '  {0:<%s}   {1:<+14.8g}   {2:<13.8g}   {3:<+14.8g}   {4:<+14.8g}   {5:<}\n' % maxLenName )\
-                          .format( parName, parVals[0], parVals[1], parVals[2], parVals[3], 'True' if parVals[4] else 'False' )
+                          .format( parName, parVals[0], parVals[1], parVals[4], parVals[5], 'True' if parVals[6] else 'False' )
             else :
-                cont += '{0:s}\t{1:+.8g}\t{2:.8g}\n'.format( commonParNames[parName], parVals[0], parVals[1] )
+                cont += '{0:s}\t{1:+.8g}\t{2:.8g}\t{3:+.8g}\t{4:.8g}\n'\
+                          .format( commonParNames[parName], parVals[0], parVals[1], parVals[2], parVals[3] )
             numPars += 1
 
         if fileFormat != 'common' :
