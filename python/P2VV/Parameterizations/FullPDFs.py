@@ -1208,6 +1208,7 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
     elif lambdaCPParam.startswith('lambPhi_CPVDecay') :
         from P2VV.Parameterizations.CPVParams import LambdaAbsArg_CPVDecay_CPParam as CPParam
         if lambdaCPParam.endswith('PSWaves') :
+            from P2VV.RooFitWrappers import RealVar
             from ROOT import RooNumber
             RooInf = RooNumber.infinity()
             rhoCP_P = RealVar( namePF + 'rhoCP_P', Title = 'CPV in decay |rho|', Value = 1., Error = 0.04, MinMax = ( 0., 5. ) )
