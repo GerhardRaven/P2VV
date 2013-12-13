@@ -101,15 +101,25 @@ RooBinnedFun::~RooBinnedFun()
 }
 
 namespace {
-  Double_t get(const RooArgList& b,int i) { return ((RooAbsReal&)b[i]).getVal() ; }
+  Double_t get(const RooArgList& b,int i)
+  {
+     return ((RooAbsReal&)b[i]).getVal();
+  }
 }
+
 //_____________________________________________________________________________
 Double_t RooBinnedFun::evaluate() const
 {
-    if (_x<_u.front()) get(_coefList,0);
-    if (_x>_u.back())  get(_coefList,_u.size()-2);
-    std::vector<double>::const_iterator i = --std::upper_bound(_u.begin(),_u.end()-1,_x);
-    return get(_coefList,std::distance(_u.begin(),i));
+   if (_x<=_u.front()) return get(_coefList,0);
+   if (_x>=_u.back()) return get(_coefList,_u.size()-2);
+   std::vector<double>::const_iterator i = --std::upper_bound(_u.begin(),_u.end()-1,_x);
+   size_t d = std::distance(_u.begin(),i);
+   if (d > size_t(_coefList.getSize())) {
+      cout << "RooBinnedFun::evaluate(): index " << d << " > size of coefs " 
+           << _coefList.getSize() << " for x == " << double(_x) << endl;
+      assert(false);
+   }
+   return get(_coefList, d);
 }
 
 //_____________________________________________________________________________

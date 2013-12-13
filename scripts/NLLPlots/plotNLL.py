@@ -1,15 +1,17 @@
-testParName = 'delSDelta'
-testParTitle = '#Delta#delta_{S_{0-3}}'
+amp = 'AS'
+testParName = '__phiCP_%s__' % amp
+testParTitle = '#phi_{s}^{%s}' % ( '0' if amp == 'A0' else '#parallel' if amp == 'Apar' else '#perp' if amp == 'Aperp' else 'S' )
 
-nllFilePaths = [ 'nllVals/nllPars_delSDelta.par' ]
-fitFilePaths = [ 'nllVals/fitPars_delSDelta_%04d.par' % it for it in range(28) ]
-plotFilePath = 'delSDelta.ps'
-parRange = ( -3.5, -0.8 )
-nllRange = ( 0., 17.  )
+from glob import glob
+nllFilePaths = [ 'nllVals/nllPars_phiCP_%s.par' % amp ]
+fitFilePaths = glob( 'nllVals/fitPars_phiCP_%s_*.par' % amp )
+plotFilePath = 'phiCP_%s.ps' % amp
+parRange = ( -0.60, 1.0 )
+nllRange = ( 0., 14. )
 
-nPointsPara = 100
-meanPara = -1.626
-sigmaPara = 0.221
+nPointsPara = 1000
+meanPara =  0.1909084  # 0.1909084  # -0.23525682 # -0.28361833 # -0.26138806
+sigmaPara = 0.14208314 # 0.14208314 # 0.066643948 # 0.063555006 # 0.054327098
 
 # get parabola values
 from math import sqrt
@@ -57,7 +59,8 @@ from P2VV.Parameterizations.FullPDFs import PdfConfiguration
 for filePath in fitFilePaths :
     pdfConfig = PdfConfiguration()
     fitStatus = pdfConfig.readParametersFromFile( filePath, Verbose = False )
-    assert fitStatus[0] == 0, 'plotNLL: ERROR: fit status is "%d" for fit "%s"' % ( fitStatus[0], filePath )
+    if fitStatus[0] != 0 :
+        print 'plotNLL: WARNING: fit status is "%d" for fit "%s"' % ( fitStatus[0], filePath )
     assert testParName in pdfConfig.parameters(), 'plotNLL: ERROR: "%s" not in parameters of file "%s"' % ( testParName, filePath )
 
     parVal = pdfConfig.parameters()[testParName][0]
@@ -69,6 +72,7 @@ for filePath in fitFilePaths :
     parValsFit.insert( pos, parVal )
     nllValsFit.insert( pos, fitStatus[1] )
 
+print parValsFit
 if parValsFit :
     minNLL = min(nllValsFit)
     parValsFitArr = array( 'd', parValsFit )
@@ -113,5 +117,5 @@ for it, graph in enumerate(graphs) :
         graph.Draw('AL')
         firstGraph = False
     elif graph :
-        graph.Draw( 'SAMES L' + ( 'P' if it == 2 else '' ) )
+        graph.Draw( 'SAMES' + ( ' PC' if it == 2 else ' L' ) )
 canv.Print(plotFilePath)
