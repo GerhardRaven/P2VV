@@ -114,7 +114,7 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
     # match physics
     physWeights = PhysicsReweight.calculateWeights( iterNumb, dataParameters )
     dataMngr.appendWeights( physWeightName, physWeights )
-    assert False
+    
     # match mKK 
     mKKweights = OneDimentionalVerticalReweighting( dataMngr.getDataSet(),      # source distribution
                                                     Bs2JpsiKKFit.getDataSet(),  # target distribution
