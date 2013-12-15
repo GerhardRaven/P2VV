@@ -14,9 +14,13 @@ NumbOfIterations      = options.numIters
 kinematicRewApproach  = options.KKmomRew
 MCProd                = options.MCProd
 initialFitOnData      = options.InitFit
+OneDverticalRewNbins  = 1000
+TwoDverticalRewNbins  = 50
+reweightBmomentum     = False
 physWeightName        = 'phys'
 mKKWeightsName        = 'mKK'
 KmomentaWeightsName   = 'KKmom'
+BmomentumWeightsName  = 'Bmom'
 
 # plotig control
 makePlots          = True
@@ -103,7 +107,17 @@ if kinematicRewApproach == 'horizontal':
                                                     observables    = angles + time + truetime,
                                                     nonObsVars     = muMomenta + Kmomenta + Bmomenta + KKMass,
                                                     nBins          = 1000                       # preceision of the transformation
-                                                    ) 
+                                                    )
+
+# match B momentum
+
+if reweightBmomentum:
+    BmomentumWeights = OneDimentionalVerticalReweighting( dataMngr.getDataSet(),      # source distribution
+                                                          Bs2JpsiKKFit.getDataSet(),  # target distribution
+                                                          OneDverticalRewNbins,'B_P', # nBins, variable
+                                                          #xCheckPlots = True
+                                                          )
+    dataMngr.appendWeights( BmomentumWeightsName, BmomentumWeights, permanetnWeigts=True )
 
 # start looping.
 for iterNumb in range( 1, NumbOfIterations + 1 ):
@@ -114,11 +128,11 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
     # match physics
     physWeights = PhysicsReweight.calculateWeights( iterNumb, dataParameters )
     dataMngr.appendWeights( physWeightName, physWeights )
-    
+
     # match mKK 
     mKKweights = OneDimentionalVerticalReweighting( dataMngr.getDataSet(),      # source distribution
                                                     Bs2JpsiKKFit.getDataSet(),  # target distribution
-                                                    1000, 'mdau2', iterationNumber = iterNumb, # nBins, variable
+                                                    OneDverticalRewNbins, 'mdau2', iterationNumber = iterNumb, # nBins, variable
                                                     )
     dataMngr.appendWeights( mKKWeightsName, mKKweights )
     
@@ -126,7 +140,7 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
     if kinematicRewApproach == 'vertical':
         KKMomWeights = TwoDimentionalVerticalReweighting(dataMngr.getDataSet(),      # source distribution
                                                          Bs2JpsiKKFit.getDataSet(),  # target distribution
-                                                         50, ['Kplus_P','Kminus_P'], iterationNumber = iterNumb  
+                                                         TwoDverticalRewNbins, ['Kplus_P','Kminus_P'], iterationNumber = iterNumb  
                                                          # number of bins per dimention, variables
                                                          )
         dataMngr.appendWeights( KmomentaWeightsName, KKMomWeights )
@@ -134,19 +148,22 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
         KinematicReweight.reweight( iterNumb, PhysicsReweight.getDataSet(weighted=True) )
         reweightedData = KinematicReweight.getDataSet()
    
-    # comparition plots 
+    # comparition plots
     if makePlots and iterNumb in plotAtTheseSteps: # plot data after each reweighting step
         compPlots = compareDistributions( mcData          = dataMngr.getDataSet('initSource'),
                                           mcDataPhysRew   = dataMngr.getDataSet(physWeightName),
                                           mkkRewData      = dataMngr.getDataSet(mKKWeightsName),
                                           MomRewData      = dataMngr.getDataSet(KmomentaWeightsName),
+                                          BmomRewData     = dataMngr.getDataSet(BmomentumWeightsName) if reweightBmomentum else '', 
                                           sData           = Bs2JpsiKKFit.getDataSet(),
                                           obsSet          = angles + time + muMomenta + Kmomenta + Bmomenta + KKMass,
                                           itNumb          = iterNumb,
                                           )
         # plot weights
-        for wList in [physWeightName, mKKWeightsName, KmomentaWeightsName]: dataMngr.plotWeights(wList)
-        
+        plotWeightsList = [physWeightName, mKKWeightsName, KmomentaWeightsName]
+        if reweightBmomentum: plotWeightsList += [ BmomentumWeightsName ]
+        for wList in plotWeightsList: dataMngr.plotWeights(wList)
+    
     # compute angular efficiency moments from the new reweighted mc dataset.    
     PhysicsReweight.setDataFitParameters(dataParameters) # set data pars to pdf (reweighted data has the data physics now)
     physMoments = RealMomentsBuilder( Moments = ( RealEffMoment( Name = func.GetName(), BasisFunc = func,
