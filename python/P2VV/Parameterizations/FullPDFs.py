@@ -178,7 +178,7 @@ class PdfConfiguration( dict ) :
                 cont += ( '  {0:<%s}   {1:<+14.8g}   {2:<13.8g}   {3:<+14.8g}   {4:<+14.8g}   {5:<}\n' % maxLenName )\
                           .format( parName, parVals[0], parVals[1], parVals[4], parVals[5], 'True' if parVals[6] else 'False' )
             else :
-                cont += '{0:s}\t{1:+.8g}\t{2:.8g}\t{3:+.8g}\t{4:.8g}\n'\
+                cont += '{0:s}\t{1:+.8g}\t{2:.8g}\t{3:+.8g}\t{4:+.8g}\n'\
                           .format( commonParNames[parName], parVals[0], parVals[1], parVals[2], parVals[3] )
             numPars += 1
 

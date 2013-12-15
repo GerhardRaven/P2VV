@@ -40,11 +40,11 @@ else :
     dataSetName = 'JpsiKK'
     dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats.root'
 
-MinosPars = [#  'phiCP', 'lambdaCP'
-             #, 'AparPhase', 'AperpPhase'
-             #, 'ASOddPhase_bin0', 'ASOddPhase_bin1', 'ASOddPhase_bin2', 'ASOddPhase_bin3'#, 'ASOddPhase_bin4', 'ASOddPhase_bin5'
-             #, 'f_S_bin0',        'f_S_bin1',        'f_S_bin2',        'f_S_bin3'#,        'f_S_bin4',        'f_S_bin5'
-             #, 'timeResSigmaSF'
+MinosPars = [#  '__phiCP__', '__dGamma__', 'lambdaCP', 'Gamma', 'dM'
+             #, 'A0Mag2', 'AperpMag2', 'AparPhase', 'AperpPhase'
+             #, 'f_S_bin0',        'f_S_bin1',        'f_S_bin2',        'f_S_bin3',        'f_S_bin4',        'f_S_bin5'
+             #, 'ASOddPhase_bin0', 'ASOddPhase_bin1', 'ASOddPhase_bin2', 'ASOddPhase_bin3', 'ASOddPhase_bin4', 'ASOddPhase_bin5'
+             #, 'betaTimeEff_p2011', 'betaTimeEff_p2012'
             ]
 dllPars = [ ] # [ ( 'ASOddPhase_bin2', True, True, True ) ] # [ ( 'ImApar', True, True, True ) ] / [ ( 'phiCP', True, True, True ) ]
 
