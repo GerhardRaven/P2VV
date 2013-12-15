@@ -344,7 +344,8 @@ def compareDataSets( canv, obs, data={}, dataOpts={}, frameOpts={}, logy=False, 
     
     # plot data on frame
     if data:
-        assert data.keys()==dataOpts.keys(), 'must have same keys'
+        for key in data.keys():
+            if key not in dataOpts.keys(): assert  False, 'P2VV - EROR: compareDataSets: data and dataOpts dictionaries must have the same keys.'
         YaxisMaxima, YaxisMinima = [], []
         for d in data.keys():
             frame = data[d].plotOn( obsFrame, **dataOpts[d] )
@@ -372,15 +373,12 @@ def compareDataSets( canv, obs, data={}, dataOpts={}, frameOpts={}, logy=False, 
     return obsFrame
 
 
-def makeAssymetryPlot( canv, frame, refHist ):
+def makeAssymetryPlot( canv, frame, refHist, numOfFrames, yRange=[] ):
     # get list of RooHist objects from frame
     HistList = []
-    indx=0
-    while True:
-        if frame.getObject(indx): HistList.append( frame.getObject(indx) )
-        else: break
-        indx+=1
-        
+    
+    for idx in range(numOfFrames): HistList.append( frame.getObject(idx) )
+
     # grab reference histogram
     for h in HistList: 
         if h.GetName()==refHist: hRef = h
@@ -439,7 +437,10 @@ def makeAssymetryPlot( canv, frame, refHist ):
                                    _l2a( assymYerrH ),  # array of y-axis high errors 
                                    _l2a( assymYerrL )   # array of y-axis low errors 
                                    )
-
+        
+        if yRange: 
+            graph.SetMinimum(yRange[0])
+            graph.SetMaximum(yRange[1])
         graph.SetName(hist.GetName() + frame.getPlotVar().GetName())
         graph.SetTitle(frame.getPlotVar().GetName())
         graph.GetXaxis().SetTitle(frame.getPlotVar().GetName())
