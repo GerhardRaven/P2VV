@@ -348,7 +348,8 @@ def compareDataSets( canv, obs, data={}, dataOpts={}, frameOpts={}, logy=False, 
             if key not in dataOpts.keys(): assert  False, 'P2VV - EROR: compareDataSets: data and dataOpts dictionaries must have the same keys.'
         YaxisMaxima, YaxisMinima = [], []
         for d in data.keys():
-            frame = data[d].plotOn( obsFrame, **dataOpts[d] )
+            if obs.hasBinning(obs.getBinning().GetName()): frame = data[d].plotOn( obsFrame, Binning = obs.getBinning(), **dataOpts[d] )
+            else: frame = data[d].plotOn( obsFrame, **dataOpts[d] )
             YaxisMaxima += [frame.GetMaximum()]
             YaxisMinima += [frame.GetMinimum()]
             del frame

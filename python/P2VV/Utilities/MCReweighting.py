@@ -73,17 +73,65 @@ def compareDistributions( **kwargs ):
     assymMuonCanv.Divide(4,2)
     BmomCanv.Divide(2,2)
 
+    # # create equal statistics binning
+    # binnings = {}
+    # binnedVars = {}
+    # targetLists = {}
+    # for k in binnedVars.keys(): targetLists[k] = 0
+    # for var in obsSet: # create binnign for these variables
+    #     if var.GetName() in ['Kplus_P','Kplus_PX','muplus_P','muplus_PX', 'B_P', 'B_Pt','mdau2']:
+    #         binnedVars[var.GetName()] = var 
+    # for ev in data['Sdata']: # loop over data and get entries 
+    #     for key in binnedVars.keys(): targetLists[key] += [ev.find(key).getVal()]
+    # for key in targetLists.keys(): targetLists[key].sort()
+    
+    # # create binnings
+    # nbins = 30
+    # binstat = data['Sdata'].numEntries() / nbins
+    # from array import array
+    # from ROOT import RooBinning
+    # lowbounds = {}
+    # for key in targetLists.keys():
+    #     lowbin = [] # low bin bounds container
+    #     range = binnedVars[key].getMax() - binnedVars[key].getMin()
+    #     lowbin = [binnedVars[key].getMin() - 0.0001*binnedVars[key].getMax()]
+    #     for ev in xrange(binstat,len(targetLists[key]),binstat):
+    #         lowbin[key] += targetLists[key][ev]
+    #         if len( lowbounds ) == nbins: break
+    #     lowbin += [ binnedVars[key].getMax() ]
+    #     binning =  RooBinning(nbins,array('d',lowbin),'bins') 
+    #     binnedVars[key].setBinning(binning)
+
+    # # set binning to similar variables 
+    # for var in obsSet:
+    #     obsName = var.GetName()
+    #     if obsName.startswith('K') and not obsName.startswith('KK'):
+    #         if   'X' in obsName or 'Y' in obsName: var.setBinning(binnedVars['Kplus_PX'].getBinning())
+    #         elif 'Z' in obsName:                   var.setBinning(binnedVars['Kplus_P'].getBinning())
+    #         else:                                  var.setBinning(binnedVars['Kplus_P'].getBinning())
+    #     elif obsName.startswith('mu'):
+    #         if   'X' in obsName or 'Y' in obsName: var.setBinning(binnedVars['muplus_PX'].getBinning())
+    #         elif 'Z' in obsName:                   var.setBinning(binnedVars['muplus_P'].getBinning())
+    #         else:                                  var.setBinning(binnedVars['muplus_P'].getBinning())
+    #     elif obsName == 'mdau2': KKMass.setBinning(binnedVars['mdau2'].getBinning())
+    #     elif obsName == 'B_P':   B_P.setBinning(binnedVars['B_P'].getBinning())
+    #     elif obsName == 'B_Pt':  B_Pt.setBinning(binnedVars['B_Pt'].getBinning())
+    
     # set some data drawing options
     colors      = dict(mcBefore=2, mcAfter=kGreen+3, MomRewData=4, Sdata=kMagenta+2, mkkRewData=1, BmomRewData=5 )
     stdDrawOpts = dict( DataError = RooAbsData.SumW2, MarkerSize = .6, XErrorSize = 0 )
     dataOpts    = dict()    
     for key in colors.keys():
-        if data.has_key(key): dataOpts[key] = dict( MarkerColor = colors[key], **stdDrawOpts  )  
+        if data.has_key(key): dataOpts[key] = dict( MarkerColor = colors[key], **stdDrawOpts  )
+
+    # import pdb
+    # pdb.set_trace()
+
 
     # plot angles and decay time
     for canv, assymCanv, obs, logY, assymYrange in zip( 
-        [obsCanv.cd(i+1) for i in range(len(observables))], 
-        [assymObsCanv.cd(i+1) for i in range(len(observables))], 
+        [obsCanv.cd(i+1) for i in xrange(len(observables))], 
+        [assymObsCanv.cd(i+1) for i in xrange(len(observables))], 
         observables,
         3 * [False] + [True],
         [ [],[],[], [-3,3] ]
@@ -99,8 +147,8 @@ def compareDistributions( **kwargs ):
     # plot Kaon and muon momenta
     print 'P2VV - INFO: compareDistributions: Plotting track momenta.'
     for canv, assymCanv, obs in zip( 
-        [ KaonCanv.cd(k+1) for k in range(len(Kmomenta)) ]      + [ muonCanv.cd(m+1) for m in range(len(muMomenta)) ],
-        [ assymKaonCanv.cd(k+1) for k in range(len(Kmomenta)) ] + [ assymMuonCanv.cd(m+1) for m in range(len(muMomenta)) ],
+        [ KaonCanv.cd(k+1) for k in xrange(len(Kmomenta)) ]      + [ muonCanv.cd(m+1) for m in xrange(len(muMomenta)) ],
+        [ assymKaonCanv.cd(k+1) for k in xrange(len(Kmomenta)) ] + [ assymMuonCanv.cd(m+1) for m in xrange(len(muMomenta)) ],
         Kmomenta + muMomenta,
         ):
         print 'P2VV - INFO: compareDistributions: Plotting %s'%obs.GetName()
@@ -121,6 +169,7 @@ def compareDistributions( **kwargs ):
     # plot B_P and B_Pt
     if data.has_key('BmomRewData'):
         for pad, obs in zip( [1,2], [ B_P,B_Pt] ):
+            # for key in dataOpts.keys(): dataOpts[key]['Binning'] = B_P.getBinning()
             print 'P2VV - INFO: compareDistributions: Plotting %s'%obs.GetName()
             BmomFrame = compareDataSets( BmomCanv.cd(pad), obs, data = data, dataOpts = dataOpts, frameOpts = dict( Bins = 70 ))
             print 'P2VV - INFO: compareDistributions: Creating assymentry plot for %s'%obs.GetName()
@@ -314,12 +363,34 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     xMax, yMax = 2 * ( max( RooObject._rooobject(var[0]).getMax(), RooObject._rooobject(var[1]).getMax() ), )
         
     # import binning
-    from P2VV.Utilities.MCReweighting import createKaonMomentaBinning
-    binning = createKaonMomentaBinning(nbins, endpoint=max(yMax,xMax),typeSpec='f')
+    # from P2VV.Utilities.MCReweighting import createKaonMomentaBinning
+    # binning = createKaonMomentaBinning(nbins, endpoint=max(yMax,xMax),typeSpec='f')
+
+    # create equal statistics binning
+    from array import array
+    targetListX,  targetListY = [],[]
+    for ev in target: targetListX += [ev.find(var[0]).getVal()]
+    for ev in target: targetListY += [ev.find(var[1]).getVal()]
+    targetListX.sort()
+    targetListY.sort()
+
+    rangeX, rangeY = xMax - xMin, yMax - yMin
+    binstat = target.numEntries() / nbins
+    lowboundsX, lowboundsY = [xMin - 0.0001*xMin], [yMin - 0.0001*yMin]
+
+    for ev in xrange(binstat,len(targetListX),binstat):
+        lowboundsX += [ targetListX[ev] ]
+        lowboundsY += [ targetListY[ev] ]
+        if len(lowboundsX) == nbins: break
+    lowboundsX += [ xMax ]
+    lowboundsY += [ yMax ]
+    lowboundsX, lowboundsY = array('f',lowboundsX), array('f',lowboundsY)
     
     # create 2D histrograms (Kplus_P vs Kminus_P)
-    sourceHist  = TH2F('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, binning, nbins, binning )
-    targetHist  = TH2F('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, binning, nbins, binning )
+    # sourceHist  = TH2F('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, binning, nbins, binning )
+    # targetHist  = TH2F('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, binning, nbins, binning )
+    sourceHist  = TH2F('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, lowboundsX, nbins, lowboundsY )
+    targetHist  = TH2F('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, lowboundsX, nbins, lowboundsY )
     
     # fill 2D rewweighting histograms
     for evnt in source: sourceHist.Fill( _valX(evnt), _valY(evnt), source.weight() )
@@ -359,9 +430,9 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
         canvWeights.cd()
         weightsHist.Draw()
         canvWeights.Print(canvWeights.GetName() + '_%s.pdf'%iterIdx )
-    
+
         del source, target
-        return weights, source
+        return weights
     else: 
         del source, target
         return weights
@@ -373,17 +444,35 @@ def OneDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     plot     = kwargs.pop('xCheckPlots', False  )
 
     from ROOT import TH1F, TCanvas
-    
+    from array import array
+
     # dataset value getter 
     _valX = lambda ev: ev.find(var).getVal() 
 
     # get axis ranges
     from P2VV.RooFitWrappers import RooObject
     xMin, xMax = RooObject._rooobject(var).getMin(), RooObject._rooobject(var).getMax(var)
-   
+
+    # create equal statistics binning
+    targetList = []
+    for ev in target: targetList += [ev.find(var).getVal()]
+    targetList.sort()
+
+    range = xMax - xMin
+    binstat = target.numEntries() / nbins
+    lowbounds = [xMin - 0.0001*xMin]
+
+    for ev in xrange(binstat,len(targetList),binstat):
+        lowbounds += [ targetList[ev] ]
+        if len(lowbounds) == nbins: break
+    lowbounds += [ xMax ]
+
     # create histrograms
-    sourceHist  = TH1F('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, xMin, xMax )
-    targetHist  = TH1F('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, xMin, xMax )
+    #sourceHist  = TH1F('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, xMin, xMax )
+    #targetHist  = TH1F('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, xMin, xMax )
+    
+    sourceHist  = TH1F('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, array('f',lowbounds) )
+    targetHist  = TH1F('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, array('f',lowbounds) )
   
     # fill reweighting histograms
     for evnt in source: sourceHist.Fill( _valX(evnt), source.weight() )

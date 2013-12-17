@@ -14,9 +14,10 @@ NumbOfIterations      = options.numIters
 kinematicRewApproach  = options.KKmomRew
 MCProd                = options.MCProd
 initialFitOnData      = options.InitFit
+combinedFit           = True
+reweightBmomentum     = True
 OneDverticalRewNbins  = 1000
 TwoDverticalRewNbins  = 50
-reweightBmomentum     = False
 physWeightName        = 'phys'
 mKKWeightsName        = 'mKK'
 KmomentaWeightsName   = 'KKmom'
@@ -57,6 +58,7 @@ else:
     sDataPath += 'P2VVDataSets20112012Reco14_I2DiegoMass_6KKMassBins_2TagCats_trackMom_BMom.root'
     from P2VV.Utilities.MCReweighting import parValues6KKmassBins20112012 as dataParameters
     nomAngEffMomentsFile += 'MC20112012_Sim08/Sim08_hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
+if combinedFit: sDataPath = '/project/bfys/vsyropou/data/iterativeProcedure/P2VVDataSets20112012Reco14_I2DiegoMass_6KKMassBins_2TagCats_trackMom_BMom.root'
 
 ###########################################################################################################################
 ## Begin iterative procedure  ##
@@ -77,7 +79,7 @@ import gc
 worksp = RooObject( workspace = 'iterativeProcedure' ).ws()
 
 # build data pdf and prepare the sFit ( This pdf will not be multiplied by the angular acceptance !! ).
-Bs2JpsiKKFit = BuildBs2JpsiKKFit( dataSetPath=sDataPath, dataSetName=sDataName, weightsName=sWeightsName, MonteCarloProduction=MCProd  )
+Bs2JpsiKKFit = BuildBs2JpsiKKFit( dataSetPath=sDataPath, dataSetName=sDataName, weightsName=sWeightsName) #, MonteCarloProduction=MCProd  )
 if initialFitOnData:
     Bs2JpsiKKFit.doFit( angAccFile=nomAngEffMomentsFile )
     assert False
@@ -114,7 +116,7 @@ if kinematicRewApproach == 'horizontal':
 if reweightBmomentum:
     BmomentumWeights = OneDimentionalVerticalReweighting( dataMngr.getDataSet(),      # source distribution
                                                           Bs2JpsiKKFit.getDataSet(),  # target distribution
-                                                          OneDverticalRewNbins,'B_P', # nBins, variable
+                                                          OneDverticalRewNbins, 'B_P', # nBins, variable
                                                           #xCheckPlots = True
                                                           )
     dataMngr.appendWeights( BmomentumWeightsName, BmomentumWeights, permanetnWeigts=True )
@@ -140,7 +142,7 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
     if kinematicRewApproach == 'vertical':
         KKMomWeights = TwoDimentionalVerticalReweighting(dataMngr.getDataSet(),      # source distribution
                                                          Bs2JpsiKKFit.getDataSet(),  # target distribution
-                                                         TwoDverticalRewNbins, ['Kplus_P','Kminus_P'], iterationNumber = iterNumb  
+                                                         TwoDverticalRewNbins, ['Kplus_P','Kminus_P'], iterationNumber = iterNumb ,
                                                          # number of bins per dimention, variables
                                                          )
         dataMngr.appendWeights( KmomentaWeightsName, KKMomWeights )
