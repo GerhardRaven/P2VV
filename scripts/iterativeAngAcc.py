@@ -4,18 +4,17 @@
 from optparse import OptionParser
 parser = OptionParser()
 parser.add_option('-R', '--KKmomRew', dest='KKmomRew',  default = 'vertical',       help='KK momentum reweighting approach (vertical/horizontal)')
-parser.add_option('-c', '--MCProd',   dest='MCProd',    default = 'Sim08_reduced',  help='MC simulation conditions (Sim08_2011/Sim08_2012/Sim08)')
+parser.add_option('-s', '--MCProd',   dest='MCProd',    default = 'Sim08_reduced',  help='MC simulation conditions (Sim08_2011/Sim08_2012/Sim08)')
 parser.add_option('-n', '--numIters', dest='numIters',  default = 7, type=int,      help='number of iterations')
-parser.add_option('-f', '--InitFit',  dest='InitFit',   default = False,            help='Initial fit on data')
 (options, args) = parser.parse_args()
 
 # reweightng flow control
 NumbOfIterations      = options.numIters
 kinematicRewApproach  = options.KKmomRew
 MCProd                = options.MCProd
-initialFitOnData      = options.InitFit
-combinedFit           = True
+initialFitOnData      = True
 reweightBmomentum     = True
+reweightMkk           = True
 OneDverticalRewNbins  = 1000
 TwoDverticalRewNbins  = 50
 physWeightName        = 'phys'
@@ -23,8 +22,12 @@ mKKWeightsName        = 'mKK'
 KmomentaWeightsName   = 'KKmom'
 BmomentumWeightsName  = 'Bmom'
 
+# sFit configuration
+combinedFit = True # fit on 2011 and 2012 data, if false
+nCPU        = 8
+
 # plotig control
-makePlots          = True
+makePlots          = False
 plotAtTheseSteps   = [ NumbOfIterations ]  # [ i for i in xrange(1,NumbOfIterations+1) ]
 plotFinalPdfonData = False
 
@@ -48,17 +51,21 @@ from P2VV.Utilities.MCReweighting import parValuesMcSim08_6KKmassBins as monteCa
 if  '2011' in MCProd:
     from P2VV.Utilities.MCReweighting import parValues6KKmassBins2011 as dataParameters
     sDataPath += 'P2VVDataSets2011Reco14_I2DiegoMass_6KKMassBins_2TagCats_trackMom_BMom.root'
+    RunPeriod = '2011'
     if 'reduced' in MCProd: nomAngEffMomentsFile += 'MC11_Sim08_reduced/Sim08_2011_hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
     else:                   nomAngEffMomentsFile += 'MC11_Sim08/Sim08_2011_hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
 elif '2012' in MCProd:
     from P2VV.Utilities.MCReweighting import parValues6KKmassBins2012 as dataParameters
     sDataPath += 'P2VVDataSets2012Reco14_I2DiegoMass_6KKMassBins_2TagCats_trackMom_BMom.root'
+    RunPeriod = '2012'
     nomAngEffMomentsFile += 'MC12_Sim08/Sim08_2012_hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
 else:
     sDataPath += 'P2VVDataSets20112012Reco14_I2DiegoMass_6KKMassBins_2TagCats_trackMom_BMom.root'
     from P2VV.Utilities.MCReweighting import parValues6KKmassBins20112012 as dataParameters
     nomAngEffMomentsFile += 'MC20112012_Sim08/Sim08_hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
-if combinedFit: sDataPath = '/project/bfys/vsyropou/data/iterativeProcedure/P2VVDataSets20112012Reco14_I2DiegoMass_6KKMassBins_2TagCats_trackMom_BMom.root'
+if combinedFit: 
+    sDataPath = '/project/bfys/vsyropou/data/iterativeProcedure/P2VVDataSets20112012Reco14_I2DiegoMass_6KKMassBins_2TagCats_trackMom_BMom.root'
+    RunPeriod = '3fb'
 
 ###########################################################################################################################
 ## Begin iterative procedure  ##
@@ -79,7 +86,7 @@ import gc
 worksp = RooObject( workspace = 'iterativeProcedure' ).ws()
 
 # build data pdf and prepare the sFit ( This pdf will not be multiplied by the angular acceptance !! ).
-Bs2JpsiKKFit = BuildBs2JpsiKKFit( dataSetPath=sDataPath, dataSetName=sDataName, weightsName=sWeightsName) #, MonteCarloProduction=MCProd  )
+Bs2JpsiKKFit = BuildBs2JpsiKKFit( dataSetPath=sDataPath, dataSetName=sDataName, runPeriod=RunPeriod, Ncpu=nCPU )
 if initialFitOnData:
     Bs2JpsiKKFit.doFit( angAccFile=nomAngEffMomentsFile )
     assert False
@@ -112,7 +119,6 @@ if kinematicRewApproach == 'horizontal':
                                                     )
 
 # match B momentum
-
 if reweightBmomentum:
     BmomentumWeights = OneDimentionalVerticalReweighting( dataMngr.getDataSet(),      # source distribution
                                                           Bs2JpsiKKFit.getDataSet(),  # target distribution

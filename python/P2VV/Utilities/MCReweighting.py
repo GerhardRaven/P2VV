@@ -73,60 +73,12 @@ def compareDistributions( **kwargs ):
     assymMuonCanv.Divide(4,2)
     BmomCanv.Divide(2,2)
 
-    # # create equal statistics binning
-    # binnings = {}
-    # binnedVars = {}
-    # targetLists = {}
-    # for k in binnedVars.keys(): targetLists[k] = 0
-    # for var in obsSet: # create binnign for these variables
-    #     if var.GetName() in ['Kplus_P','Kplus_PX','muplus_P','muplus_PX', 'B_P', 'B_Pt','mdau2']:
-    #         binnedVars[var.GetName()] = var 
-    # for ev in data['Sdata']: # loop over data and get entries 
-    #     for key in binnedVars.keys(): targetLists[key] += [ev.find(key).getVal()]
-    # for key in targetLists.keys(): targetLists[key].sort()
-    
-    # # create binnings
-    # nbins = 30
-    # binstat = data['Sdata'].numEntries() / nbins
-    # from array import array
-    # from ROOT import RooBinning
-    # lowbounds = {}
-    # for key in targetLists.keys():
-    #     lowbin = [] # low bin bounds container
-    #     range = binnedVars[key].getMax() - binnedVars[key].getMin()
-    #     lowbin = [binnedVars[key].getMin() - 0.0001*binnedVars[key].getMax()]
-    #     for ev in xrange(binstat,len(targetLists[key]),binstat):
-    #         lowbin[key] += targetLists[key][ev]
-    #         if len( lowbounds ) == nbins: break
-    #     lowbin += [ binnedVars[key].getMax() ]
-    #     binning =  RooBinning(nbins,array('d',lowbin),'bins') 
-    #     binnedVars[key].setBinning(binning)
-
-    # # set binning to similar variables 
-    # for var in obsSet:
-    #     obsName = var.GetName()
-    #     if obsName.startswith('K') and not obsName.startswith('KK'):
-    #         if   'X' in obsName or 'Y' in obsName: var.setBinning(binnedVars['Kplus_PX'].getBinning())
-    #         elif 'Z' in obsName:                   var.setBinning(binnedVars['Kplus_P'].getBinning())
-    #         else:                                  var.setBinning(binnedVars['Kplus_P'].getBinning())
-    #     elif obsName.startswith('mu'):
-    #         if   'X' in obsName or 'Y' in obsName: var.setBinning(binnedVars['muplus_PX'].getBinning())
-    #         elif 'Z' in obsName:                   var.setBinning(binnedVars['muplus_P'].getBinning())
-    #         else:                                  var.setBinning(binnedVars['muplus_P'].getBinning())
-    #     elif obsName == 'mdau2': KKMass.setBinning(binnedVars['mdau2'].getBinning())
-    #     elif obsName == 'B_P':   B_P.setBinning(binnedVars['B_P'].getBinning())
-    #     elif obsName == 'B_Pt':  B_Pt.setBinning(binnedVars['B_Pt'].getBinning())
-    
     # set some data drawing options
     colors      = dict(mcBefore=2, mcAfter=kGreen+3, MomRewData=4, Sdata=kMagenta+2, mkkRewData=1, BmomRewData=5 )
     stdDrawOpts = dict( DataError = RooAbsData.SumW2, MarkerSize = .6, XErrorSize = 0 )
     dataOpts    = dict()    
     for key in colors.keys():
         if data.has_key(key): dataOpts[key] = dict( MarkerColor = colors[key], **stdDrawOpts  )
-
-    # import pdb
-    # pdb.set_trace()
-
 
     # plot angles and decay time
     for canv, assymCanv, obs, logY, assymYrange in zip( 
@@ -644,14 +596,12 @@ class BuildBs2JpsiKKFit():
         from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_RunIAnalysis as PdfConfig
         
         # specify running period
-        MCProd = kwargs.pop('MonteCarloProduction', 'Sim08')
-        if   '2011' in MCProd: runPeriod = '2011'
-        elif '2012' in MCProd: runPeriod = '2012'
-        else: runPeriod = '3fb'
+        runPeriod = kwargs.pop('runPeriod', '3fb')
         self._pdfConfig = PdfConfig( RunPeriods = runPeriod )
         
         # blind / unblind (phi_s,dGama)
-        #self._pdfConfig['blind'] = {}
+        blind = kwargs.pop('blind', True)
+        if not blind: self._pdfConfig['blind'] = {}
         
         # give parameters of the pdf a prefix
         self._pdfConfig['parNamePrefix'] = 'data' 
@@ -659,15 +609,15 @@ class BuildBs2JpsiKKFit():
 
         self._dataSetPath = kwargs.pop('dataSetPath', None)
         self._dataSetName = kwargs.pop('dataSetName', None)
-        self._weightsName = kwargs.pop('weightsName', 'JpsiKK_sigSWeight')
-    
+           
         self._doUntaggedFit = kwargs.pop('doUntaggedFit', '')        
         self._doNullTest    = kwargs.pop('doNullTest',    '')
      
         # fit options
-        fitOpts = dict( NumCPU = 2, Optimize  = 2, Minimizer = 'Minuit2' )
+        nCPU = kwargs.pop('Ncpu', 8)
+        fitOpts = dict( NumCPU = nCPU, Optimize  = 2, Minimizer = 'Minuit2' )
         self._pdfConfig['fitOptions'] = fitOpts
-        corrSFitErrCats         = [ 'runPeriod', 'KKMassCat' ] if ('2011' not in MCProd or '2012' not in MCProd) else [ 'KKMassCat' ]
+        corrSFitErrCats         = [ 'runPeriod', 'KKMassCat' ] if ('2011' not in runPeriod or '2012' not in runPeriod) else [ 'KKMassCat' ]
         randomParVals           = ( ) # ( 1., 12345 )
 
         # PDF options
@@ -743,10 +693,10 @@ class BuildBs2JpsiKKFit():
         print 120 * '='
         print 'Bs2JpsiKKFit: fit data:'
         self._fitData.Print()
-        print 'Bs2JpsiKKFit: observables in PDF:'
-        self._pdf.getObservables(self._fitData).Print('v')
-        print 'Bs2JpsiKKFit: parameters in PDF:'
-        self._pdf.getParameters(self._fitData).Print('v')
+        #print 'Bs2JpsiKKFit: observables in PDF:'
+        #self._pdf.getObservables(self._fitData).Print('v')
+        #print 'Bs2JpsiKKFit: parameters in PDF:'
+        #self._pdf.getParameters(self._fitData).Print('v')
         print 'Bs2JpsiKKFit: constraints in PDF:'
         for constr in self._pdf.ExternalConstraints() : constr.Print()
 
