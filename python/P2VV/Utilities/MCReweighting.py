@@ -614,32 +614,31 @@ class BuildBs2JpsiKKFit():
         self._doNullTest    = kwargs.pop('doNullTest',    '')
      
         # fit options
-        nCPU = kwargs.pop('Ncpu', 8)
-        fitOpts = dict( NumCPU = nCPU, Optimize  = 2, Minimizer = 'Minuit2' )
-        self._pdfConfig['fitOptions'] = fitOpts
+        self._pdfConfig['fitOptions']['NumCPU'] = kwargs.pop('Ncpu', 2)
         corrSFitErrCats         = [ 'runPeriod', 'KKMassCat' ] if ('2011' not in runPeriod or '2012' not in runPeriod) else [ 'KKMassCat' ]
         randomParVals           = ( ) # ( 1., 12345 )
 
         # PDF options
         # time acceptance
-        if runPeriod=='3fb':
-            self._pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file']\
-                = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
-            self._pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] )['file']\
-                = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
-        elif runPeriod=='2011':
-            self._pdfConfig['timeEffHistFiles'] = dict(  
-                file  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
-                , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
-                , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
-                )
-        elif runPeriod=='2012':
-            self._pdfConfig['timeEffHistFiles'] = dict(  
-                file = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
-                , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
-                , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
-                )
-            
+        timeEff2011 = dict(  file      = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
+                           , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+                           , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+                          )
+        timeEff2012 = dict(  file      = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
+                           , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
+                           , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+                          )
+        if runPeriod == '2011' :
+            self._pdfConfig['timeEffHistFiles'] = timeEff2011
+        elif runPeriod == '2012' :
+            self._pdfConfig['timeEffHistFiles'] = timeEff2012
+        else :
+            from P2VV.Parameterizations.FullPDFs import SimulCatSettings
+            timeEffHistFiles = SimulCatSettings('timeEffHistFiles')
+            timeEffHistFiles.addSettings( [ 'runPeriod' ], [ [ 'p2011' ] ], timeEff2011 )
+            timeEffHistFiles.addSettings( [ 'runPeriod' ], [ [ 'p2012' ] ], timeEff2012 )
+            self._pdfConfig['timeEffHistFiles'] = timeEffHistFiles
+
         # angular acceptance
         self._pdfConfig['angEffMomsFiles'] = ''
         self._pdfConfig['anglesEffType']   = ''
@@ -651,15 +650,17 @@ class BuildBs2JpsiKKFit():
         self._pdfConfig['readFromWS'] = True
         
         # set range for track momenta
-        print 'P2VV - INFO: BuildBs2JpsiKKFit: Calculating track and B momenta ranges from dataset'
-        tree = dataSet.buildTree()
-        from P2VV.RooFitWrappers import RooObject
-        for obj in [ '%s_%s'%( part, comp ) for part in [ 'Kplus', 'Kminus', 'muplus', 'muminus' ] for comp in ( 'PX', 'PY', 'PZ', 'P' ) ] + ['B_P','B_Pt']:
-            var = RooObject._rooobject(obj)
-            var.setRange( [ tree.GetMinimum(var.GetName()), tree.GetMaximum(var.GetName()) ] )
-        del tree
+        if kwargs.pop('IsTracnMomInData', True):
+            print 'mphka'
+            print 'P2VV - INFO: BuildBs2JpsiKKFit: Calculating track and B momenta ranges from dataset'
+            tree = dataSet.buildTree()
+            from P2VV.RooFitWrappers import RooObject
+            for obj in [ '%s_%s'%( part, comp ) for part in [ 'Kplus', 'Kminus', 'muplus', 'muminus' ] for comp in ( 'PX', 'PY', 'PZ', 'P' ) ] + ['B_P','B_Pt']:
+                var = RooObject._addObject(obj)
+                var.setRange( [ tree.GetMinimum(var.GetName()), tree.GetMaximum(var.GetName()) ] )
+            del tree
         
-        # build the PDF
+        # build PDF
         from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
         self._pdfBuild = PdfBuilder( **self._pdfConfig )
         self._pdf = self._pdfBuild.pdf()
@@ -848,6 +849,7 @@ class MatchPhysics( ):
         for obj in [ '%s_%s'%( part, comp ) for part in [ 'Kplus', 'Kminus', 'muplus', 'muminus' ] for comp in ( 'PX', 'PY', 'PZ', 'P' ) ] + ['B_P','B_Pt']:
             var = RooObject._rooobject(obj)
             min,max = var.getRange()[0], var.getRange()[1]
+            print min,max
             if min > tree.GetMinimum(var.GetName()): min = tree.GetMinimum(var.GetName())
             if max < tree.GetMaximum(var.GetName()): max = tree.GetMaximum(var.GetName())
             var.setRange( [ min,max] )
