@@ -51,4 +51,7 @@ struct TFakeObjectProxy {
 
 bool GetOwnership(_object* obj);
 
+Double_t getRooRealMaxVal(RooAbsReal& function, const RooArgList& scanVars,
+    const std::vector<Int_t>& numPoints);
+
 #endif // FUNCTIONS_H

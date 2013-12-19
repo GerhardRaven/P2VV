@@ -30,12 +30,14 @@
 #include <RooDataSet.h>
 #include <RooArgSet.h>
 #include <RooLinkedListIter.h>
+#include <RooNumber.h>
 
 #include "P2VV/Functions.h"
 
 namespace {
    using std::cout;
    using std::endl;
+   using std::vector;
    using std::list;
 }
 
@@ -779,4 +781,121 @@ std::vector<double> HelicityAngles(TLorentzVector Kplus_P, TLorentzVector Kminus
 
 bool GetOwnership(_object* obj) {
    return (reinterpret_cast<TFakeObjectProxy*>(obj))->fFlags & 0x0001;
+}
+
+Double_t getRooRealMaxVal(RooAbsReal& function, const RooArgList& scanVars,
+    const vector<Int_t>& numPoints) {
+  Double_t maxVal = -RooNumber::infinity();
+
+  // check number of scan variables
+  Int_t numVars(scanVars.getSize());
+  if (numVars < 1) {
+    std::cerr << "P2VV - ERROR: getRooRealMaxVal(): no scan variables found"
+         << std::endl;
+    assert(numVars > 0);
+    return maxVal;
+  }
+  if ((Int_t)numPoints.size() != numVars) {
+    std::cerr << "P2VV - ERROR: getRooRealMaxVal(): number of variables in \"numPoints\" ("
+        << numPoints.size() << ") does not match number of scan variables ("
+         << numVars << ")" << std::endl;
+    assert((Int_t)numPoints.size() == numVars);
+    return maxVal;
+  }
+
+  // create vector of variable values
+  RooRealVar** varAdds = new RooRealVar*[numVars];
+  vector<Double_t>* varVals = new vector<Double_t>[numVars];
+  vector<Double_t>::const_iterator* varValsIts
+      = new vector<Double_t>::const_iterator[numVars];
+  for (Int_t varIt = 0; varIt < numVars; ++varIt) {
+    // get variable
+    RooRealVar* var = dynamic_cast<RooRealVar*>(scanVars.at(varIt));
+    if (var == 0) {
+      std::cerr << "P2VV - ERROR: getRooRealMaxVal(): variable \""
+          << scanVars.at(varIt)->GetName() << "\" is not a RooRealVar"
+          << std::endl;
+      assert(var != 0);
+      return maxVal;
+    }
+
+    // get number of points for variable
+    Int_t nPts = numPoints.at(varIt);
+    if (nPts < 1) {
+      std::cerr << "P2VV - ERROR: getRooRealMaxVal(): number of scan points for variable \""
+          << var->GetName() << "\" is smaller than one" << std::endl;
+      assert(nPts > 0);
+      return maxVal;
+    }
+
+    // create vector of variable values
+    if (!var->hasMin() || !var->hasMax()) {
+      std::cerr << "P2VV - ERROR: getRooRealMaxVal(): range of variable \""
+          << var->GetName() << "\" is infinite" << std::endl;
+      assert(var->hasMin() && var->hasMax());
+      return maxVal;
+    }
+    vector<Double_t> vals;
+    if (nPts == 1) {
+      vals.push_back(0.5 * (var->getMin() + var->getMax()));
+    } else {
+      vals.push_back(var->getMin());
+      vals.push_back(var->getMax());
+    }
+    for (Int_t valIt = 1; valIt < nPts - 1; ++valIt) {
+      vals.push_back(var->getMin() + ((Double_t)valIt) / (Double_t)(nPts - 1)
+          * (var->getMax() - var->getMin()));
+    }
+
+    // fill vectors
+    varAdds[varIt]    = var;
+    varVals[varIt]    = vals;
+    varValsIts[varIt] = varVals[varIt].begin();
+    var->setVal(vals.front());
+  }
+
+  // find maximum of function
+  std::cout << "P2VV - INFO: getRooRealMaxVal(): find maximum of function \""
+      << function.GetName() << "\":"<< std::endl << "    ";
+  function.Print();
+
+  Int_t varIt(0);
+  Long64_t itCount(0);
+  Long64_t numIts0(varVals[0].size());
+  while (varIt < numVars) {
+    // print number of iterations
+    if (itCount % 100000 == 0) {
+      std::cout << "    iteration " << itCount << ": maximum = " << maxVal
+          << std::endl;
+    }
+
+    // loop over values of first variable and find function maximum
+    while (varValsIts[0] != varVals[0].end()) {
+      varAdds[0]->setVal(*varValsIts[0]);
+      Double_t funcVal(function.getVal());
+      if (funcVal > maxVal) maxVal = funcVal;
+      ++varValsIts[0];
+    }
+    varValsIts[0] -= varVals[0].size();
+
+    // set values of variables other than the first
+    varIt = 1;
+    while (varIt < numVars) {
+      if (++varValsIts[varIt] != varVals[varIt].end()) {
+        varAdds[varIt]->setVal(*varValsIts[varIt]);
+        break;
+      }
+      varValsIts[varIt] -= varVals[varIt].size();
+      varAdds[varIt]->setVal(*varValsIts[varIt]);
+      ++varIt;
+    }
+
+    itCount += numIts0;
+  }
+  std::cout << "    maximum = " << maxVal << std::endl;
+
+  delete[] varAdds;
+  delete[] varVals;
+  delete[] varValsIts;
+  return maxVal;
 }
