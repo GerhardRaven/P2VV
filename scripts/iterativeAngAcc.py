@@ -12,7 +12,7 @@ parser.add_option('-n', '--numIters', dest='numIters',  default = 7, type=int,  
 NumbOfIterations      = options.numIters
 kinematicRewApproach  = options.KKmomRew
 MCProd                = options.MCProd
-initialFitOnData      = True
+initialFitOnData      = False
 reweightBmomentum     = True
 reweightMkk           = True
 OneDverticalRewNbins  = 1000
@@ -23,7 +23,7 @@ KmomentaWeightsName   = 'KKmom'
 BmomentumWeightsName  = 'Bmom'
 
 # sFit configuration
-combinedFit = True # fit on 2011 and 2012 data, if false
+combinedFit = True # fit on 2011 and 2012 data combined
 nCPU        = 8
 
 # plotig control
@@ -39,7 +39,7 @@ mcTupleName = 'DecayTree'
 sDataPath    = '/project/bfys/vsyropou/data/iterativeProcedure/'
 sDataName    = 'JpsiKK_sigSWeight'
 sWeightsName = 'sWeights_ipatia'
-JeroensData  = [ True, '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_I2DiegoMass_6KKMassBins_2TagCats.root' ]
+JeroensData  = [ False, '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_I2DiegoMass_6KKMassBins_2TagCats.root' ]
 
 # nominal angluar acceptance path 
 nomAngEffMomentsFile     = '/project/bfys/vsyropou/PhD/macros/iterativeAngAcc/output/uncorrecteEffMoments/'
@@ -72,8 +72,7 @@ if combinedFit:
 if JeroensData[0]: 
     sDataPath = JeroensData[1]
     nomAngEffMomentsFile = JeroensAngAcc
-IsTracnMomInData=False if JeroensData[0] else True
-print IsTracnMomInData
+
 ###########################################################################################################################
 ## Begin iterative procedure  ##
 ################################
@@ -93,7 +92,7 @@ import gc
 worksp = RooObject( workspace = 'iterativeProcedure' ).ws()
 
 # build data pdf and prepare the sFit ( This pdf will not be multiplied by the angular acceptance !! ).
-Bs2JpsiKKFit = BuildBs2JpsiKKFit( dataSetPath=sDataPath, dataSetName=sDataName, runPeriod=RunPeriod, Ncpu=nCPU, IsTracnMomInData=False if JeroensData[0] else True )
+Bs2JpsiKKFit = BuildBs2JpsiKKFit( dataSetPath=sDataPath, dataSetName=sDataName, runPeriod=RunPeriod, Ncpu=nCPU )
 if initialFitOnData:
     Bs2JpsiKKFit.doFit( angAccFile=nomAngEffMomentsFile )
     assert False
@@ -138,8 +137,8 @@ if reweightBmomentum:
 for iterNumb in range( 1, NumbOfIterations + 1 ):
     print 'P2VV - INFO: Iteratitive procedure, begining of iteration %s.'%str(iterNumb)
     dataMngr['iterationNumber'] = iterNumb
-    dataMngr['saveIntermediateDatasets'] = True if iterNumb in plotAtTheseSteps else False
-            
+    dataMngr['saveIntermediateDatasets'] = True if iterNumb in plotAtTheseSteps and makePlots else False
+
     # match physics
     physWeights = PhysicsReweight.calculateWeights( iterNumb, dataParameters )
     dataMngr.appendWeights( physWeightName, physWeights )
@@ -196,7 +195,16 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
                                             )
 
     # perform sFit on data using the new angular acceptance and update the data physics parameters
-    Bs2JpsiKKFit.doFit( itNum=iterNumb, angAccFile= outputEffMomentsFileName + '_weights_%s_Iteration'%iterNumb )
+    
+
+
+
+
+
+
+
+    Bs2JpsiKKFit.doFit( itNum=iterNumb, angAccFile=nomAngEffMomentsFile )
+    #Bs2JpsiKKFit.doFit( itNum=iterNumb, angAccFile= outputEffMomentsFileName + '_weights_%s_Iteration'%iterNumb )
     Bs2JpsiKKFit.updateDataParameters( dataParameters, itNum=iterNumb ) 
     
     # save memory
