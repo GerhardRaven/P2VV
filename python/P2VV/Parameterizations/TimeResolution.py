@@ -217,17 +217,19 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
             else:
                 from math import sqrt
                 self._sf_mean = self._parseArg('timeResSFMean', kwargs
-                                               , Value = ( ( 1. - fracs[-1][1] ) * sigmasSFs[-1][1] + fracs[-1][1] * sigmasSFs[-2][1] )
-                                               , MinMax = (0.5, 5 ))
-                self._sf_sigma = self._parseArg( 'timeResSFSigma', kwargs, Value = sqrt((1 - fracs[-1][1]) * sigmasSFs[-1][1] * sigmasSFs[-1][1] +
-                                                                                        fracs[-1][1] * sigmasSFs[-2][1] * sigmasSFs[-2][1] - self._sf_mean.getVal() ** 2),
-                                                 MinMax = ( 0.01, 2 ))
-            self._timeResSigmasSFs[-1] = self._parseArg( Name + '_SF1', kwargs, Formula = '- sqrt(@0 / (1 - @0)) * @1 + @2'
-                                                        , Arguments = (self._timeResFracs[-1], self._sf_sigma, self._sf_mean)
-                                                        , ObjectType = 'FormulaVar')
-            self._timeResSigmasSFs[-2] = self._parseArg( Name + '_SF2', kwargs, Formula = 'sqrt((1 - @0) / @0) * @1 + @2'
-                                                        , Arguments = (self._timeResFracs[-1], self._sf_sigma, self._sf_mean)
-                                                        , ObjectType = 'FormulaVar')
+                                               , Value = ((1. - fracs[-1][1]) * sigmasSFs[-1][1]
+                                                           + fracs[-1][1] * sigmasSFs[-2][1])
+                                               , MinMax = (0.5, 5))
+                self._sf_sigma = self._parseArg('timeResSFSigma', kwargs, Value = sqrt((1 - fracs[-1][1]) * sigmasSFs[-1][1] * sigmasSFs[-1][1]
+                                                                                        + fracs[-1][1] * sigmasSFs[-2][1] * sigmasSFs[-2][1]
+                                                                                        - self._sf_mean.getVal() ** 2),
+                                                 MinMax = (0.01, 2))
+            self._timeResSigmasSFs[-1] = self._parseArg(Name + '_SF1', kwargs, Formula = '- sqrt(@0 / (1 - @0)) * @1 + @2',
+                                                        Arguments = (self._timeResFracs[-1], self._sf_sigma, self._sf_mean),
+                                                        ObjectType = 'FormulaVar')
+            self._timeResSigmasSFs[-2] = self._parseArg(Name + '_SF2', kwargs, Formula = 'sqrt((1 - @0) / @0) * @1 + @2',
+                                                        Arguments = (self._timeResFracs[-1], self._sf_sigma, self._sf_mean),
+                                                        ObjectType = 'FormulaVar')
             if sf_param:
                 self._realVars = []
             else:
@@ -327,15 +329,13 @@ class Rest_TimeResolution( TimeResolution ):
         self._left_rlifeSF = self._parseArg( 'timeResRestLTSF', kwargs, Value = 6, MinMax = (0.01, 50))
         self._right_rlifeSF = self._parseArg( 'timeResRestRTSF', kwargs, Value = 2, MinMax = (0.01, 50))
 
-        self._frac_left = self._parseArg('timeResFracLeft', kwargs, Value = 0.2, MinMax = (0.01, 0.99))
+        self._frac_left = self._parseArg('timeResRestFracLeft', kwargs, Value = 0.2, MinMax = (0.01, 0.99))
         
-        self._timeResFracRest = self._parseArg('timeResFracRest', kwargs, Value = 0.05, MinMax = (0.0001, 0.99))
-
         from P2VV.RooFitWrappers import ResolutionModel, AddModel
         from ROOT import RooGExpModel
         self._gexps = []
         for side, pars in (('right', [self._right_sigmaSF, self._right_rlifeSF, 'false', 'Flipped']),
-                           ('left',  [self._left_sigmaSF, self._left_rlifeSF, 'false', 'Normal'])):
+                           ('left',  [self._right_sigmaSF, self._left_rlifeSF, 'false', 'Normal'])):
             gexp = ResolutionModel(Name = '%sgexp_%s' % (namePF, side), Type = RooGExpModel,
                                      Parameters = [self._time, self._timeResMu, self._sigmat,
                                                    self._sigmat, self._timeResMuSF] + pars,

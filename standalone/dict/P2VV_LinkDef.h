@@ -69,6 +69,9 @@
 #pragma link C++ class std::pair<RooRealProxy*, bool>;
 #pragma link C++ class std::pair<double, TString>;
 #pragma link C++ class std::pair<RooCategoryProxy*, std::string>;
+#pragma link C++ class std::pair<std::string, std::pair<RooRealProxy*,bool> >;
+#pragma link C++ class std::map<std::string, std::pair<RooRealProxy*, bool> >;
+#pragma link C++ class std::map<RooCategoryProxy*, std::map<std::string, std::pair<RooRealProxy*, bool> > >;
 
 #pragma link C++ class std::map<Int_t, MultiHistEntry*>;
 #pragma link C++ class std::pair<Int_t, MultiHistEntry*>;

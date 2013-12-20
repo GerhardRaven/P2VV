@@ -354,9 +354,9 @@ class DoubleCB_Psi_Mass ( MassPdf ) :
             f2 = self._mpsi_frac.getVal()
             s1 = self._mpsi_sigma_1.getVal()
             s2 = self._mpsi_sigma_sf.getVal() * s1
-            self._sigma_mean = self._parseArg('mpsi_sigma_mean', kwargs, MinMax = (5, 20),
+            self._sigma_mean = self._parseArg('mpsi_sigma_mean', kwargs, MinMax = (1, 20),
                                               Value = (( 1. - f2 ) * s1 + f2 * s2))
-            self._sigma_sigma = self._parseArg('mpsi_sigma_sigma', kwargs, MinMax = (0.01, 10),
+            self._sigma_sigma = self._parseArg('mpsi_sigma_sigma', kwargs, MinMax = (0.01, 50),
                                                Value = sqrt((1 - f2) * s1 ** 2 + f2 * s2 ** 2 -
                                                             self._sigma_mean.getVal() ** 2))
             self._mpsi_sigma_1 = self._parseArg('%ssigma_1_param' % namePF, kwargs, Formula = '- sqrt(@0 / (1 - @0)) * @1 + @2',
