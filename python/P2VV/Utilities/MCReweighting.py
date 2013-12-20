@@ -614,32 +614,31 @@ class BuildBs2JpsiKKFit():
         self._doNullTest    = kwargs.pop('doNullTest',    '')
      
         # fit options
-        nCPU = kwargs.pop('Ncpu', 8)
-        fitOpts = dict( NumCPU = nCPU, Optimize  = 2, Minimizer = 'Minuit2' )
-        self._pdfConfig['fitOptions'] = fitOpts
+        self._pdfConfig['fitOptions']['NumCPU'] = kwargs.pop('Ncpu', 2)
         corrSFitErrCats         = [ 'runPeriod', 'KKMassCat' ] if ('2011' not in runPeriod or '2012' not in runPeriod) else [ 'KKMassCat' ]
         randomParVals           = ( ) # ( 1., 12345 )
 
         # PDF options
         # time acceptance
-        if runPeriod=='3fb':
-            self._pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file']\
-                = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
-            self._pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] )['file']\
-                = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
-        elif runPeriod=='2011':
-            self._pdfConfig['timeEffHistFiles'] = dict(  
-                file  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
-                , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
-                , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
-                )
-        elif runPeriod=='2012':
-            self._pdfConfig['timeEffHistFiles'] = dict(  
-                file = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
-                , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
-                , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
-                )
-            
+        timeEff2011 = dict(  file      = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
+                           , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+                           , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+                          )
+        timeEff2012 = dict(  file      = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
+                           , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
+                           , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
+                          )
+        if runPeriod == '2011' :
+            self._pdfConfig['timeEffHistFiles'] = timeEff2011
+        elif runPeriod == '2012' :
+            self._pdfConfig['timeEffHistFiles'] = timeEff2012
+        else :
+            from P2VV.Parameterizations.FullPDFs import SimulCatSettings
+            timeEffHistFiles = SimulCatSettings('timeEffHistFiles')
+            timeEffHistFiles.addSettings( [ 'runPeriod' ], [ [ 'p2011' ] ], timeEff2011 )
+            timeEffHistFiles.addSettings( [ 'runPeriod' ], [ [ 'p2012' ] ], timeEff2012 )
+            self._pdfConfig['timeEffHistFiles'] = timeEffHistFiles
+
         # angular acceptance
         self._pdfConfig['angEffMomsFiles'] = ''
         self._pdfConfig['anglesEffType']   = ''
@@ -651,15 +650,16 @@ class BuildBs2JpsiKKFit():
         self._pdfConfig['readFromWS'] = True
         
         # set range for track momenta
-        print 'P2VV - INFO: BuildBs2JpsiKKFit: Calculating track and B momenta ranges from dataset'
-        tree = dataSet.buildTree()
-        from P2VV.RooFitWrappers import RooObject
-        for obj in [ '%s_%s'%( part, comp ) for part in [ 'Kplus', 'Kminus', 'muplus', 'muminus' ] for comp in ( 'PX', 'PY', 'PZ', 'P' ) ] + ['B_P','B_Pt']:
-            var = RooObject._rooobject(obj)
-            var.setRange( [ tree.GetMinimum(var.GetName()), tree.GetMaximum(var.GetName()) ] )
-        del tree
+        if kwargs.pop('calcTrackMomRanges', False):
+            print 'P2VV - INFO: BuildBs2JpsiKKFit: Calculating track and B momenta ranges from dataset'
+            tree = dataSet.buildTree()
+            from P2VV.RooFitWrappers import RooObject
+            for obj in [ '%s_%s'%( part, comp ) for part in [ 'Kplus', 'Kminus', 'muplus', 'muminus' ] for comp in ( 'PX', 'PY', 'PZ', 'P' ) ] + ['B_P','B_Pt']:
+                var = RooObject._rooobject(obj)
+                var.setRange( [ tree.GetMinimum(var.GetName()), tree.GetMaximum(var.GetName()) ] )
+            del tree
         
-        # build the PDF
+        # build PDF
         from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
         self._pdfBuild = PdfBuilder( **self._pdfConfig )
         self._pdf = self._pdfBuild.pdf()
@@ -770,6 +770,7 @@ class BuildBs2JpsiKKFit():
         elif which=='time':   return [o for o in self._pdfBuild['obsSetP2VV'] if o.GetName()==('time')         ]
         else:                 return             self._pdfBuild['obsSetP2VV']
 
+          
 # Vertical reweighting class to match physics of weighted distribution using a pdf
 class MatchPhysics( ):
     def __init__( self, nTupleFile, nTupleName, **kwargs ):      
@@ -842,17 +843,33 @@ class MatchPhysics( ):
         self._obsSet = [ trueTime, time, KKMass ] + angles + [ runPeriod, KKMassCat ]
         
         # set momenta range and put them in obsSet
-        print 'P2VV - INFO: MatchPhysics: Calculating track and B momenta ranges from dataset '
-        from ROOT import TFile
-        tree = TFile.Open(nTupleFile,'read').Get(nTupleName)
-        for obj in [ '%s_%s'%( part, comp ) for part in [ 'Kplus', 'Kminus', 'muplus', 'muminus' ] for comp in ( 'PX', 'PY', 'PZ', 'P' ) ] + ['B_P','B_Pt']:
-            var = RooObject._rooobject(obj)
-            min,max = var.getRange()[0], var.getRange()[1]
-            if min > tree.GetMinimum(var.GetName()): min = tree.GetMinimum(var.GetName())
-            if max < tree.GetMaximum(var.GetName()): max = tree.GetMaximum(var.GetName())
-            var.setRange( [ min,max] )
-            self._obsSet += [ RooObject._rooobject(var) ]
-        del tree
+        if kwargs.pop('calcTrackMomRanges', False):
+            print 'P2VV - INFO: MatchPhysics: Calculating track and B momenta ranges from dataset '
+            from ROOT import TFile
+            tree = TFile.Open(nTupleFile,'read').Get(nTupleName)
+            ranges = dict()
+            for obj in [ '%s_%s'%( part, comp ) for part in [ 'Kplus', 'Kminus', 'muplus', 'muminus' ] for comp in ( 'PX', 'PY', 'PZ', 'P' ) ] + ['B_P','B_Pt']:
+                var = RooObject._rooobject(obj)
+                min,max = var.getRange()[0], var.getRange()[1]
+                if min > tree.GetMinimum(var.GetName()): min = tree.GetMinimum(var.GetName())
+                if max < tree.GetMaximum(var.GetName()): max = tree.GetMaximum(var.GetName())
+                ranges[var.GetName()] = (min,max)
+                var.setRange( [ min,max] )
+                self._obsSet += [ RooObject._rooobject(var) ]
+            del tree
+            print ranges
+        else:
+            print 'P2VV - INFO: setTrackMomentaRanges: Setting track and B momenta ranges.'
+            if MCProd == 'Sim08':
+                from P2VV.Utilities.MCReweighting import trackMomentaRanges_3fb as trackMomRanges
+            elif '2011' in MCProd:
+                from P2VV.Utilities.MCReweighting import trackMomentaRanges_2011 as trackMomRanges
+            elif '2012' in MCProd:
+                from P2VV.Utilities.MCReweighting import trackMomentaRanges_2012 as trackMomRanges
+            for key, ranges in trackMomRanges.iteritems(): 
+                var = RooObject._rooobject(key) 
+                self._obsSet += [ var ]
+                var.setRange(ranges)
 
         # read ntuple
         from P2VV.Utilities.DataHandling import readData
@@ -1472,11 +1489,22 @@ parValuesMc2012Fit =  dict(
     ,A0Mag2           = 5.2148e-01
     ,A0Phase          = 0. # fixed
     ,AparPhase        = 3.2927e+00
-    ,f_S         =  0.
-    ,ASOddPhase  =  0.
+    ,f_S              =  0.
+    ,ASOddPhase       =  0.
     ,dM               = 1.7629e+01
-    ,__dGamma__           = 9.3441e-02
+    ,__dGamma__       = 9.3441e-02
     ,Gamma            = 6.7722e-01
-    ,__phiCP__            = 0.07 # fixed to MC12Gen, not enough sensitivity
+    ,__phiCP__        = 0.07 # fixed to MC12Gen, not enough sensitivity
     ,lambdaCP         = 1.   # fixed to Mc12Gen, not enough sensitivity
     )
+
+
+trackMomentaRanges_2011 = { 
+    'B_Pt': (3.475068344651656, 94405.79638519925), 'Kminus_P': (1677.953023001538, 427233.06384604156), 'muplus_PZ': (2823.49, 937800.68), 'muplus_PX': (-49518.34, 43507.7), 'muplus_P': (3001.6447034417647, 938077.8742838512), 'Kplus_PZ': (1636.74, 412060.38), 'Kplus_P': (1693.6910599338948, 412184.3071739076), 'Kplus_PX': (-19960.13, 18022.09), 'Kplus_PY': (-14370.73, 21138.03), 'muplus_PY': (-39316.42, 41499.08), 'B_P': (18325.751392693288, 1518285.3190418803), 'Kminus_PY': (-16578.05, 13945.68), 'Kminus_PX': (-17293.54, 18420.46), 'muminus_PY': (-41160.23, 48934.39), 'Kminus_PZ': (1614.8, 427104.45), 'muminus_PX': (-68297.92, 49670.94), 'muminus_P': (3002.7104830302906, 782336.4262793907), 'muminus_PZ': (2853.03, 782040.87)
+                           }
+trackMomentaRanges_2012 = {
+    'B_Pt': (3.475068344651656, 94405.79638519925), 'Kminus_P': (1677.953023001538, 427233.06384604156), 'muplus_PZ': (2823.49, 937800.68), 'muplus_PX': (-49518.34, 43507.7), 'muplus_P': (3001.6447034417647, 938077.8742838512), 'Kplus_PZ': (1636.74, 412060.38), 'Kplus_P': (1693.6910599338948, 412184.3071739076), 'Kplus_PX': (-19960.13, 18022.09), 'Kplus_PY': (-14370.73, 21138.03), 'muplus_PY': (-39316.42, 41499.08), 'B_P': (18325.751392693288, 1518285.3190418803), 'Kminus_PY': (-16578.05, 13945.68), 'Kminus_PX': (-17293.54, 18420.46), 'muminus_PY': (-41160.23, 48934.39), 'Kminus_PZ': (1614.8, 427104.45), 'muminus_PX': (-68297.92, 49670.94), 'muminus_P': (3002.7104830302906, 782336.4262793907), 'muminus_PZ': (2853.03, 782040.87)
+                           }
+trackMomentaRanges_3fb = {
+    'B_Pt': (3.475068344651656, 94405.79638519925), 'Kminus_P': (1677.953023001538, 427233.06384604156), 'muplus_PZ': (2823.49, 937800.68), 'muplus_PX': (-49518.34, 43507.7), 'muplus_P': (3001.6447034417647, 938077.8742838512), 'Kplus_PZ': (1636.74, 412060.38), 'Kplus_P': (1693.6910599338948, 412184.3071739076), 'Kplus_PX': (-19960.13, 18022.09), 'Kplus_PY': (-14370.73, 21138.03), 'muplus_PY': (-39316.42, 41499.08), 'B_P': (18325.751392693288, 1518285.3190418803), 'Kminus_PY': (-16578.05, 13945.68), 'Kminus_PX': (-17293.54, 18420.46), 'muminus_PY': (-41160.23, 48934.39), 'Kminus_PZ': (1614.8, 427104.45), 'muminus_PX': (-68297.92, 49670.94), 'muminus_P': (3002.7104830302906, 782336.4262793907), 'muminus_PZ': (2853.03, 782040.87)
+                          }

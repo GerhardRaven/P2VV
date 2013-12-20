@@ -12,7 +12,7 @@ parser.add_option('-n', '--numIters', dest='numIters',  default = 7, type=int,  
 NumbOfIterations      = options.numIters
 kinematicRewApproach  = options.KKmomRew
 MCProd                = options.MCProd
-initialFitOnData      = True
+initialFitOnData      = False
 reweightBmomentum     = True
 reweightMkk           = True
 OneDverticalRewNbins  = 1000
@@ -23,7 +23,7 @@ KmomentaWeightsName   = 'KKmom'
 BmomentumWeightsName  = 'Bmom'
 
 # sFit configuration
-combinedFit = True # fit on 2011 and 2012 data, if false
+combinedFit = True # fit on 2011 and 2012 data combined
 nCPU        = 8
 
 # plotig control
@@ -31,7 +31,6 @@ makePlots          = False
 plotAtTheseSteps   = [ NumbOfIterations ]  # [ i for i in xrange(1,NumbOfIterations+1) ]
 plotFinalPdfonData = False
 
-# specify datasets, sim. conditions, nominal accceptance weights and data physics parameters
 # source distribution
 mcTuplePath = '/project/bfys/vsyropou/data/iterativeProcedure/Bs2JpsiPhi_20112012_Sim08_ntupleB_201309_add_afterFullSel_trackMom_BMom.root'
 mcTupleName = 'DecayTree'
@@ -40,32 +39,39 @@ mcTupleName = 'DecayTree'
 sDataPath    = '/project/bfys/vsyropou/data/iterativeProcedure/'
 sDataName    = 'JpsiKK_sigSWeight'
 sWeightsName = 'sWeights_ipatia'
+JeroensData  = [ False, '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_I2DiegoMass_6KKMassBins_2TagCats.root' ]
 
 # nominal angluar acceptance path 
 nomAngEffMomentsFile     = '/project/bfys/vsyropou/PhD/macros/iterativeAngAcc/output/uncorrecteEffMoments/'
-outputEffMomentsFileName = 'hel_UB_UT_trueTime_BkgCat050_KK30' 
+outputEffMomentsFileName = 'hel_UB_UT_trueTime_BkgCat050_KK30'
+JeroensAngAcc = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
 
 # source generating parameters
 from P2VV.Utilities.MCReweighting import parValuesMcSim08_6KKmassBins as monteCarloParameters
 
+# run period settings
 if  '2011' in MCProd:
     from P2VV.Utilities.MCReweighting import parValues6KKmassBins2011 as dataParameters
-    sDataPath += 'P2VVDataSets2011Reco14_I2DiegoMass_6KKMassBins_2TagCats_trackMom_BMom.root'
     RunPeriod = '2011'
+    sDataPath += 'P2VVDataSets2011Reco14_I2DiegoMass_6KKMassBins_2TagCats_trackMom_BMom.root'
     if 'reduced' in MCProd: nomAngEffMomentsFile += 'MC11_Sim08_reduced/Sim08_2011_hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
     else:                   nomAngEffMomentsFile += 'MC11_Sim08/Sim08_2011_hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
 elif '2012' in MCProd:
     from P2VV.Utilities.MCReweighting import parValues6KKmassBins2012 as dataParameters
-    sDataPath += 'P2VVDataSets2012Reco14_I2DiegoMass_6KKMassBins_2TagCats_trackMom_BMom.root'
     RunPeriod = '2012'
+    sDataPath += 'P2VVDataSets2012Reco14_I2DiegoMass_6KKMassBins_2TagCats_trackMom_BMom.root'
     nomAngEffMomentsFile += 'MC12_Sim08/Sim08_2012_hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
 else:
-    sDataPath += 'P2VVDataSets20112012Reco14_I2DiegoMass_6KKMassBins_2TagCats_trackMom_BMom.root'
     from P2VV.Utilities.MCReweighting import parValues6KKmassBins20112012 as dataParameters
+    RunPeriod = '3fb'
+    sDataPath += 'P2VVDataSets20112012Reco14_I2DiegoMass_6KKMassBins_2TagCats_trackMom_BMom.root'
     nomAngEffMomentsFile += 'MC20112012_Sim08/Sim08_hel_UB_UT_trueTime_BkgCat050_KK30_Basis_weights'
 if combinedFit: 
     sDataPath = '/project/bfys/vsyropou/data/iterativeProcedure/P2VVDataSets20112012Reco14_I2DiegoMass_6KKMassBins_2TagCats_trackMom_BMom.root'
     RunPeriod = '3fb'
+if JeroensData[0]: 
+    sDataPath = JeroensData[1]
+    nomAngEffMomentsFile = JeroensAngAcc
 
 ###########################################################################################################################
 ## Begin iterative procedure  ##
@@ -131,8 +137,8 @@ if reweightBmomentum:
 for iterNumb in range( 1, NumbOfIterations + 1 ):
     print 'P2VV - INFO: Iteratitive procedure, begining of iteration %s.'%str(iterNumb)
     dataMngr['iterationNumber'] = iterNumb
-    dataMngr['saveIntermediateDatasets'] = True if iterNumb in plotAtTheseSteps else False
-            
+    dataMngr['saveIntermediateDatasets'] = True if iterNumb in plotAtTheseSteps and makePlots else False
+
     # match physics
     physWeights = PhysicsReweight.calculateWeights( iterNumb, dataParameters )
     dataMngr.appendWeights( physWeightName, physWeights )
@@ -189,7 +195,16 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
                                             )
 
     # perform sFit on data using the new angular acceptance and update the data physics parameters
-    Bs2JpsiKKFit.doFit( itNum=iterNumb, angAccFile= outputEffMomentsFileName + '_weights_%s_Iteration'%iterNumb )
+    
+
+
+
+
+
+
+
+    Bs2JpsiKKFit.doFit( itNum=iterNumb, angAccFile=nomAngEffMomentsFile )
+    #Bs2JpsiKKFit.doFit( itNum=iterNumb, angAccFile= outputEffMomentsFileName + '_weights_%s_Iteration'%iterNumb )
     Bs2JpsiKKFit.updateDataParameters( dataParameters, itNum=iterNumb ) 
     
     # save memory
