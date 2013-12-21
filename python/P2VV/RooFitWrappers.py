@@ -1974,13 +1974,10 @@ class BinnedFun(RooObject):
     def __build_for_fit(self, name, observable, hists):
         self.__base_bounds = None
         coefficients = {}
-                
-        for (category, entries) in hists.iteritems():
-            states = set([s.GetName() for s in category])
-            coef_info = {}
 
-            from random import shuffle
-            for state, state_info in [(s, entries[s]) for s in states if s in entries]:
+        n_vars = 0
+        for category, entries in hists.iteritems():
+            for state, state_info in entries.iteritems():
                 hist = state_info.pop('histogram', None)
                 if hist:
                     xaxis = hist.GetXaxis()
@@ -1988,21 +1985,33 @@ class BinnedFun(RooObject):
                     heights = [hist.GetBinContent(i) for i in range(1, hist.GetNbinsX() + 1)]
                     state_info['bins'] = bins
                     state_info['heights'] = heights
-                else:
-                    heights = list(state_info['heights'])
-                    bins = state_info['bins']
+                n_vars += len(state_info['heights'])
+
+        from random import shuffle
+        from math import log
+        nn = int(log(n_vars, 10))
+        order = [i for i in range(n_vars)]
+        shuffle(order)
+        order = [('%' + ('0%d' % (nn + 1)) + 'd') % (i + 1) for i in order]
+
+        for (category, entries) in hists.iteritems():
+            states = set([s.GetName() for s in category])
+            coef_info = {}
+
+            from random import shuffle
+            for state, state_info in [(s, entries[s]) for s in states if s in entries]:
+                heights = list(state_info['heights'])
+                bins = state_info['bins']
                 from array import array    
                 bounds = array('d', bins)
-                order = range(len(heights))
-                shuffle(order)
 
                 # Add a binning for this category and state
                 binning_name = '_'.join([category.GetName(), state, 'binning'])
                 shape_binning = self.__create_binning(binning_name, observable, bounds)
 
                 # Make the RealVars which represent the bin heights
-                for i, (rn, v) in enumerate(zip(order, heights)):
-                    bin_name = '%s%d_%s_%s_bin_%03d' % (self.__namePF, rn, category.GetName(), state, i + 1)
+                for i, v in enumerate(heights):
+                    bin_name = '%s_%s%s_%s_bin_%03d' % (order.pop(), self.__namePF, category.GetName(), state, i + 1)
                     heights[i] = RealVar(bin_name, Observable = False, Value = v, MinMax = (0.001, 0.999))
                 if not self.__fit:
                     # If we're not fitting set all bins constant
