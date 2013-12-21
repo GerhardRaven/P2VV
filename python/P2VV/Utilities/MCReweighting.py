@@ -490,10 +490,12 @@ class WeightedDataSetsManager(dict):
         self['iterationNumber'] = 0
         self['saveIntermediateDatasets'] = False
         
-    def appendWeights( self, weightsName, weightsList, permanetnWeigts=False ):
+    def appendWeights( self, weightsName, weightsList, permanetnWeigts=False, permanentDataSet=False ):
         from numpy import array
-        if permanetnWeigts: self['permanetnWeigtsLists'][weightsName] = array( weightsList )
-        else:               self['WeightsLists'][weightsName] = array( weightsList )
+        if permanetnWeigts: 
+            print 'P2VV - INFO: appendWeights: Weights list %s will be put in permanetnWeigtsLists, and will not be deleted.'%weightsName
+            self['permanetnWeigtsLists'][weightsName] = array( weightsList )
+        else: self['WeightsLists'][weightsName] = array( weightsList )
 
         # combine weights
         if not len( self['WeightsLists'] ) <= 1:
@@ -516,10 +518,9 @@ class WeightedDataSetsManager(dict):
         wName = ''
         for name in self['WeightsLists'].keys() + self['permanetnWeigtsLists'].keys(): wName += name + '_'
         wName += str(self['iterationNumber'])
-        self['dataSets'][weightsName] = self.writeWeights(self['dataSets'][self['latestDataSetPointer']], 
-                                                          'weight_' + wName, wName, 
-                                                          )
-        if permanetnWeigts:
+        self['dataSets'][weightsName] = self.writeWeights(self['dataSets'][self['latestDataSetPointer']], 'weight_' + wName, wName )
+
+        if permanentDataSet:
             print 'P2VV - INFO: appendWeights: Dataset %s will be put in permanentDataSets, and will not be deleted.'%wName
             self['permanentDataSets'][weightsName] = self['dataSets'][weightsName]
             
@@ -583,8 +584,7 @@ class WeightedDataSetsManager(dict):
         
         # restore initial and permanent datasets 
         self['dataSets'] =  dict( initSource = self['initSource'] )
-        #for key, dataset in self['permanentDataSets'].iteritems(): self['dataSets'][key] = dataset
-        
+                
         # restore weights container and flag
         self['WeightsLists'] = dict()
         self['latestDataSetPointer'] = 'initSource'
@@ -1263,6 +1263,7 @@ class MatchWeightedDistributions():
 parValues6KKmassBins20112012 = dict(
     __dGamma__	       = 0.086993
     ,__phiCP__	       = 0.0830558
+    ,A0Phase           = 0.
     ,A0Mag2	       = 0.5208
     ,ASOddPhase_bin0   = 0.803468
     ,ASOddPhase_bin1   = 2.3092

@@ -23,7 +23,7 @@ KmomentaWeightsName   = 'KKmom'
 BmomentumWeightsName  = 'Bmom'
 
 # sFit configuration
-combinedFit = True # fit on 2011 and 2012 data combined
+combinedFit = True # fit 2011 and 2012 data combined
 nCPU        = 8
 
 # plotig control
@@ -131,7 +131,8 @@ if reweightBmomentum:
                                                           OneDverticalRewNbins, 'B_P', # nBins, variable
                                                           #xCheckPlots = True
                                                           )
-    dataMngr.appendWeights( BmomentumWeightsName, BmomentumWeights, permanetnWeigts=True )
+    dataMngr['saveIntermediateDatasets'] = True if makePlots else False
+    dataMngr.appendWeights( BmomentumWeightsName, BmomentumWeights, permanetnWeigts=True, permanentDataSet=False )
 
 # start looping.
 for iterNumb in range( 1, NumbOfIterations + 1 ):
@@ -195,16 +196,8 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
                                             )
 
     # perform sFit on data using the new angular acceptance and update the data physics parameters
-    
-
-
-
-
-
-
-
-    Bs2JpsiKKFit.doFit( itNum=iterNumb, angAccFile=nomAngEffMomentsFile )
-    #Bs2JpsiKKFit.doFit( itNum=iterNumb, angAccFile= outputEffMomentsFileName + '_weights_%s_Iteration'%iterNumb )
+    #Bs2JpsiKKFit.doFit( itNum=iterNumb, angAccFile=nomAngEffMomentsFile )
+    Bs2JpsiKKFit.doFit( itNum=iterNumb, angAccFile= outputEffMomentsFileName + '_weights_%s_Iteration'%iterNumb )
     Bs2JpsiKKFit.updateDataParameters( dataParameters, itNum=iterNumb ) 
     
     # save memory
