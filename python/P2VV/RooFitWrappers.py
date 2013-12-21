@@ -1987,18 +1987,23 @@ class BinnedFun(RooObject):
                     state_info['heights'] = heights
                 n_vars += len(state_info['heights'])
 
-        from random import shuffle
+        ## Seed the random numbers with the name prefix so we only get different
+        ## random numbers when we really need them
+        import random
+        random.seed(self.__namePF)
+        ## Generate some random prefixes to ensure there are no bin to bin
+        ## correlations because of Minuit
         from math import log
         nn = int(log(n_vars, 10))
         order = [i for i in range(n_vars)]
-        shuffle(order)
+        random.shuffle(order)
         order = [('%' + ('0%d' % (nn + 1)) + 'd') % (i + 1) for i in order]
 
+        ## Create the RealVars which are the real floating parameters for the
+        ## acceptance
         for (category, entries) in hists.iteritems():
             states = set([s.GetName() for s in category])
             coef_info = {}
-
-            from random import shuffle
             for state, state_info in [(s, entries[s]) for s in states if s in entries]:
                 heights = list(state_info['heights'])
                 bins = state_info['bins']
@@ -2027,6 +2032,8 @@ class BinnedFun(RooObject):
                 coef_info[state].update({'heights' : heights})
 
             coefficients[category] = coef_info
+        ## Save the RealVars so they can be retrieved later, for example to
+        ## build the average constraint.
         for c, state_info in coefficients.iteritems():
             for state, i in state_info.iteritems():
                 if len(i['heights']) > 1:
