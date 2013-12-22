@@ -15,7 +15,6 @@ MCProd                = options.MCProd
 initialFitOnData      = False
 reweightBmomentum     = False
 reweightMkk           = True
-initialFitOnData      = True
 OneDverticalRewNbins  = 1000
 TwoDverticalRewNbins  = 50
 EqualStatsBins        = True
@@ -96,6 +95,7 @@ worksp = RooObject( workspace = 'iterativeProcedure' ).ws()
 # build data pdf and prepare the sFit ( This pdf will not be multiplied by the angular acceptance !! ).
 Bs2JpsiKKFit = BuildBs2JpsiKKFit( dataSetPath=sDataPath, dataSetName=sDataName, runPeriod=RunPeriod, Ncpu=nCPU )
 if initialFitOnData:
+    assert False
     Bs2JpsiKKFit.doFit( angAccFile=nomAngEffMomentsFile )
     assert False
 
