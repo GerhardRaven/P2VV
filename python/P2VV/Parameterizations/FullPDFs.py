@@ -800,8 +800,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             self['simulPdf'] = SimultaneousPdf(  fullPdf.GetName() + '_simul'
                                                , MasterPdf       = fullPdf
                                                , SplitCategories = [ pars[1] for pars in splitPars ]
-                                               , SplitParameters = [ pars[0] for pars in splitPars ]
-                                              )
+                                               , SplitParameters = [ pars[0] for pars in splitPars ] )
 
             # set time resolution models
             from ROOT import RooArgSet, RooArgList
@@ -1037,15 +1036,45 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         # Time res model constraints include those form the acceptance
         from P2VV.Parameterizations.TimePDFs import Single_Exponent_Time
-        simple_time = Single_Exponent_Time(Name = 'sig_t', time = self['obsSetP2VV'][0],
-                                           resolutionModel = self['timeResModels']['prototype'].model(),
+        from P2VV.Parameterizations.TimeResolution import Truth_TimeResolution
+        truth_res = Truth_TimeResolution(time = self['obsSetP2VV'][0])
+        simple_time = Single_Exponent_Time(Name = 'constraint_time', time = self['obsSetP2VV'][0],
+                                           resolutionModel = truth_res.model(),
                                            tau = self['lifetimeParams']['MeanLifetime'])
+        simple_time_pdf = simple_time.pdf()
         acc_settings = externalConstr.pop('acceptance', None)
         if acc_settings and simulPdf:
             splitCat = simulPdf.indexCat()
             from ROOT import RooArgList
             inputCats = RooArgList(splitCat) if splitCat.isFundamental() else splitCat.inputCatList()
             splitAccCats = [inputCats.find(c if type(c) == str else c.GetName()) for c in acc_settings.categories()]
+
+            ## Create a simultaneous pdf for the constraints.
+            from P2VV.Utilities.General import createSplitParsList
+
+            splitSet = set(k.GetName() for k in splitParsDict.iterkeys())
+            accSplitDict = dict((var, set(splitAccCats)) for var in simple_time_pdf.getVariables() if var.GetName() in splitSet)
+            accSplitPars = createSplitParsList(accSplitDict)
+
+            # build simultaneous PDF
+            from P2VV.RooFitWrappers import SimultaneousPdf
+            simul_time_pdf = SimultaneousPdf(simple_time_pdf.GetName() + '_simul',
+                                             MasterPdf       = simple_time_pdf,
+                                             SplitCategories = [pars[1] for pars in accSplitPars],
+                                             SplitParameters = [pars[0] for pars in accSplitPars])
+
+            from ROOT import RooRealVar
+            simulVars = simul_time_pdf.getVariables()
+            for v in simulPdf.getVariables():
+                if v.getAttribute('Observable'):
+                    continue
+                if not isinstance(v, RooRealVar):
+                    continue
+                sv = simulVars.find(v.GetName())
+                if sv:
+                    sv.setVal(v.getVal())
+                    sv.setError(v.getError())
+                            
             acc_constraints = {}
             for (key, model), state in zip(self['timeResModels'].iteritems(), splitCat):
                 if key == 'prototype':
@@ -1054,10 +1083,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     continue
                 sk = tuple((cat.GetName(), cat.getLabel()) for cat in splitAccCats)
                 values = acc_settings.getSettings(sk)
-                # I use the pdf before splitting here. I think this is a valid
-                # approximation. If not, we need to somehow construct a data
-                # weighted average over the categories a la ProjectWData
-                ac = model.build_constraints(simple_time.pdf(), values)
+                # I use a simple PDF with only the average lifetime here. I
+                # think this is a valid approximation.
+                ac = model.build_constraints(simul_time_pdf, values)
                 for constraint in ac:
                     if constraint.GetName() not in acc_constraints:
                         acc_constraints[constraint.GetName()] = constraint
@@ -1065,8 +1093,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         elif acc_settings:
             acceptance = timeResModels['prototype']
             if hasattr(acceptance, 'build_constraints'):
-                constraints |= set(acceptance.build_constraints(simple_time.pdf(), acc_settings))
-                
+                constraints |= set(acceptance.build_constraints(simple_time_pdf, acc_settings))
+
         ws = pdf.ws()
         pdfVars = pdf.getVariables()
 
