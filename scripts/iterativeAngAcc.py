@@ -13,21 +13,19 @@ NumbOfIterations      = options.numIters
 kinematicRewApproach  = options.KKmomRew
 MCProd                = options.MCProd
 initialFitOnData      = False
-reweightBmomentum     = True
+reweightBmomentum     = False
 reweightMkk           = True
 initialFitOnData      = True
-reweightBmomentum     = False
-reweightMkk           = False
 OneDverticalRewNbins  = 1000
 TwoDverticalRewNbins  = 50
-EqualStatsBins        = False
+EqualStatsBins        = True
 physWeightName        = 'phys'
 mKKWeightsName        = 'mKK'
 KmomentaWeightsName   = 'KKmom'
 BmomentumWeightsName  = 'Bmom'
 
 # sFit configuration
-combinedFit = True # fit 2011 and 2012 data combined
+combinedFit = False # fit 2011 and 2012 data combined
 nCPU        = 8
 
 # plotig control
