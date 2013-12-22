@@ -12,11 +12,12 @@ parser.add_option('-n', '--numIters', dest='numIters',  default = 7, type=int,  
 NumbOfIterations      = options.numIters
 kinematicRewApproach  = options.KKmomRew
 MCProd                = options.MCProd
-initialFitOnData      = False
-reweightBmomentum     = True
-reweightMkk           = True
+initialFitOnData      = True
+reweightBmomentum     = False
+reweightMkk           = False
 OneDverticalRewNbins  = 1000
 TwoDverticalRewNbins  = 50
+EqualStatsBins        = False
 physWeightName        = 'phys'
 mKKWeightsName        = 'mKK'
 KmomentaWeightsName   = 'KKmom'
@@ -129,6 +130,7 @@ if reweightBmomentum:
     BmomentumWeights = OneDimentionalVerticalReweighting( dataMngr.getDataSet(),      # source distribution
                                                           Bs2JpsiKKFit.getDataSet(),  # target distribution
                                                           OneDverticalRewNbins, 'B_P', # nBins, variable
+                                                          equalStatsBins = EqualStatsBins
                                                           #xCheckPlots = True
                                                           )
     dataMngr['saveIntermediateDatasets'] = True if makePlots else False
@@ -148,6 +150,7 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
     mKKweights = OneDimentionalVerticalReweighting( dataMngr.getDataSet(),      # source distribution
                                                     Bs2JpsiKKFit.getDataSet(),  # target distribution
                                                     OneDverticalRewNbins, 'mdau2', iterationNumber = iterNumb, # nBins, variable
+                                                    equalStatsBins = EqualStatsBins
                                                     )
     dataMngr.appendWeights( mKKWeightsName, mKKweights )
     
@@ -157,6 +160,7 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
                                                          Bs2JpsiKKFit.getDataSet(),  # target distribution
                                                          TwoDverticalRewNbins, ['Kplus_P','Kminus_P'], iterationNumber = iterNumb ,
                                                          # number of bins per dimention, variables
+                                                         equalStatsBins = EqualStatsBins
                                                          )
         dataMngr.appendWeights( KmomentaWeightsName, KKMomWeights )
     elif kinematicRewApproach == 'horizontal':

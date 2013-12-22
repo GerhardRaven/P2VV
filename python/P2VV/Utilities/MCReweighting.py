@@ -301,8 +301,9 @@ def createKaonMomentaBinning(nbins, startingPoint=0, turningPoint=5e4, endpoint=
 # function that reweighits the KK distributions with a 2D histrogram
 def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     print 'P2VV - INFO: Initialised vertical reweigthing class, TwoDimentionalVerticalReweighting() for variables (%s,%s).'%(var[0],var[1])
-    iterIdx  = kwargs.pop('iterationNumber' ,  0)
-    plot     = kwargs.pop('xCheckPlots', False  )
+    iterIdx        = kwargs.pop('iterationNumber',   0   )
+    plot           = kwargs.pop('xCheckPlots',     False )
+    equalStatsBins = kwargs.pop('equalStatsBins',  False )
 
     from ROOT import TH2F, TH1F, TCanvas
   
@@ -314,35 +315,39 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     xMin, yMin = 2 * ( min( RooObject._rooobject(var[0]).getMin(), RooObject._rooobject(var[1]).getMin() ), )
     xMax, yMax = 2 * ( max( RooObject._rooobject(var[0]).getMax(), RooObject._rooobject(var[1]).getMax() ), )
         
-    # import binning
-    # from P2VV.Utilities.MCReweighting import createKaonMomentaBinning
-    # binning = createKaonMomentaBinning(nbins, endpoint=max(yMax,xMax),typeSpec='f')
+    # import / create binning
+    print 'P2VV - INFO: TwoDimentionalVerticalReweighting: Using %s binnning with #bins = %s.'%('equal statistics' if equalStatsBins else 'uniform',nbins)
+    if equalStatsBins: 
+        # create equal statistics binning
+        from array import array
+        targetListX,  targetListY = [],[]
+        for ev in target: targetListX += [ev.find(var[0]).getVal()]
+        for ev in target: targetListY += [ev.find(var[1]).getVal()]
+        targetListX.sort()
+        targetListY.sort()
 
-    # create equal statistics binning
-    from array import array
-    targetListX,  targetListY = [],[]
-    for ev in target: targetListX += [ev.find(var[0]).getVal()]
-    for ev in target: targetListY += [ev.find(var[1]).getVal()]
-    targetListX.sort()
-    targetListY.sort()
+        rangeX, rangeY = xMax - xMin, yMax - yMin
+        binstat = target.numEntries() / nbins
+        lowboundsX, lowboundsY = [xMin - 0.0001*xMin], [yMin - 0.0001*yMin]
 
-    rangeX, rangeY = xMax - xMin, yMax - yMin
-    binstat = target.numEntries() / nbins
-    lowboundsX, lowboundsY = [xMin - 0.0001*xMin], [yMin - 0.0001*yMin]
-
-    for ev in xrange(binstat,len(targetListX),binstat):
-        lowboundsX += [ targetListX[ev] ]
-        lowboundsY += [ targetListY[ev] ]
-        if len(lowboundsX) == nbins: break
-    lowboundsX += [ xMax ]
-    lowboundsY += [ yMax ]
-    lowboundsX, lowboundsY = array('f',lowboundsX), array('f',lowboundsY)
+        for ev in xrange(binstat,len(targetListX),binstat):
+            lowboundsX += [ targetListX[ev] ]
+            lowboundsY += [ targetListY[ev] ]
+            if len(lowboundsX) == nbins: break
+        lowboundsX += [ xMax ]
+        lowboundsY += [ yMax ]
+        lowboundsX, lowboundsY = array('f',lowboundsX), array('f',lowboundsY)
+    else: # import binning
+        from P2VV.Utilities.MCReweighting import createKaonMomentaBinning
+        binning = createKaonMomentaBinning(nbins, endpoint=max(yMax,xMax),typeSpec='f')
     
     # create 2D histrograms (Kplus_P vs Kminus_P)
-    # sourceHist  = TH2F('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, binning, nbins, binning )
-    # targetHist  = TH2F('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, binning, nbins, binning )
-    sourceHist  = TH2F('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, lowboundsX, nbins, lowboundsY )
-    targetHist  = TH2F('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, lowboundsX, nbins, lowboundsY )
+    if equalStatsBins:
+        sourceHist  = TH2F('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, lowboundsX, nbins, lowboundsY )
+        targetHist  = TH2F('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, lowboundsX, nbins, lowboundsY )
+    else:
+        sourceHist  = TH2F('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, binning, nbins, binning )
+        targetHist  = TH2F('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, binning, nbins, binning )
     
     # fill 2D rewweighting histograms
     for evnt in source: sourceHist.Fill( _valX(evnt), _valY(evnt), source.weight() )
@@ -392,8 +397,9 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
 # function that reweighits a single source distribution to match a given target using a histogram
 def OneDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     print 'P2VV - INFO: Initialised vertical reweigthing class, OneDimentionalVerticalReweighting() for variable %s.'%var
-    iterIdx  = kwargs.pop('iterationNumber' ,  0)
-    plot     = kwargs.pop('xCheckPlots', False  )
+    iterIdx        = kwargs.pop('iterationNumber',     0 )
+    plot           = kwargs.pop('xCheckPlots',     False )
+    equalStatsBins = kwargs.pop('equalStatsBins',  False )
 
     from ROOT import TH1F, TCanvas
     from array import array
@@ -406,26 +412,30 @@ def OneDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     xMin, xMax = RooObject._rooobject(var).getMin(), RooObject._rooobject(var).getMax(var)
 
     # create equal statistics binning
-    targetList = []
-    for ev in target: targetList += [ev.find(var).getVal()]
-    targetList.sort()
-
-    range = xMax - xMin
-    binstat = target.numEntries() / nbins
-    lowbounds = [xMin - 0.0001*xMin]
-
-    for ev in xrange(binstat,len(targetList),binstat):
-        lowbounds += [ targetList[ev] ]
-        if len(lowbounds) == nbins: break
-    lowbounds += [ xMax ]
+    if equalStatsBins:
+        print 'P2VV - INFO: OneDimentionalVerticalReweighting: Reweighting with equal statistics binning.'
+        targetList = []
+        for ev in target: targetList += [ev.find(var).getVal()]
+        targetList.sort()
+        
+        range = xMax - xMin
+        binstat = target.numEntries() / nbins
+        lowbounds = [xMin - 0.0001*xMin]
+        
+        for ev in xrange(binstat,len(targetList),binstat):
+            lowbounds += [ targetList[ev] ]
+            if len(lowbounds) == nbins: break
+        lowbounds += [ xMax ]
 
     # create histrograms
-    #sourceHist  = TH1F('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, xMin, xMax )
-    #targetHist  = TH1F('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, xMin, xMax )
-    
-    sourceHist  = TH1F('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, array('f',lowbounds) )
-    targetHist  = TH1F('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, array('f',lowbounds) )
-  
+    print 'P2VV - INFO: OneDimentionalVerticalReweighting: Using %s binnning with #bins = %s.'%('equal statistics' if equalStatsBins else 'uniform',nbins)
+    if equalStatsBins:
+        sourceHist  = TH1F('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, array('f',lowbounds) )
+        targetHist  = TH1F('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, array('f',lowbounds) )
+    else:
+        sourceHist  = TH1F('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, xMin, xMax )
+        targetHist  = TH1F('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, xMin, xMax )
+
     # fill reweighting histograms
     for evnt in source: sourceHist.Fill( _valX(evnt), source.weight() )
     for evnt in target: targetHist.Fill( _valX(evnt), target.weight() )
@@ -685,9 +695,9 @@ class BuildBs2JpsiKKFit():
                     else: 
                         CEvenOdd.setConstant('avgCEven.*')
                         CEvenOdd.setConstant( 'avgCOdd.*', True )
-        for par in self._pdf.getParameters(self._fitData):
-            if 'C_SP' in par: par.setConstant()
-            #self._pdfBuild['amplitudes'].setConstant('C_SP')
+        #for par in self._pdf.getParameters(self._fitData):
+        #    if 'C_SP' in par: par.setConstant()
+        self._pdfBuild['amplitudes'].setConstant('C_SP')
 
         # print parameters
         print 120 * '='
@@ -722,12 +732,23 @@ class BuildBs2JpsiKKFit():
         #fitResult.covarianceMatrix().Print()
         #fitResult.correlationMatrix().Print()
         from ROOT import TFile
-        resultFile = TFile.Open('fitResult_iterativeProcedure_%s.root'%itNum,'recreate')
+        resultFile = TFile.Open('fitResult_iterativeProcedure_%s.root'%itNum, 'recreate')
         resultFile.cd()
         fitResult.Write()
         resultFile.Close()
-        self._FitResults['iter_%s'%itNum] = fitResult 
-        print 120 * '=' + '\n'        
+        self._FitResults['iter_%s'%itNum] = fitResult
+
+        # wite parameters to file
+        # parFileOut = ( 'parameterEstimates.par', dict( Format = 'common' ) )
+        # filePath = parFileOut[0] if type(parFileOut) != str else parFileOut
+        # fileOpts = parFileOut[1] if type(parFileOut) != str else { }
+        # self._pdfConfig.getParametersFromPdf( self._pdf, self._fitData )
+        # self._pdfConfig.writeParametersToFile( filePath = filePath
+        #                                        , FitStatus = ( fitResult.status(), fitResult.minNll(), fitResult.edm() )\
+        #                                            if fitResult else ( -1, 0., 0. )
+        #                                        , **fileOpts
+        #                                        )
+        print 120 * '=' + '\n'
 
     def updateDataParameters(self, oldPars, itNum=0):
         fitResult = self._FitResults['iter_%s'%itNum]
@@ -797,15 +818,15 @@ class MatchPhysics( ):
 
         # build pdf with KK mass bins and category states.
         KKMassStates = dict( [ ('bin%d' % i, i) for i in range(6) ] )
-        SWaveAmps = dict(  mc_f_S        = dict()
-                         , mc_ASOddPhase = dict()
-                           , mc_C_SP       = dict()
-                           )
+        SWaveAmps    = dict( mc_f_S        = dict()
+                            ,mc_ASOddPhase = dict()
+                            ,mc_C_SP       = dict()
+                             )
         for k in SWaveAmps.keys():
             for bin in xrange(6): SWaveAmps[k]['bin%s'%bin] = 0
 
         # CP violation parameters
-        phiCPVal    = +0.07 
+        phiCPVal  = +0.07 
         lambCPVal = 1.
 
         # B lifetime parameters
@@ -964,8 +985,6 @@ class MatchPhysics( ):
             for physParName in ['dM', 'dGamma', 'Gamma', 'phiCP', 'lambdaCP']:
                  if physParName in par.GetName(): 
                      self._pdfPhysPars[par.GetName()] = par
-
-        #del self._data
     
     def setMonteCarloParameters(self, pars=None):
         print 'P2VV - INFO: setMonteCarloParameters: Setting the following parameters to the monte carlo pdf, named %s.'%self._pdf.GetName()
