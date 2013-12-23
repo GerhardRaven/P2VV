@@ -411,7 +411,13 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
         from collections import defaultdict
         splitConstr = defaultdict(dict)
         splitConstr['betaTimeEff']['2011']      = ( -0.0083,  0.004 )
-        splitConstr['betaTimeEff']['2012']      = ( -0.0083,  None ) if runPeriods == '3fb' else ( 0., 0. )
+        if runPeriods == '3fb':
+            if self['timeEffType'] == 'fit':
+                splitConstr['betaTimeEff']['2012'] = ( -0.0138, 0.0065 )
+            else:
+                splitConstr['betaTimeEff']['2012'] = ( -0.0083, None )
+        else:
+            splitConstr['betaTimeEff']['2012'] = ( 0., 0. )
         splitConstr['tres_placeholder']['2011'] = (  0.0349,  0. ) #( 0.0352, 0. )
         splitConstr['tres_placeholder']['2012'] = (  0.0347,  0. ) #( 0.0352, 0. )
         splitConstr['timeResMu']['2011']        = ( -0.00259, 0. ) #( 0.,     0. )
@@ -426,10 +432,11 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
         splitConstr['sf_sigma_offset']['2012']  = (  0.4143,  0. ) #( 0.4118, 0. )
         splitConstr['sf_sigma_slope']['2011']   = ( -0.63,    0. ) #( -0.117, 0. )
         splitConstr['sf_sigma_slope']['2012']   = ( -2.80,    0. ) #( -0.172, 0. )
-        splitConstr['acceptance']['2011'] = {('hlt1_excl_biased_dec', 'exclB') : (0.65, 0.01),
-                                             ('hlt2_biased', 'B') : (0.65, 0.01)}
-        splitConstr['acceptance']['2012'] = {('hlt1_excl_biased_dec', 'exclB') : (0.65, 0.01),
-                                             ('hlt2_biased', 'B') : (0.65, 0.01)}
+        if self['timeEffType'] == 'fit':
+            splitConstr['acceptance']['2011'] = {('hlt1_excl_biased_dec', 'exclB') : (0.65, 0.01),
+                                                 ('hlt2_biased', 'B') : (0.65, 0.01)}
+            splitConstr['acceptance']['2012'] = {('hlt1_excl_biased_dec', 'exclB') : (0.65, 0.01),
+                                                 ('hlt2_biased', 'B') : (0.65, 0.01)}
         if runPeriods in [ '2011', '2012' ] :
             self['externalConstr']['betaTimeEff']      = splitConstr['betaTimeEff']     [runPeriods]
             self['externalConstr']['tres_placeholder'] = splitConstr['tres_placeholder'][runPeriods]
@@ -439,6 +446,8 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
             self['externalConstr']['sf_mean_slope']    = splitConstr['sf_mean_slope']   [runPeriods]
             self['externalConstr']['sf_sigma_offset']  = splitConstr['sf_sigma_offset'] [runPeriods]
             self['externalConstr']['sf_sigma_slope']   = splitConstr['sf_sigma_slope']  [runPeriods]
+            if self['timeEffType'] == 'fit':
+                self['externalConstr']['acceptance']   = splitConstr['acceptance'][runPeriods]
         else :
             self['splitParams']['runPeriod'] = [ ]
             for par, vals in splitConstr.iteritems() :
@@ -1043,10 +1052,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                            tau = self['lifetimeParams']['MeanLifetime'])
         simple_time_pdf = simple_time.pdf()
         acc_settings = externalConstr.pop('acceptance', None)
-        if acc_settings and simulPdf:
+        if simulPdf:
             splitCat = simulPdf.indexCat()
             from ROOT import RooArgList
             inputCats = RooArgList(splitCat) if splitCat.isFundamental() else splitCat.inputCatList()
+
+        if acc_settings and simulPdf:
             splitAccCats = [inputCats.find(c if type(c) == str else c.GetName()) for c in acc_settings.categories()]
 
             ## Create a simultaneous pdf for the constraints.
