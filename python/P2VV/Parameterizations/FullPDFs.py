@@ -1884,10 +1884,10 @@ def multiplyByTimeAcceptance( pdf, self, **kwargs ) :
         assert all( cat.GetName() not in indexCatNames for cat in [ hlt1ExclB, hlt2B, hlt2UB ] )\
                , 'P2VV - ERROR: multiplyByTimeAcceptance(): acceptance function depends on the index category of the simultaneous mother PDF'
 
-        hists = {  hlt1ExclB : {  'exclB'    : { 'histogram' : 'hlt1_shape', 'average' : ( 6.285e-01, 1.633e-02 ) }
+        hists = {  hlt1ExclB : {  'exclB'    : { 'histogram' : histExclBName, 'average' : ( 6.285e-01, 1.633e-02 ) }
                                 , 'notExclB' : { 'bins'      : time.getRange(), 'heights' : [0.5]                 }
                                }
-                 , hlt2B     : { 'B'         : { 'histogram' : 'hlt2_shape', 'average' : ( 6.3290e-01, 1.65e-02 ) } }
+                 , hlt2B     : { 'B'         : { 'histogram' : histUBName, 'average' : ( 6.3290e-01, 1.65e-02 ) } }
                  , hlt2UB    : { 'UB'        : { 'bins'      : time.getRange(), 'heights' : [0.5]                 } }
                 }
 

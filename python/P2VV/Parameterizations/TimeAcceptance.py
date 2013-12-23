@@ -157,7 +157,8 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
                     if not hist:
                         continue
                     hist = acceptance_file.Get(info['histogram'])
-                    if not hist : raise ValueError, 'Failed to get histrogram %s from file %s' % (h, input_file)
+                    if not hist : raise ValueError, ('Failed to get histrogram %s from file %s' \
+                                                     % (info['histogram'], input_file))
                     hist.SetDirectory(0) # disconnect self._hist from file... otherwise it is deleted when file is closed
                     info['histogram'] = hist
 

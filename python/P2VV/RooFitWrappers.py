@@ -2017,6 +2017,7 @@ class BinnedFun(RooObject):
                 # Make the RealVars which represent the bin heights
                 for i, v in enumerate(heights):
                     bin_name = '%s_%s%s_%s_bin_%03d' % (order.pop(), self.__namePF, category.GetName(), state, i + 1)
+                    if v > 0.999: v = 0.999
                     heights[i] = RealVar(bin_name, Observable = False, Value = v, MinMax = (0.001, 0.999))
                 if not self.__fit:
                     # If we're not fitting set all bins constant
