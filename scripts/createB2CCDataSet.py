@@ -2,7 +2,7 @@
 ## script settings ##
 #####################
 
-#nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_2011_2012_s20_dv33r6p1_20131217_tupleB_sel.root'
+#nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs2JpsiPhi_2011_2012_s20_dv33r6p1_20131217_tupleB_selTrig.root'
 nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_w0.root'
 nTupleName       = 'DecayTree'
 dataSetsFilePath = 'temp.root' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_6KKMassBins_2TagCats.root'
@@ -15,7 +15,7 @@ parFileOut       = ''
 simulation       = False
 weightName       = 'wMC'
 runPeriods       = [ 2011, 2012 ]
-triggerSel       = 'noSelection' # 'paper2012' # 'HLT1Unbiased' # 'paper2012'
+triggerSel       = 'noSelection' # 'timeEffFit' # 'paper2012' # 'HLT1Unbiased' # 'paper2012'
 dataCuts         = 'noSelection' # 'nominal2011'
 addCuts          = '' # 'runPeriod == 2011 && hlt1_excl_biased_dec == 1' # 'wMC > 0.'
 dataSample       = '(bkgcat==0 || bkgcat==50)' if simulation else ''
@@ -317,7 +317,7 @@ print 'P2VV - INFO: createB2CCDataSet: data set from n-tuple:\n' + ' ' * 13,
 dataSets['pre'][0].Print()
 print
 
-#selDataFile = TFile.Open( '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhi_2011_2012_s20_dv33r6p1_20131217_tupleB_sel.root', 'RECREATE' )
+#selDataFile = TFile.Open( '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs2JpsiPhi_2011_2012_s20_dv33r6p1_20131217_tupleB_selTrig.root', 'RECREATE' )
 #selDataTree = dataTree.CopyTree(ntupleCuts)
 #print 'P2VV - INFO: selected number of entries in tree = %d' % selDataTree.GetEntries()
 #selDataFile.Write()

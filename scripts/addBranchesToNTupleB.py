@@ -1,5 +1,5 @@
-nTupleFilePathIn  = '/data/bfys/jleerdam/Bs2Jpsiphi/Bs2JpsiPhi_2012_s20r0p1_dv33r6p1_20131107_tupleB.root'
-nTupleFilePathOut = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs2JpsiPhi_2012_s20r0p1_dv33r6p1_20131107_tupleB_add.root'
+nTupleFilePathIn  = '/data/bfys/jleerdam/Bs2Jpsiphi/Bs2JpsiPhi_2012_s20r0p1_dv33r6p1_20131217_tupleB.root'
+nTupleFilePathOut = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs2JpsiPhi_2012_s20r0p1_dv33r6p1_20131217_tupleB_add.root'
 nTupleName = 'DecayTree'
 runPeriod = 2012
 KKMassBounds = [ 1008., 1016., 1020., 1024., 1032. ]
