@@ -161,6 +161,7 @@ TTree.buildDataSet = __TreeToRooDataSet
 from operator import methodcaller
 from ROOT import RooAbsCategory
 RooAbsCategory.__iter__ = __createRooIterator( methodcaller('typeIterator') )
+RooAbsCategory.__len__  = lambda s: s.numTypes()
 
 from ROOT import RooLinkedList
 RooLinkedList.__iadd__ = lambda s,x : s if s.Add(x)    else s  # else None??
@@ -168,7 +169,7 @@ RooLinkedList.__isub__ = lambda s,x : s if s.Remove(x) else s  # else None??
 # RooAbsCollection/RooArgSet/RooArgList functions
 from ROOT import RooAbsCollection
 RooAbsCollection.__iter__ = __createRooIterator( methodcaller('createIterator') )
-RooAbsCollection.__len__  = lambda s   : s.getSize()
+RooAbsCollection.__len__  = lambda s: s.getSize()
 RooAbsCollection.__contains__  = lambda s,i : s.contains(i)
 RooAbsCollection.__iadd__ = lambda s,x : s if s.add(x)    else s  # else None??
 RooAbsCollection.__isub__ = lambda s,x : s if s.remove(x) else s  # else None??

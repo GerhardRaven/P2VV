@@ -28,6 +28,8 @@ public:
       return new RooEfficiencyBin(*this, newname);
    }
 
+   virtual void addEntry(RooAbsCategory* cat, const std::string& state,
+                         RooAbsReal* var, const bool flag);
    virtual void addEntry(RooAbsReal*, bool);
 
    virtual ~RooEfficiencyBin();
@@ -38,7 +40,22 @@ protected:
 
 private:
 
-   std::map<RooRealProxy*, bool> _variables;
+   RooEfficiencyBin& operator=(const RooEfficiencyBin& other);
+
+   RooCategoryProxy* getProxy(RooAbsCategory* cat, const std::string& state,
+                              RooAbsReal* var, const bool flag, const RooCategoryProxy* ocproxy = 0,
+                              const RooRealProxy* ovproxy = 0);
+   RooRealProxy* getProxy(RooAbsReal* var, const bool flag, const RooRealProxy* oproxy = 0);
+   
+   Double_t evaluateVars() const;
+   Double_t evaluateCats() const;
+
+   typedef std::map<std::string, std::pair<RooRealProxy*, bool> > stateMap_t;
+   typedef std::map<RooCategoryProxy*, stateMap_t> catMap_t;
+   catMap_t _categories;
+
+   typedef std::map<RooRealProxy*, bool> varMap_t;
+   varMap_t _variables;
 
    ClassDef(RooEfficiencyBin,1) // Your description goes here...
 };
