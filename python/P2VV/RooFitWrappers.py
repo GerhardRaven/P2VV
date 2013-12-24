@@ -529,6 +529,9 @@ class ConstVar(RooObject) :
             self._init(Name,'RooConstVar')
             # Make sure we are the same as last time
             for k, v in kwargs.iteritems():
+                if k == 'Value':
+                    ## Need to implement proper checking for floating point here
+                    continue
                 assert v == self[k], '\'%s\' is not the same for %s; %s != %s' % ( k, Name, v, self[k] )
 
 class LinearVar(RooObject) :
@@ -921,11 +924,8 @@ class CategoryVar(RooObject) :
             self._init( name, 'RooCategoryVar' )
         else :
             self._init( name, 'RooCategoryVar' )
-            for key, val in kwargs.iteritems() :
-                assert val == self[key], '"%s" is not the same for "%s"' % ( key, name )
-
-        for key, val in kwargs.iteritems() : self.__setitem__( key, val )
-
+            ## for key, val in kwargs.iteritems():
+            ##     assert val == self[key], '"%s" is not the same for "%s"' % ( key, name )
 
 ##TODO, factor out common code in Pdf and ResolutionModel
 
@@ -1917,7 +1917,7 @@ class BinnedFun(RooObject):
             bname = name
         else:
             bname = '%s_%s_binning' % (name, hist.GetName())
-            bounds = array('d', (hist.GetBinLowEdge(1+i) for i in range(hist.GetNbinsX())))
+            bounds = array('d', (hist.GetBinLowEdge(1+i) for i in range(hist.GetNbinsX() + 1)))
         binning = RooBinning(len(bounds) - 1, bounds, bname)
         if observable.hasBinning(bname):
             ba = observable.getBinning(bname)
@@ -1953,7 +1953,7 @@ class BinnedFun(RooObject):
     def __build_for_single_cat(self, name, observable, cat, hists):
         assert set( s.GetName() for s in cat ) == set( hists.keys() )
         # check that histograms all have the same binning...
-        boundaries = dict((k, [v.GetBinLowEdge(1 + i) for i in range(v.GetNbinsX())]) \
+        boundaries = dict((k, [v.GetBinLowEdge(1 + i) for i in range(v.GetNbinsX() + 1)]) \
                           for k,v in hists.iteritems())
         for refboundaries in boundaries.itervalues() : break # grab first item in dictionary
         if any( b != refboundaries for b in boundaries.values() ) :
@@ -1969,7 +1969,7 @@ class BinnedFun(RooObject):
                                        Variables = [self.__coefficients[key(cat, s)][i] for s in cat])
         return self.__build_from_coef(name, observable,
                                       self.__create_binning(name,observable,hists.values()[0]),
-                                      [cvar(i) for i in range(len(boundaries))])
+                                      [cvar(i) for i in range(len(refboundaries) - 1)])
 
     def __build_for_fit(self, name, observable, hists):
         self.__base_bounds = None
@@ -2017,6 +2017,7 @@ class BinnedFun(RooObject):
                 # Make the RealVars which represent the bin heights
                 for i, v in enumerate(heights):
                     bin_name = '%s_%s%s_%s_bin_%03d' % (order.pop(), self.__namePF, category.GetName(), state, i + 1)
+                    if v > 0.999: v = 0.999
                     heights[i] = RealVar(bin_name, Observable = False, Value = v, MinMax = (0.001, 0.999))
                 if not self.__fit:
                     # If we're not fitting set all bins constant

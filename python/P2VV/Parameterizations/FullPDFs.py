@@ -416,7 +416,13 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
         from collections import defaultdict
         splitConstr = defaultdict(dict)
         splitConstr['betaTimeEff']['2011']      = ( -0.0083,  0.004 )
-        splitConstr['betaTimeEff']['2012']      = ( -0.0083,  None ) if runPeriods == '3fb' else ( 0., 0. )
+        if runPeriods == '3fb':
+            if self['timeEffType'] == 'fit':
+                splitConstr['betaTimeEff']['2012'] = ( -0.0138, 0.0065 )
+            else:
+                splitConstr['betaTimeEff']['2012'] = ( -0.0083, None )
+        else:
+            splitConstr['betaTimeEff']['2012'] = ( 0., 0. )
         splitConstr['tres_placeholder']['2011'] = (  0.0349,  0. ) #( 0.0352, 0. )
         splitConstr['tres_placeholder']['2012'] = (  0.0347,  0. ) #( 0.0352, 0. )
         splitConstr['timeResMu']['2011']        = ( -0.00259, 0. ) #( 0.,     0. )
@@ -431,10 +437,11 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
         splitConstr['sf_sigma_offset']['2012']  = (  0.4143,  0. ) #( 0.4118, 0. )
         splitConstr['sf_sigma_slope']['2011']   = ( -0.63,    0. ) #( -0.117, 0. )
         splitConstr['sf_sigma_slope']['2012']   = ( -2.80,    0. ) #( -0.172, 0. )
-        splitConstr['acceptance']['2011'] = {('hlt1_excl_biased_dec', 'exclB') : (0.65, 0.01),
-                                             ('hlt2_biased', 'B') : (0.65, 0.01)}
-        splitConstr['acceptance']['2012'] = {('hlt1_excl_biased_dec', 'exclB') : (0.65, 0.01),
-                                             ('hlt2_biased', 'B') : (0.65, 0.01)}
+        if self['timeEffType'] == 'fit':
+            splitConstr['acceptance']['2011'] = {('hlt1_excl_biased_dec', 'exclB') : (0.65, 0.01),
+                                                 ('hlt2_biased', 'B') : (0.65, 0.01)}
+            splitConstr['acceptance']['2012'] = {('hlt1_excl_biased_dec', 'exclB') : (0.65, 0.01),
+                                                 ('hlt2_biased', 'B') : (0.65, 0.01)}
         if runPeriods in [ '2011', '2012' ] :
             self['externalConstr']['betaTimeEff']      = splitConstr['betaTimeEff']     [runPeriods]
             self['externalConstr']['tres_placeholder'] = splitConstr['tres_placeholder'][runPeriods]
@@ -444,6 +451,8 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
             self['externalConstr']['sf_mean_slope']    = splitConstr['sf_mean_slope']   [runPeriods]
             self['externalConstr']['sf_sigma_offset']  = splitConstr['sf_sigma_offset'] [runPeriods]
             self['externalConstr']['sf_sigma_slope']   = splitConstr['sf_sigma_slope']  [runPeriods]
+            if self['timeEffType'] == 'fit':
+                self['externalConstr']['acceptance']   = splitConstr['acceptance'][runPeriods]
         else :
             self['splitParams']['runPeriod'] = [ ]
             for par, vals in splitConstr.iteritems() :
@@ -805,8 +814,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             self['simulPdf'] = SimultaneousPdf(  fullPdf.GetName() + '_simul'
                                                , MasterPdf       = fullPdf
                                                , SplitCategories = [ pars[1] for pars in splitPars ]
-                                               , SplitParameters = [ pars[0] for pars in splitPars ]
-                                              )
+                                               , SplitParameters = [ pars[0] for pars in splitPars ] )
 
             # set time resolution models
             from ROOT import RooArgSet, RooArgList
@@ -1042,15 +1050,47 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         # Time res model constraints include those form the acceptance
         from P2VV.Parameterizations.TimePDFs import Single_Exponent_Time
-        simple_time = Single_Exponent_Time(Name = 'sig_t', time = self['obsSetP2VV'][0],
-                                           resolutionModel = self['timeResModels']['prototype'].model(),
+        from P2VV.Parameterizations.TimeResolution import Truth_TimeResolution
+        truth_res = Truth_TimeResolution(time = self['obsSetP2VV'][0])
+        simple_time = Single_Exponent_Time(Name = 'constraint_time', time = self['obsSetP2VV'][0],
+                                           resolutionModel = truth_res.model(),
                                            tau = self['lifetimeParams']['MeanLifetime'])
+        simple_time_pdf = simple_time.pdf()
         acc_settings = externalConstr.pop('acceptance', None)
-        if acc_settings and simulPdf:
+        if simulPdf:
             splitCat = simulPdf.indexCat()
             from ROOT import RooArgList
             inputCats = RooArgList(splitCat) if splitCat.isFundamental() else splitCat.inputCatList()
+
+        if acc_settings and simulPdf:
             splitAccCats = [inputCats.find(c if type(c) == str else c.GetName()) for c in acc_settings.categories()]
+
+            ## Create a simultaneous pdf for the constraints.
+            from P2VV.Utilities.General import createSplitParsList
+
+            splitSet = set(k.GetName() for k in splitParsDict.iterkeys())
+            accSplitDict = dict((var, set(splitAccCats)) for var in simple_time_pdf.getVariables() if var.GetName() in splitSet)
+            accSplitPars = createSplitParsList(accSplitDict)
+
+            # build simultaneous PDF
+            from P2VV.RooFitWrappers import SimultaneousPdf
+            simul_time_pdf = SimultaneousPdf(simple_time_pdf.GetName() + '_simul',
+                                             MasterPdf       = simple_time_pdf,
+                                             SplitCategories = [pars[1] for pars in accSplitPars],
+                                             SplitParameters = [pars[0] for pars in accSplitPars])
+
+            from ROOT import RooRealVar
+            simulVars = simul_time_pdf.getVariables()
+            for v in simulPdf.getVariables():
+                if v.getAttribute('Observable'):
+                    continue
+                if not isinstance(v, RooRealVar):
+                    continue
+                sv = simulVars.find(v.GetName())
+                if sv:
+                    sv.setVal(v.getVal())
+                    sv.setError(v.getError())
+                            
             acc_constraints = {}
             for (key, model), state in zip(self['timeResModels'].iteritems(), splitCat):
                 if key == 'prototype':
@@ -1059,10 +1099,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     continue
                 sk = tuple((cat.GetName(), cat.getLabel()) for cat in splitAccCats)
                 values = acc_settings.getSettings(sk)
-                # I use the pdf before splitting here. I think this is a valid
-                # approximation. If not, we need to somehow construct a data
-                # weighted average over the categories a la ProjectWData
-                ac = model.build_constraints(simple_time.pdf(), values)
+                # I use a simple PDF with only the average lifetime here. I
+                # think this is a valid approximation.
+                ac = model.build_constraints(simul_time_pdf, values)
                 for constraint in ac:
                     if constraint.GetName() not in acc_constraints:
                         acc_constraints[constraint.GetName()] = constraint
@@ -1070,8 +1109,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         elif acc_settings:
             acceptance = timeResModels['prototype']
             if hasattr(acceptance, 'build_constraints'):
-                constraints |= set(acceptance.build_constraints(simple_time.pdf(), acc_settings))
-                
+                constraints |= set(acceptance.build_constraints(simple_time_pdf, acc_settings))
+
         ws = pdf.ws()
         pdfVars = pdf.getVariables()
 
@@ -1862,10 +1901,10 @@ def multiplyByTimeAcceptance( pdf, self, **kwargs ) :
         assert all( cat.GetName() not in indexCatNames for cat in [ hlt1ExclB, hlt2B, hlt2UB ] )\
                , 'P2VV - ERROR: multiplyByTimeAcceptance(): acceptance function depends on the index category of the simultaneous mother PDF'
 
-        hists = {  hlt1ExclB : {  'exclB'    : { 'histogram' : 'hlt1_shape', 'average' : ( 6.285e-01, 1.633e-02 ) }
+        hists = {  hlt1ExclB : {  'exclB'    : { 'histogram' : histExclBName, 'average' : ( 6.285e-01, 1.633e-02 ) }
                                 , 'notExclB' : { 'bins'      : time.getRange(), 'heights' : [0.5]                 }
                                }
-                 , hlt2B     : { 'B'         : { 'histogram' : 'hlt2_shape', 'average' : ( 6.3290e-01, 1.65e-02 ) } }
+                 , hlt2B     : { 'B'         : { 'histogram' : histUBName, 'average' : ( 6.3290e-01, 1.65e-02 ) } }
                  , hlt2UB    : { 'UB'        : { 'bins'      : time.getRange(), 'heights' : [0.5]                 } }
                 }
 
