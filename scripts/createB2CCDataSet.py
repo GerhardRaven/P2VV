@@ -2,7 +2,7 @@
 ## script settings ##
 #####################
 
-#nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/2011_2012_dv33r6p1_s20_20131031_tupleB_add.root'
+#nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs2JpsiPhi_2011_2012_s20_dv33r6p1_20131217_tupleB_selTrig.root'
 nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_w0.root'
 nTupleName       = 'DecayTree'
 dataSetsFilePath = 'temp.root' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_6KKMassBins_2TagCats.root'
@@ -15,7 +15,7 @@ parFileOut       = ''
 simulation       = False
 weightName       = 'wMC'
 runPeriods       = [ 2011, 2012 ]
-triggerSel       = 'noSelection' # 'paper2012' # 'HLT1Unbiased' # 'paper2012'
+triggerSel       = 'noSelection' # 'timeEffFit' # 'paper2012' # 'HLT1Unbiased' # 'paper2012'
 dataCuts         = 'noSelection' # 'nominal2011'
 addCuts          = '' # 'runPeriod == 2011 && hlt1_excl_biased_dec == 1' # 'wMC > 0.'
 dataSample       = '(bkgcat==0 || bkgcat==50)' if simulation else ''
@@ -215,29 +215,29 @@ massRanges = dict(  LeftSideBand  = ( 5200., 5300. )
                  )
 
 if addTaggingObs and addTaggingObs[0] == 2 :
-    tagCatsOS = [  ( 'Untagged', 0, 0.5000001 )
-                 , ( 'Tagged',   1, 0.4999999 )
+    tagCatsOS = [  ( 'Untagged', 0, 0.500000001 )
+                 , ( 'Tagged',   1, 0.499999999 )
                 ]
 elif addTaggingObs and addTaggingObs[0] > 2 :
-    tagCatsOS = [  ( 'Untagged', 0, 0.5000001 )
-                 , ( 'TagCat1',  1, 0.4999999 )
-                 , ( 'TagCat2',  2, 0.38      )
-                 , ( 'TagCat3',  3, 0.31      )
-                 , ( 'TagCat4',  4, 0.24      )
-                 , ( 'TagCat5',  5, 0.17      )
+    tagCatsOS = [  ( 'Untagged', 0, 0.500000001 )
+                 , ( 'TagCat1',  1, 0.499999999 )
+                 , ( 'TagCat2',  2, 0.38        )
+                 , ( 'TagCat3',  3, 0.31        )
+                 , ( 'TagCat4',  4, 0.24        )
+                 , ( 'TagCat5',  5, 0.17        )
                 ]
 else :
     tagCatsOS = [ ]
 
 if addTaggingObs and addTaggingObs[1] == 2 :
-    tagCatsSS = [  ( 'Untagged', 0, 0.5000001 )
-                 , ( 'Tagged',   1, 0.4999999 )
+    tagCatsSS = [  ( 'Untagged', 0, 0.500000001 )
+                 , ( 'Tagged',   1, 0.499999999 )
                 ]
 elif addTaggingObs and addTaggingObs[1] > 2 :
-    tagCatsSS = [  ( 'Untagged', 0, 0.5000001 )
-                 , ( 'TagCat1',  1, 0.4999999 )
-                 , ( 'TagCat2',  2, 0.32      )
-                 , ( 'TagCat3',  3, 0.25      )
+    tagCatsSS = [  ( 'Untagged', 0, 0.500000001 )
+                 , ( 'TagCat1',  1, 0.499999999 )
+                 , ( 'TagCat2',  2, 0.32        )
+                 , ( 'TagCat3',  3, 0.25        )
                 ]
 else :
     tagCatsSS = [ ]
@@ -316,6 +316,13 @@ dataSets = dict( pre = ( dataTree.buildDataSet( Observables = obsSetPreDS, Name 
 print 'P2VV - INFO: createB2CCDataSet: data set from n-tuple:\n' + ' ' * 13,
 dataSets['pre'][0].Print()
 print
+
+#selDataFile = TFile.Open( '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs2JpsiPhi_2011_2012_s20_dv33r6p1_20131217_tupleB_selTrig.root', 'RECREATE' )
+#selDataTree = dataTree.CopyTree(ntupleCuts)
+#print 'P2VV - INFO: selected number of entries in tree = %d' % selDataTree.GetEntries()
+#selDataFile.Write()
+#selDataFile.Close()
+#assert False
 
 # create KK mass binning
 from array import array

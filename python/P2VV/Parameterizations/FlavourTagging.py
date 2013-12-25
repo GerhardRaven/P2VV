@@ -78,7 +78,7 @@ def getTagCatParamsFromData( data, estWTagName, tagCats = [ ], numSigmas = 1., S
 
         # determine binning in estimated wrong-tag probability from data
         bin = 0
-        binUpperEdges = [ 0.4999999 ]
+        binUpperEdges = [ 0.499999999 ]
         while True :
             bin += 1
 
@@ -886,11 +886,11 @@ class Linear_TaggingCategories( TaggingCategories ) :
         # get tagging category binning in estimated wrong-tag probability (eta)
         self._tagCats = kwargs.pop( 'TagCats', None )
         if not self._tagCats :
-            self._tagCats = [  ( 'Untagged', 0, 0.5000001, 0.50, 0.50, 0., 0.65,  0. )
-                             , ( 'Tagged',   1, 0.4999999, 0.40, 0.40, 0., 0.35,  0. )
+            self._tagCats = [  ( 'Untagged', 0, 0.500000001, 0.50, 0.50, 0., 0.65,  0. )
+                             , ( 'Tagged',   1, 0.499999999, 0.40, 0.40, 0., 0.35,  0. )
                             ] if self._estWTag else \
-                            [  ( 'Untagged', 0, 0.5000001, 0.50, 0.50, 0., 0.65,  0. )
-                             , ( 'TagCat1',  1, 0.4999999, 0.44, 0.44, 0., 0.24,  0. )
+                            [  ( 'Untagged', 0, 0.500000001, 0.50, 0.50, 0., 0.65,  0. )
+                             , ( 'TagCat1',  1, 0.499999999, 0.44, 0.44, 0., 0.24,  0. )
                              , ( 'TagCat2',  2, 0.38,      0.35, 0.35, 0., 0.062, 0. )
                              , ( 'TagCat3',  3, 0.31,      0.28, 0.28, 0., 0.032, 0. )
                              , ( 'TagCat4',  4, 0.24,      0.21, 0.21, 0., 0.012, 0. )
