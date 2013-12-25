@@ -7,7 +7,7 @@ parser = optparse.OptionParser(usage = 'usage: %prog year')
 (options, args) = parser.parse_args()
 
 prefix = '/stuff/PhD' if os.path.exists('/stuff') else '/bfys/raaij'
-input_data = {'Combined' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_2012_s20_dv33r6p1_20131107_tupleB_add.root'),
+input_data = {'Combined' : os.path.join(prefix, 'p2vv/data/P2VVDataSets20112012Reco14_I2MassNoMC_6KKMassBins_2TagCats_newTagging_trig.root'),
               '2012' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2012_s20r0p1_dv33r6p1_20131107_tupleB_add.root'),
               'MC2012' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC2012_ntupleB_20130904_add.root')}
 
@@ -26,7 +26,7 @@ from P2VV.RooFitWrappers import *
 from itertools import product
 from ROOT import RooCBShape as CrystalBall
 from P2VV.Parameterizations.GeneralUtils import valid_combinations
-from P2VV.Load import RooFitOutput
+#from P2VV.Load import RooFitOutput
 
 from ROOT import RooMsgService
 ## RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.ObjectHandling))
@@ -45,9 +45,9 @@ st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMa
 # Categories
 hlt1_biased = Category('hlt1_biased', States = {'biased' : 1, 'not_biased' : 0}, Observable = True)
 hlt1_unbiased = Category('hlt1_unbiased_dec', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
-hlt1_excl_biased_dec = Category('hlt1_excl_biased_dec', States = {'excl_biased' : 1, 'unbiased' : 0}, Observable = True)
-hlt2_biased = Category('hlt2_biased', States = {'biased' : 1, 'not_biased' : 0}, Observable = True)
-hlt2_unbiased = Category('hlt2_unbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
+hlt1_excl_biased_dec = Category('hlt1_excl_biased_dec', States = {'exclB' : 1, 'notExclB' : 0}, Observable = True)
+hlt2_biased = Category('hlt2_biased', States = {'B' : 1, 'notB' : 0}, Observable = True)
+hlt2_unbiased = Category('hlt2_unbiased', States = {'UB' : 1, 'notUB' : 0}, Observable = True)
 hlt2_excl_biased = Category('hlt2_excl_biased', States = {'excl_biased' : 1, 'unbiased' : 0}, Observable = True)
 
 ## project_vars = [hlt1_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased, st]
@@ -134,14 +134,14 @@ input_file = os.path.join(base_location, 'data/start_values.root')
 
 ## hists = {hlt1_excl_biased_dec : {'excl_biased' : {'histogram' : 'hlt1_shape', 'average' : (6.285e-01, 1.633e-02)},
 ##                                  'unbiased' : { 'bins' : t.getRange(), 'heights' : [0.5]}}}
-hists = {hlt1_excl_biased_dec : {'excl_biased' : {'histogram' : 'hlt1_shape', 'average' : (6.285e-01, 1.633e-02)},
-                                 'unbiased' : { 'bins' : t.getRange(), 'heights' : [0.7]}},
-         hlt2_biased : { 'biased' : {'histogram' : 'hlt2_shape', 'average' : (6.3290e-01, 1.65e-02)}},
-         hlt2_unbiased : { 'unbiased' : { 'bins' : t.getRange(), 'heights' : [0.9]}}}
+hists = {hlt1_excl_biased_dec : {'exclB' : {'histogram' : 'hlt1_shape', 'average' : (6.285e-01, 1.633e-02)},
+                                 'notExclB' : { 'bins' : t.getRange(), 'heights' : [0.7]}},
+         hlt2_biased : { 'B' : {'histogram' : 'hlt2_shape', 'average' : (6.3290e-01, 1.65e-02)}},
+         hlt2_unbiased : { 'UB' : { 'bins' : t.getRange(), 'heights' : [0.5]}}}
 
 from P2VV.Parameterizations.TimeAcceptance import Paper2012_csg_TimeAcceptance as TimeAcceptance
 acceptance = TimeAcceptance(time = t, ResolutionModel = sig_tres, Input = input_file,
-                            Histograms = hists, Fit = True, Cache = True)
+                            Histograms = hists, Fit = True, Cache = False)
 pdf = Single_Exponent_Time(Name = 'pdf', time = t, resolutionModel = acceptance.model())
 pdf = pdf.pdf()
 pdf.Print('t')
@@ -155,65 +155,72 @@ tree_name = 'DecayTree'
 fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Optimize = 1,
                Strategy = 2, Minimizer = 'Minuit2')
 
-valid_definition = [[(hlt1_excl_biased_dec, 'excl_biased'), (hlt1_excl_biased_dec, 'unbiased')], [(hlt2_biased, 'biased'), (hlt2_unbiased, 'unbiased')]]
+valid_definition = [[(hlt1_excl_biased_dec, 'exclB'), (hlt1_excl_biased_dec, 'notExclB')], [(hlt2_biased, 'B'), (hlt2_unbiased, 'UB')]]
 valid = valid_combinations(valid_definition)
 
 data = None
 if ntuple_file:
-    data = readData(ntuple_file, tree_name, cuts = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased_dec == 1) && (hlt2_biased == 1 || hlt2_unbiased == 1)',
-                    NTuple = True, observables = observables)
+    from ROOT import TFile
+    input_file = TFile(ntuple_file)
+    if input_file.FindKey(tree_name):
+        input_file.Close()
+        data = readData(ntuple_file, tree_name, cuts = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased_dec == 1) && (hlt2_biased == 1 || hlt2_unbiased == 1)',
+                        NTuple = True, observables = observables)
 
-    for i in range(3):
-        mass_result = mass_pdf.fitTo(data, **fitOpts)
-        if mass_result.status() == 0:
-            break
-    assert(mass_result.status() == 0)
-
-    # Plot mass pdf
-    from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
-    from ROOT import TCanvas
-    canvas = TCanvas('mass_canvas', 'mass_canvas', 600, 530)
-    obs = [m]
-    for (p,o) in zip(canvas.pads(len(obs)), obs):
-        from P2VV.Utilities.Plotting import plot
-        pdfOpts  = dict()
-        plot(p, o, pdf = mass_pdf, data = data
-             , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
-             , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
-             , plotResidHist = True
-             , components = { 'bkg_*'     : dict( LineColor = kRed,   LineStyle = kDashed ),
-                              ## 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed ),
-                              'sig_*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
-                              }
-             )
-    # Do the sWeights
-    # make sweighted dataset. TODO: use mumu mass as well...
-    from P2VV.Utilities.SWeights import SData
-
-    for p in mass_pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
-    splot = SData(Pdf = mass_pdf, Data = data, Name = 'MassSplot')
-    data = splot.data('signal')
-    ## psi_sdata = splot.data('psi_background')
-    bkg_sdata = splot.data('background')
-
-    if 'MC' in args[0]:
-        import random
-        ## Set more events to be unbiased, so we get some HLT2 exclusive biased
-        ## sample.
-        new_data = RooDataSet("new_data", "new_data", data.get())
-        for i, obs in enumerate(data):
-            b2 = obs.find('hlt2_biased')
-            ub2 = obs.find('hlt2_unbiased')
-            eb2 = obs.find('hlt2_excl_biased')
-            if b2.getIndex() == 0:
-                pass
-            elif random.random() < 0.5:
-                ub2.setIndex(0)
-                eb2.setIndex(1)
-            new_data.add(obs)
-            if i >= 50000:
+        for i in range(3):
+            mass_result = mass_pdf.fitTo(data, **fitOpts)
+            if mass_result.status() == 0:
                 break
+        assert(mass_result.status() == 0)
 
+        # Plot mass pdf
+        from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
+        from ROOT import TCanvas
+        canvas = TCanvas('mass_canvas', 'mass_canvas', 600, 530)
+        obs = [m]
+        for (p,o) in zip(canvas.pads(len(obs)), obs):
+            from P2VV.Utilities.Plotting import plot
+            pdfOpts  = dict()
+            plot(p, o, pdf = mass_pdf, data = data
+                 , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack)
+                 , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
+                 , plotResidHist = True
+                 , components = { 'bkg_*'     : dict( LineColor = kRed,   LineStyle = kDashed ),
+                                  ## 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed ),
+                                  'sig_*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
+                                  }
+                 )
+        # Do the sWeights
+        # make sweighted dataset. TODO: use mumu mass as well...
+        from P2VV.Utilities.SWeights import SData
+
+        for p in mass_pdf.Parameters() : p.setConstant( not p.getAttribute('Yield') )
+        splot = SData(Pdf = mass_pdf, Data = data, Name = 'MassSplot')
+        data = splot.data('signal')
+        ## psi_sdata = splot.data('psi_background')
+        bkg_sdata = splot.data('background')
+
+        if 'MC' in args[0]:
+            import random
+            ## Set more events to be unbiased, so we get some HLT2 exclusive biased
+            ## sample.
+            new_data = RooDataSet("new_data", "new_data", data.get())
+            for i, obs in enumerate(data):
+                b2 = obs.find('hlt2_biased')
+                ub2 = obs.find('hlt2_unbiased')
+                eb2 = obs.find('hlt2_excl_biased')
+                if b2.getIndex() == 0:
+                    pass
+                elif random.random() < 0.5:
+                    ub2.setIndex(0)
+                    eb2.setIndex(1)
+                new_data.add(obs)
+                if i >= 50000:
+                    break
+    else:
+        dataset_name = 'JpsiKK_sigSWeight'
+        data = input_file.Get(dataset_name)
+        data = data.reduce('runPeriod == runPeriod::p2012')
 else:
     ## Generate
     from P2VV.Load import MultiCatGen
@@ -222,11 +229,16 @@ else:
     cut = ' || '.join('(' + ' && '.join('{0} == {0}::{1}'.format(c.GetName(), s) for c, s in comb) + ')' for comb in valid)
     data = data.reduce(Cut = cut, EventRange = (0, 30000))
 
+    
 # Make PDF without acceptance for the constraints
-pdf_no_acc = Single_Exponent_Time(Name = 'pdf_no_acc', time = t, resolutionModel = sig_tres.model())
+from P2VV.Parameterizations.TimeResolution import Truth_TimeResolution
+truth_res = Truth_TimeResolution(time = t)
+
+pdf_no_acc = Single_Exponent_Time(Name = 'pdf_no_acc', time = t, resolutionModel = truth_res.model())
 pdf_no_acc = pdf_no_acc.pdf()
 constraints = []
 from itertools import chain
+acc_average = {}
 for c, s in chain.from_iterable([zip([c] * c.numTypes(), [s.GetName() for s in c]) for c in hists.iterkeys()]):
     if not s in hists[c]:
         continue
@@ -234,7 +246,9 @@ for c, s in chain.from_iterable([zip([c] * c.numTypes(), [s.GetName() for s in c
     if len(heights) <= 1:
         continue
     val, err = hists[c][s]['average']
-    constraints.append(acceptance.build_constraint(pdf_no_acc, heights, c, s, val, err))
+    acc_average[(c.GetName(), s)] = (val, err)
+
+constraints.extend(acceptance.build_constraints(pdf_no_acc, acc_average))
 
 pdf.setExternalConstraints(pdf.ExternalConstraints() | set(constraints))
 
@@ -242,7 +256,7 @@ pdf.setExternalConstraints(pdf.ExternalConstraints() | set(constraints))
 print 'fitting data'
 ## from profiler import profiler_start, profiler_stop
 ## profiler_start("acceptance.log")
-result = pdf.fitTo(data, **fitOpts)
+result = pdf.fitTo(data, SumW2Error = False, **fitOpts)
 ## profiler_stop()
 
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
@@ -318,26 +332,26 @@ def plot_shape(p, o, shape, errorOpts = {}, pdfOpts = {}):
     frame.Draw()
     __frames.append(frame)
     
-## shapes = res_model.shapes()
-## eff_canvas = TCanvas('eff_canvas', 'eff_canvas', 1000, 500)
-## from ROOT import kYellow, kOrange
-## for p, shape in zip(eff_canvas.pads(len(shapes), 1), shapes):
-##     plot_shape(p, t, shape, errorOpts = {'result' : result, 3 : kYellow, 1 : kOrange})
+shapes = acceptance.shapes()
+eff_canvas = TCanvas('eff_canvas', 'eff_canvas', 1000, 500)
+from ROOT import kYellow, kOrange
+for p, shape in zip(eff_canvas.pads(len(shapes), 1), shapes):
+    plot_shape(p, t, shape, errorOpts = {'result' : result, 3 : kYellow, 1 : kOrange})
 
-## output = {'hlt1_shape' : 'hlt1_excl_biased_dec_excl_biased_bin',
-##           'hlt2_shape' : 'hlt2_biased_biased_bin'}
-## output_file = TFile.Open('efficiencies.root', 'recreate')
+output = {'hlt1_shape' : 'hlt1_excl_biased_dec_exclB_bin',
+          'hlt2_shape' : 'hlt2_biased_B_bin'}
+output_file = TFile.Open('efficiencies.root', 'recreate')
 
-## allVars = w.allVars()
-## from ROOT import TH1D
-## for name, pat in output.iteritems():
-##     n = len(biased_bins)
-##     heights = [v for v in allVars if v.GetName().find(pat) != -1]
-##     heights = sorted(heights, key = lambda v: int(v.GetName().split('_', 1)[-1]))
-##     v = [(h.getVal(), h.getError()) for h in heights]
-##     hist = TH1D(name, name, n - 1, biased_bins)
-##     for i in range(1, n):
-##         hist.SetBinContent(i, v[i - 1][0])
-##         hist.SetBinError(i, v[i - 1][1])
-##     output_file.WriteTObject(hist)
-## output_file.Close()
+allVars = w.allVars()
+from ROOT import TH1D
+for name, pat in output.iteritems():
+    n = len(biased_bins)
+    heights = [v for v in allVars if v.GetName().find(pat) != -1]
+    heights = sorted(heights, key = lambda v: int(v.GetName().split('_', 1)[-1]))
+    v = [(h.getVal(), h.getError()) for h in heights]
+    hist = TH1D(name, name, n - 1, biased_bins)
+    for i in range(1, n):
+        hist.SetBinContent(i, v[i - 1][0])
+        hist.SetBinError(i, v[i - 1][1])
+    output_file.WriteTObject(hist)
+output_file.Close()

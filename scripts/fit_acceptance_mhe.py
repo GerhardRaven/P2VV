@@ -408,15 +408,20 @@ def plot_shape(p, o, shape, errorOpts = {}, pdfOpts = {}):
         entries.reverse()
         for x, colour in entries:
             shape.plotOn(frame, VisualizeError = (r, x), FillColor = colour, **errorOpts)
+    
     shape.plotOn(frame, **pdfOpts)
     frame.Draw()
     __frames.append(frame)
     
 shapes = res_model.shapes()
-eff_canvas = TCanvas('eff_canvas', 'eff_canvas', 1000, 500)
+
 from ROOT import kYellow, kOrange
-for p, shape in zip(eff_canvas.pads(len(shapes), 1), shapes):
-    plot_shape(p, t, shape, errorOpts = {'result' : result, 3 : kYellow, 1 : kOrange})
+__canvases = []
+for y, year in zip(['2011', '2012'], shapes):
+    eff_canvas = TCanvas(y, y, 1000, 500)
+    __canvases.append(eff_canvas)
+    for p, shape in zip(eff_canvas.pads(len(shapes), 1), year):
+            plot_shape(p, time, shape, errorOpts = {'result' : fitResult, 3 : kYellow, 1 : kOrange})
 
 output = {'hlt1_shape' : 'hlt1_excl_biased_dec_excl_biased_bin',
           'hlt2_shape' : 'hlt2_biased_biased_bin'}

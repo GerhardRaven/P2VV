@@ -128,8 +128,5 @@ result = ln.fitTo(psi_sdata, **fitOpts)
 # Plot
 canvas = TCanvas('canvas', 'canvas', 900, 600)
 p = canvas.cd(1)
-plot(p, st, pdf = ln, data = psi_sdata
-     , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack, Binning = 60)
-     , pdfOpts  = dict(LineWidth = 4)
-     )
+plot(p, st, pdf = ln, data = psi_sdata, dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack, Binning = 60), pdfOpts  = dict(LineWidth = 4))
 
