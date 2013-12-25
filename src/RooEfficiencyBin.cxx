@@ -37,36 +37,122 @@ RooEfficiencyBin::RooEfficiencyBin(const char *name, const char *title)
 RooEfficiencyBin::RooEfficiencyBin(const RooEfficiencyBin& other, const char* name)
    : RooAbsReal(other,name)
 { 
-   for (std::map<RooRealProxy*, bool>::const_iterator it = other._variables.begin(),
-           end = other._variables.end(); it != end; ++it) {
-      RooRealProxy* proxy = new RooRealProxy(it->first->GetName(), this, *(it->first));
-      _variables.insert(make_pair(proxy, it->second));
+   if (other._categories.empty()) {
+      for (varMap_t::const_iterator it = other._variables.begin(),
+              end = other._variables.end(); it != end; ++it) {
+         RooAbsReal* real = static_cast<RooAbsReal*>(it->first->absArg());
+         getProxy(real, it->second, it->first);
+      }
+   } else {
+      for (catMap_t::const_iterator it = other._categories.begin(),
+              end = other._categories.end(); it != end; ++it) {
+         RooAbsCategory* cat = static_cast<RooAbsCategory*>(it->first->absArg());
+         for (stateMap_t::const_iterator sit = it->second.begin(),
+              send = it->second.end(); sit != send; ++sit) {
+            RooAbsReal* real = static_cast<RooAbsReal*>(sit->second.first->absArg());
+            getProxy(cat, sit->first, real, sit->second.second, it->first, sit->second.first);
+         }
+      }
    }
 } 
 
 //_____________________________________________________________________________
 RooEfficiencyBin::~RooEfficiencyBin()
 {
-  for (std::map<RooRealProxy*, bool>::const_iterator it = _variables.begin(),
-           end = _variables.end(); it != end; ++it) {
+  for (varMap_t::const_iterator it = _variables.begin(),
+          end = _variables.end(); it != end; ++it) {
      delete it->first;
   }
-  _variables.clear();
+  for (catMap_t::const_iterator it = _categories.begin(),
+          end = _categories.end(); it != end; ++it) {
+     delete it->first;
+  }
 }
 
 //_____________________________________________________________________________
 void RooEfficiencyBin::addEntry(RooAbsReal* var, const bool flag)
 {
-   std::string name = var->GetName();
-   name += "_proxy";
-   RooRealProxy* proxy = new RooRealProxy(name.c_str(), name.c_str(), this, *var);
-   _variables.insert(make_pair(proxy, flag));
+   getProxy(var, flag);
+}
+
+//_____________________________________________________________________________
+void RooEfficiencyBin::addEntry(RooAbsCategory* cat, const std::string& state,
+                                RooAbsReal* var, const bool flag)
+{
+   getProxy(cat, state, var, flag);
+}
+
+//_____________________________________________________________________________
+RooCategoryProxy* RooEfficiencyBin::getProxy(RooAbsCategory* cat, const std::string& state,
+                                             RooAbsReal* var, const bool flag,
+                                             const RooCategoryProxy* ocproxy,
+                                             const RooRealProxy* ovproxy)
+{
+   RooRealProxy* vproxy = getProxy(var, flag, ovproxy);
+
+   // Find or create new proxy for category
+   catMap_t::iterator cit = _categories.begin(), cend = _categories.end();
+   for(; cit != cend; ++cit) {
+      if (!strcmp(cit->first->arg().GetName(), cat->GetName())) {
+         break;
+      }
+   }
+
+   RooCategoryProxy* cproxy = 0;
+   if (cit != cend) {
+      cit->second.insert(make_pair(state, make_pair(vproxy, flag)));
+   } else {
+      std::string name = cat->GetName();
+      name += "_proxy";
+      if (ocproxy) {
+         cproxy = new RooCategoryProxy(name.c_str(), this, *ocproxy);
+      } else {
+         cproxy = new RooCategoryProxy(name.c_str(), name.c_str(), this, *cat);
+      }
+      stateMap_t states;
+      states.insert(make_pair(state, make_pair(vproxy, flag)));
+      _categories.insert(make_pair(cproxy, states));
+   }
+   return cproxy;
+}
+
+//_____________________________________________________________________________
+RooRealProxy* RooEfficiencyBin::getProxy(RooAbsReal* var, const bool flag,
+                                         const RooRealProxy* oproxy)
+{
+   // Find or create proxy for variable
+   varMap_t::iterator vit = _variables.begin(), vend = _variables.end();
+   for(; vit != vend; ++vit) {
+      if (!strcmp(vit->first->arg().GetName(), var->GetName())) {
+         break;
+      }
+   }
+
+   RooRealProxy* vproxy = 0;
+   if (vit != vend) {
+      vproxy = vit->first;
+   } else {
+      std::string name = var->GetName();
+      name += "_proxy";
+      if (oproxy) {
+         vproxy = new RooRealProxy(name.c_str(), this, *oproxy);
+      } else {
+         vproxy = new RooRealProxy(name.c_str(), name.c_str(), this, *var);
+      }
+      _variables.insert(make_pair(vproxy, flag));
+   }
+   return vproxy;
 }
 
 //_____________________________________________________________________________
 Double_t RooEfficiencyBin::evaluate() const 
 { 
-   // cout << "RooEfficiencyBin::" << GetName() << "::evaluate:" << endl;
+   return _categories.empty() ? evaluateVars() : evaluateCats();
+} 
+
+//_____________________________________________________________________________
+Double_t RooEfficiencyBin::evaluateVars() const 
+{ 
    Double_t val = 1;
    for (std::map<RooRealProxy*, bool>::const_iterator it = _variables.begin(),
            end = _variables.end(); it != end; ++it) {
@@ -79,4 +165,24 @@ Double_t RooEfficiencyBin::evaluate() const
       // cout << it->first->arg().GetName() << " " << it->second << " " << bin_val << " " << val << endl;
    }
    return val;
-} 
+
+}
+
+//_____________________________________________________________________________
+Double_t RooEfficiencyBin::evaluateCats() const 
+{ 
+   Double_t val = 1;
+   for (catMap_t::const_iterator cit = _categories.begin(),
+           cend = _categories.end(); cit != cend; ++cit) {
+      const stateMap_t& stateMap = cit->second;
+      stateMap_t::const_iterator sit = stateMap.find(cit->first->arg().getLabel());
+      assert(sit != stateMap.end());
+      double bin_val = *(sit->second.first);
+      if (sit->second.second) {
+         val *= bin_val;
+      } else {
+         val *= (1. - bin_val);
+      }
+   }
+   return val;
+}

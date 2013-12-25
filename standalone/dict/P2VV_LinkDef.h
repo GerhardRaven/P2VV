@@ -48,7 +48,6 @@
 #pragma link C++ function addIntegerToTree;
 #pragma link C++ function addCategoryToTree;
 #pragma link C++ function addVertexErrors;
-#pragma link C++ function sigmaFromFT;
 #pragma link C++ function hessian;
 #pragma link C++ function hessian_with_errors;
 #pragma link C++ function gradient;
@@ -70,6 +69,9 @@
 #pragma link C++ class std::pair<RooRealProxy*, bool>;
 #pragma link C++ class std::pair<double, TString>;
 #pragma link C++ class std::pair<RooCategoryProxy*, std::string>;
+#pragma link C++ class std::pair<std::string, std::pair<RooRealProxy*,bool> >;
+#pragma link C++ class std::map<std::string, std::pair<RooRealProxy*, bool> >;
+#pragma link C++ class std::map<RooCategoryProxy*, std::map<std::string, std::pair<RooRealProxy*, bool> > >;
 
 #pragma link C++ class std::map<Int_t, MultiHistEntry*>;
 #pragma link C++ class std::pair<Int_t, MultiHistEntry*>;

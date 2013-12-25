@@ -138,26 +138,29 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
         from ROOT import TFile
         self._parseArg('time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True,
                        MinMax = (0.3, 14))
-        histograms = kwargs.pop('Histograms')
+        self._histograms = kwargs.pop('Histograms')
         input_file = kwargs.pop('Input', 'acceptance.root')
-        model = kwargs.pop('ResolutionModel')
+        self.__model = kwargs.pop('ResolutionModel')
         name = kwargs.pop('Name', 'Paper2012_BinnedFunAcceptance')
+        fit = kwargs.pop('Fit', False)
         namePF = self.getNamePrefix(kwargs)
-
+        
         with TFile.Open(input_file) as acceptance_file :
             if not acceptance_file:
                 raise ValueError, "Cannot open histogram file %s" % input_file
             print 'P2VV - INFO: using time efficiency histograms file "%s"' % input_file
             # transform histograms in map of cat state -> histo name
             # assume only one category for now (compositing could be implemented later)
-            assert len(histograms)==1
-            for (cat,v) in histograms.iteritems() : pass # grab the first and only k,v pair in this dictionary
-            histograms = dict( (s.GetName(), v[s.GetName()]['histogram'] ) for s in cat )
-            for (s,h) in histograms.iteritems() :
-                    hist = acceptance_file.Get(h)
-                    if not hist : raise ValueError, 'Failed to get histrogram %s from file %s' % (h, input_file)
+            for (cat, v) in self._histograms.iteritems():
+                for (s, info) in v.iteritems() :
+                    hist = info.get('histogram', None)
+                    if not hist:
+                        continue
+                    hist = acceptance_file.Get(info['histogram'])
+                    if not hist : raise ValueError, ('Failed to get histrogram %s from file %s' \
+                                                     % (info['histogram'], input_file))
                     hist.SetDirectory(0) # disconnect self._hist from file... otherwise it is deleted when file is closed
-                    histograms[s] = hist
+                    info['histogram'] = hist
 
         parameterization = kwargs.pop('Parameterization','CubicSplineGaussModel')
         assert parameterization in [ 'CubicSplineGaussModel','EffResModel' ]
@@ -172,15 +175,52 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
             print 'WARNING  WARNING  WARNING  WARNING  WARNING  WARNING  WARNING WARNING WARNING WARNING WARNING'
             print 'WARNING  WARNING  WARNING  WARNING  WARNING  WARNING  WARNING WARNING WARNING WARNING WARNING'
             from P2VV.RooFitWrappers import EffResModel as AcceptanceModel
-        self._shape = self._parseArg( name + '_shape', kwargs, ObsVar = self._time, Category = cat, Histograms = histograms
-                                     , ObjectType = 'BinnedFun' )
-        TimeAcceptance.__init__(self, Acceptance = AcceptanceModel( Name = namePF + name,
-                                                                   Efficiency = self._shape,
-                                                                   ResolutionModel = model['model'],
-                                                                   ConditionalObservables = model.ConditionalObservables() | set( [ cat ] ),
-                                                                   ExternalConstraints = model.ExternalConstraints()))
+        self._shape = self._parseArg(name + '_shape', kwargs, ParNamePrefix = namePF, Fit = fit,
+                                     ObsVar = self._time, Histograms = self._histograms, ObjectType = 'BinnedFun')
+        acceptance = AcceptanceModel(Name = namePF + name, ParNamePrefix = namePF,
+                                     Efficiency = self._shape, ResolutionModel = self.__model['model'],
+                                     ConditionalObservables = self.__model.ConditionalObservables() | set( self._histograms.iterkeys()),
+                                     ExternalConstraints = self.__model.ExternalConstraints())
+        TimeAcceptance.__init__(self, Acceptance = acceptance, Cache = kwargs.pop('Cache', True))
         self._check_extraneous_kw( kwargs )
 
+    def build_constraints(self, original, values):
+        # We're fitting and using the average constraint, first
+        # create a shape and then the constraint.
+        binning = self._shape.base_binning()
+        constraints = []
+        for (prefix, cat, state), parameters in self._shape.coefficients().iteritems():
+            if prefix:
+                shape_name = '_'.join([prefix, cat, state, 'shape'])
+            else:
+                shape_name = '_'.join([cat, state, 'shape'])
+            from P2VV.RooFitWrappers import BinnedPdf
+            shape = BinnedPdf(Name = shape_name, Observable = self._time, Coefficients = parameters,
+                              Binning = binning if type(binning) == str else binning.GetName())
+            shape.setForceUnitIntegral(True) # insure BinnedPdf is used as function, not PDF, i.e. skip normalization!
+
+            from P2VV.RooFitWrappers import EffResModel
+            res_model = self.__model.model()
+            eff_model = EffResModel(Name = shape_name + '_effres', Efficiency = shape,
+                                    ResolutionModel = res_model)
+
+            # Set all observables constant for the shape to work around a
+            # RooFit limitation
+            from ROOT import RooArgSet
+            obs_set = RooArgSet(res_model.Observables().intersection(res_model.ConditionalObservables()))
+            observables = eff_model.getObservables(obs_set)
+            for o in observables: o.setConstant(True)
+
+            av_name = '_'.join((prefix, cat, state, 'average'))
+            from P2VV.RooFitWrappers import RealVar, Pdf
+            mean  = RealVar(Name = av_name + '_constraint_mean', Value = values[(cat, state)][0], Constant = True)
+            sigma = RealVar(Name = av_name + '_constraint_sigma', Value = values[(cat, state)][1], Constant = True)
+            constraints.append(Pdf(Name = av_name + '_constraint', Type = 'RooAvEffConstraint',
+                                   Parameters = [original, eff_model, mean, sigma]))
+        return constraints
+
+    def shapes(self):
+        return [self._shape]
 
 class Paper2012_mer_TimeAcceptance(TimeAcceptance):
     def __init__(self, **kwargs ) :
@@ -193,7 +233,7 @@ class Paper2012_mer_TimeAcceptance(TimeAcceptance):
         acceptance_file = TFile.Open(input_file)
         fit = kwargs.pop('Fit')
         model = kwargs.pop('ResolutionModel')
-        binHeightMinMax = kwargs.pop('BinHeightMinMax', None)
+        binHeightMinMax = kwargs.pop('BinHeightMinMax', (0.001, 0.999))
         spline = kwargs.pop('Spline', False)
         smooth = kwargs.pop('SmoothSpline', 0.1)
 

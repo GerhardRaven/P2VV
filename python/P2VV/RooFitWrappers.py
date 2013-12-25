@@ -199,7 +199,10 @@ class RooObject(object) :
         self.ws()._rooobjects[x.GetName()] = self
 
     def __getattr__(self, name):
-        return getattr(self._target_(), name)
+        if hasattr(self, '_var'):
+            return getattr(self._var, name)
+        else:
+            raise AttributeError
 
     def _target_(self) :
         return self._var
@@ -526,6 +529,9 @@ class ConstVar(RooObject) :
             self._init(Name,'RooConstVar')
             # Make sure we are the same as last time
             for k, v in kwargs.iteritems():
+                if k == 'Value':
+                    ## Need to implement proper checking for floating point here
+                    continue
                 assert v == self[k], '\'%s\' is not the same for %s; %s != %s' % ( k, Name, v, self[k] )
 
 class LinearVar(RooObject) :
@@ -766,10 +772,18 @@ class EfficiencyBin(RooObject):
         Bins = kwargs.pop('Bins')
 
         from ROOT import RooEfficiencyBin
-        b = RooEfficiencyBin(Name, Name)
-        for v, f in Bins.iteritems():
-            b.addEntry(__dref__(v), f)
-        b = self._addObject(b)
+        from ROOT import RooCategory
+
+        if Name not in self.ws() :
+            b = RooEfficiencyBin(Name, Name)
+            for v, f in Bins.iteritems():
+                v = __dref__(v)
+                if isinstance(v, RooCategory):
+                    for state, var, flag in f:
+                        b.addEntry(__dref__(v), state, __dref__(var), flag)
+                else:
+                    b.addEntry(__dref__(v), f)
+            b = self._addObject(b)
         self._init( Name, 'RooEfficiencyBin' )
         for k, v in kwargs.iteritems() : self.__setitem__( k, v )
 
@@ -910,11 +924,8 @@ class CategoryVar(RooObject) :
             self._init( name, 'RooCategoryVar' )
         else :
             self._init( name, 'RooCategoryVar' )
-            for key, val in kwargs.iteritems() :
-                assert val == self[key], '"%s" is not the same for "%s"' % ( key, name )
-
-        for key, val in kwargs.iteritems() : self.__setitem__( key, val )
-
+            ## for key, val in kwargs.iteritems():
+            ##     assert val == self[key], '"%s" is not the same for "%s"' % ( key, name )
 
 ##TODO, factor out common code in Pdf and ResolutionModel
 
@@ -1527,8 +1538,16 @@ class BTagDecay( Pdf ) :
 
 class BinnedPdf( Pdf ) :
     def __init__( self, Name, **kwargs ) :
-	# !!! Since the workspace factory doesn't know about RooBinnedPdf and its constructors, the default approach doesn't seem to
-	# !!! work very well. We create the object directly and then add it to RooObject and the workspace.
+        # !!! Since the workspace factory doesn't know about RooBinnedPdf and
+        # !!! its constructors, the default approach doesn't seem to work very
+        # !!! well. We create the object directly and then add it to RooObject
+        # !!! and the workspace.
+        if Name in self.ws():
+            # initialize PDF
+            self._init( Name, 'RooBinnedPdf' )
+            Pdf.__init__(self, Name = Name, Type = 'RooBinnedPdf')
+            return
+        
         from P2VV.Load import P2VVLibrary
         argDict = { 'Name' : Name }
 
@@ -1675,10 +1694,7 @@ class BinnedPdf( Pdf ) :
 
         # initialize PDF
         self._init( Name, 'RooBinnedPdf' )
-        Pdf.__init__(  self
-                     , Name = Name
-                     , Type = 'RooBinnedPdf'
-                    )
+        Pdf.__init__(self, Name = Name, Type = 'RooBinnedPdf')
         for ( k, v ) in kwargs.iteritems() : self.__setitem__( k, v )
 
     def _make_pdf(self) : pass
@@ -1819,11 +1835,12 @@ class EffResAddModel(ResolutionModel):
             conditionals |= model.ConditionalObservables()
             externals |= set(model.ExternalConstraints())
 
-        from ROOT import RooEffResAddModel
-        models = RooArgList(self.__models)
-        fracs = RooArgList(self.__fractions)
-        model = RooEffResAddModel(name, name, models, fracs)
-        self._addObject(model)
+        if name not in self.ws() :
+            from ROOT import RooEffResAddModel
+            models = RooArgList(self.__models)
+            fracs = RooArgList(self.__fractions)
+            model = RooEffResAddModel(name, name, models, fracs)
+            self._addObject(model)
         self._init(name, 'RooEffResAddModel')
 
         ResolutionModel.__init__(self, Name = name, Type = 'RooEffResAddModel',
@@ -1871,64 +1888,201 @@ class BinnedFun(RooObject):
         # TODO: add support for _multiple histograms and a Category, using RooCategoryVar to select
         #       the right coefficient
         __check_mutually_exclusive_kw__(kwargs,('Histogram'),('Binning'))
-        name = kwargs.pop('Name')
+        self.__namePF = kwargs.pop('ParNamePrefix', '')
+        self.__name = kwargs.pop('Name')
+        if self.__namePF and not self.__name.startswith(self.__namePF):
+            self.__name = self.__namePF + self.__name
         observable = kwargs.pop('ObsVar')
         hist = kwargs.pop('Histogram', None)
         histograms = kwargs.pop('Histograms', None)
+        self.__fit = kwargs.pop('Fit', False)
+        self.__binning = None
+        self.__coefficients = {}
+        
         if hist:
-            self.__build_from_hist( name,observable
-                                  , hist )
+            self.__build_from_hist(self.__name, observable, hist )
         elif histograms :
-            self.__build_from_histograms( name, observable
-                                        , kwargs.pop('Category')
-                                        , histograms )
+            self.__build_from_histograms(self.__name, observable, histograms)
         else :
-            self.__build_from_coef( name,observable
-                                  , kwargs.pop('Binning')
-                                  , kwargs.pop('Coefficients') )
-        self._init(name, 'RooBinnedFun')
+            self.__coefficients[self.__name] = kwargs.pop('Coefficients')
+            self.__build_from_coef(self.__name, observable, kwargs.pop('Binning'),
+                                   self.__coefficients[self.__name])
+        self._init(self.__name, 'RooBinnedFun')
 
-    def __create_binning(self,name,observable,hist) :
+    def __create_binning(self, name, observable, hist) :
         from ROOT import RooBinning
-        bname = '%s_%s_binning'%(name,hist.GetName())
-        binning = RooBinning(1,observable.getMin(),observable.getMax(),bname)
-        nbins = hist.GetNbinsX()
-        for i in range(1,nbins) : binning.addBoundary( hist.GetBinLowEdge(1+i) )
-        observable.setBinning(binning,bname)
-        return bname
+        from array import array
+        if type(hist) in [list, array]:
+            bounds = hist
+            bname = name
+        else:
+            bname = '%s_%s_binning' % (name, hist.GetName())
+            bounds = array('d', (hist.GetBinLowEdge(1+i) for i in range(hist.GetNbinsX() + 1)))
+        binning = RooBinning(len(bounds) - 1, bounds, bname)
+        if observable.hasBinning(bname):
+            ba = observable.getBinning(bname)
+            bab = array('d', [ba.binLow(i) for i in range(ba.numBins())] + [ba.highBound()])
+            assert(bab == bounds)
+        else:
+            observable.setBinning(binning,bname)
+        return binning
 
-    def __build_from_coef(self,name,observable,bname,coeffs) :
+    def __build_from_coef(self, name, observable, binning, coeffs) :
         spec = 'RooBinnedFun::%s(%s,"%s",{%s})' \
              % ( name, observable.GetName()
-               , bname
-               , ','.join( i.GetName() for i in coeffs ) )
+               , binning.GetName(), ','.join( i.GetName() for i in coeffs ) )
         self._declare( spec )
 
     def __build_from_hist(self,name,observable,hist) :
-        cvar = lambda i : ConstVar( Name = '%s_bin_%d'%(name,i)
-                                  , Value = hist.GetBinContent(1+i) )
-        return self.__build_from_coef( name,observable
-                                     , self.__create_binning(name,observable,hist)
-                                     , [ cvar(i) for i in range(hist.GetNbinsX()) ] )
+        cvar = lambda i : ConstVar(Name = '%s_bin_%d' % (name, i), Value = hist.GetBinContent(1 + i))
+        self.__coefficients[name] = [cvar(i) for i in range(hist.GetNbinsX())]
+        return self.__build_from_coef(name, observable, self.__create_binning(name, observable, hist),
+                                      self.__coefficients[name])
 
-    def __build_from_histograms( self, name, observable, cat, hists ) :
-        # check that all states are present as keys
+    def __build_from_histograms(self, name, observable, hists) :
+        # This condition is not very pretty and quite incomplete, it works for
+        # our use-cases though
+        if len(hists) == 1 and not self.__fit:
+            # check that all states are present as keys
+            cat, hs = hists.items()[0]
+            hs = dict([(s, info['histogram']) for s, info in hs.iteritems()])
+            return self.__build_for_single_cat(name, observable, cat, hs)
+        else:
+            return self.__build_for_fit(name, observable, hists)
+
+    def __build_for_single_cat(self, name, observable, cat, hists):
         assert set( s.GetName() for s in cat ) == set( hists.keys() )
         # check that histograms all have the same binning...
-        boundaries = dict( ( k, [ v.GetBinLowEdge(1+i) for i in range(v.GetNbinsX()) ] ) \
-                           for k,v in hists.iteritems() )
+        boundaries = dict((k, [v.GetBinLowEdge(1 + i) for i in range(v.GetNbinsX() + 1)]) \
+                          for k,v in hists.iteritems())
         for refboundaries in boundaries.itervalues() : break # grab first item in dictionary
         if any( b != refboundaries for b in boundaries.values() ) :
             raise ValueError('histograms do not share boundaries: %s' % boundaries)
 
-        cvars = lambda i : [ ConstVar( Name = '%s_state_%s_bin_%d'%(name,s.GetName(),i)
-                                     , Value = hists[ s.GetName() ].GetBinContent( 1+i ) ) for s in cat ]
-        cvar  = lambda i : CategoryVar(Name = '%s_bin_%d' % (name,i)
-                                     , Category = cat
-                                     , Variables = cvars(i) )
-        return self.__build_from_coef( name, observable
-                                     , self.__create_binning(name,observable,hists.values()[0])
-                                     , [ cvar(i) for i in range(hists.values()[0].GetNbinsX()) ] )
+        key = lambda c, s: (self.__namePF, c.GetName(), s.GetName())
+        for s in cat:
+            k = key(cat, s)
+            self.__coefficients[k] = [ConstVar(Name = '%s_state_%s_bin_%d'%(name, s.GetName(), i),
+                                               Value = hists[s.GetName()].GetBinContent(1 + i)) \
+                                               for i in range(hists.values()[0].GetNbinsX())]
+        cvar  = lambda i : CategoryVar(Name = '%s_bin_%d' % (name, i + 1), Category = cat,
+                                       Variables = [self.__coefficients[key(cat, s)][i] for s in cat])
+        return self.__build_from_coef(name, observable,
+                                      self.__create_binning(name,observable,hists.values()[0]),
+                                      [cvar(i) for i in range(len(refboundaries) - 1)])
+
+    def __build_for_fit(self, name, observable, hists):
+        self.__base_bounds = None
+        coefficients = {}
+
+        n_vars = 0
+        for category, entries in hists.iteritems():
+            for state, state_info in entries.iteritems():
+                hist = state_info.pop('histogram', None)
+                if hist:
+                    xaxis = hist.GetXaxis()
+                    bins = [xaxis.GetBinLowEdge(i) for i in range(1, hist.GetNbinsX() + 2)]
+                    heights = [hist.GetBinContent(i) for i in range(1, hist.GetNbinsX() + 1)]
+                    state_info['bins'] = bins
+                    state_info['heights'] = heights
+                n_vars += len(state_info['heights'])
+
+        ## Seed the random numbers with the name prefix so we only get different
+        ## random numbers when we really need them
+        import random
+        random.seed(self.__namePF)
+        ## Generate some random prefixes to ensure there are no bin to bin
+        ## correlations because of Minuit
+        from math import log
+        nn = int(log(n_vars, 10))
+        order = [i for i in range(n_vars)]
+        random.shuffle(order)
+        order = [('%' + ('0%d' % (nn + 1)) + 'd') % (i + 1) for i in order]
+
+        ## Create the RealVars which are the real floating parameters for the
+        ## acceptance
+        for (category, entries) in hists.iteritems():
+            states = set([s.GetName() for s in category])
+            coef_info = {}
+            for state, state_info in [(s, entries[s]) for s in states if s in entries]:
+                heights = list(state_info['heights'])
+                bins = state_info['bins']
+                from array import array    
+                bounds = array('d', bins)
+
+                # Add a binning for this category and state
+                binning_name = '_'.join([category.GetName(), state, 'binning'])
+                shape_binning = self.__create_binning(binning_name, observable, bounds)
+
+                # Make the RealVars which represent the bin heights
+                for i, v in enumerate(heights):
+                    bin_name = '%s_%s%s_%s_bin_%03d' % (order.pop(), self.__namePF, category.GetName(), state, i + 1)
+                    if v > 0.999: v = 0.999
+                    heights[i] = RealVar(bin_name, Observable = False, Value = v, MinMax = (0.001, 0.999))
+                if not self.__fit:
+                    # If we're not fitting set all bins constant
+                    for h in heights: h.setConstant(True)
+                elif len(heights) == 1:
+                    # Fix the bin if there is only one.
+                    heights[0].setConstant(True)
+                if not self.__base_bounds or len(bounds) > len(self.__base_bounds):
+                    self.__base_bounds = bounds
+                    self.__binning = shape_binning
+                from copy import copy
+                coef_info[state] = copy(state_info)
+                coef_info[state].update({'heights' : heights})
+
+            coefficients[category] = coef_info
+        ## Save the RealVars so they can be retrieved later, for example to
+        ## build the average constraint.
+        for c, state_info in coefficients.iteritems():
+            for state, i in state_info.iteritems():
+                if len(i['heights']) > 1:
+                    self.__coefficients[(self.__namePF, c.GetName(), state)] =  i['heights']
+            
+        # Make one combination by looping over the entries and taking the first
+        # state for each.
+        from itertools import chain, izip
+        bins = self.__build_bins(coefficients, list(chain.from_iterable([izip([c] * c.numTypes(), [s.GetName() for s in c]) for c in hists.iterkeys()])))
+        self.__build_from_coef(name, observable, self.__binning, bins)
+                               
+    def __build_bins(self, coefficients, categories):
+        # Make EfficiencyBins for the bin values
+        from collections import defaultdict
+        bin_vars = [defaultdict(list) for i in range(len(self.__base_bounds) - 1)]
+        # Loop over the categories, a single state is given per category. The
+        # info in self.__coefficients tells us whether this is the 1 or 0 state
+        # and which RealVar to use in both cases.
+        for category, state in categories:
+            category_info = coefficients[category]
+            states = [s.GetName() for s in category if s.GetName() in category_info]
+            if len(states) == 1:
+                category_heights = category_info[states[0]]['heights']
+                category_bounds  = category_info[states[0]]['bins']
+            elif len(states) > 1:
+                category_heights = category_info[state]['heights']
+                category_bounds  = category_info[state]['bins']
+            else:
+                raise ValueError("Number of states must not be 0")
+            for i in range(len(self.__base_bounds) - 1):
+                val = (self.__base_bounds[i] + self.__base_bounds[i + 1]) / 2
+                coefficient = self.__find_coefficient(val, category_bounds, category_heights)
+                bin_vars[i][category].append((state, coefficient, state in category_info))
+        return [EfficiencyBin(Name = '%s_bin_%d' % (self.__name, i), Bins = d) for i, d in enumerate(bin_vars)]
+
+    def __find_coefficient(self, val, bounds, coefficients):
+        for i in range(len(bounds) - 1):
+            if val > bounds[i] and val < bounds[i + 1]:
+                break
+        else:
+            raise RuntimeError;
+        return coefficients[i]
+
+    def base_binning(self):
+        return self.__binning
+
+    def coefficients(self):
+        return self.__coefficients
 
 class CubicSplineFun(RooObject):
     def __init__(self, **kwargs):
@@ -1971,13 +2125,14 @@ class CubicSplineGaussModel(ResolutionModel) :
 
     def __init__(self, **kwargs):
         name = kwargs.pop('Name')
+        namePF = kwargs.pop('ParNamePrefix', '')
         res_model = kwargs.pop('ResolutionModel', None)
         params = [__dref__(p) for p in kwargs.pop('Parameters', [])]
         efficiency = kwargs.pop('Efficiency', None)
 
         constraints = kwargs.pop('ExternalConstraints', set())
         conds = kwargs.pop('ConditionalObservables', set())
-
+        
         assert(not res_model or not params)
         if res_model:
             constraints |= set(res_model.ExternalConstraints())
@@ -1987,10 +2142,6 @@ class CubicSplineGaussModel(ResolutionModel) :
             for t, fun in types.iteritems():
                 if isinstance(res_model._target_(), t):
                     model, this_type, name = fun(name, res_model, efficiency)
-                    if type(model) == str:
-                        print model
-                    else:
-                        model.Print()
         else:
             model = 'RooGaussEfficiencyModel::{0}({1},{2},{3})'.format(name, params[0].GetName(), efficiency.GetName(), ','.join([p.GetName() for p in params[1:]]))
             this_type = 'RooGaussEfficiencyModel'
@@ -2002,7 +2153,7 @@ class CubicSplineGaussModel(ResolutionModel) :
         if constraints : extraOpts['ExternalConstraints' ]   = constraints
         if conds:        extraOpts['ConditionalObservables'] = conds
         ResolutionModel.__init__(self, Name = name , Type = this_type, **extraOpts)
-
+        
     def __from_gauss(self, name, gauss_model, spline_fun):
         params = gauss_model['Parameters']
         name = name + '_' + gauss_model.GetName().replace( '{', '' ).replace( '}', '' ).replace( ';', '_' ) + '_spline'
@@ -2200,6 +2351,7 @@ class MultiHistEfficiencyModel(ResolutionModel):
     def __build_shapes(self, relative):
         import ROOT
         std = ROOT.std
+
         from ROOT import MultiHistEntry
 
         efficiency_entries = std.vector('MultiHistEntry*')()

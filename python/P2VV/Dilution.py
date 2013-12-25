@@ -4,10 +4,50 @@ from math import exp, log, sqrt
 __keep = []
 __histos = []
 
+def sigmaFromFT(hist, dMs, dMsErr):
+    from math import cos, sqrt, log, sin
+
+    s = 0
+    sdt = 0
+    sdterr = 0
+    scos = 0
+    sx2 = 0
+    error = 0
+    for i in range(1, hist.GetNbinsX() + 1):
+        c = hist.GetBinContent(i)
+        e = hist.GetBinError(i)
+        x = hist.GetBinCenter(i)
+        dt = hist.GetBinWidth(i)
+        s += c
+        sdt += c * dt
+        sdterr += e * e * dt * dt
+
+        cosv = cos( - dMs * x )
+        scos += c * cosv * dt
+        sx2 += c * x * x
+
+        coserr = sin(dMsErr) * dMsErr
+        error += (c * c * coserr * coserr +  cosv * cosv * e * e) * dt * dt
+
+    error = sqrt(error / (sdt * sdt) + sdterr * scos * scos / sdt ** 4)
+
+    rms = sqrt(sx2/s)
+    D = scos / sdt
+    sigma = sqrt( -2*log(D) ) / dMs
+
+    print "%f %f %f" % (sdt, scos, sx2)
+    r = dict(rms = rms, gd = exp(-0.5*rms*rms*dMs*dMs), ftd = D, ftde = error, cgd = sigma)
+    print """
+RMS of input histogram: %(rms)f
+If distribution were Gaussian, dilution is: %(gd)f
+Dilution from FT: %(ftd)f +- %(ftde)f
+Corresponding Gaussian resolution: %(cgd)f""" % r
+
+    return D
+
 def dilution_bin(t_var, bin_data, result, dilution_binning, bin_name = "", 
                  signal = [], subtract_pdf = None, subtract = [], t_range = None, n_bins = 512):
     from P2VV.Load import P2VVLibrary
-    from ROOT import sigmaFromFT
 
     if not t_range:
         t_range = 0 - t_var.getMin()
@@ -236,7 +276,6 @@ def dilution_ft(t_var, data, t_range = None, parameters = None, signal = [], sub
 
         # Calculate the dilution using Wouter's macro
         from P2VV.Load import P2VVLibrary
-        from ROOT import sigmaFromFT
         return sigmaFromFT(ft_histo, 17.768, 0.024)
     else:
         from ROOT import TCanvas
@@ -314,7 +353,6 @@ def dilution_ft(t_var, data, t_range = None, parameters = None, signal = [], sub
 
     # Calculate the dilution using Wouter's macro
     from P2VV.Load import P2VVLibrary
-    from ROOT import sigmaFromFT
     return sigmaFromFT(ft_histo, 17.768, 0.024)
 
 def dilution(data, sfs, calib = None, error_fun = None):
@@ -391,6 +429,12 @@ def signal_dilution(data, sigmat, calibration = None):
         values.append((res, w))
     return dilution(values, [((0, 1), 1)])
 
+def signal_dilution_sfs(data, sigmat, sfm, frac, sfs):
+    from math import sqrt
+    sf1 = - sqrt(frac / (1 - frac)) * sfs + sfm
+    sf2 = sqrt((1 - frac) / frac) * sfs + sfm
+    return signal_dilution_dg(data, sigmat, sf1, frac, sf2)
+
 def signal_dilution_dg(data, sigmat, sf1, frac, sf2):
     res_var = data.get().find(sigmat.GetName())
     weighted = data.isWeighted()
@@ -457,8 +501,8 @@ class SolveSF(object):
 from P2VV.PropagateErrors import Parameter
 
 class DilutionCSFS(object):
-    def __init__(self, st_mean, result_dir):
-        self.__result_name = 'time_result_double_RMS_Gauss_linear'
+    def __init__(self, st_mean, result_dir, result_name = 'time_result_double_RMS_Gauss_linear'):
+        self.__result_name = result_name
         self.__result = result_dir.Get(self.__result_name)
         if not self.__result:
             raise RuntimeError('no result available')
@@ -515,8 +559,8 @@ class DilutionCSFS(object):
         return sum(pars[i + 1] * pow(st - pars[0], i) for i in range(len(pars) - 1))
 
 class DilutionCSFC(object):
-    def __init__(self, st_mean, result_dir):
-        self.__result_name = 'time_result_double_Comb_Gauss_linear'
+    def __init__(self, st_mean, result_dir, result_name = 'time_result_double_Comb_Gauss_linear'):
+        self.__result_name = result_name
         self.__result = result_dir.Get(self.__result_name)
         if not self.__result:
             raise RuntimeError('no result available')
@@ -576,12 +620,12 @@ class DilutionSG(object):
         return p[0].value() * st
 
 class DilutionSFC(object):
-    def __init__(self, result_dir):
+    def __init__(self, result_dir, result_name = 'time_result_double_Comb_Gauss'):
         def __mkp(result, name):
             p = result.floatParsFinal().find(name)
             return Parameter(name, p.getVal(), p.getError())
 
-        self.__result_name = 'time_result_double_Comb_Gauss'
+        self.__result_name = result_name
         self.__result = result_dir.Get(self.__result_name)
         if not self.__result:
             raise RuntimeError('no result available')
@@ -610,12 +654,12 @@ class DilutionSFC(object):
 from math import sqrt
 
 class DilutionSFS(object):
-    def __init__(self, result_dir):
+    def __init__(self, result_dir, result_name = 'time_result_double_RMS_Gauss'):
         def __mkp(result, name):
             p = result.floatParsFinal().find(name)
             return Parameter(name, p.getVal(), p.getError())
 
-        self.__result_name = 'time_result_double_RMS_Gauss'
+        self.__result_name = result_name
         self.__result = result_dir.Get(self.__result_name)
         if not self.__result:
             raise RuntimeError('no result available')
