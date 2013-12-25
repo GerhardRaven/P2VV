@@ -190,7 +190,10 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
         binning = self._shape.base_binning()
         constraints = []
         for (prefix, cat, state), parameters in self._shape.coefficients().iteritems():
-            shape_name = '_'.join([prefix, cat, state, 'shape'])
+            if prefix:
+                shape_name = '_'.join([prefix, cat, state, 'shape'])
+            else:
+                shape_name = '_'.join([cat, state, 'shape'])
             from P2VV.RooFitWrappers import BinnedPdf
             shape = BinnedPdf(Name = shape_name, Observable = self._time, Coefficients = parameters,
                               Binning = binning if type(binning) == str else binning.GetName())
