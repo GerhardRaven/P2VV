@@ -82,6 +82,7 @@
         <function name = "gradient_with_errors" />
         <function name = "cross_with_errors" />
         <function name = "HelicityAngles" />
+        <function name = "getRooRealMaxVal" />
 
     </selection>
 </lcgdict>

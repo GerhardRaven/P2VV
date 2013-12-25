@@ -2430,6 +2430,7 @@ class MultiHistEfficiencyModel(ResolutionModel):
             raise RuntimeError;
         return coefficients[i]
 
+
 class Component(object):
     _d = {}
     def __init__(self,Name,*args,**kw) :
@@ -2615,3 +2616,32 @@ def buildSimultaneousPdf(Components, Observables, Spec, Name) :
         states[state] = SumPdf(Name = '_'.join((Name, suffix)) , **args)
     ## return states
     return SimultaneousPdf(Name, SplitCategory = split_cat, States = states)
+
+
+def getFuncMaxVal( **kwargs ) :
+    __check_req_kw__( 'Function', kwargs )
+    __check_req_kw__( 'ScanSet', kwargs )
+    __check_req_kw__( 'NumScanPoints', kwargs )
+    func      = kwargs.pop('Function')
+    scanSet   = kwargs.pop('ScanSet')
+    numPoints = kwargs.pop('NumScanPoints')
+    intSet    = kwargs.pop( 'IntegrationSet', [ ] )
+    normSet   = kwargs.pop( 'NormalizationSet', [ ] )
+
+    # normalize and integrate PDF
+    from ROOT import RooArgSet
+    RooIntSet  = RooArgSet( __dref__(obs) for obs in intSet  )
+    RooNormSet = RooArgSet( __dref__(obs) for obs in normSet )
+    intFunc = func.createIntegral( RooIntSet, RooNormSet )
+
+    # get maximum value of normalized PDF in space of observables in scan set
+    from ROOT import RooArgList, std
+    RooScanList = RooArgList()
+    numPointsVec = std.vector('Int_t')()
+    for obs in scanSet :
+        RooScanList.add( __dref__(obs) )
+        assert obs.GetName() in numPoints
+        numPointsVec.push_back( numPoints[ obs.GetName() ] )
+    from P2VV.Load import P2VVLibrary
+    from ROOT import getRooRealMaxVal
+    return getRooRealMaxVal( intFunc, RooScanList, numPointsVec )

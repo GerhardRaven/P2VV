@@ -1,6 +1,6 @@
-nTupleFilePathsIn = [  '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs2JpsiPhi_2011_s20r1p1_dv33r6p1_20131107_tupleB_add.root'
-                     , '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs2JpsiPhi_2012_s20r0p1_dv33r6p1_20131107_tupleB_add.root' ]
-nTupleFilePathOut = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs2JpsiPhi_20112012_s20_dv33r6p1_20131107_tupleB_add.root'
+nTupleFilePathsIn = [  '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs2JpsiPhi_2011_s20r1p1_dv33r6p1_20131217_tupleB_add.root'
+                     , '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs2JpsiPhi_2012_s20r0p1_dv33r6p1_20131217_tupleB_add.root' ]
+nTupleFilePathOut = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs2JpsiPhi_2011_2012_s20_dv33r6p1_20131217_tupleB_add.root'
 nTupleName = 'DecayTree'
 
 from ROOT import TFile, TList
