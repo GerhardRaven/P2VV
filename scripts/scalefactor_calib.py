@@ -111,6 +111,9 @@ elif args[0] == 'MC2011_Sim08a':
 elif args[0] == 'MC2011_Sim08a_incl_Jpsi':
     good = {'2027465761870101697' : 1}
     sig_name = 'psi_ll'
+elif args[0] == 'MC2012_incl_Jpsi':
+    good = {'2027465761870101697' : 1}
+    sig_name = 'psi_ll'
 
 PDFs = defaultdict(dict)
 for k, cache_dir in filter(lambda k: k[0].split('/')[0] in ['9bins_14.10fs_simul'], interesting.iteritems()):
@@ -272,7 +275,8 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
         __histos.append(mean_graph)
 
     from ROOT import TF1
-    fit_funcs = {'pol1' : ('pol1', 'S0+'),
+    fit_funcs = {'pol0' : ('pol0', 'S0+'),
+                 'pol1' : ('pol1', 'S0+'),
                  'pol2' : ('pol2', 'S0+'),
                  'pol1_mean_param' : ('[1] + [2] * (x - [0])', 'S0+'),
                  'pol2_no_offset' : ('x ++ x * x', 'S0+'),
@@ -283,6 +287,7 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
     if split_mean:
         graphs.append(mean_graph)
     for g in graphs:
+        print ('-' * 15) + g.GetName() + ('-' * 15)
         frs = []
         for i, (name, (func, opts)) in enumerate(fit_funcs.iteritems()):
             fit_func = TF1(name, func, split_bounds[0], split_bounds[-1])
