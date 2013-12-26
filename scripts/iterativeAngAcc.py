@@ -13,7 +13,7 @@ NumbOfIterations      = options.numIters
 kinematicRewApproach  = options.KKmomRew
 MCProd                = options.MCProd
 initialFitOnData      = False
-reweightBmomentum     = False
+reweightBmomentum     = True
 reweightMkk           = True
 OneDverticalRewNbins  = 1000
 TwoDverticalRewNbins  = 50
@@ -24,11 +24,11 @@ KmomentaWeightsName   = 'KKmom'
 BmomentumWeightsName  = 'Bmom'
 
 # sFit configuration
-combinedFit = False # fit 2011 and 2012 data combined
+combinedFit = True # fit 2011 and 2012 data combined
 nCPU        = 8
 
 # plotig control
-makePlots          = False
+makePlots          = True
 plotAtTheseSteps   = [ NumbOfIterations ]  # [ i for i in xrange(1,NumbOfIterations+1) ]
 plotFinalPdfonData = False
 
@@ -95,7 +95,6 @@ worksp = RooObject( workspace = 'iterativeProcedure' ).ws()
 # build data pdf and prepare the sFit ( This pdf will not be multiplied by the angular acceptance !! ).
 Bs2JpsiKKFit = BuildBs2JpsiKKFit( dataSetPath=sDataPath, dataSetName=sDataName, runPeriod=RunPeriod, Ncpu=nCPU )
 if initialFitOnData:
-    assert False
     Bs2JpsiKKFit.doFit( angAccFile=nomAngEffMomentsFile )
     assert False
 
@@ -128,12 +127,12 @@ if kinematicRewApproach == 'horizontal':
 
 # match B momentum
 if reweightBmomentum:
-    BmomentumWeights = OneDimentionalVerticalReweighting( dataMngr.getDataSet(),      # source distribution
-                                                          Bs2JpsiKKFit.getDataSet(),  # target distribution
-                                                          OneDverticalRewNbins, 'B_P', # nBins, variable
-                                                          equalStatsBins = EqualStatsBins
-                                                          #xCheckPlots = True
-                                                          )
+    BmomentumWeights = TwoDimentionalVerticalReweighting(dataMngr.getDataSet(),      # source distribution
+                                                         Bs2JpsiKKFit.getDataSet(),  # target distribution
+                                                         TwoDverticalRewNbins, ['B_P','B_Pt'],
+                                                         # number of bins per dimention, variables
+                                                         equalStatsBins = EqualStatsBins,
+                                                         )
     dataMngr['saveIntermediateDatasets'] = True if makePlots else False
     dataMngr.appendWeights( BmomentumWeightsName, BmomentumWeights, permanetnWeigts=True, permanentDataSet=False )
 
@@ -172,18 +171,21 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
     if makePlots and iterNumb in plotAtTheseSteps: # plot data after each reweighting step
         compPlots = compareDistributions( mcData          = dataMngr.getDataSet('initSource'),
                                           mcDataPhysRew   = dataMngr.getDataSet(physWeightName),
-                                          mkkRewData      = dataMngr.getDataSet(mKKWeightsName),
                                           MomRewData      = dataMngr.getDataSet(KmomentaWeightsName),
                                           BmomRewData     = dataMngr.getDataSet(BmomentumWeightsName) if reweightBmomentum else '', 
+                                          mkkRewData      = dataMngr.getDataSet(mKKWeightsName) if reweightMkk else '',
                                           sData           = Bs2JpsiKKFit.getDataSet(),
                                           obsSet          = angles + time + muMomenta + Kmomenta + Bmomenta + KKMass,
-                                          itNumb          = iterNumb,
+                                          itNumb          = iterNumb
                                           )
+        assert False
+        
         # plot weights
-        plotWeightsList = [physWeightName, mKKWeightsName, KmomentaWeightsName]
+        plotWeightsList = [physWeightName, KmomentaWeightsName]
         if reweightBmomentum: plotWeightsList += [ BmomentumWeightsName ]
+        if reweightMkk:       plotWeightsList += [ mKKWeightsName ]
         for wList in plotWeightsList: dataMngr.plotWeights(wList)
-    
+
     # compute angular efficiency moments from the new reweighted mc dataset.    
     PhysicsReweight.setDataFitParameters(dataParameters) # set data pars to pdf (reweighted data has the data physics now)
     physMoments = RealMomentsBuilder( Moments = ( RealEffMoment( Name = func.GetName(), BasisFunc = func,
@@ -194,14 +196,13 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
     scaleFactor = 1 / 16. / sqrt(pi)
     physMoments.initCovariances()
     physMoments.compute(dataMngr.getDataSet()) 
-    physMoments.write( outputEffMomentsFileName + '_Phys_%s_Iteration'%iterNumb , Scale=scaleFactor )
+    physMoments.write( outputEffMomentsFileName + '_Phys_%s_Iteration'%iterNumb, Scale=scaleFactor )
     physMoments.convertEffWeightsToMoments( OutputFilePath    = outputEffMomentsFileName + '_weights_%s_Iteration'%iterNumb, 
                                             Scale             = scaleFactor,
                                             WeightNamesPrefix = PhysicsReweight.getParNamePrefix()
                                             )
 
     # perform sFit on data using the new angular acceptance and update the data physics parameters
-    # Bs2JpsiKKFit.doFit( itNum=iterNumb, angAccFile=nomAngEffMomentsFile ) # this is only for xChecks
     Bs2JpsiKKFit.doFit( itNum=iterNumb, angAccFile= outputEffMomentsFileName + '_weights_%s_Iteration'%iterNumb )
     Bs2JpsiKKFit.updateDataParameters( dataParameters, itNum=iterNumb ) 
     
