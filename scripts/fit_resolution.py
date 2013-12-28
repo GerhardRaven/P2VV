@@ -6,7 +6,7 @@ import os
 from math import sqrt
 
 parser = optparse.OptionParser(usage = 'usage: %prog year model')
- 
+
 parser.add_option("--no-pee", dest = "pee", default = True,
                   action = 'store_false', help = 'Do not use per-event proper-time error')
 parser.add_option("-w", "--wpv", dest = "wpv", default = False,
@@ -61,6 +61,10 @@ parser.add_option("--no-cache", dest = "cache", default = True, action = 'store_
                   help = 'Use a cache to store results and reuse them.')
 parser.add_option("--constrain", dest = "constrain", default = '', action = 'store', type = 'string',
                   help = 'Which parameters to constrain')
+parser.add_option("--write-constraints", dest = "write_constraints", default = False,
+                  action = 'store_true', help = 'Write contraints to database.')
+parser.add_option("--mass-parameterisation", dest = "mass_param", default = '',
+                  action = 'store', type = 'string', help = 'Reparameterise the mass PDF')
 
 (options, args) = parser.parse_args()
 
@@ -87,6 +91,11 @@ if options.wpv and not options.wpv_type in ['Mixing', 'Gauss']:
     print "Wring mixing type; allowed types: %s" % ' '.join(['Mixing', 'Gauss'])
     sys.exit(-2)
 
+if options.mass_param and not options.mass_param in ['MeanSigma']:
+    print parser.print_usage()
+    print "Wring mass parameterisation; allowed types: %s" % ' '.join(['MeanSigma'])
+    sys.exit(-2)
+
 if options.batch:
     from ROOT import gROOT
     gROOT.SetBatch(True)
@@ -97,13 +106,18 @@ from P2VV.Load import LHCbStyle
 obj = RooObject( workspace = 'w')
 w = obj.ws()
 
+## Code for using RooTrace
+## from ROOT import RooTrace
+## RooTrace.active(True)
+## RooTrace.printObjectCounts()
+
 from math import pi
 if options.peak_only:
     if signal_MC:
         t_minmax = (-5, 14)
         tdiff_minmax = (-0.1, 0.1)
     else:
-        t_minmax = (-0.08, 0.08)        
+        t_minmax = (-0.08, 0.08)
 elif options.wpv and options.wpv_type == 'Gauss':
     t_minmax = (-1.5, 14)
 else:
@@ -112,7 +126,7 @@ t  = RealVar('time' if not options.use_refit else 'time_refit', Title = 'decay t
 m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5200, 5550),
              Ranges =  { 'leftsideband'  : ( None, 5330 )
                          , 'signal'        : ( 5330, 5410 )
-                         , 'rightsideband' : ( 5410, None ) 
+                         , 'rightsideband' : ( 5410, None )
                          } )
 mpsi = RealVar('mdau1', Title = 'J/psi mass', Unit = 'MeV', Observable = True, MinMax = (3025, 3165))
 st = RealVar('sigmat' if not options.use_refit else 'sigmat_refit',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.01, 0.07))
@@ -140,7 +154,7 @@ if signal_MC:
 
 # Define a time_obs symbol to wrap around selection of t or t_diff
 time_obs = t_diff if signal_MC else t
-    
+
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
 from ROOT import RooExponential as Exponential
@@ -153,13 +167,14 @@ if args[1] == 'single':
     tres_args = dict(time = t, sigmat = st, PerEventError = options.pee,
                      BiasScaleFactor = False, Cache = True,
                      TimeResSFParam = options.sf_param, SplitMean = options.split_mean)
-    sig_tres = TimeResolution(Name = 'tres', **tres_args) 
+    sig_tres = TimeResolution(Name = 'tres', **tres_args)
     if options.add_background:
         bkg_tres = TimeResolution(Name = 'bkg_tres', ParNamePrefix = 'bkg', **tres_args)
 elif args[1] == 'double':
     mu = dict(MinMax = (-0.010, 0.010))
-    mu_values = {'MC11a_incl_Jpsi' : -0.000408, '2011_Reco14' : -0.00259,  
-                 '2011' : -0.00407301, '2012' : -0.00333}
+    mu_values = {'MC11a_incl_Jpsi' : -0.000408, '2011_Reco14' : -0.00259,
+                 '2011' : -0.00407301, '2012' : -0.00333,
+                 'MC2011_Sim08a_incl_Jpsi' : -0.00076}
     mu['Value'] = mu_values.get(args[0], 0)
     mu['Constant'] = options.simultaneous and not (options.split_mean or options.mu_param)
     from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
@@ -167,8 +182,8 @@ elif args[1] == 'double':
                      PerEventError = options.pee, Parameterise = options.parameterise,
                      TimeResSFParam = options.sf_param, SplitFracs = options.split_frac,
                      timeResMu = mu, Simultaneous = options.simultaneous,
-                     ScaleFactors = [(2, 1.817), (1, 1.131)] if options.pee else [(2, 0.1), (1, 0.06)],
-                     Fractions = [(2, 0.168)], SplitMean = options.split_mean,
+                     ScaleFactors = [(2, 2.00), (1, 1.174)] if options.pee else [(2, 0.1), (1, 0.06)],
+                     Fractions = [(2, 0.143)], SplitMean = options.split_mean,
                      MeanParameterisation = options.mu_param)
     sig_tres = TimeResolution(Name = 'sig_tres', **tres_args)
     if options.add_background:
@@ -184,9 +199,10 @@ elif args[1] == 'triple':
 
 # J/psi mass pdf
 from P2VV.Parameterizations.MassPDFs import DoubleCB_Psi_Mass as PsiMassPdf
-psi_m = PsiMassPdf(mpsi, Name = 'psi_m', mpsi_alpha_1 = dict(Value = 2, Constant = '2011' in args[0]))
+psi_m = PsiMassPdf(mpsi, Name = 'psi_m', mpsi_alpha_1 = dict(Value = 2, Constant = '2011' in args[0]),
+                   ParameteriseSigma = options.mass_param)
 psi_m = psi_m.pdf()
-    
+
 # J/psi background
 from P2VV.Parameterizations.MassPDFs import Background_PsiMass as PsiBkgPdf
 bkg_mpsi = PsiBkgPdf(mpsi, Name = 'bkg_mpsi')
@@ -219,7 +235,7 @@ if options.add_background:
 sig_t = Prompt_Peak(time_obs, resolutionModel = sig_tres.model(), Name = 'sig_t')
 
 from P2VV.Parameterizations.MassPDFs import LP2011_Signal_Mass as Signal_Mass
-sig_m = Signal_Mass(Name = 'sig_m', mass = m) 
+sig_m = Signal_Mass(Name = 'sig_m', mass = m)
 signal = Component('signal', (sig_m.pdf(), sig_t.pdf()), Yield = (1e6, 10000, 1e7))
 
 # Prompt component
@@ -271,7 +287,7 @@ if options.cache:
     cache_dir, cache_file = cache_files.getFromCache(directory)
     if not cache_dir:
         fit_mass = True
-    
+
 results = []
 tree_name = 'DecayTree'
 
@@ -318,12 +334,12 @@ if not fit_mass and options.cache:
         except KeyError:
             fit_mass = True
         ## CHECK ST BINNING
-            
+
     from copy import copy
     sdatas = copy(sdatas_full)
     if options.reduce and not fit_mass:
         sig_sdata = sig_sdata_full.reduce(EventRange = (0, 40000))
-        bkg_sdata = bkg_sdata_full.reduce(EventRange = (0, 40000))        
+        bkg_sdata = bkg_sdata_full.reduce(EventRange = (0, 40000))
     elif not fit_mass:
         sig_sdata = sig_sdata_full
         bkg_sdata = bkg_sdata_full
@@ -332,7 +348,7 @@ if not fit_mass and options.cache:
     data_dir = cache_dir.Get('data')
     if data_dir.GetListOfKeys() == 1:
         data = cache_dir.get(os.path.join(data_dir.GetName(), sdata_dir.GetListOfKeys()))
-    
+
     # Read results
     rd = cache_dir.Get('results')
     if not rd:
@@ -355,7 +371,7 @@ if not fit_mass and options.cache:
 
     if options.simultaneous:
         split_cats = [split_util.split_cats(sig_sdata)]
-        
+
 ## Fitting opts
 fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 1, Offset = True,
                Verbose = options.verbose, Strategy = 1)
@@ -386,8 +402,8 @@ if fit_mass:
         data = new_data
 
     gc.collect()
-    
-    # In case of reweighing 
+
+    # In case of reweighing
     sig_mass_pdf = buildPdf(Components = (signal, background), Observables = (m,), Name = 'sig_mass_pdf')
     psi_mass_pdf = buildPdf(Components = (psi_ll, background), Observables = (mpsi,), Name='psi_mass_pdf')
     if signal_MC:
@@ -413,7 +429,7 @@ if fit_mass:
     from ROOT import TCanvas
     corr_canvas = TCanvas('mass_corr_canvas', 'mass_corr_canvas', 1000, 500)
     corr_canvas.Divide(2, 1)
-    
+
     ## Plot correlation histogram
     corr_canvas.cd(1)
     corr_hist_mass = mass_result.correlationHist()
@@ -421,11 +437,11 @@ if fit_mass:
     corr_hist_mass.GetYaxis().SetLabelSize(0.03)
     corr_hist_mass.SetContour(20)
     corr_hist_mass.Draw('colz')
-    
+
     ## Plot mass pdf
     from ROOT import kDashed, kRed, kGreen, kBlue, kBlack, kOrange
     from ROOT import TCanvas
-    
+
     mass_canvas = TCanvas('mass_canvas', 'mass_canvas', 600, 530)
     from P2VV.Utilities.Plotting import plot
     pdfOpts  = dict()
@@ -433,7 +449,7 @@ if fit_mass:
         mass_obs = m
     else:
         mass_obs = mpsi
-    
+
     ps = plot(mass_canvas.cd(1), mass_obs, pdf = mass_pdf, data = data
               , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack, Binning = 50)
               , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
@@ -467,30 +483,30 @@ if fit_mass and options.simultaneous:
     # get mass parameters that are split
     split_cats = [split_util.split_cats(data)]
     split_pars = [[par for par in mass_pdf.Parameters() if par.getAttribute('Yield')]]
-    
+
     # build simultaneous mass PDF
     sWeight_mass_pdf = SimultaneousPdf(mass_pdf.GetName() + '_simul',
                                        MasterPdf       = mass_pdf,
                                        SplitCategories = split_cats,
                                        SplitParameters = split_pars)
-    
+
     for i in range(5):
         sWeight_mass_result = sWeight_mass_pdf.fitTo(data, **fitOpts)
         if sWeight_mass_result.status() == 0:
             break
-        
+
     assert(sWeight_mass_result.status() == 0)
     sWeight_mass_result.SetName('sWeight_mass_result')
     results.append(sWeight_mass_result)
-    
+
     ## Plot correlation histogram
-    corr_canvas.cd(1)
+    corr_canvas.cd(2)
     corr_hist_sWmass = sWeight_mass_result.correlationHist()
     corr_hist_sWmass.GetXaxis().SetLabelSize(0.03)
     corr_hist_sWmass.GetYaxis().SetLabelSize(0.03)
     corr_hist_sWmass.SetContour(20)
     corr_hist_sWmass.Draw('colz')
-    
+
     from P2VV.Utilities.SWeights import SData
     sData = SData(Pdf = sWeight_mass_pdf, Data = data, Name = 'SimulMassSPlot')
     sig_sdata_full = sData.data(signal_name)
@@ -520,7 +536,7 @@ if fit_mass and options.simultaneous:
     else:
         sdatas_full['sig_sdata'] = sig_sdata_full
         sdatas_full['bkg_sdata'] = bkg_sdata_full
-    
+
     from copy import copy
     sdatas = copy(sdatas_full)
     if options.reduce:
@@ -572,7 +588,7 @@ if options.cache:
         from ROOT import TObjString
         cut_string = TObjString(cut)
         cache_dir.WriteTObject(cut_string, 'cut')
-        
+
         # Write data to cache file
         def get_dir(d):
             tmp = cache_dir.Get(d)
@@ -580,24 +596,24 @@ if options.cache:
                 cache_dir.mkdir(d)
                 tmp = cache_dir.Get(d)
             return tmp
-        
+
         from ROOT import TObject
         if (options.write_data or fit_mass):
             sdata_dir = get_dir('sdata')
             data_dir = get_dir('data')
             for name, ds in sdatas_full.iteritems():
                  sdata_dir.WriteTObject(ds, name, "Overwrite")
-                        
+
             sdata_dir.Write(sdata_dir.GetName(), TObject.kOverwrite)
             data_dir.WriteTObject(data, data.GetName(), "Overwrite")
             data_dir.Write(data_dir.GetName(), TObject.kOverwrite)
 
         ## Write PDFs
-        pdf_dir = get_dir('PDFs')
-        if (options.write_data or fit_mass):
-            pdf_dir.WriteTObject(mass_pdf._target_(), 'mass_pdf', "Overwrite")
-            if options.simultaneous:
-                pdf_dir.WriteTObject(sWeight_mass_pdf._target_(), 'sWeight_mass_pdf', "Overwrite")
+        ## pdf_dir = get_dir('PDFs')
+        ## if (options.write_data or fit_mass):
+        ##     pdf_dir.WriteTObject(mass_pdf._target_(), 'mass_pdf', "Overwrite")
+        ##     if options.simultaneous:
+        ##         pdf_dir.WriteTObject(sWeight_mass_pdf._target_(), 'sWeight_mass_pdf', "Overwrite")
 
         if not options.reduce:
             ## Write mass fit results
@@ -605,28 +621,24 @@ if options.cache:
             for r in results:
                 if not 'mass' in r.GetName():
                     continue
-                results_dir.WriteTObject(r, r.GetName(), "Overwrite")            
+                results_dir.WriteTObject(r, r.GetName(), "Overwrite")
             results_dir.Write(results_dir.GetName(), TObject.kOverwrite)
-                
+
         # Delete the input TTree which was automatically attached.
         cache_file.Delete('%s;*' % tree_name)
 
-## from profiler import heap_profiler_start
-## from profiler import heap_profiler_stop
-## heap_profiler_start("profile.log")
-        
 # Define default components
-if signal_MC and not options.simultaneous:
+if signal_MC:
     from ROOT import RooIpatia2 as Ipatia2
     from P2VV.RooFitWrappers import Pdf
 
     from P2VV.Parameterizations.TimeResolution import Rest_TimeResolution
     rest_tres = Rest_TimeResolution(Name = 'rest_tres', CoreModel = sig_tres)
-    
+
     rest_t = Prompt_Peak(time_obs, resolutionModel = rest_tres.model(), Name = 'rest_t')
 
-    rest = Component('rest', (rest_t.pdf(),), Yield = (1e4, 1, 1e5))
-    
+    rest = Component('rest', (rest_t.pdf(),), Yield = (5e3, 1, 1e5))
+
     components = [signal, rest]
 elif signal_MC:
     components = [signal]
@@ -644,7 +656,7 @@ if options.wpv and options.wpv_type == 'Mixing':
     if signal_MC:
         reweigh_data = dict(B = single_bin_sig_sdata, bkg = single_bin_bkg_sdata)
         masses = {'B' : m}
-        weights = 'B' 
+        weights = 'B'
         extra_args = {'t_diff' : t_diff}
     else:
         reweigh_data = dict(jpsi = single_bin_sig_sdata, bkg = single_bin_bkg_sdata)
@@ -665,14 +677,11 @@ if options.wpv and options.wpv_type == 'Mixing':
         wpv_psi = wpv_builder.shape('jpsi')
         sig_wpv = Component('sig_wpv', (wpv_psi, psi_m), Yield = (1000, 50, 30000))
     components += [sig_wpv]
-    ## if options.add_background:
-    ##     wpv_bkg = wpv_builder.shape('bkg')
-    ##     bkg_wpv = Component('wpv', (wpv_psi, bkg_m if signal_mc else bkg_mpsi), Yield = (1000, 50, 30000))
-    ##     componets += [bkg_wpv]
+    if options.add_background:
+        wpv_bkg = wpv_builder.shape('bkg')
+        bkg_wpv = Component('wpv', (wpv_psi, bkg_m if signal_mc else bkg_mpsi), Yield = (1000, 50, 30000))
+        componets += [bkg_wpv]
 elif options.wpv and options.wpv_type == 'Gauss':
-    ## if not signal_MC:
-    ##     wpv_mean = sig_tres._timeResMu
-    ## else:
     def make_wpv_pdf(prefix):
         wpv_mean = RealVar('%swpv_mean' % prefix, Value = 0, MinMax = (-1, 1), Constant = not signal_MC)
         if options.wpv_gauss_width != 0:
@@ -718,8 +727,8 @@ if options.simultaneous:
     else:
         split_pars[0] = [par for par in time_pdf.Parameters() if par.getAttribute('Yield')]
     split_pars[0] += sig_tres.splitVars()
-    
-    if options.wpv and options.wpv_type == 'Gauss':    
+
+    if options.wpv and options.wpv_type == 'Gauss':
         split_pars[0].extend([sig_wpv.getYield()])
         ## split_pars[0].extend([wpv_sigma])
 
@@ -774,7 +783,7 @@ if options.reuse_result and options.cache:
         if r.GetName() == '_'.join(['time_result'] + extra_name):
             time_result = results.pop(i)
             break
-    
+
     if time_result:
         pdf_vars = time_pdf.getVariables()
         for p in time_result.floatParsFinal():
@@ -786,7 +795,8 @@ if options.reuse_result and options.cache:
 ## Constraints
 constraint_pars = set(['sf_mean_offset', 'sf_mean_slope', 'sf_sigma_offset', 'sf_sigma_slope',
                        'timeResFrac2', 'timeResMu_offset', 'timeResMu_quad', 'timeResMu_slope',
-                       'timeResSFMean', 'timeResSFSigma'])
+                       'timeResSFMean', 'timeResSFSigma', 'timeResRestFracLeft', 'timeResRestLTSF',
+                       'timeResRestRSSF', 'timeResRestRTSF'])
 
 import shelve
 constraints = set()
@@ -798,7 +808,7 @@ if options.constrain:
     dbase = shelve.open('constraints.db')
     cid = ' '.join(args)
     assert(cid in dbase)
-    
+
     cinfo = dbase[cid]
     from ROOT import TMatrixDSym
     from ROOT import TVectorD
@@ -837,9 +847,8 @@ if options.constrain:
 
 time_pdf.Print("t")
 
-
 ## Fit
-## print 'fitting data'
+print 'fitting data'
 ## from profiler import profiler_start, profiler_stop
 ## profiler_start("acceptance.log")
 obs_arg = RooArgSet()
@@ -854,15 +863,13 @@ parameters = dict([(p.GetName(), p) for p in time_pdf.getParameters(obs_arg)])
 ## sf1 = (comb.getVal() - frac2.getVal() * sf2.getVal()) / (1 - frac2.getVal())
 ## Dilution.signal_dilution_dg(sig_sdata, st, sf1, frac2.getVal(), sf2.getVal())
 
-## assert(False)
-
 if options.fit:
     for i in range(3):
         time_result = time_pdf.fitTo(fit_data, SumW2Error = options.correct_errors, ExternalConstraints = constraints, **fitOpts)
         if time_result.status() == 0:
-            break    
+            break
     time_result.SetName('_'.join(['time_result'] + extra_name))
-    
+
     ## Draw correlation histogram for decay-time fit
     from ROOT import TCanvas
     time_corr_canvas = TCanvas('corr_canvas', 'corr_canvas', 500, 500)
@@ -871,11 +878,10 @@ if options.fit:
     time_corr_hist_time.GetYaxis().SetLabelSize(0.03)
     time_corr_hist_time.SetContour(20)
     time_corr_hist_time.Draw('colz')
-    
+
     results.append(time_result)
 
 ## profiler_stop()
-## result.Print('v')
 
 def cut_binning(t, binning):
     ## find the first boundary which is equal to or larger than t_min
@@ -910,7 +916,7 @@ else:
 
 bounds = cut_binning(time_obs, bounds)
 zoom_bounds = cut_binning(time_obs, zoom_bounds)
-    
+
 binning = RooBinning(len(bounds) - 1, bounds)
 binning.SetName('full')
 
@@ -940,7 +946,7 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
             canvas = TCanvas(name, name, 600, 400)
             __canvases.append(canvas)
             p = canvas.cd(1)
-            
+
             projSet = RooArgSet(st, time_pdf.indexCat())
             pdfOpts  = dict(Slice = (st_cat, ct.GetName()), ProjWData = (projSet, fit_data_full, True))
             ps = plot(p, time_obs, pdf = time_pdf, data = fit_data_full
@@ -960,7 +966,7 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
             for frame in ps:
                 plot_name = '_'.join((t.GetName(), bins.GetName(), ct.GetName(), frame.GetName()))
                 frame.SetName(plot_name)
-            
+
             plots.append(ps)
     else:
         canvas = TCanvas('time_canvas_%d' % i, 'time_canvas_%d' % i, 600, 533)
@@ -974,15 +980,15 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
                   , dataOpts = dict(MarkerSize = 0.8, Binning = bins, MarkerColor = kBlack)
                   , pdfOpts  = dict(LineWidth = 4, **pdfOpts)
                   , xTitle = 'decay time [ps]'
-                  ##, yTitle = 'Candidates / (XX ps)'
+                  , yTitle = 'Candidates / (XX ps)'
                   , yTitleOffset = 1
                   , logy = pl
                   , plotResidHist = 'BX')
-        
+
         for frame in ps:
             plot_name = '_'.join((t.GetName(), bins.GetName(), frame.GetName()))
             frame.SetName(plot_name)
-        
+
         plots.append(ps)
 
 from P2VV.Utilities import Resolution as ResolutionUtils
@@ -1002,19 +1008,19 @@ if options.cache:
                 cache_dir.mkdir(d)
                 tmp = cache_dir.Get(d)
             return tmp
-                
+
         ## Write PDFs
-        pdf_dir = get_dir('PDFs')
-        pdf_dir.WriteTObject(time_pdf._target_(), 'time_pdf_' + args[1] + \
-                             ('_' + options.parameterise) if options.parameterise else '', "Overwrite")
-                             
+        ## pdf_dir = get_dir('PDFs')
+        ## pdf_dir.WriteTObject(time_pdf._target_(), 'time_pdf_' + args[1] + \
+        ##                      ('_' + options.parameterise) if options.parameterise else '', "Overwrite")
+
         if not options.reduce and options.fit:
             ## Write fit results
             results_dir = get_dir('results')
             for r in results:
                 if not 'time' in r.GetName():
                     continue
-                results_dir.WriteTObject(r, r.GetName(), "Overwrite")            
+                results_dir.WriteTObject(r, r.GetName(), "Overwrite")
             results_dir.Write(results_dir.GetName(), TObject.kOverwrite)
 
         if not options.reduce and options.fit:
@@ -1023,38 +1029,40 @@ if options.cache:
             for ps in plots:
                 for p in ps:
                     plots_dir.WriteTObject(p, p.GetName(), "Overwrite")
-            
+
             plots_dir.Write(plots_dir.GetName(), TObject.kOverwrite)
 
-ca = RooArgList()
-for p in sorted(list(constraint_pars)):
-    rp = time_result.floatParsFinal().find(p)
-    if rp:
-        ca.add(rp)
+if options.write_constraints:
+    ca = RooArgList()
+    for p in sorted(list(constraint_pars)):
+        rp = time_result.floatParsFinal().find(p)
+        if rp:
+            ca.add(rp)
 
-cov = time_result.reducedCovarianceMatrix(ca)
-m = []
+    cov = time_result.reducedCovarianceMatrix(ca)
+    m = []
 
-for i in range(cov.GetNrows()):
-    m.append([])
-    row = cov[i]
-    for j in range(cov.GetNcols()):
-        m[i].append(row[j])
-   
-if options.fit and options.simultaneous:
-    dbase = shelve.open('constraints.db')
-    key_pars = args
-    if options.use_refit:
-        key_pars += ['refit']
-    
-    base_key = ' '.join(key_pars)
-    param_key = {'mu' : options.mu_param, 'sf' : options.sf_param}
-    if base_key in dbase:
-        d = dbase[base_key]
-        d.update({str(param_key) : {'parameters' : dict([(p.GetName(), (p.getVal(), p.getError())) for p in ca]),
-                                    'covariance' : m}})
-        dbase[base_key] = d
-    else:
-        dbase[base_key] = {str(param_key) : {'parameters' : dict([(p.GetName(), (p.getVal(), p.getError())) for p in ca]),
-                                             'covariance' : m}}    
-    dbase.close()
+    for i in range(cov.GetNrows()):
+        m.append([])
+        row = cov[i]
+        for j in range(cov.GetNcols()):
+            m[i].append(row[j])
+
+    if options.fit:
+        dbase = shelve.open('constraints.db')
+        key_pars = args
+        if options.use_refit:
+            key_pars += ['refit']
+
+        base_key = ' '.join(key_pars)
+        param_key = {'mu' : options.mu_param, 'sf' : options.sf_param}
+        if base_key in dbase:
+            d = dbase[base_key]
+            d.update({str(param_key) : {'parameters' : dict([(p.GetName(), (p.getVal(), p.getError())) for p in ca]),
+                                        'covariance' : m}})
+            dbase[base_key] = d
+        else:
+            dbase[base_key] = {str(param_key) : {'parameters' : dict([(p.GetName(), (p.getVal(), p.getError())) for p in ca]),
+                                                 'covariance' : m}}
+        dbase.close()
+

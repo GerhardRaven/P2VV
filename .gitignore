@@ -29,3 +29,4 @@ cmt/install*
 standalone/.deps/*
 standalone/.build/*
 standalone/lib
+scripts/constraints.db

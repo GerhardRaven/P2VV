@@ -252,10 +252,10 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                             'sf2' : [self._sigmat, self.__placeholder, self._sf2_offset, self._sf2_slope]}
                 self._sf2_original = self._timeResSigmasSFs[-2]
                 self._timeResSigmasSFs[-2] = self._parseArg( self._sf2_original.GetName() + '_linear', kwargs,
-                                                             Formula = '@0 + @1 * @2', ObjectType = 'FormulaVar',
+                                                             Formula = formula, ObjectType = 'FormulaVar',
                                                              Arguments = args['sf2'])
                 self._sf_mean = self._parseArg( 'timeResSFMean_linear', kwargs,
-                                                Formula = '@0 + @1 * @2', ObjectType = 'FormulaVar', 
+                                                Formula = formula, ObjectType = 'FormulaVar', 
                                                 Arguments = [ self._sf_mean_offset, self._sf_mean_slope, self.__placeholder] )
             else:
                 self._sf_mean = self._parseArg('timeResSFMean', kwargs
