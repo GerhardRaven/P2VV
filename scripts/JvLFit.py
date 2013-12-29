@@ -34,7 +34,7 @@ elif pdfConfig['sFit'] :
     elif pdfConfig['runPeriods'] == [ 2012 ] :
         dataSetFile = dataPath + 'P2VVDataSets2012Reco14_I2DiegoMass_6KKMassBins_2TagCats.root'
     else :
-        dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2DiegoMass_6KKMassBins_2TagCats.root'
+        dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
         #dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_exclBiased_narrowKKMass_2TagCats.root'
 else :
     dataSetName = 'JpsiKK'
