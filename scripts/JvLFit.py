@@ -73,9 +73,10 @@ constLambdaCP     = ''  # 'lamb'
 equalAbsLambdaCPs = False
 
 # PDF options
-pdfConfig['timeResType']   = 'event3fb' # 'eventNoMean'
-pdfConfig['timeEffType']   = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
-pdfConfig['constrainBeta'] = ''  # '' / 'constrain' / 'fixed' / 'noBeta'
+pdfConfig['timeResType']       = 'event3fb' # 'eventNoMean'
+pdfConfig['timeEffType']       = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
+pdfConfig['timeEffParameters'] = dict( Fit = False, RandomBinOrder = False )
+pdfConfig['constrainBeta']     = ''  # '' / 'constrain' / 'fixed' / 'noBeta'
 
 timeEffFile2011 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
 timeEffFile2012 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
@@ -390,6 +391,15 @@ if fastFit :
 if pdfConfig['lambdaCPParam'].startswith('lambPhi_CPVDecay') :
     if equalAbsLambdaCPs : pdfBuild['lambdaCP'].setConstant('rhoCP_A.*')
     else :                 pdfBuild['lambdaCP'].setConstant('rhoCP_m')
+
+if pdfConfig['timeEffParameters']['Fit'] :
+    for period in [ 'p2011', 'p2012' ] :
+        for cat, coefs in pdfBuild['timeResModels'][ '{bin0;%s}' % period ].shapes()[0].coefficients().iteritems() :
+            for coef in coefs :
+                if coef.GetName().endswith('001') :
+                    coef.setConstant(True)
+                if cat[2] == 'notExclB' :
+                    coef.setVal( 0.5 * coef.getVal() )
 
 #pdfBuild['lifetimeParams'].parameter('Gamma').setVal(0.72)
 
