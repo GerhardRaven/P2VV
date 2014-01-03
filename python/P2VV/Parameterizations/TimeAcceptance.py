@@ -149,7 +149,7 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
         with TFile.Open(input_file) as acceptance_file :
             if not acceptance_file:
                 raise ValueError, "Cannot open histogram file %s" % input_file
-            print 'P2VV - INFO: using time efficiency histograms file "%s"' % input_file
+            print 'P2VV - INFO: Paper2012_csg_TimeAcceptance: using time efficiency histograms file "%s"' % input_file
             # transform histograms in map of cat state -> histo name
             # assume only one category for now (compositing could be implemented later)
             for (cat, v) in self._histograms.iteritems():
@@ -162,7 +162,7 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
                                                      % (info['histogram'], input_file))
                     hist.SetDirectory(0) # disconnect self._hist from file... otherwise it is deleted when file is closed
                     info['histogram'] = hist
-                    print 'P2VV - INFO: time efficiency category "%s/%s": using histogram "%s"'\
+                    print 'P2VV - INFO: Paper2012_csg_TimeAcceptance: time efficiency category "%s/%s": using histogram "%s"'\
                           % ( cat.GetName(), s, hist.GetName() )
 
         parameterization = kwargs.pop('Parameterization','CubicSplineGaussModel')
