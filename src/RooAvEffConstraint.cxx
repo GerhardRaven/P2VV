@@ -33,7 +33,7 @@ RooAvEffConstraint::RooAvEffConstraint(const char *name, const char *title,
      _integral(0),
      _integrals("!integrals", 0, this),
      _efficiencies("!efficiencies", 0, this),
-     _model("!res_model", 0, this)
+     _model("!res_model", "!res_model", this, model)
 { 
    auto_ptr<RooArgSet> vars(pdf.getVariables());
    RooFIter it = vars->fwdIterator();
