@@ -17,6 +17,9 @@ def angularMomentIndices( label,angleFuncs ) :
         if case('weights') :
             return [ ( 0, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ), ( 2, 0, 0 ), ( 0, 2, 1 ), ( 0, 2, -1 ), ( 0, 2, -2 )
                    , ( 1, 0, 0 ), ( 1, 2, 1 ), ( 1, 2, -1 ) ]
+        if case('weightsPlus1') :
+            return [ ( 0, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ), ( 2, 0, 0 ), ( 0, 2, 1 ), ( 0, 2, -1 ), ( 0, 2, -2 )
+                   , ( 1, 0, 0 ), ( 1, 2, 1 ), ( 1, 2, -1 ), ( 0, 1, 0 ), ( 0, 1, 1 ) ]
         if case('basis012') :
             return [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
                          for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]

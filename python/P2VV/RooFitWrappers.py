@@ -1987,7 +1987,6 @@ class BinnedFun(RooObject):
                     state_info['bins'] = bins
                     state_info['heights'] = heights
                 n_vars += len(state_info['heights'])
-                
         if self.__random_bin_order:
             ## Seed the random numbers with the name prefix so we only get different
             ## random numbers when we really need them

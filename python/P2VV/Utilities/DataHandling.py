@@ -517,10 +517,10 @@ def printEventYields( **kwargs ) :
 
     # print yields and fractions with error from S/(S+B) fraction only (no Poisson error for number of events!)
     print
-    print '-'.join( dashes for dashes in [ ' ' * 4 + '-' * 22, '-' * 8 ] + [ '-' * num for name in yieldNames for num in ( 23, 19 ) ] )
-    print ' '.join( ( '{0:^%ds}' % width ).format(title) for ( title, width ) in [ ( '', 26 ), ( ' total', 8 ) ]\
+    print '-'.join( dashes for dashes in [ ' ' * 4 + '-' * 26, '-' * 8 ] + [ '-' * num for name in yieldNames for num in ( 23, 19 ) ] )
+    print ' '.join( ( '{0:^%ds}' % width ).format(title) for ( title, width ) in [ ( '', 30 ), ( ' total', 8 ) ]\
                    + [ ( name if num == 23 else 'f(' + name + ')', num ) for name in yieldNames for num in ( 23, 19 ) ] )
-    print '-'.join( dashes for dashes in [ ' ' * 4 + '-' * 22, '-' * 8 ] + [ '-' * num for name in yieldNames for num in ( 23, 19 ) ] )
+    print '-'.join( dashes for dashes in [ ' ' * 4 + '-' * 26, '-' * 8 ] + [ '-' * num for name in yieldNames for num in ( 23, 19 ) ] )
 
     from P2VV.Utilities.General import getSplitPar
     cont = True
@@ -533,10 +533,10 @@ def printEventYields( **kwargs ) :
         nEvErr     = [ yieldVar.getError() for yieldVar in yields ]
         nEvTot     = sum(nEv)
         frac       = [ num / nEvTot if nEvTot > 0. else 0. for num in nEv ]
-        nEvCorrErr = [ sqrt( numErr**2 - num**2 / nEvTot ) for num, numErr in zip( nEv, nEvErr ) ]
+        nEvCorrErr = [ sqrt( ( numErr**2 - num**2 / nEvTot ) if numErr**2 > num**2 / nEvTot else 0. ) for num, numErr in zip(nEv, nEvErr) ]
         fracErr    = [ err / nEvTot if nEvTot > 0. else 0. for err in nEvCorrErr ]
 
-        print '     {0:>20s}   {1:>6.0f}  '.format( stateName, nEvTot )\
+        print '     {0:>24s}   {1:>6.0f}  '.format( stateName, nEvTot )\
               + ' '.join( ' {0:>9.2f} +/- {1:>7.2f}   {2:>6.4f} +/- {3:>6.4f} '.format( num, err, fr, frErr )\
                          for ( num, err, fr, frErr ) in zip( nEv, nEvCorrErr, frac, fracErr ) )
 
@@ -553,7 +553,7 @@ def printEventYields( **kwargs ) :
             else :
                 continue
 
-    print '-'.join( dashes for dashes in [ ' ' * 4 + '-' * 22, '-' * 8 ] + [ '-' * num for name in yieldNames for num in ( 23, 19 ) ] )
+    print '-'.join( dashes for dashes in [ ' ' * 4 + '-' * 26, '-' * 8 ] + [ '-' * num for name in yieldNames for num in ( 23, 19 ) ] )
     print
 
 

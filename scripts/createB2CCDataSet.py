@@ -3,21 +3,21 @@
 #####################
 
 #nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs2JpsiPhi_2011_2012_s20_dv33r6p1_20131217_tupleB_selTrig.root'
-nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_w0.root'
+nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_December28.root'
 nTupleName       = 'DecayTree'
 dataSetsFilePath = 'temp.root' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_6KKMassBins_2TagCats.root'
 appendToFile     = False
 savedObjects     = [ 'sigSWeight' ]
 plotsFilePath    = 'temp.ps' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_6KKMassBins_2TagCats.ps'
-parFileIn        = 'eventYields6KKBins.par' #'eventYields6KKBinsNoMC.par' #'eventYields6KKBins.par'
+parFileIn        = 'eventYields6KKBins_HLT2.par' #'eventYields6KKBins.par' #'eventYields6KKBinsNoMC.par' #'eventYields6KKBins.par'
 parFileOut       = ''
 
 simulation       = False
 weightName       = 'wMC'
 runPeriods       = [ 2011, 2012 ]
-triggerSel       = 'noSelection' # 'timeEffFit' # 'paper2012' # 'HLT1Unbiased' # 'paper2012'
-dataCuts         = 'noSelection' # 'nominal2011'
-addCuts          = '' # 'runPeriod == 2011 && hlt1_excl_biased_dec == 1' # 'wMC > 0.'
+triggerSel       = 'timeEffFit' # 'paper2012' # 'HLT1Unbiased' # 'paper2012'
+dataCuts         = 'nominal2011'
+addCuts          = '' # 'hlt2_biased == 1' # 'runPeriod == 2011 && hlt1_excl_biased_dec == 1' # 'wMC > 0.'
 dataSample       = '(bkgcat==0 || bkgcat==50)' if simulation else ''
 sWeightName      = 'sigWeight_I2'
 addSWeights      = False
@@ -250,7 +250,7 @@ else :
 from P2VV.Load import RooFitOutput, LHCbStyle
 
 # create list of required observables
-reqObsList = [ 'index', 'mass', 'KKMass', 'tagDecOS', 'tagDecSS', 'wTagOS', 'wTagSS', 'hlt1ExclB' ]
+reqObsList = [ 'index', 'mass', 'KKMass', 'tagDecOS', 'tagDecSS', 'wTagOS', 'wTagSS', 'hlt1ExclB', 'hlt2B' ]
 reqObsList += [ weightName ] if weightName else [ ]
 reqObsList += ['runPeriod'] if runPeriods else [ ]
 reqObsList += [ '%s_P%s' % ( part, comp ) for part in [ 'Kplus', 'Kminus', 'muplus', 'muminus' ] for comp in ( 'X', 'Y', 'Z' ) ]\
@@ -444,33 +444,31 @@ if not simulation :
         sigParNames = [ par.GetName() for par in signalBMass.parameters() if not par.isConstant() ]
         bkgParNames = [ par.GetName() for par in backgroundBMass.parameters() if not par.isConstant() ]
         if runPeriods :
-            # split yields and background parameters for run period
+            # split parameters for run period
             splitCats[ observables['runPeriod'].GetName() ] = set( yieldNames + bkgParNames )
-            if sigMassModel.startswith('Ipatia2') :
-                # split signal mean and sigma for run period
-                for parName in sigParNames :
-                    if 'mean' in parName or 'sigma' in parName : splitCats[ observables['runPeriod'].GetName() ].add(parName)
+            #if sigMassModel.startswith('Ipatia2') :
+            #    for parName in sigParNames :
+            #        if 'mean' in parName or 'sigma' in parName : splitCats[ observables['runPeriod'].GetName() ].add(parName)
 
         if len(KKMassBinBounds) > 2 :
-            # split yields for KK-mass category
+            # split parameters for KK-mass category
             splitCats[ observables['KKMassCat'].GetName() ] = set(yieldNames)
             if sigMassModel.startswith('Ipatia2') :
-                # split signal parameters for KK-mass category
-                #splitCats[ observables['KKMassCat'].GetName() ].add('m_sig_sigma')
                 for parName in sigParNames : splitCats[ observables['KKMassCat'].GetName() ].add(parName)
-            if 'FreeCBkg' in SWeightsType :
-                # split all background parameters for KK-mass category
-                for parName in bkgParNames : splitCats[ observables['KKMassCat'].GetName() ].add(parName)
+            #if 'FreeCBkg' in SWeightsType :
+            #    for parName in bkgParNames : splitCats[ observables['KKMassCat'].GetName() ].add(parName)
 
-        # split yields for HLT1 category
+        # split parameters for HLT1 category
         splitCats[ observables['hlt1ExclB'].GetName() ] = set(yieldNames)
-        if sigMassModel.startswith('Ipatia2') :
-            # split signal parameters for HLT1 category
-            #splitCats[ observables['hlt1ExclB'].GetName() ].add('m_sig_sigma')
-            for parName in sigParNames : splitCats[ observables['hlt1ExclB'].GetName() ].add(parName)
+        #if sigMassModel.startswith('Ipatia2') :
+        #    for parName in sigParNames : splitCats[ observables['hlt1ExclB'].GetName() ].add(parName)
+        #if 'FreeCBkg' in SWeightsType :
+        #    for parName in bkgParNames : splitCats[ observables['hlt1ExclB'].GetName() ].add(parName)
+
+        # split parameters for HLT2 category
+        splitCats[ observables['hlt2B'].GetName() ] = set(yieldNames)
         if 'FreeCBkg' in SWeightsType :
-            # split all background parameters for HLT1 category
-            for parName in bkgParNames : splitCats[ observables['hlt1ExclB'].GetName() ].add(parName)
+            for parName in bkgParNames : splitCats[ observables['hlt2B'].GetName() ].add(parName)
 
         for cat in constSplitCats :
             # split specified constant shape parameters

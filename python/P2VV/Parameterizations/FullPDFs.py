@@ -473,6 +473,9 @@ class SimulCatSettings(list) :
         self._cats = set()
         self._default = None
 
+    def name() :
+        return self._name
+
     def categories(self) :
         return self._cats
 
@@ -881,31 +884,25 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             
             # Figure out which way the time resolution model is to be split
             from itertools import chain
-            resParams = set(chain.from_iterable(list(v) for v in origResParams.itervalues()))
+            resParams = set( var.GetName() for var in timeResModelsOrig['prototype']['model'].getVariables() )
             splitResCats = [c for c, pars in splitParams.iteritems() if set(pars).intersection(resParams)]
-            
-            if splitResCats:
-                if splitCat.isFundamental():
-                    splitResCats = inputCats
-                else:
-                    l = splitCat.inputCatList()
-                    splitResCats = [l.find(c) for c in splitResCats]
-                replacements = {}
-                for splitCatState in splitCat:
-                    splitCat.setIndex( splitCatState.getVal() )
-                    k = tuple(c.getLabel() for c in splitResCats)
-                    if k not in replacements:
-                        catPdf = self['simulPdf'].getPdf( splitCatState.GetName() )
-                        resModelCount = 0
-                        from ROOT import RooBTagDecay
-                        for comp in filter( lambda x : isinstance( x, RooBTagDecay ), catPdf.getComponents() ) :
-                            # TODO: don't do this with RooBTagDecay, but move RooBTagDecay::resModel() to RooAbsAnaConvPdf
-                            assert resModelCount < 1, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: multiple resolution models found for simultaneous category "%s"' % splitCatState.GetName()
-                            replacements[k] = __make_model(comp.resolutionModel())
-                            resModelCount += 1
-                        assert resModelCount > 0, ('P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: no resolution'
-                                                   + ' model found for simultaneous category "%s"' % splitCatState.GetName())
-                    timeResModelsOrig[splitCatState.GetName()] = replacements[k]
+            splitResCats = [inputCats.find(c) for c in splitResCats]
+            replacements = { ( ) : timeResModelsOrig['prototype'] }
+            for splitCatState in splitCat:
+                splitCat.setIndex( splitCatState.getVal() )
+                k = tuple(c.getLabel() for c in splitResCats)
+                if k not in replacements:
+                    catPdf = self['simulPdf'].getPdf( splitCatState.GetName() )
+                    resModelCount = 0
+                    from ROOT import RooBTagDecay
+                    for comp in filter( lambda x : isinstance( x, RooBTagDecay ), catPdf.getComponents() ) :
+                        # TODO: don't do this with RooBTagDecay, but move RooBTagDecay::resModel() to RooAbsAnaConvPdf
+                        assert resModelCount < 1, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: multiple resolution models found for simultaneous category "%s"' % splitCatState.GetName()
+                        replacements[k] = __make_model(comp.resolutionModel())
+                        resModelCount += 1
+                    assert resModelCount > 0, ('P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: no resolution'
+                                               + ' model found for simultaneous category "%s"' % splitCatState.GetName())
+                timeResModelsOrig[splitCatState.GetName()] = replacements[k]
                     
             if paramKKMass == 'simultaneous' and ASParam != 'Mag2ReIm' :
                 # set values for split S-P coupling factors
@@ -938,54 +935,50 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         if not simulPdf :
             # original PDF is not simultaneous: multiply with acceptance from outside PDF
-            multiplyByTimeAcceptance(pdf, self, data = signalData, histFile = timeEffHistFiles['file'],
-                                     histUBName = timeEffHistFiles['hlt1UB'], histExclBName = timeEffHistFiles['hlt1ExclB'])
+            if type(timeEffHistFiles) == SimulCatSettings :
+                timeEffHistFiles = timeEffHistFiles.default()
+            multiplyByTimeAcceptance( pdf, self, data = signalData, histFile = timeEffHistFiles['file']
+                                     , histUBName = timeEffHistFiles['hlt1UB'], histExclBName = timeEffHistFiles['hlt1ExclB'] )
         else :
             # original PDF is simultaneous: multiply with acceptance separately for all categories
             from ROOT import RooArgList
-            splitCat      = simulPdf.indexCat()
-            inputCats     = RooArgList(splitCat) if splitCat.isFundamental() else splitCat.inputCatList()
+            splitCat = simulPdf.indexCat()
+            inputCats = RooArgList(splitCat) if splitCat.isFundamental() else splitCat.inputCatList()
+            splitAccCats = [ ]
+            if type(timeEffHistFiles) == SimulCatSettings :
+                splitAccCats = [ inputCats.find(cat) for cat in timeEffHistFiles.categories() ]
+                assert all( cat for cat in splitAccCats )\
+                       , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: PDF was not split for all categories in "%s"' % timeEffHistFiles.name()
             singleHLT1Eff = timeEffType.startswith('paper2012')\
                             and any( cat.GetName() == observables['hlt1ExclB'].GetName() for cat in inputCats )
 
-            # Make a map of top level category state to acceptance setting and parameter name prefix
-            accSettings = {}
-            if type(timeEffHistFiles) == SimulCatSettings:
-                splitAccCats = [inputCats.find(c if type(c) == str else c.GetName()) for c in timeEffHistFiles.categories()]
-                from itertools import product
-                for keySpec, effFile in timeEffHistFiles:
-                    for key in product(*[zip([c] * len(labs), labs) for c, labs in keySpec.iteritems()]):
-                        accSettings[tuple(key)] = effFile
-            else:
-                cNamePF = ( splitCatState.GetName() ).replace( '{', '' ).replace( '}', '' ).replace( ';', '_' )
-                splitAccCats = inputCats
-                for splitCatState in splitCat:
-                    # get category state and corresponding acceptance parameters
-                    splitCat.setIndex(splitCatState.getVal())
-                    accSettings[tuple((cat.GetName(), cat.getLabel()) for cat in splitAccCats)] = (effFile, cNamePF)
-            
             # loop over simultaneous categories
             for splitCatState in splitCat:
                 # get category state and corresponding acceptance parameters
                 splitCat.setIndex( splitCatState.getVal() )
                 catPdf = simulPdf.getPdf( splitCatState.GetName() )
-                effFile = accSettings[tuple((cat.GetName(), cat.getLabel()) for cat in splitAccCats)]
-                cNamePF = '_'.join('%s_%s' % (cat.GetName(), cat.getLabel()) for cat in splitAccCats)
-                effType = observables['hlt1ExclB'].getIndex() if singleHLT1Eff else timeEffType
-                if effType == 0:
-                    effType = 'HLT1Unbiased'
-                elif effType == 1:
-                    effType = 'HLT1ExclBiased'
-                elif effType != timeEffType :
-                    raise AssertionError\
-                          , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: unknown HLT1 exclusively biased state: %s (%d)'\
-                            % ( observables['hlt1ExclB'].getLabel(), effType )
+                if type(timeEffHistFiles) == SimulCatSettings :
+                    effFile = timeEffHistFiles.getSettings( [ ( cat.GetName(), cat.getLabel() ) for cat in splitAccCats ] )
+                else :
+                    effFile = timeEffHistFiles
+
+                cNamePF = '_'.join( '%s_%s' % ( cat.GetName(), cat.getLabel() ) for cat in splitAccCats )
+                if singleHLT1Eff :
+                    cNamePF += '_%s_%s' % ( observables['hlt1ExclB'].GetName(), observables['hlt1ExclB'].getLabel() )
+                    if observables['hlt1ExclB'].getIndex() == 0 :
+                        timeEffType = 'HLT1Unbiased'
+                    elif observables['hlt1ExclB'].getIndex() == 1 :
+                        timeEffType = 'HLT1ExclBiased'
+                    else :
+                        raise AssertionError, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: unknown HLT1 exclusively biased state: %s (%d)'\
+                                              % ( observables['hlt1ExclB'].getLabel(), observables['hlt1ExclB'].getIndex() )
 
                 # multiply PDF for this category state with acceptance
-                multiplyByTimeAcceptance( catPdf, self, data = signalData, timeEffType = effType,
-                                          histFile = effFile['file'], histUBName = effFile['hlt1UB'],
-                                          histExclBName = effFile['hlt1ExclB'], coefNamePF = cNamePF,
-                                          motherPdf = simulPdf, resModelKey = splitCatState.GetName() )
+                multiplyByTimeAcceptance( catPdf, self, data = signalData, timeEffType = timeEffType
+                                         , histFile = effFile['file'], histUBName = effFile['hlt1UB']
+                                         , histExclBName = effFile['hlt1ExclB'], coefNamePF = cNamePF
+                                         , motherPdf = simulPdf, resModelKey = splitCatState.GetName() )
+
 
     def _multiplyByAngularAcceptance( self, **kwargs ) :
         angEffMomsFiles = getKWArg( self, kwargs, 'angEffMomsFiles' )
