@@ -24,6 +24,13 @@ using std::vector;
 using std::auto_ptr;
 
 //_____________________________________________________________________________
+RooAvEffConstraint::RooAvEffConstraint()
+   : RooAbsPdf(), _integral(0)
+{
+
+}
+
+//_____________________________________________________________________________
 RooAvEffConstraint::RooAvEffConstraint(const char *name, const char *title, 
                                        RooAbsPdf& pdf, RooEffResModel& model,
                                        RooRealVar& mean, RooRealVar& sigma)
@@ -33,7 +40,7 @@ RooAvEffConstraint::RooAvEffConstraint(const char *name, const char *title,
      _integral(0),
      _integrals("!integrals", 0, this),
      _efficiencies("!efficiencies", 0, this),
-     _model("!res_model", 0, this)
+     _model("!res_model", "!res_model", this, model)
 { 
    auto_ptr<RooArgSet> vars(pdf.getVariables());
    RooFIter it = vars->fwdIterator();

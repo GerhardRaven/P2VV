@@ -1895,8 +1895,8 @@ class BinnedFun(RooObject):
         observable = kwargs.pop('ObsVar')
         hist = kwargs.pop('Histogram', None)
         histograms = kwargs.pop('Histograms', None)
+        self.__random_bin_order = kwargs.pop('RandomBinOrder', False)
         self.__fit = kwargs.pop('Fit', False)
-        self.__randBinOrder = kwargs.pop('RandomBinOrder', True)
         self.__binning = None
         self.__coefficients = {}
         
@@ -1987,8 +1987,7 @@ class BinnedFun(RooObject):
                     state_info['bins'] = bins
                     state_info['heights'] = heights
                 n_vars += len(state_info['heights'])
-
-        if self.__randBinOrder :
+        if self.__random_bin_order:
             ## Seed the random numbers with the name prefix so we only get different
             ## random numbers when we really need them
             import random
@@ -1999,9 +1998,7 @@ class BinnedFun(RooObject):
             nn = int(log(n_vars, 10))
             order = [i for i in range(n_vars)]
             random.shuffle(order)
-            order = [('%' + ('0%d' % (nn + 1)) + 'd_') % (i + 1) for i in order]
-        else :
-            order = [ '' ] * n_vars
+            order = [('%' + ('0%d' % (nn + 1)) + 'd') % (i + 1) for i in order]
 
         ## Create the RealVars which are the real floating parameters for the
         ## acceptance
@@ -2020,7 +2017,10 @@ class BinnedFun(RooObject):
 
                 # Make the RealVars which represent the bin heights
                 for i, v in enumerate(heights):
-                    bin_name = '%s%s%s_%s_bin_%03d' % (order.pop(), self.__namePF, category.GetName(), state, i + 1)
+                    if self.__random_bin_order:
+                        bin_name = '%s_%s%s_%s_bin_%03d' % (order.pop(), self.__namePF, category.GetName(), state, i + 1)
+                    else:
+                        bin_name = '%s%s_%s_bin_%03d' % (self.__namePF, category.GetName(), state, i + 1)                        
                     if v > 0.999: v = 0.999
                     heights[i] = RealVar(bin_name, Observable = False, Value = v, MinMax = (0.001, 0.999))
                 if not self.__fit:

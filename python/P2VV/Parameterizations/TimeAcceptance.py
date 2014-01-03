@@ -143,9 +143,8 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
         self.__model = kwargs.pop('ResolutionModel')
         name = kwargs.pop('Name', 'Paper2012_BinnedFunAcceptance')
         fit = kwargs.pop('Fit', False)
-        randBinOrder = kwargs.pop('RandomBinOrder', True)
         namePF = self.getNamePrefix(kwargs)
-        
+        rbo = kwargs.pop('RandomBinOrder', False)
         with TFile.Open(input_file) as acceptance_file :
             if not acceptance_file:
                 raise ValueError, "Cannot open histogram file %s" % input_file
@@ -178,8 +177,9 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
             print 'WARNING  WARNING  WARNING  WARNING  WARNING  WARNING  WARNING WARNING WARNING WARNING WARNING'
             print 'WARNING  WARNING  WARNING  WARNING  WARNING  WARNING  WARNING WARNING WARNING WARNING WARNING'
             from P2VV.RooFitWrappers import EffResModel as AcceptanceModel
-        self._shape = self._parseArg(name + '_shape', kwargs, ParNamePrefix = namePF, Fit = fit, RandomBinOrder = randBinOrder,
-                                     ObsVar = self._time, Histograms = self._histograms, ObjectType = 'BinnedFun')
+        self._shape = self._parseArg(name + '_shape', kwargs, ParNamePrefix = namePF, Fit = fit,
+                                     ObsVar = self._time, Histograms = self._histograms,
+                                     RandomBinOrder = rbo, ObjectType = 'BinnedFun')
         acceptance = AcceptanceModel(Name = namePF + name, ParNamePrefix = namePF,
                                      Efficiency = self._shape, ResolutionModel = self.__model['model'],
                                      ConditionalObservables = self.__model.ConditionalObservables() | set( self._histograms.iterkeys()),

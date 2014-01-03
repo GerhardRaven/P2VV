@@ -20,7 +20,7 @@
 #pragma link C++ class RooEfficiencyBin+;
 #pragma link C++ class RooAvEffConstraint+;
 #pragma link C++ class RooCorrectedWeight+;
-#pragma link C++ class RooAbsEffResModel;
+#pragma link C++ class RooAbsEffResModel+;
 #pragma link C++ class RooEffResModel+;
 #pragma link C++ class MultiHistEntry+;
 #pragma link C++ class RooMultiEffResModel+;

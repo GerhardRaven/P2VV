@@ -220,7 +220,7 @@ if ntuple_file:
     else:
         dataset_name = 'JpsiKK_sigSWeight'
         data = input_file.Get(dataset_name)
-        data = data.reduce('runPeriod == runPeriod::p2012')
+        data = data.reduce('runPeriod == runPeriod::p2011')
 else:
     ## Generate
     from P2VV.Load import MultiCatGen
@@ -332,26 +332,26 @@ def plot_shape(p, o, shape, errorOpts = {}, pdfOpts = {}):
     frame.Draw()
     __frames.append(frame)
     
-shapes = acceptance.shapes()
+shapes = [s.efficiency() for s in pdf.ExternalConstraints()]
 eff_canvas = TCanvas('eff_canvas', 'eff_canvas', 1000, 500)
 from ROOT import kYellow, kOrange
 for p, shape in zip(eff_canvas.pads(len(shapes), 1), shapes):
     plot_shape(p, t, shape, errorOpts = {'result' : result, 3 : kYellow, 1 : kOrange})
 
-output = {'hlt1_shape' : 'hlt1_excl_biased_dec_exclB_bin',
-          'hlt2_shape' : 'hlt2_biased_B_bin'}
-output_file = TFile.Open('efficiencies.root', 'recreate')
+## output = {'hlt1_shape' : 'hlt1_excl_biased_dec_exclB_bin',
+##           'hlt2_shape' : 'hlt2_biased_B_bin'}
+## output_file = TFile.Open('efficiencies.root', 'recreate')
 
-allVars = w.allVars()
-from ROOT import TH1D
-for name, pat in output.iteritems():
-    n = len(biased_bins)
-    heights = [v for v in allVars if v.GetName().find(pat) != -1]
-    heights = sorted(heights, key = lambda v: int(v.GetName().split('_', 1)[-1]))
-    v = [(h.getVal(), h.getError()) for h in heights]
-    hist = TH1D(name, name, n - 1, biased_bins)
-    for i in range(1, n):
-        hist.SetBinContent(i, v[i - 1][0])
-        hist.SetBinError(i, v[i - 1][1])
-    output_file.WriteTObject(hist)
-output_file.Close()
+## allVars = w.allVars()
+## from ROOT import TH1D
+## for name, pat in output.iteritems():
+##     n = len(biased_bins)
+##     heights = [v for v in allVars if v.GetName().find(pat) != -1]
+##     heights = sorted(heights, key = lambda v: int(v.GetName().split('_', 1)[-1]))
+##     v = [(h.getVal(), h.getError()) for h in heights]
+##     hist = TH1D(name, name, n - 1, biased_bins)
+##     for i in range(1, n):
+##         hist.SetBinContent(i, v[i - 1][0])
+##         hist.SetBinError(i, v[i - 1][1])
+##     output_file.WriteTObject(hist)
+## output_file.Close()
