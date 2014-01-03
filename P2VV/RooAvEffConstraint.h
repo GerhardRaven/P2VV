@@ -23,6 +23,8 @@ class RooCustomizer;
 class RooAvEffConstraint : public RooAbsPdf {
 public:
 
+   RooAvEffConstraint();
+
    RooAvEffConstraint(const char *name, const char *title, 
                       RooAbsPdf& pdf, RooEffResModel& model,
                       RooRealVar& mean, RooRealVar& sigma);
