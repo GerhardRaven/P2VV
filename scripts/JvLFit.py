@@ -75,7 +75,7 @@ equalAbsLambdaCPs = False
 # PDF options
 pdfConfig['timeResType']       = 'event3fb' # 'eventNoMean'
 pdfConfig['timeEffType']       = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
-pdfConfig['timeEffParameters'] = dict( Fit = False, RandomBinOrder = False )
+pdfConfig['timeEffParameters'] = { } # dict( Fit = False, RandomBinOrder = False )
 pdfConfig['constrainBeta']     = ''  # '' / 'constrain' / 'fixed' / 'noBeta'
 
 timeEffFile2011 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
@@ -138,6 +138,9 @@ pdfConfig['lambdaCPParam'] = 'lambPhi' # 'lambPhi_CPVDecay_PSWaves'  # 'lambPhi'
 #for par in [ 'tres_placeholder', 'timeResMu', 'timeResFrac2', 'sf_mean_offset', 'sf_mean_slope', 'sf_sigma_offset', 'sf_sigma_slope' ] :
 #    pdfConfig['splitParams']['runPeriod'].remove(par)
 #    pdfConfig['externalConstr'].pop(par)
+
+#pdfConfig['splitParams']['hlt1_excl_biased_dec'] = [ 'hlt1_excl_biased_dec' ]
+#pdfConfig['splitParams']['hlt1_excl_biased_dec'] = [ 'sf_mean_offset' ]
 
 dGammaVal = 0.108
 dMVal     = 17.647
@@ -394,7 +397,7 @@ if pdfConfig['lambdaCPParam'].startswith('lambPhi_CPVDecay') :
     if equalAbsLambdaCPs : pdfBuild['lambdaCP'].setConstant('rhoCP_A.*')
     else :                 pdfBuild['lambdaCP'].setConstant('rhoCP_m')
 
-if pdfConfig['timeEffParameters']['Fit'] :
+if 'Fit' in pdfConfig['timeEffParameters'] and pdfConfig['timeEffParameters']['Fit'] :
     for period in [ 'p2011', 'p2012' ] :
         for cat, coefs in pdfBuild['timeResModels'][ '{bin0;%s}' % period ].shapes()[0].coefficients().iteritems() :
             for coef in coefs :
