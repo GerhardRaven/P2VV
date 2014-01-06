@@ -1359,13 +1359,13 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
             asymErr = 0.1
             from P2VV.RooFitWrappers import RealVar
             avgCEvenSum = RealVar( namePF + 'avgCEvenSum', Title = 'Sum of CP average even coefficients'
-                                  , Value = 1., MinMax = (  0., 2. ) )
+                                  , Value = 1., MinMax = (  0., 2. ), Constant = True )
             avgCOddSum  = RealVar( namePF + 'avgCOddSum', Title = 'Sum of CP average odd coefficients'
-                                  , Value = asymVal, Error = asymErr, MinMax = ( -2., 2. ) )
+                                  , Value = asymVal, Error = asymErr, MinMax = ( -2., 2. ), Constant = True )
             avgCEvenOS  = RealVar( namePF + 'avgCEvenOSTagged', Title = 'CP average even coefficients OS tagged categories'
-                                  , Value = 1., MinMax = (  0., 2. ) )
+                                  , Value = 1., MinMax = (  0., 2. ), Constant = True )
             avgCOddOS   = RealVar( namePF + 'avgCOddOSTagged' , Title = 'CP average odd coefficients OS tagged categories'
-                                  , Value = asymVal, Error = asymErr, MinMax = ( -2., 2. ) )
+                                  , Value = asymVal, Error = asymErr, MinMax = ( -2., 2. ), Constant = True )
             if not SSTagging :
                 # only opposite side tagging: replace tagging efficiency asymmetry parameters by asymmetry coefficients
                 tagCatsDictOS[ 'AvgCEvenSum' ] = avgCEvenSum
@@ -1381,13 +1381,13 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
                 # both same side tagging and opposite side tagging: build coefficients for SS tagged categories
                 from P2VV.RooFitWrappers import RealVar
                 avgCEvenSS = RealVar( namePF + 'avgCEvenSSTagged', Title = 'CP average even coefficients SS tagged categories'
-                                     , Value = 1., MinMax = (  0., 2. ) )
+                                     , Value = 1., MinMax = (  0., 2. ), Constant = True )
                 avgCOddSS  = RealVar( namePF + 'avgCOddSSTagged', Title = 'CP average odd coefficients SS tagged categories'
-                                     , Value = asymVal, Error = asymErr, MinMax = ( -2., 2. ) )
+                                     , Value = asymVal, Error = asymErr, MinMax = ( -2., 2. ), Constant = True )
                 avgCEven   = RealVar( namePF + 'avgCEvenTagged', Title = 'CP average even coefficients OS+SS tagged categories'
-                                     , Value = 1., MinMax = (  0., 2. ) )
+                                     , Value = 1., MinMax = (  0., 2. ), Constant = True )
                 avgCOdd    = RealVar( namePF + 'avgCOddTagged', Title = 'CP average odd coefficients OS+SS tagged categories'
-                                     , Value = asymVal, Error = asymErr, MinMax = ( -2., 2. ) )
+                                     , Value = asymVal, Error = asymErr, MinMax = ( -2., 2. ), Constant = True )
 
                 # build dictionary with both opposite side and same side tagging categories parameters
                 tagCatsDict = dict(  NumTagCats0  = tagCatsDictOS['NumTagCats']
