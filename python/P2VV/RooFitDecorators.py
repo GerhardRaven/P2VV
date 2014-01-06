@@ -219,7 +219,9 @@ RooWorkspace.__contains__ = lambda s,i : bool( s.obj(i) )
 #RooWorkspace.__setitem__ = lambda s,k,v : s.put('%s[%s]'%(k,v))
 
 def __RooWorkspacePut( self ,x, **kwargs ) :
+    __dref = lambda o : o._target_() if hasattr(o,'_target_') else o
     from ROOT import TObject
+    x = __dref(x)
     assert isinstance(x, TObject)
     _import = getattr(RooWorkspace,'import')
     if _import(self,x,**kwargs) : return None
