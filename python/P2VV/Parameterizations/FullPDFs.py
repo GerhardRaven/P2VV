@@ -1980,7 +1980,7 @@ def multiplyByTimeAcceptance( pdf, self, **kwargs ) :
         if not change :
             # remove ORIGNAME:<"old model name"> attribute; this attribute gives problems with customization of the PDF later on
             for att in new_model.attributes() :
-                if att == 'ORIGNAME:' + timeResModelsOrig[resModelKey]['model'].GetName() :
+                if att.startswith( 'ORIGNAME:' + timeResModelsOrig[resModelKey]['model'].GetName().split('{')[0] ) :
                     new_model.setAttribute( att, False )
             accPdfs.append( comp.GetName() )
         else :
