@@ -30,9 +30,9 @@ if generateData :
 elif pdfConfig['sFit'] :
     dataSetName = 'JpsiKK_sigSWeight'
     if pdfConfig['runPeriods'] == [ 2011 ] :
-        dataSetFile = dataPath + 'P2VVDataSets2011Reco14_I2DiegoMass_6KKMassBins_2TagCats.root'
+        dataSetFile = dataPath + 'P2VVDataSets2011Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
     elif pdfConfig['runPeriods'] == [ 2012 ] :
-        dataSetFile = dataPath + 'P2VVDataSets2012Reco14_I2DiegoMass_6KKMassBins_2TagCats.root'
+        dataSetFile = dataPath + 'P2VVDataSets2012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
     else :
         #dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2MassNoMC_6KKMassBins_2TagCats_newTagging_trig.root'
         dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats.root'
@@ -152,6 +152,9 @@ pdfConfig['obsDict']['KKMass'] = ( KKMassPars[0], KKMassPars[1], KKMassPars[2]
 
 pdfConfig['lambdaCPParam'] = 'lambPhi' # 'lambPhi_CPVDecay_PSWaves'  # 'lambPhi'
 
+if 'Parameterization' in pdfConfig['timeEffParameters'] and pdfConfig['timeEffParameters']['Parameterization'] == 'Spline' :
+    pdfConfig['splitParams']['hlt1_excl_biased_dec'] = [ 'tagCatCoef0_1' ]
+
 #pdfConfig['externalConstr'].pop('dM')
 #pdfConfig['externalConstr']['dM']          = (  17.768, 0.024  )
 #pdfConfig['externalConstr'].pop('betaTimeEff')
@@ -162,6 +165,8 @@ pdfConfig['lambdaCPParam'] = 'lambPhi' # 'lambPhi_CPVDecay_PSWaves'  # 'lambPhi'
 #for par in [ 'tres_placeholder', 'timeResMu', 'timeResFrac2', 'sf_mean_offset', 'sf_mean_slope', 'sf_sigma_offset', 'sf_sigma_slope' ] :
 #    pdfConfig['splitParams']['runPeriod'].remove(par)
 #    pdfConfig['externalConstr'].pop(par)
+
+#pdfConfig['splitParams']['hlt1_excl_biased_dec'] = [ 'sf_mean_offset' ]
 
 dGammaVal = 0.108
 dMVal     = 17.647
@@ -344,14 +349,6 @@ if 'lamb' in constLambdaCP.lower() :
 if 'phi' in constLambdaCP.lower() :
     pdfBuild['lambdaCP'].setConstant('phiCP')
     pdfBuild['lambdaCP'].parameter('phiCP').setVal(phiCPVal)
-for CEvenOdds in pdfBuild['taggingParams']['CEvenOdds'] :
-    if not pdfConfig['SSTagging'] :
-        CEvenOdds.setConstant('avgCEven.*')
-        if constAvgCEvenOdd : CEvenOdds.setConstant( 'avgCOdd.*', True )
-    else :
-        for CEvenOdd in CEvenOdds :
-            CEvenOdd.setConstant('avgCEven.*')
-            if constAvgCEvenOdd : CEvenOdd.setConstant( 'avgCOdd.*', True )
 
 if not constTagCatCoefs : pdfBuild['taggingParams'].setConstant( 'tagCatCoef.*', False )
 
@@ -426,6 +423,9 @@ if pdfConfig['lambdaCPParam'].startswith('lambPhi_CPVDecay') :
 ##                     coef.setConstant(True)
 ##                 if cat[2] == 'notExclB' :
 ##                     coef.setVal( 0.5 * coef.getVal() )
+
+#ws['timeResMu_p2011'].setVal(0.)
+#ws['timeResMu_p2012'].setVal(0.)
 
 #pdfBuild['lifetimeParams'].parameter('Gamma').setVal(0.72)
 

@@ -337,9 +337,6 @@ class WTagsCoefAsyms_TaggingParams( TaggingParams ) :
                 # (values for the) coefficients are specified
                 avgCEven = kwargs.pop('AvgCEven')
                 avgCOdd  = kwargs.pop('AvgCOdd')
-                if not isinstance( avgCEven, RooObject ) and not isinstance( avgCOdd, RooObject ) :
-                    avgCOdd  /= avgCEven
-                    avgCEven  = 1.
 
             elif 'AProd' in kwargs and 'ANorm' in kwargs :
                 # values for the production and normalization asymmetries are specified
@@ -348,13 +345,17 @@ class WTagsCoefAsyms_TaggingParams( TaggingParams ) :
                 if isinstance( self._AProdVal, RooObject ) : self._AProdVal = self._AProdVal.getVal()
                 if isinstance( self._ANormVal, RooObject ) : self._ANormVal = self._ANormVal.getVal()
 
-                avgCEven = 1.
-                avgCOdd  = ( self._AProdVal + self._ANormVal ) / ( 1. + self._AProdVal * self._ANormVal )
+                avgCEven = 1. + self._AProdVal * self._ANormVal
+                avgCOdd  = self._AProdVal + self._ANormVal
 
             else :
                 # use default values
                 avgCEven = 1.
                 avgCOdd  = 0.
+
+            if not isinstance( avgCEven, RooObject ) and not isinstance( avgCOdd, RooObject ) :
+                avgCOdd  = dict( Name = 'avgCOdd',  Value = avgCOdd / avgCEven, Constant = True )
+                avgCEven = dict( Name = 'avgCEven', Value = 1., ObjectType = 'ConstVar' )
 
             # create coefficients object
             from P2VV.Parameterizations.BBbarAsymmetries import Coefficients_CEvenOdd
@@ -434,10 +435,6 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
                 avgCEvenSum = kwargs.pop('AvgCEvenSum')
                 avgCOddSum  = kwargs.pop('AvgCOddSum')
 
-                if not isinstance( avgCEvenSum, RooObject ) and not isinstance( avgCOddSum, RooObject ) :
-                    avgCOddSum  /= avgCEvenSum
-                    avgCEvenSum  = 1.
-
             elif 'AProd' in kwargs and 'ANorm' in kwargs :
                 # values for the production and normalization asymmetries are specified
                 self._AProdVal = kwargs.pop('AProd')
@@ -445,20 +442,20 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
                 if isinstance( self._AProdVal, RooObject ) : self._AProdVal = self._AProdVal.getVal()
                 if isinstance( self._ANormVal, RooObject ) : self._ANormVal = self._ANormVal.getVal()
 
-                avgCEvenSum = 1.
-                avgCOddSum  = ( self._AProdVal + self._ANormVal ) / ( 1. + self._AProdVal * self._ANormVal )
+                avgCEvenSum = 1. + self._AProdVal * self._ANormVal
+                avgCOddSum  = self._AProdVal + self._ANormVal
 
             else :
                 # use default values
                 avgCEvenSum = 1.
                 avgCOddSum  = 0.
 
+            if not isinstance( avgCEvenSum, RooObject ) and not isinstance( avgCOddSum, RooObject ) :
+                avgCOddSum  = dict( Name = 'avgCOddSum',  Value = avgCOddSum / avgCEvenSum, Constant = True )
+                avgCEvenSum = dict( Name = 'avgCEvenSum', Value = 1., ObjectType = 'ConstVar' )
+
             from P2VV.Parameterizations.BBbarAsymmetries import Coefficients_CEvenOdd
-            CEvenOddSum = Coefficients_CEvenOdd(  avgCEven = avgCEvenSum if isinstance( avgCEvenSum, RooObject ) \
-                                                             else { 'Name' : 'avgCEvenSum', 'Value' : avgCEvenSum }
-                                                , avgCOdd  = avgCOddSum if isinstance( avgCOddSum, RooObject )   \
-                                                             else { 'Name' : 'avgCOddSum', 'Value' : avgCOddSum }
-                                               )
+            CEvenOddSum = Coefficients_CEvenOdd( avgCEven = avgCEvenSum, avgCOdd = avgCOddSum )
 
         CEvenOdds[0].append(CEvenOddSum)
 
@@ -579,11 +576,6 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
                             avgCEven = kwargs.pop( 'AvgCEven%d-%d' % ( index0, index1 ) if namePF else 'AvgCEven%d' % index1 )
                             avgCOdd  = kwargs.pop( 'AvgCOdd%d-%d'  % ( index0, index1 ) if namePF else 'AvgCOdd%d'  % index1 )
 
-                            if not isinstance( avgCEven, RooObject ) and not isinstance( avgCOdd, RooObject )\
-                                    and hasattr( self, '_AProdVal' ) and hasattr( self, '_ANormVal' ) :
-                                avgCOdd  /= 1. + self._AProdVal * self._ANormVal
-                                avgCEven /= 1. + self._AProdVal * self._ANormVal
-
                         elif hasattr(self, '_AProdVal') and hasattr(self, '_ANormVal') :
                             # values for the asymmetries are specified
                             avgCEven = 1. + self._AProdVal * self._ANormVal \
@@ -594,19 +586,19 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
                                        + self._AProdVal * self._ANormVal * self._ATagEffVals[0][index0] \
                                        + self._AProdVal * self._ANormVal * self._ATagEffVals[1][index1]
 
-                            avgCEven /= 1. + self._AProdVal * self._ANormVal
-                            avgCOdd  /= 1. + self._AProdVal * self._ANormVal
-
                         else :
                             # use values for tagging efficiency asymmetry = 0
                             avgCEven = CEvenOddSum['avgCEven'].getVal()
                             avgCOdd  = CEvenOddSum['avgCOdd'].getVal()
 
-                        CEvenOdd = Coefficients_CEvenOdd(  avgCEven = avgCEven if isinstance( avgCEven, RooObject ) \
-                                                               else { 'Name' : 'avgCEven%d-%d' % ( index0, index1 ), 'Value' : avgCEven }
-                                                         , avgCOdd  = avgCOdd if isinstance( avgCOdd, RooObject )   \
-                                                               else { 'Name' : 'avgCOdd%d-%d'  % ( index0, index1 ), 'Value' : avgCOdd  }
-                                                        )
+                        if not isinstance( avgCEven, RooObject ) and not isinstance( avgCOdd, RooObject )\
+                                and hasattr( self, '_AProdVal' ) and hasattr( self, '_ANormVal' ) :
+                            avgCEven = dict( Name = 'avgCEven%d-%d' % ( index0, index1 )
+                                            , Value = avgCOdd  / ( 1. + self._AProdVal * self._ANormVal ), Constant = True )
+                            avgCOdd  = dict( Name = 'avgCOdd%d-%d'  % ( index0, index1 )
+                                            , Value = avgCEven / ( 1. + self._AProdVal * self._ANormVal ), Constant = True )
+
+                        CEvenOdd = Coefficients_CEvenOdd( avgCEven = avgCEven, avgCOdd = avgCOdd )
 
                     CEvenOdds[index0].append(CEvenOdd)
 
