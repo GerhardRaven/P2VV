@@ -1,17 +1,9 @@
 # script parameters
-momentsFile1 = '/project/bfys/vsyropou/PhD/macros/iterativeAngAcc/output/_junk/hel_UB_UT_trueTime_BkgCat050_KK30_mkk_Phys'
-momentsFile2 = '/project/bfys/vsyropou/PhD/macros/iterativeAngAcc/output/_junk/hel_UB_UT_trueTime_BkgCat050_KK30_mkk_Bmom_Phys'
-funcNames = [ 'Re_ang_A0_A0', 
-              'Re_ang_Apar_Apar', 
-              'Re_ang_Aperp_Aperp',
-              'Im_ang_Apar_Aperp', 
-              'Re_ang_A0_Apar', 
-              'Im_ang_A0_Aperp',
-              'Re_ang_AS_AS', 
-              'Re_ang_Apar_AS', 
-              'Im_ang_Aperp_AS', 
-              'Re_ang_A0_AS'
-              ]
+momentsFile1 = 'Sim08_2011_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_norm'
+momentsFile2 = 'Sim08_2012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_norm'
+funcNames = [ 'Re_ang_A0_A0', 'Re_ang_Apar_Apar', 'Re_ang_Aperp_Aperp'
+             , 'Im_ang_Apar_Aperp', 'Re_ang_A0_Apar', 'Im_ang_A0_Aperp'
+             , 'Re_ang_AS_AS', 'Re_ang_Apar_AS', 'Im_ang_Aperp_AS', 'Re_ang_A0_AS' ]
 
 latex = True
 
