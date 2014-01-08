@@ -206,7 +206,7 @@ void RooP2VVAngleBasis::printArgs(std::ostream& os) const
   if (!_isProd && _coef.absArg() != 0)
     os << " " << _coef.absArg()->GetName() << " *";
   if (_c != 1.)
-    os << " " << std::setprecision(3) << _c;
+    os << " " << _c;
   os << " P_" << _i;
   if (_j != 0)
     os << "^" << _j;
@@ -219,7 +219,7 @@ void RooP2VVAngleBasis::printArgs(std::ostream& os) const
     for (Int_t it = 0; it < _set.getSize(); ++it) {
       os << " " << _prodCoefs.at(it)->GetName() << " *";
       if (_cProd.at(it) != 1.)
-	os << " " << std::setprecision(3) << _cProd.at(it);
+	os << " " << _cProd.at(it);
       os << " P_" << _iProd.at(it);
       if (_jProd.at(it) != 0)
         os << "^" << _jProd.at(it);
