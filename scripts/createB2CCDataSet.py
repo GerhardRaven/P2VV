@@ -4,6 +4,8 @@
 
 #nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs2JpsiPhi_2011_2012_s20_dv33r6p1_20131217_tupleB_selTrig.root'
 nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_December28.root'
+#nTupleFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_MC2011_Sim08a_ntupleB_20130909_add.root'
+#nTupleFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_MC2012_ntupleB_20130904_add.root'
 nTupleName       = 'DecayTree'
 dataSetsFilePath = 'temp.root' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_6KKMassBins_2TagCats.root'
 appendToFile     = False
@@ -108,6 +110,7 @@ KKMMax  = KKMassBinBounds[-1]
 obsKeys = [  'sWeights_ipatia', 'runPeriod'
            , 'mass', 'KKMass'#, 'mumuMass'
            , 'time', 'timeRes'
+           #, 'truetime'
            , 'ctk', 'ctl', 'phih'
            #, 'cpsi', 'cttr', 'phitr'
            #, 'wTag', 'tagDec'
@@ -116,7 +119,7 @@ obsKeys = [  'sWeights_ipatia', 'runPeriod'
            #, 'sel', 'sel_cleantail', 'selA', 'selB'
            , 'hlt1ExclB', 'hlt2B', 'hlt2UB'#, 'hlt1B', 'hlt1UB'
            #, 'trigDecUnb', 'trigDecExclB'
-           #, 'B_P', 'B_Pt'
+           #, 'B_P', 'B_Pt', 'B_eta', 'B_phi'
            #, 'Kplus_PX', 'Kplus_PY', 'Kplus_PZ', 'Kplus_LOKI_ETA'
            #, 'Kminus_PX', 'Kminus_PY', 'Kminus_PZ', 'Kminus_LOKI_ETA'
            #, 'muplus_PX', 'muplus_PY', 'muplus_PZ', 'muplus_LOKI_ETA'
@@ -197,6 +200,8 @@ obsDict = dict(  runPeriod = ( 'runPeriod',            'run period', dict( [ ( '
                , Kminus_LOKI_ETA            = ( 'Kminus_LOKI_ETA',            'Kminus_LOKI_ETA',  '',      0.,   -RooInf, +RooInf )
                , B_Pt                       = ( 'B_Pt',                       'B_Pt',             'MeV/c', 0.,    0.,      RooInf )
                , B_P                        = ( 'B_P',                        'B_P',              'MeV/c', 0.,    0.,      RooInf )
+               , B_eta                      = ( 'B_eta',                      'B_eta',            '',      0.,   -RooInf, +RooInf )
+               , B_phi                      = ( 'B_phi',                      'B_phi',            'rad',   0.,    -pi,     +pi    )
                , phi_1020_pt                = ( 'phi_1020_pt',                'phi_1020_pt',    500.,  500.,    RooInf )
                , B_s0_LOKI_CosPolAngle_Dau1 = ( 'B_s0_LOKI_CosPolAngle_Dau1', 'mumu cos(th)',   0.,   -1.,     +1.     )
                , B_s0_IP_OWNPV              = ( 'B_s0_IP_OWNPV',              'B_s0_IP_OWNPV',  0.,   -RooInf, +RooInf )
@@ -1058,11 +1063,15 @@ if createRangeData :
     dataSets['cbkgRange'].append( dataSets['main'][0].reduce( CutRange = 'RightSideBand' ) )
     savedObjects += [ 'sigRange', 'cbkgRange' ]
 
-if createNTuple :
+if createNTuple and not simulation :
     # create n-tuple containing signal and background weights
     dataSets['sigTree'] = dataSets['sigSWeight'][0].buildTree( Name = nTupleName, Title = nTupleName, WeightName = sWeightName
                                                               , RooFitFormat = False )
     savedObjects += [ 'sigTree' ]
+elif createNTuple :
+    # create n-tuple
+    dataSets['mainTree'] = dataSets['main'][0].buildTree( Name = nTupleName, Title = nTupleName, RooFitFormat = False )
+    savedObjects += [ 'mainTree' ]
 
 # save data sets to file
 print 120 * '='
