@@ -62,6 +62,7 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
         namePF = self.getNamePrefix(kwargs)
         model = kwargs.pop('ResolutionModel')
         parameterization = kwargs.pop('Parameterization','BinnedFun')
+        fit = kwargs.pop('Fit', False)
 
         from ROOT import TFile
         with TFile.Open(input_file) as acceptance_file :
@@ -80,15 +81,14 @@ class Moriond2012_TimeAcceptance(TimeAcceptance):
             knots = knots[0:-1:2]
             rhe = _hist.GetBinLowEdge(nbins)+_hist.GetBinWidth(nbins)
             knots.append(rhe)
-            self._coefficients = fitAverageExpToHist( _hist,knots,1.5)
+            self._coefficients = fitAverageExpToHist( _hist,knots, 1. / 0.66091 )
 
-            self._shape = CubicSplineFun(  Name = namePF + name +'_shape'
-                                         , Observable = self._time
-                                         , Knots = knots
-                                         , Coefficients = [ self._parseArg( name + '_shape_%s' % it, kwargs, Value = self._coefficients(it)
-                                                                           , ObjectType = 'ConstVar' )\
-                                                           for it in range( self._coefficients.GetNoElements() ) ]
-                                        )
+            if fit : coefArgs = dict( ObjectType = 'RealVar', MinMax = ( -50, 50. ) )
+            else :   coefArgs = dict( ObjectType = 'ConstVar' )
+            coefVars = [ self._parseArg( name + '_shape_%03d' % it, kwargs, Value = self._coefficients(it), **coefArgs )\
+                        for it in range( self._coefficients.GetNoElements() ) ]
+            if fit : coefVars[0].setConstant(True)
+            self._shape = CubicSplineFun( Name = namePF + name +'_shape', Observable = self._time, Knots = knots, Coefficients = coefVars )
 
             if False :
                 fr = self._time.frame()
