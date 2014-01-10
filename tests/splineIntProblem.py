@@ -1,5 +1,5 @@
-fit = True
-useTimeResMean = True
+fit = False
+useTimeResMean = False
 
 dataPath    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
 dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
@@ -64,10 +64,15 @@ from ROOT import RooArgSet
 angSet = RooArgSet( ws[var] for var in [ 'helcosthetaK', 'helcosthetaL', 'helphi' ] )
 timeAngSet = RooArgSet( ws[var] for var in [ 'time', 'helcosthetaK', 'helcosthetaL', 'helphi' ] )
 print '\n\n' + '-' * 80
-print 'PDF values:'
-print 'unnormalized:', pdf.getVal()
-print 'angle-normalized:', pdf.getVal(angSet)
-print 'time-angle-normalized:', pdf.getVal(timeAngSet)
+for period in [ 2011, 2012 ] :
+    ws['runPeriod'].setIndex(period)
+    for cat in [ 0, 1 ] :
+        ws['hlt1_excl_biased_dec'].setIndex(cat)
+        print 'PDF values "%d"/"%s":' % ( ws['runPeriod'].getIndex(), ws['hlt1_excl_biased_dec'].getLabel() )
+        print 'unnormalized:', pdf.getVal()
+        print 'angle-normalized:', pdf.getVal(angSet)
+        print 'time-angle-normalized:', pdf.getVal(timeAngSet)
+        print
 print '-' * 80 + '\n\n'
 
 if fit :
