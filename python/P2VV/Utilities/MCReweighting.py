@@ -416,7 +416,7 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
 
 # function that reweighits a single source distribution to match a given target using a histogram
 def OneDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
-    print 'P2VV - INFO: OneimentionalVerticalReweighting: Reweighting variable %s in sample.'%(var,source.GetName())
+    print 'P2VV - INFO: OneimentionalVerticalReweighting: Reweighting variable %s in sample %s.'%(var,source.GetName())
     iterIdx        = kwargs.pop('iterationNumber',     0 )
     plot           = kwargs.pop('xCheckPlots',     False )
     equalStatsBins = kwargs.pop('equalStatsBins',  False )
@@ -507,7 +507,6 @@ def OneDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
  
 class WeightedDataSetsManager(dict):
     def __init__( self, **kwargs ):       
-        print 'P2VV - INFO: Initialised weighted datasets manage, WeightedDataSetsManager().'
         self['initSource']        = kwargs.pop('source', '')
         self['dataSets']          = dict( initSource = self['initSource'] )
         self['permanentDataSets'] = dict()
@@ -519,17 +518,19 @@ class WeightedDataSetsManager(dict):
         self['latestDataSetPointer'] = 'initSource'
         self['iterationNumber'] = 0
         self['saveIntermediateDatasets'] = False
-        
+
+        print 'P2VV - INFO: WeightedDataSetsManager: Initialsed for sample %s.'%self['initSource'].GetName()
+
     def appendWeights( self, weightsName, weightsList, permanetnWeigts=False, permanentDataSet=False ):
         from numpy import array
         if permanetnWeigts: 
-            print 'P2VV - INFO: appendWeights: Weights list %s will be put in permanetnWeigtsLists, and will not be deleted.'%weightsName
+            print 'P2VV - INFO: appendWeights: Putting weights list %s in permanetnWeigtsLists.'%weightsName
             self['permanetnWeigtsLists'][weightsName] = array( weightsList )
         else: self['WeightsLists'][weightsName] = array( weightsList )
 
         # combine weights
         if not len( self['WeightsLists'] ) <= 1:
-            print 'P2VV - INFO: WeightedDataSetsManager: Combining weights, named %s, with existing ones.'%weightsName
+            print 'P2VV - INFO: appendWeights: Combining weights, named %s, with existing ones.'%weightsName
             self['combinedWeights'] = 1
             for wList in self['WeightsLists'].itervalues(): self['combinedWeights'] *= wList
             if self['permanetnWeigtsLists'].keys():
@@ -539,7 +540,7 @@ class WeightedDataSetsManager(dict):
                                                                               else self['WeightsLists'][weightsName]
 
         # scale weights to preserve number of events 
-        print 'P2VV - INFO: WeightedDataSetsManager: Scaling sources sum of weights to the number of entries.'
+        print 'P2VV - INFO: appendWeights: Scaling sources sum of weights to the number of entries.'
         n_events = self['initSource'].numEntries()
         sumW = sum( self['combinedWeights'] )
         self['combinedWeights'] =  ( n_events / sumW ) * self['combinedWeights'] 
@@ -548,13 +549,14 @@ class WeightedDataSetsManager(dict):
         wName = ''
         for name in self['WeightsLists'].keys() + self['permanetnWeigtsLists'].keys(): wName += name + '_'
         wName += str(self['iterationNumber'])
-        self['dataSets'][weightsName] = self.writeWeights(self['dataSets'][self['latestDataSetPointer']], 'weight_' + wName, wName )
+        self['dataSets'][weightsName] = self.writeWeights(self['dataSets'][self['latestDataSetPointer']], \
+                                        'weight_' + wName, self['dataSets'][self['latestDataSetPointer']].GetName() + wName )
 
         if permanentDataSet:
             print 'P2VV - INFO: appendWeights: Dataset %s will be put in permanentDataSets, and will not be deleted.'%wName
             self['permanentDataSets'][weightsName] = self['dataSets'][weightsName]
             
-        # delete intermediate dataset, except if it is the initial source and or you want to keep them for plotting 
+        # delete intermediate dataset, except if it is the initial source and/or you want to keep them for plotting 
         if not self['saveIntermediateDatasets'] and not self['latestDataSetPointer'] == 'initSource':
             if not self['latestDataSetPointer'] in self['permanentDataSets'].keys():
                 print 'P2VV - INFO: appendWeights: Deleting dataset named ' + self['dataSets'][self['latestDataSetPointer']].GetName()
@@ -920,7 +922,7 @@ class MatchPhysics( ):
         readOpts = {}
         for dataKey in nTupleFile.keys():
             self._dataSets[dataKey] = readData( nTupleFile[dataKey], dataSetName=nTupleName, NTuple=True, observables=self._obsSet, **readOpts)
-            ws[nTupleName].SetName(nTupleName + '_' + dataKey)
+            ws[nTupleName].SetName( 'mcData_' + dataKey)
         self._data = ''
         
         # if MCProd == '2011':

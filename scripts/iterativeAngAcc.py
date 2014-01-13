@@ -98,7 +98,7 @@ if initialFitOnData:
 # initialise physics matching class and build MC pdf
 PhysicsReweight = MatchPhysics( monteCarloData, mcTupleName , MonteCarloProduction=MCProd, BlindPdf=Bs2JpsiKKFit.getBlindString() )
 
-# keep track of the weights (avoid creating too many datasets)
+# manage the weights (avoid creating too many datasets)
 PhysicsReweight.selectDataSet('2011')
 mcDataMngr2011 = WeightedDataSetsManager( source = PhysicsReweight.getDataSet() )
 PhysicsReweight.selectDataSet('2012')
@@ -137,7 +137,6 @@ if reweightBmomentum:
                                                               )
         dataMngr['saveIntermediateDatasets'] = True if makePlots else False
         dataMngr.appendWeights( BmomentumWeightsName, BmomentumWeights, permanetnWeigts=True, permanentDataSet=False )
-assert False
 
 # start looping.
 for iterNumb in range( 1, NumbOfIterations + 1 ):
@@ -145,35 +144,42 @@ for iterNumb in range( 1, NumbOfIterations + 1 ):
     dataMngr['iterationNumber'] = iterNumb
     dataMngr['saveIntermediateDatasets'] = True if iterNumb in plotAtTheseSteps and makePlots else False
 
-    # match mKK
-    if reweightMkk:
-        mKKweights = OneDimentionalVerticalReweighting( dataMngr.getDataSet(),      # source distribution
-                                                        Bs2JpsiKKFit.getDataSet(),  # target distribution
-                                                        OneDverticalRewNbins, 'mdau2', iterationNumber = iterNumb, # nBins, variable
-                                                        equalStatsBins = EqualStatsBins
-                                                        )
-        dataMngr.appendWeights( mKKWeightsName, mKKweights )
+    # loop over mc production periods
+    for source, target, dataMngr, prodPeriod in zip( [mcDataMngr2011.getDataSet(),mcDataMngr2012.getDataSet()], 
+                                                     [data2011, data2012], 
+                                                     [mcDataMngr2011,mcDataMngr2012],
+                                                     ['2011','2012']
+                                                     ):
 
-    # match physics
-    if reweightPhysics:
-        physWeights = PhysicsReweight.calculateWeights( iterNumb, dataParameters )
-        dataMngr.appendWeights( physWeightName, physWeights )
+        # match mKK
+        if reweightMkk:
+            mKKweights = OneDimentionalVerticalReweighting( source, target,
+                                                            OneDverticalRewNbins, 'mdau2', iterationNumber = iterNumb, # nBins, variable
+                                                            equalStatsBins = EqualStatsBins
+                                                            )
+            dataMngr.appendWeights( mKKWeightsName, mKKweights )
+
+        # match physics
+        if reweightPhysics:
+            PhysicsReweight.selectDataSet(prodPeriod)
+            physWeights = PhysicsReweight.calculateWeights( iterNumb, dataParameters )
+            dataMngr.appendWeights( physWeightName, physWeights )
+                
+        
     
-        assert False
-    
-    # match KK momenta
-    if reweightKKmom and RewApproach == 'vertical':
-        KKMomWeights = TwoDimentionalVerticalReweighting(dataMngr.getDataSet(),      # source distribution
-                                                         Bs2JpsiKKFit.getDataSet(),  # target distribution
-                                                         TwoDverticalRewNbins, ['Kplus_P','Kminus_P'], iterationNumber = iterNumb ,
-                                                         # number of bins per dimention, variables
-                                                         equalStatsBins = EqualStatsBins
-                                                         )
-        dataMngr.appendWeights( KmomentaWeightsName, KKMomWeights )
-    elif reweightKKmom and RewApproach == 'horizontal':
-        KinematicReweight.reweight( iterNumb, PhysicsReweight.getDataSet(weighted=True) )
-        reweightedData = KinematicReweight.getDataSet()
+        # match KK momenta
+        if reweightKKmom and RewApproach == 'vertical':
+            KKMomWeights = TwoDimentionalVerticalReweighting(source, target,
+                                                             TwoDverticalRewNbins, ['Kplus_P','Kminus_P'], iterationNumber = iterNumb ,
+                                                             # number of bins per dimention, variables
+                                                             equalStatsBins = EqualStatsBins
+                                                             )
+            dataMngr.appendWeights( KmomentaWeightsName, KKMomWeights )
+        elif reweightKKmom and RewApproach == 'horizontal':
+            KinematicReweight.reweight( iterNumb, PhysicsReweight.getDataSet(weighted=True) )
+            reweightedData = KinematicReweight.getDataSet()
    
+    assert False
     # comparition plots
     if makePlots and iterNumb in plotAtTheseSteps: # plot data after each reweighting step
         compPlots = compareDistributions( mcData          = dataMngr.getDataSet('initSource'),
