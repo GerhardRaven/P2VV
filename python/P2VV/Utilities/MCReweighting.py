@@ -550,7 +550,7 @@ class WeightedDataSetsManager(dict):
         for name in self['WeightsLists'].keys() + self['permanetnWeigtsLists'].keys(): wName += name + '_'
         wName += str(self['iterationNumber'])
         self['dataSets'][weightsName] = self.writeWeights(self['dataSets'][self['latestDataSetPointer']], \
-                                        'weight_' + wName, self['dataSets'][self['latestDataSetPointer']].GetName() + wName )
+                                        'weight_' + wName, self['initSource'].GetName() + '_' + wName )
 
         if permanentDataSet:
             print 'P2VV - INFO: appendWeights: Dataset %s will be put in permanentDataSets, and will not be deleted.'%wName
@@ -647,9 +647,7 @@ class BuildBs2JpsiKKFit():
      
         # fit options
         self._pdfConfig['fitOptions']['NumCPU'] = kwargs.pop('Ncpu', 2)
-        corrSFitErrCats         = [ 'runPeriod', 'KKMassCat' ] if ('2011' not in runPeriod or '2012' not in runPeriod) else [ 'KKMassCat' ]
-        randomParVals           = ( ) # ( 1., 12345 )
-
+        
         # PDF options
         # time acceptance
         timeEff2011 = dict(  file      = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
@@ -677,14 +675,14 @@ class BuildBs2JpsiKKFit():
         
         # read data set from file
         from P2VV.Utilities.DataHandling import readData
-        dataSet = readData( filePath = self._dataSetPath, dataSetName = self._dataSetName,  NTuple = False )
-        self._pdfConfig['signalData'] = dataSet
+        self._dataSet = readData( filePath = self._dataSetPath, dataSetName = self._dataSetName,  NTuple = False )
+        self._pdfConfig['signalData'] = self._dataSet
         self._pdfConfig['readFromWS'] = True
         
         # set range for track momenta
         if kwargs.pop('calcTrackMomRanges', False):
             print 'P2VV - INFO: BuildBs2JpsiKKFit: Calculating track and B momenta ranges from dataset'
-            tree = dataSet.buildTree()
+            tree = self._dataSet.buildTree()
             from P2VV.RooFitWrappers import RooObject
             for obj in [ '%s_%s'%( part, comp ) for part in [ 'Kplus', 'Kminus', 'muplus', 'muminus' ] for comp in ( 'PX', 'PY', 'PZ', 'P' ) ] + ['B_P','B_Pt']:
                 var = RooObject._rooobject(obj)
@@ -695,10 +693,6 @@ class BuildBs2JpsiKKFit():
         from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
         self._pdfBuild = PdfBuilder( **self._pdfConfig )
         self._pdf = self._pdfBuild.pdf()
-        
-        # data set with weights corrected for background dilution: for phi_s fit only!
-        from P2VV.Utilities.DataHandling import correctWeights
-        self._fitData = correctWeights( dataSet, corrSFitErrCats )
 
         # fix values of some parameters
         for CEvenOdds in self._pdfBuild['taggingParams']['CEvenOdds'] :
@@ -717,9 +711,21 @@ class BuildBs2JpsiKKFit():
                     else: 
                         CEvenOdd.setConstant('avgCEven.*')
                         CEvenOdd.setConstant( 'avgCOdd.*', True )
-        #for par in self._pdf.getParameters(self._fitData):
-        #    if 'C_SP' in par: par.setConstant()
         self._pdfBuild['amplitudes'].setConstant('C_SP')
+
+        self._FitResults  = {} # collect all the fit results
+        self._Moments     = {} # collect all moments
+       
+    def doFit( self, itNum=0, angAccFile=None, parFileOut='parameterEstimates.par' ):
+        pref = self._pdfConfig['parNamePrefix'] + '_'
+        
+        # multiply by angular acceptance
+        if angAccFile: self._pdf = self._multiplyPdfWithAcc( angAccFile, iterNumb = itNum )
+        
+        # data set with weights corrected for background dilution: for phi_s fit only!
+        from P2VV.Utilities.DataHandling import correctWeights
+        corrSFitErrCats = [ 'runPeriod', 'KKMassCat' ]
+        self._fitData = correctWeights( self._dataSet, corrSFitErrCats )
 
         # print parameters
         print 120 * '='
@@ -732,16 +738,6 @@ class BuildBs2JpsiKKFit():
         print 'Bs2JpsiKKFit: constraints in PDF:'
         for constr in self._pdf.ExternalConstraints() : constr.Print()
 
-        self._FitResults  = {} # collect all the fit results
-        self._Moments     = {} # collect all moments
-       
-    def doFit( self, itNum=0, angAccFile=None ):
-        pref = self._pdfConfig['parNamePrefix'] + '_'
-        
-        # multiply by angular acceptance
-        if angAccFile: self._pdf = self._multiplyPdfWithAcc( angAccFile, iterNumb = itNum )
-
-        print 120 * '='
         # fit data
         print 'Bs2JpsiKKFit: fitting %d events (%s)' % (  self._fitData.numEntries(), 'weighted' if  self._fitData.isWeighted() else 'not weighted' )
         fitResult = self._pdf.fitTo( self._fitData, SumW2Error = False, Save = True, Hesse = False, Offset = True, ** self._pdfConfig['fitOptions'] )
@@ -761,32 +757,28 @@ class BuildBs2JpsiKKFit():
         self._FitResults['iter_%s'%itNum] = fitResult
 
         # wite parameters to file
-        parFileOut = 'parameterEstimates.par'
         if parFileOut :
-            # write parameters to file
-            filePath = parFileOut[0] if type(parFileOut) != str else parFileOut
-            fileOpts = parFileOut[1] if type(parFileOut) != str else { }
             self._pdfConfig.getParametersFromPdf( self._pdf, self._fitData )
-            self._pdfConfig.writeParametersToFile(  filePath = filePath )
+            self._pdfConfig.writeParametersToFile(  filePath = parFileOut )
 
         print 120 * '=' + '\n'
 
-    def updateDataParameters(self, oldPars, itNum=0):
-        fitResult = self._FitResults['iter_%s'%itNum]
-        cloneOldPars = oldPars.copy()
-        parkeys = oldPars.keys()
-        parkeys.remove('A0Phase')
-        for par in parkeys:
-            if par.startswith('__'):
-                fitResultParKey = '__%s_'%self._pdfConfig['parNamePrefix'] + par.partition('__')[2]
-            else:
-                fitResultParKey =  self._pdfConfig['parNamePrefix'] + '_' + par
-            try: oldPars[par] = fitResult.floatParsFinal().find(fitResultParKey).getVal()
-            except AttributeError: 
-                print 'P2VV - WARNING: updateDataParameters: Parameter %s not found in fit result %s, parameter value will not change.'\
-                    %( fitResultParKey, fitResult.GetName() )
-        print 'P2VV - INFO: updateDataParameters: Updating physics parameters from sFit.'
-        for k in parkeys: print '%20s  %.4f --> %.4f'%(k,cloneOldPars[k],oldPars[k])
+    # def updateDataParameters(self, oldPars, itNum=0):
+    #     fitResult = self._FitResults['iter_%s'%itNum]
+    #     cloneOldPars = oldPars.copy()
+    #     parkeys = oldPars.keys()
+    #     parkeys.remove('A0Phase')
+    #     for par in parkeys:
+    #         if par.startswith('__'):
+    #             fitResultParKey = '__%s_'%self._pdfConfig['parNamePrefix'] + par.partition('__')[2]
+    #         else:
+    #             fitResultParKey =  self._pdfConfig['parNamePrefix'] + '_' + par
+    #         try: oldPars[par] = fitResult.floatParsFinal().find(fitResultParKey).getVal()
+    #         except AttributeError: 
+    #             print 'P2VV - WARNING: updateDataParameters: Parameter %s not found in fit result %s, parameter value will not change.'\
+    #                 %( fitResultParKey, fitResult.GetName() )
+    #     print 'P2VV - INFO: updateDataParameters: Updating physics parameters from sFit.'
+    #     for k in parkeys: print '%20s  %.4f --> %.4f'%(k,cloneOldPars[k],oldPars[k])
         
     def _multiplyPdfWithAcc( self, effFile, iterNumb=None ):
         # read moments file and multiply pure pdf with angular acceptance
@@ -817,7 +809,7 @@ class BuildBs2JpsiKKFit():
 class MatchPhysics( ):
     def __init__( self, nTupleFile, nTupleName, **kwargs ):      
         # monte carlo gen conditions specifier
-        MCProd = kwargs.pop('MonteCarloProduction', '2011_2012')        
+        MCProd = kwargs.pop('MonteCarloProduction', '2011')        
         print 'P2VV - INFO: Initialised physics reweighting class: MatchPhysics().'        
     
         # set global object name prefix
@@ -916,15 +908,10 @@ class MatchPhysics( ):
 
         # read ntuple
         from P2VV.Utilities.DataHandling import readData
-        from P2VV.RooFitWrappers import RooObject
-        ws = RooObject().ws()
-        self._dataSets = {}
         readOpts = {}
-        for dataKey in nTupleFile.keys():
-            self._dataSets[dataKey] = readData( nTupleFile[dataKey], dataSetName=nTupleName, NTuple=True, observables=self._obsSet, **readOpts)
-            ws[nTupleName].SetName( 'mcData_' + dataKey)
-        self._data = ''
-        
+        self._data = readData( nTupleFile, dataSetName=nTupleName, NTuple=True, observables=self._obsSet, **readOpts)
+        self._data.SetName( 'mcData_' + MCProd )
+                
         # if MCProd == '2011':
         #     dataSets['2011'] = nTupleFile
         #     cuts = 'runPeriod==2011 && runNumber>2540e3 && runNumber< 2544.7e3' #tiny%->#'runNumber>2543.93e3 && runNumber<2544e3'  #.5%->#'runNumber>2540e3 && runNumber< 2544.7e3'  #.3%-># 2542e3
@@ -1023,21 +1010,23 @@ class MatchPhysics( ):
         for key in self._pdfPhysPars.keys():
             if key.startswith('__'): self._pdfPhysPars[key].setVal( self._mcPhysParsSet['_' + key.partition('__mc')[2]]  )
             else:                    self._pdfPhysPars[key].setVal( self._mcPhysParsSet[      key.partition('_')[2]]     ) 
-        for k in self._pdfPhysPars.keys(): 
-            print '%20s %.4f'%(self._pdfPhysPars[k].GetName(), self._pdfPhysPars[k].getVal())
-                    
+        for par in self._pdf.Parameters():
+           if par.GetName() == 'dummyBlindState':continue
+           print '%20s %.4f'%(par.GetName(), par.getVal())
+                            
     def setDataFitParameters(self, dataPars):
         print 'P2VV - INFO: setDataFitParameters: Setting the following parameters to the monte carlo pdf, named %s.'%self._pdf.GetName()
         from P2VV.Parameterizations.FullPDFs import PdfConfiguration
         pdfConfig = PdfConfiguration() 
         pdfConfig.readParametersFromFile( filePath = dataPars )
                 
+        # print currect pdf parameter values
         for par in self._pdf.Parameters():
             key = par.GetName().replace('mc_','data_')
             if key == 'dummyBlindState': continue
             if pdfConfig.parameters().has_key(key):
                 par.setVal( pdfConfig.parameters()[key][1] )
-                print par.GetName(), par.getVal()
+                print '%20s %.4f'%(par.GetName(), par.getVal())
             else: print 'P2VV - ERROR:setDataFitParameters: Cannot find parameter %s in data physics parameters file %s'%(par.GetName(),dataPars)
  
     def calculateWeights(self, iterNumb, dataParameters):
@@ -1077,10 +1066,7 @@ class MatchPhysics( ):
         calculatePhysicsWeights(nom=nominators, den=denominators)
         
         return self._physWeights
- 
-    def selectDataSet(self,dataKey): 
-        del self._data
-        self._data = self._dataSets[dataKey]
+    
     def getDataSet(self):           return self._data
     def getPdf(self):               return self._pdf
     def getAngleFunctions(self):    return self._angleFuncs
@@ -1315,9 +1301,7 @@ class MatchWeightedDistributions():
             else:             return self._recalculatedData
 
 
-
 # physics parameter imports
-
 # sFit in 2011 + 2012 data  
 parValues6KKmassBins20112012 = dict(
     __dGamma__	       = 0.086993
