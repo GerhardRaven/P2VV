@@ -469,6 +469,125 @@ def multiplyP2VVAngleBases( angleBasis, **kwargs ) :
         raise RuntimeError, 'P2VV - ERROR: multiplyP2VVAngleBases(): either functions or indices should be specified'
 
 
+def normalizeMoments( momentsFileOrig, momentsFileNorm, normMoment = 'Re_ang_A0_A0', printMoms = True ):
+    # moment containers
+    funcNames = [ ]
+    moments = { }
+    correlations = { }
+    
+    # read moments
+    print 'input moments:'
+    from P2VV.Utilities.DataMoments import readMoments, printMoments
+    readMoments( momentsFileOrig, BasisFuncNames = funcNames, Moments = moments, Correlations = correlations, ProcessAll = True )
+    if printMoms: printMoments( BasisFuncNames = funcNames, Moments = moments, Correlations = correlations )
+    
+    # calculate moments with new normalization
+    from math import sqrt
+    valNorm = moments[normMoment][0]
+    errNorm = moments[normMoment][1]
+    momsNew  = { }
+    corrsNew = { }
+    # moments value and error
+    for name in funcNames :
+        valNew   = moments[name][0] / valNorm
+        err      = moments[name][1]
+        corrNorm = correlations[name][normMoment]
+        varNew   = ( err**2 + valNew**2 * errNorm**2 - 2. * valNew * err * errNorm * corrNorm ) / valNorm**2
+        momsNew[name] = ( valNew, sqrt(varNew), ( sqrt( valNew**2 / varNew ) ) if varNew != 0. else 0. if valNew == 0. else float('inf') )
+        corrsNew[name] = { }
+    
+    # moments correlations
+    for name0 in funcNames :
+        for name1 in funcNames :
+            valsNew   = ( momsNew[name0][0], momsNew[name1][0] )
+            errsNew   = ( momsNew[name0][1], momsNew[name1][1] )
+            errs      = ( moments[name0][1], moments[name1][1] )
+            corr01    = correlations[name0][name1]
+            corr0Norm = correlations[name0][normMoment]
+            corr1Norm = correlations[name1][normMoment]
+            corr01New = ( errs[0] * errs[1] * corr01 + valsNew[0] * valsNew[1] * errNorm**2\
+                         - valsNew[1] * errs[0] * errNorm * corr0Norm - valsNew[0] * errs[1] * errNorm * corr1Norm ) / valNorm**2
+            if abs( errsNew[0] ) > 1.e-10 and abs( errsNew[1] ) > 1.e-10 :
+                corr01New /= errsNew[0] * errsNew[1]
+            elif abs( corr01New ) < 1.e-10 and name0 == normMoment and name1 == normMoment :
+                corr01New = 1.
+            elif abs( corr01New ) < 1.e-10 and ( name0 == normMoment or name1 == normMoment ) :
+                corr01New = 0.
+            else :
+                corr01New = -999.
+            corrsNew[name0][name1] = corr01New
+            corrsNew[name1][name0] = corr01New
+    
+    print 'output moments:'
+    from P2VV.Utilities.DataMoments import writeMoments
+    writeMoments( momentsFileNorm, BasisFuncNames = funcNames, Moments = momsNew, Correlations = corrsNew )
+    if printMoms: printMoments( BasisFuncNames = funcNames, Moments = momsNew, Correlations = corrsNew )
+    
+def combineMoments( momentsFilesIn, momentsFileOut, prefix = '', printMoms = True):
+    funcNames = [ 'Re_ang_A0_A0', 'Re_ang_Apar_Apar', 'Re_ang_Aperp_Aperp'
+                 , 'Im_ang_Apar_Aperp', 'Re_ang_A0_Apar', 'Im_ang_A0_Aperp'
+                 , 'Re_ang_AS_AS', 'Re_ang_Apar_AS', 'Im_ang_Aperp_AS', 'Re_ang_A0_AS' ]
+    
+    if prefix:
+        funcNamesWPF = []
+        for name in funcNames: funcNamesWPF += [prefix + '_' + name]
+        funcNames =  funcNamesWPF
+
+    # moment containers
+    moments = [ ]
+    correlations = [ ]
+    
+    # read moments
+    from P2VV.Utilities.DataMoments import readMoments, printMoments
+    for momsFile in momentsFilesIn :
+        moments.append( { } )
+        correlations.append( { } )
+        readMoments( momsFile, BasisFuncNames = funcNames, Moments = moments[-1], Correlations = correlations[-1] )
+        if printMoms: printMoments( BasisFuncNames = funcNames, Moments = moments[-1], Correlations = correlations[-1] )
+    
+    # combine moments
+    from ROOT import TMatrixD
+    combNames = [ name for name in funcNames if moments[0][name][1] > 0. ]
+    momVec    = TMatrixD( len(combNames), 1              )
+    covMat    = TMatrixD( len(combNames), len(combNames) )
+    for moms, corrs in zip( moments, correlations ) :
+        mom = TMatrixD( len(combNames), 1              )
+        cov = TMatrixD( len(combNames), len(combNames) )
+        for it1, name1 in enumerate(combNames) :
+            mom[it1][0] = moms[name1][0]
+            for it2, name2 in enumerate(combNames) :
+                cov[it1][it2] = moms[name1][1] * moms[name2][1] * corrs[name1][name2]
+        cov.Invert()
+        momVec += cov * mom
+        covMat += cov
+    covMat.Invert()
+    momVec = covMat * momVec
+    
+    momsNew  = { }
+    corrsNew = { }
+    for name in funcNames :
+        if moments[0][name][1] > 0. : continue
+        momsNew[name]  = moments[0][name]
+        corrsNew[name] = correlations[0][name]
+    
+    from math import sqrt
+    for it1, name1 in enumerate(combNames) :
+        val = momVec[it1][0]
+        err = sqrt( covMat[it1][it1] )
+        momsNew[name1]  = ( val, err, abs( val / err ) )
+        corrsNew[name1] = { }
+        for name in funcNames :
+            if moments[0][name][1] > 0. : continue
+            corrsNew[name1][name] = correlations[0][name1][name]
+        for it2, name2 in enumerate(combNames) :
+            corrsNew[name1][name2] = covMat[it1][it2] / err / sqrt( covMat[it2][it2] )
+    
+    # write combined moments to file
+    from P2VV.Utilities.DataMoments import writeMoments
+    writeMoments( momentsFileOut, BasisFuncNames = funcNames, Moments = momsNew, Correlations = corrsNew )
+    if printMoms: printMoments( BasisFuncNames = funcNames, Moments = momsNew, Correlations = corrsNew )
+    
+
 class RealMomentsBuilder ( dict ) :
     # TODO:  implement reduce: clone self, selecting a subset of available moments...
     # TODO:                    support as kw: MinSignificance, Names
