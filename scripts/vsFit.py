@@ -60,51 +60,35 @@ from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
 pdfBuild = PdfBuilder( **pdfConfig )
 pdf = pdfBuild.pdf()
 
-# # fix values of some parameters
-# for CEvenOdds in self._pdfBuild['taggingParams']['CEvenOdds'] :
-#         if not self._pdfConfig['SSTagging'] :
-#             if namePF:
-#                 CEvenOdds.setConstant( 'avgCEven.*')
-#                 CEvenOdds.setConstant( 'avgCOdd.*', True )
-#             else: 
-#                 CEvenOdds.setConstant( 'avgCEven.*')
-#                 CEvenOdds.setConstant( 'avgCOdd.*', True )
-#         else :
-#             for CEvenOdd in CEvenOdds :
-#                 if namePF:
-#                     CEvenOdd.setConstant( 'avgCEven.*')
-#                     CEvenOdd.setConstant( 'avgCOdd.*', True )
-#                 else: 
-#                     CEvenOdd.setConstant('avgCEven.*')
-#                     CEvenOdd.setConstant( 'avgCOdd.*', True )
-# self._pdfBuild['amplitudes'].setConstant('C_SP')
+# fix values of some parameters
+for CEvenOdds in self._pdfBuild['taggingParams']['CEvenOdds'] :
+        if not self._pdfConfig['SSTagging'] :
+            if namePF:
+                CEvenOdds.setConstant( 'avgCEven.*')
+                CEvenOdds.setConstant( 'avgCOdd.*', True )
+            else: 
+                CEvenOdds.setConstant( 'avgCEven.*')
+                CEvenOdds.setConstant( 'avgCOdd.*', True )
+        else :
+            for CEvenOdd in CEvenOdds :
+                if namePF:
+                    CEvenOdd.setConstant( 'avgCEven.*')
+                    CEvenOdd.setConstant( 'avgCOdd.*', True )
+                else: 
+                    CEvenOdd.setConstant('avgCEven.*')
+                    CEvenOdd.setConstant( 'avgCOdd.*', True )
+self._pdfBuild['amplitudes'].setConstant('C_SP')
 
 if parFileIn:
     # read parameters from file
     pdfConfig.readParametersFromFile( filePath = parFileIn )
     pdfConfig.setParametersInPdf(pdf)
-
-# print PDF values
-from ROOT import RooArgSet
-angSet = RooArgSet( ws[var] for var in [ 'helcosthetaK', 'helcosthetaL', 'helphi' ] )
-timeAngSet = RooArgSet( ws[var] for var in [ 'time', 'helcosthetaK', 'helcosthetaL', 'helphi' ] )
-print '\n\n' + '-' * 80
-for period in [ 2011, 2012 ] :
-    ws['runPeriod'].setIndex(period)
-    for cat in [ 0, 1 ] :
-        ws['hlt1_excl_biased_dec'].setIndex(cat)
-        print 'PDF values "%d"/"%s":' % ( ws['runPeriod'].getIndex(), ws['hlt1_excl_biased_dec'].getLabel() )
-        print 'unnormalized:', pdf.getVal()
-        print 'angle-normalized:', pdf.getVal(angSet)
-        print 'time-angle-normalized:', pdf.getVal(timeAngSet)
-        print
 print '-' * 80 + '\n\n'
 
-if fit :
-    # fit data
-    fitResult = pdf.fitTo( fitData, SumW2Error = False, Save = True, **fitOpts )
-    from P2VV.Imports import parNames, parValues
-    fitResult.PrintSpecial( text = True, ParNames = parNames, ParValues = parValues )
+# fit data
+fitResult = pdf.fitTo( fitData, SumW2Error = False, Save = True, **fitOpts )
+from P2VV.Imports import parNames, parValues
+fitResult.PrintSpecial( text = True, ParNames = parNames, ParValues = parValues )
 
 if parFileOut :
     pdfConfig.getParametersFromPdf( pdf,  fitData )
