@@ -35,9 +35,12 @@ class SplitUtil(object):
         if data:
             cat = data.get().find(observable.GetName() + '_cat')
         if cat:
-            self.__cats[observable] = observable.ws().put(cat)
-            if make_binning != 0 and (self.__cat.getBinning(prefix + '_binning').numBins() != make_binning):
+            cat = observable.ws().put(cat)
+            obs = data.get().find(observable.GetName())
+            if make_binning != 0 and (obs.getBinning(prefix + '_binning').numBins() != make_binning):
                 return None
+            else:
+                self.__cats[observable] = cat
         else:
             if make_binning != 0:
                 bins = __mb(data, observable, make_binning)
