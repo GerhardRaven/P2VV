@@ -101,8 +101,12 @@ class WritableCacheFile(CacheFiles):
                 cf = self._getFirstCacheFile()
         
         from time import sleep
+        printed = False
         while self.locked(cf):
             sleep(5)
+            if not printed:
+                print 'Waiting for lock file'
+                printed = True
         self._rootFile = self._openForWriting(cf)
         if self._file_dir and not self._rootFile.Get(self._file_dir):
             self._rootFile.mkdir(self._file_dir)

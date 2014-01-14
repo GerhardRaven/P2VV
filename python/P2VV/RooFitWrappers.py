@@ -1046,12 +1046,21 @@ class Pdf(RooObject):
     @wraps(RooAbsPdf.generate)
     def generate(self, whatvars, *args, **kwargs):
         #if not whatvars : whatvars = [ i for i in self._var.getVariables() if i.getAttribute('Observable') ]
-        whatvars = RooArgSet([ __dref__(i) for i in whatvars] if not isinstance(__dref__(whatvars),RooAbsCategory) else __dref__(whatvars))
+        from ROOT import RooAbsPdf
+        if isinstance(whatvars, RooAbsPdf.GenSpec):
+            spec = True
+        else:
+            spec = False
+            whatvars = RooArgSet([ __dref__(i) for i in whatvars] if isinstance(__dref__(whatvars),RooAbsCategory) else __dref__(whatvars))
+
         conditionals = set(o.GetName() for o in self.ConditionalObservables())
         pdfVars = self._var.getVariables()
         for v in pdfVars:
             if v.GetName() in conditionals: v.setAttribute("GenerateConditional", True)
-        data = self._var.generate(whatvars, *args,**kwargs)
+        if spec:
+            data = self._var.generate(whatvars)
+        else:
+            data = self._var.generate(whatvars, *args,**kwargs)
         for v in pdfVars:
             if v.GetName() in conditionals: v.setAttribute("GenerateConditional", False)
         return data
@@ -2449,7 +2458,7 @@ class Component(object):
                 for i,j in args[0].iteritems() : self[i] = j
             else :
                 for j in args[0] : self.append(j)
-        if 'Yield' in kw : self.setYield( *kw.pop('Yield') )
+        self.setYield(*kw.pop('Yield', []))
         if kw : raise IndexError('unknown keyword arguments %s' % kw.keys() )
     def _yieldName(self) : return 'N_%s' % self.name
     def getYield(self):
@@ -2459,13 +2468,13 @@ class Component(object):
         y = None
         if len(args) == 1 and type(args[0]) == RealVar:
             y = args[0]
-        else :
+        elif len(args) == 3:
             n, nlo, nhi = args
             assert n>=nlo
             assert n<=nhi
             y = RealVar(self._yieldName(), MinMax=(nlo,nhi), Value=n)
         Component._d[self.name]['Yield'] = y
-        Component._d[self.name]['Yield'].setAttribute('Yield',True)
+        if y: Component._d[self.name]['Yield'].setAttribute('Yield',True)
     def __iadd__(self,pdf) :
         self.append(pdf)
         return self
@@ -2554,7 +2563,8 @@ def buildPdf( Components, Observables, Name ) :
     for comp in Components:
         # build PDF
         pdf = comp[obsList]
-        if len(Components) > 1 : args['Yields'][pdf.GetName()] = comp['Yield']
+        if len(Components) > 1 and comp['Yield']:
+            args['Yields'][pdf.GetName()] = comp['Yield']
         args['PDFs'].append(pdf)
 
         # add external constraints

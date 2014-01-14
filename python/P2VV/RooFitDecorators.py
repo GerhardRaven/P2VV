@@ -274,21 +274,22 @@ from ROOT import RooFit
 from ROOT import RooSimultaneous
 RooSimultaneous.plotOn     = __wrap_kw_subs( RooSimultaneous.plotOn )
 from ROOT import RooAbsPdf
-RooAbsPdf.generate         = __wrap_kw_subs( RooAbsPdf.generate )
+RooAbsPdf.generate         = __wrap_kw_subs( RooAbsPdf.generate, True )
+RooAbsPdf.prepareMultiGen  = __wrap_kw_subs( RooAbsPdf.prepareMultiGen, True )
 RooAbsPdf.fitTo            = __wrap_kw_subs( RooAbsPdf.fitTo )
 RooAbsPdf.plotOn           = __wrap_kw_subs( RooAbsPdf.plotOn )
 RooAbsPdf.paramOn          = __wrap_kw_subs( RooAbsPdf.paramOn )
-RooAbsPdf.createCdf        = __wrap_kw_subs( RooAbsPdf.createCdf )
-RooAbsPdf.createNLL        = __wrap_kw_subs( RooAbsPdf.createNLL )
-RooAbsPdf.createProjection = __wrap_kw_subs( RooAbsPdf.createProjection )
+RooAbsPdf.createCdf        = __wrap_kw_subs( RooAbsPdf.createCdf, True )
+RooAbsPdf.createNLL        = __wrap_kw_subs( RooAbsPdf.createNLL, True )
+RooAbsPdf.createProjection = __wrap_kw_subs( RooAbsPdf.createProjection, True )
 from ROOT import RooAbsData
-RooAbsData.createHistogram = __wrap_kw_subs( RooAbsData.createHistogram )
-RooAbsData.reduce          = __wrap_kw_subs( RooAbsData.reduce )
+RooAbsData.createHistogram = __wrap_kw_subs( RooAbsData.createHistogram, True )
+RooAbsData.reduce          = __wrap_kw_subs( RooAbsData.reduce, True )
 RooAbsData.plotOn          = __wrap_kw_subs( RooAbsData.plotOn )
 from ROOT import RooAbsReal
 RooAbsReal.plotOn          = __wrap_kw_subs( RooAbsReal.plotOn )
 RooAbsReal.fillHistogram   = __wrap_kw_subs( RooAbsReal.fillHistogram )
-RooAbsReal.createIntegral  = __wrap_kw_subs( RooAbsReal.createIntegral )
+RooAbsReal.createIntegral  = __wrap_kw_subs( RooAbsReal.createIntegral, True )
 from ROOT import RooRealVar
 RooRealVar.format          = __wrap_kw_subs( RooRealVar.format )
 from ROOT import RooAbsCollection
@@ -572,7 +573,7 @@ creators = {'RooAbsAnaConvPdf' : ['coefVars'],
             'RooAbsGenContext' : ['generate'],
             'RooAbsPdf'  : ['createChi2', 'createNLL', 'getConstraints', 'chi2FitTo',
                             'getAllConstraints', 'generateSimGlobal', 'generateBinned',
-                            'prepareMultiGen', 'createProjection', 'createScanCdf',
+                            'generate', 'prepareMultiGen', 'createProjection', 'createScanCdf',
                             'fitTo','createCdf'],
             'RooAbsReal' : ['createScanRI', 'functor', 'createHistogram', 'createIntRI',
                             'createRunningIntegral', 'createChi2', 'plotSamplingHint', 'derivative',
