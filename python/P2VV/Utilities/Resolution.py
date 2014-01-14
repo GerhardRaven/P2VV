@@ -32,8 +32,7 @@ class SplitUtil(object):
 
         if observable in self.__cats:
             return self.__cats[observable]
-        if data:
-            cat = data.get().find(observable.GetName() + '_cat')
+        cat = data.get().find(observable.GetName() + '_cat') if data else None
         if cat:
             cat = observable.ws().put(cat)
             obs = data.get().find(observable.GetName())
@@ -64,7 +63,7 @@ class SplitUtil(object):
     
     def directory(self, hd):
         return self.__format + '/' + hd
-
+    
 class SplitPPT(object):
     def __init__(self, data_type, p, pt):
         self.__p = p
