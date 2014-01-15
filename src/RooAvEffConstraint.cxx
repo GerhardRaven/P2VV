@@ -27,7 +27,8 @@ using std::auto_ptr;
 RooAvEffConstraint::RooAvEffConstraint()
    : RooAbsPdf(), _integral(0), _pdf(0)
 {
-
+   _integrals = new RooListProxy("!integrals", "!integrals", this);
+   _efficiencies = new RooListProxy("!efficiencies", "!integrals", this);
 }
 
 //_____________________________________________________________________________
@@ -155,7 +156,9 @@ Double_t RooAvEffConstraint::evaluate() const
       const RooAbsReal* entry = dynamic_cast<const RooAbsReal*>(_integrals->at(i));
       assert(entry);
       const RooAbsReal* efficiency = dynamic_cast<const RooAbsReal*>(_efficiencies->at(i));
-      av += efficiency->getVal() * entry->getVal();
+      double e = efficiency->getVal();
+      double v = entry->getVal();
+      av += e * v;
    }
 
    double integral = static_cast<const RooAbsReal&>(_integral->arg()).getVal();
@@ -183,8 +186,8 @@ void RooAvEffConstraint::initialize()
 
    const RooEffResModel& model = static_cast<const RooEffResModel&>(_model.arg());
 
-   RooArgSet iset(model.convVar());
-   RooAbsReal* I = pdf.createIntegral(iset);
+   RooArgSet* iset = new RooArgSet(model.convVar());
+   RooAbsReal* I = pdf.createIntegral(*iset);
    TString intName = TString(model.efficiency()->GetName()) + "_average_" + I->GetName();
    I->SetName(intName.Data());
 
@@ -193,11 +196,11 @@ void RooAvEffConstraint::initialize()
 
    RooRealVar& x = model.convVar(); // binboundaries not const...
 
-   const RooArgList& ranges = model.getIntegralRanges(iset);
+   const RooArgList& ranges = model.getIntegralRanges(*iset);
    it = ranges.fwdIterator();
    while (const RooStringVar* rangeName = static_cast<const RooStringVar*>(it.next())) {
       const char* range = rangeName->getVal();
-      I = pdf.createIntegral(iset, range);
+      I = pdf.createIntegral(*iset, range);
       _integrals->addOwned(*I);
 
       Double_t xmin = x.getMin(range);

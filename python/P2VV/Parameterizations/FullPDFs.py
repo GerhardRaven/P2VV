@@ -1087,16 +1087,22 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     sv.setError(v.getError())
                             
             acc_constraints = {}
-            for (key, model), state in zip(self['timeResModels'].iteritems(), splitCat):
+            simple_split_cat = simul_time_pdf.indexCat()
+            for (key, model) in self['timeResModels'].iteritems():
                 if key == 'prototype':
                     continue
                 if not hasattr(model, 'build_constraints'):
                     continue
+                splitCat.setLabel(key)
+                state = simple_split_cat.getLabel()
+                split_pdf = simul_time_pdf.getPdf(state)
+                print key, state, split_pdf.GetName()
+
                 sk = tuple((cat.GetName(), cat.getLabel()) for cat in splitAccCats)
                 values = acc_settings.getSettings(sk)
                 # I use a simple PDF with only the average lifetime here. I
                 # think this is a valid approximation.
-                ac = model.build_constraints(simul_time_pdf, values)
+                ac = model.build_constraints(split_pdf, values)
                 for constraint in ac:
                     if constraint.GetName() not in acc_constraints:
                         acc_constraints[constraint.GetName()] = constraint
