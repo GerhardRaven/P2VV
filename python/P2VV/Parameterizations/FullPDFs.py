@@ -884,7 +884,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             
             # Figure out which way the time resolution model is to be split
             from itertools import chain
-            resParams = set( var.GetName() for var in timeResModelsOrig['prototype']['model'].getVariables() )
+            pfLen = len(namePF)
+            resParams = set( var.GetName()[ pfLen : ] for var in timeResModelsOrig['prototype']['model'].getVariables() )
             splitResCats = [c for c, pars in splitParams.iteritems() if set(pars).intersection(resParams)]
             splitResCats = [inputCats.find(c) for c in splitResCats]
             replacements = { ( ) : timeResModelsOrig['prototype'] }

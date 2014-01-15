@@ -5,6 +5,8 @@ funcNames = [ 'Re_ang_A0_A0', 'Re_ang_Apar_Apar', 'Re_ang_Aperp_Aperp'
              , 'Im_ang_Apar_Aperp', 'Re_ang_A0_Apar', 'Im_ang_A0_Aperp'
              , 'Re_ang_AS_AS', 'Re_ang_Apar_AS', 'Im_ang_Aperp_AS', 'Re_ang_A0_AS' ]
 
+latex = True
+
 # moment containers
 moments1 = { }
 moments2 = { }
@@ -54,3 +56,33 @@ chiSq = diffsTrans * diffCovsInv * diffs
 from ROOT import TMath
 print 'differences chi^2 / #dof = %.1f / %d = %.1f (%.2g%%)'\
       % ( chiSq[0][0], len(diffNames), chiSq[0][0] / float( len(diffNames) ), TMath.Prob( chiSq[0][0], len(diffNames) ) * 100. )
+
+if latex:
+    
+    effWeightsNamesLatexMap = dict(Re_ang_A0_Apar    = '($0\parallel$)',
+                                   Re_ang_AS_AS      = 'SS',
+                                   Re_ang_A0_AS      = 'S0',
+                                   Re_ang_A0_A0      = '00',
+                                   Re_ang_Apar_Apar  = '($\parallel\parallel$)',
+                                   Im_ang_Aperp_AS   = '(S$\perp$)',
+                                   Re_ang_Apar_AS    = '(S$\parallel$)',
+                                   Im_ang_Apar_Aperp = '($\parallel\perp$)',
+                                   Re_ang_Aperp_Aperp= '($\perp\perp$)',
+                                   Im_ang_A0_Aperp   = '($0\perp$)',
+                                   )
+    print '\n\n\n\n\n\n'
+    print '  \\begin{tabular}{|c|c|c|c|}'
+    print '    \\hline'
+
+    for name in funcNames :
+        val1 = moments1[name][0]
+        val2 = moments2[name][0]
+        diffVal = val2 - val1
+        diffErr = sqrt( moments1[name][1]**2 + moments2[name][1]**2 )
+        diffSig = ( diffVal / diffErr ) if diffErr != 0. else 0. if abs(diffVal) < 1.e-10 else float('inf')
+        print '  {0:20s} & {1:+7.4f} $\pm$ {2:7.4f}  &  {3:+7.4f} $\pm$ {4:7.4f}  &  {5:+7.4f} $\pm$ {6:7.4f} ({7:+.1f} sigma) \\\\'\
+            .format( effWeightsNamesLatexMap[name], val1, moments1[name][1], val2, moments2[name][1], diffVal, diffErr, diffSig )
+    print '\\hline'
+    print '\\end{tabular}'
+print '\\small differences \\chi^2 / \# dof = %.1f / %d = %.1f (%.2g%%)'\
+    % ( chiSq[0][0], len(diffNames), chiSq[0][0] / float( len(diffNames) ), TMath.Prob( chiSq[0][0], len(diffNames) ) * 100. )
