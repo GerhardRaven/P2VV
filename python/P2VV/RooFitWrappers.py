@@ -2051,7 +2051,7 @@ class BinnedFun(RooObject):
         for c, state_info in coefficients.iteritems():
             for state, i in state_info.iteritems():
                 if len(i['heights']) > 1:
-                    self.__coefficients[(self.__namePF, c.GetName(), state)] =  i['heights']
+                    self.__coefficients[(self.__namePF, c.GetName(), state)] = i['heights']
             
         # Make one combination by looping over the entries and taking the first
         # state for each.

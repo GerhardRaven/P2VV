@@ -213,7 +213,7 @@ def dilution_bins(data, t_var, sigmat, sigmat_cat, result = None, signal = [], s
     return total
 
 # Calculate dilution
-def dilution_ft(data, t_var, t_range = None, parameters = None, signal = [], subtract = [],
+def dilution_ft(t_var, data, t_range = None, parameters = None, signal = [], subtract = [],
                 raw = False, simultaneous = False, n_bins = 512, st = None, mean_param = None):
     if mean_param: assert(st)
 

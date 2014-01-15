@@ -318,6 +318,7 @@ def plot_shape(p, o, shape, errorOpts = {}, pdfOpts = {}):
     i = shape.createIntegral(RooArgSet(o))
     n = i.getVal()
     p.cd()
+    p.SetLogx(True)
     frame = o.frame()
     if errorOpts:
         r = errorOpts.pop('result')
@@ -329,29 +330,53 @@ def plot_shape(p, o, shape, errorOpts = {}, pdfOpts = {}):
         for x, colour in entries:
             shape.plotOn(frame, VisualizeError = (r, x), FillColor = colour, **errorOpts)
     shape.plotOn(frame, **pdfOpts)
+    frame.GetXaxis().SetTitle('decay time [ps]')
+    n = shape.GetName()
+    pos = n.find('hlt')
+    title = n[pos : pos + 4]
+    frame.GetYaxis().SetTitle(title)
+    frame.GetYaxis().SetTitleOffset(1.05)
     frame.Draw()
     __frames.append(frame)
     
-shapes = [s.efficiency() for s in pdf.ExternalConstraints()]
-eff_canvas = TCanvas('eff_canvas', 'eff_canvas', 1000, 500)
+shapes = [s.efficiency() for s in pdf.ExternalConstraints() if hasattr(s, 'efficiency')]
+eff_canvases = {}
 from ROOT import kYellow, kOrange
-for p, shape in zip(eff_canvas.pads(len(shapes), 1), shapes):
-    plot_shape(p, t, shape, errorOpts = {'result' : result, 3 : kYellow, 1 : kOrange})
+for p in ['p2011', 'p2012']:
+    n = 'eff_canvas_' + p
+    eff_canvas = TCanvas(n, n, 1200, 400)
+    eff_canvases[p] = eff_canvas
+    for p, shape in zip(eff_canvas.pads(2, 1), sorted(shapes, key = lambda s: s.GetName())):
+        plot_shape(p, t, shape, errorOpts = {'result' : result, 2 : kYellow, 1 : kOrange})
 
-## output = {'hlt1_shape' : 'hlt1_excl_biased_dec_exclB_bin',
-##           'hlt2_shape' : 'hlt2_biased_B_bin'}
-## output_file = TFile.Open('efficiencies.root', 'recreate')
+output = {'hlt1_shape_10' : 'hlt1_excl_biased_dec_exclB',
+          'hlt2_shape_10' : 'hlt2_biased_B'}
+output_file = os.path.join(prefix, 'p2vv/data/start_values.root')
+if os.path.exists(output_file):
+    open_mode = 'update'
+else:
+    open_mode = 'new'
 
-## allVars = w.allVars()
-## from ROOT import TH1D
-## for name, pat in output.iteritems():
-##     n = len(biased_bins)
-##     heights = [v for v in allVars if v.GetName().find(pat) != -1]
-##     heights = sorted(heights, key = lambda v: int(v.GetName().split('_', 1)[-1]))
-##     v = [(h.getVal(), h.getError()) for h in heights]
-##     hist = TH1D(name, name, n - 1, biased_bins)
-##     for i in range(1, n):
-##         hist.SetBinContent(i, v[i - 1][0])
-##         hist.SetBinError(i, v[i - 1][1])
-##     output_file.WriteTObject(hist)
-## output_file.Close()
+from ROOT import TFile
+output_file = TFile(output_file, open_mode)
+
+allVars = ws.allVars()
+from ROOT import TH1D
+from itertools import product
+from array import array
+
+for (name, pat), period in product(output.items(), ['p2011', 'p2012']):
+    binning = time.getBinning(pat + '_binning')
+    bins = array('d', [binning.binLow(i) for i in range(binning.numBins())] + [binning.highBound()])
+    n = len(bins)
+    heights = [v for v in allVars if '_'.join((period, pat)) in v.GetName()]
+    heights = sorted(heights, key = lambda v: int(v.GetName().rsplit('_', 1)[-1]))
+    v = [(h.getVal(), h.getError()) for h in heights]
+    name = '_'.join((name, period))
+    hist = TH1D(name, name, n - 1, bins)
+    for i in range(1, n):
+        hist.SetBinContent(i, v[i - 1][0])
+        hist.SetBinError(i, v[i - 1][1])
+    output_file.WriteTObject(hist, hist.GetName(), 'overwrite')
+
+output_file.Close()

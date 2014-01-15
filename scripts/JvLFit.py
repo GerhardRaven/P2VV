@@ -11,17 +11,17 @@ pdfConfig = PdfConfig( RunPeriods = runPeriods )
 # job parameters
 from P2VV.Parameterizations.FullPDFs import SimulCatSettings
 generateData        = False
-doFit               = True #'NLL'
+doFit               = False #'NLL'
 makeObservablePlots = False
 makeKKMassPlots     = False
 plotAnglesNoEff     = False
 corrSFitErr         = ( 'sumWeight', [ 'runPeriod', 'KKMassCat' ] )
 randomParVals       = ( ) #( 0.2, 12345 )
-dataPath            = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
+dataPath            = '/project/bfys/raaij/p2vv/data/'
 
 plotsFile     = 'temp.ps'   #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.ps'
 plotsROOTFile = 'temp.root' #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.root'
-parFileIn     = '20112012Reco14DataFitValues_6KKMassBins.par' # '20112012Reco14DataFitValues_4KKMassBins.par'
+parFileIn     = 'parameterEstimates.par' #'20112012Reco14DataFitValues_6KKMassBins.par' # '20112012Reco14DataFitValues_4KKMassBins.par'
 parFileOut    = ( 'parameterEstimates.par', dict( Format = 'common' ) )
 
 if generateData :
@@ -30,11 +30,13 @@ if generateData :
 elif pdfConfig['sFit'] :
     dataSetName = 'JpsiKK_sigSWeight'
     if pdfConfig['runPeriods'] == [ 2011 ] :
-        dataSetFile = dataPath + 'P2VVDataSets2011Reco14_I2DiegoMass_6KKMassBins_2TagCats.root'
+        dataSetFile = dataPath + 'P2VVDataSets2011Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
     elif pdfConfig['runPeriods'] == [ 2012 ] :
-        dataSetFile = dataPath + 'P2VVDataSets2012Reco14_I2DiegoMass_6KKMassBins_2TagCats.root'
+        dataSetFile = dataPath + 'P2VVDataSets2012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
     else :
-        dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
+        #dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2MassNoMC_6KKMassBins_2TagCats_newTagging_trig.root'
+        dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats.root'
+        #dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2DiegoMass_6KKMassBins_2TagCats.root'
         #dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_exclBiased_narrowKKMass_2TagCats.root'
 else :
     dataSetName = 'JpsiKK'
@@ -72,14 +74,36 @@ constAmplitudes   = False
 constLambdaCP     = ''  # 'lamb'
 equalAbsLambdaCPs = False
 
-# PDF options
-pdfConfig['timeResType']       = 'event3fb' # 'eventNoMean'
-pdfConfig['timeEffType']       = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
-pdfConfig['timeEffParameters'] = dict( Fit = False, RandomBinOrder = False )
-pdfConfig['constrainBeta']     = ''  # '' / 'constrain' / 'fixed' / 'noBeta'
+pdfConfig['timeResType']   = 'event3fb' # 'eventNoMean'
+pdfConfig['timeEffType']   = 'fit' #'paper2012' # 'paper2012' # 'HLT1Unbiased'
+pdfConfig['timeEffParameters'] = dict(RandomBinOrder = False)
+pdfConfig['constrainBeta'] = ''  # '' / 'constrain' / 'fixed' / 'noBeta'
 
-timeEffFile2011 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
-timeEffFile2012 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
+if pdfConfig['timeEffType'] == 'fit':
+    timeEffFile2011 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
+    timeEffFile2012 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
+    ## timeEffFile2011 = dataPath + 'start_values.root'
+    ## timeEffFile2012 = dataPath + 'start_values.root'
+    ## pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] ).update(dict(hlt1UB = 'hlt2_shape', hlt1ExclB = 'hlt1_shape'))
+    ## pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] ).update(dict(hlt1UB = 'hlt2_shape', hlt1ExclB = 'hlt1_shape'))
+    ## Hack...
+    pdfConfig['externalConstr']['acceptance'] = SimulCatSettings('acceptanceConstr')
+    pdfConfig['externalConstr']['acceptance'].addSettings(['runPeriod'], [['p2011']],
+                                                          {('hlt1_excl_biased_dec', 'exclB') : (0.65, 0.01),
+                                                           ('hlt2_biased', 'B') : (0.65, 0.01)})
+    pdfConfig['externalConstr']['acceptance'].addSettings(['runPeriod'], [['p2012']],
+                                                          {('hlt1_excl_biased_dec', 'exclB') : (0.65, 0.01),
+                                                           ('hlt2_biased', 'B') : (0.65, 0.01)})
+    ## pdfConfig['externalConstr']['betaTimeEff'][0] = ({'runPeriod': ['p2011']}, ( -0.0083, 0.004 ))
+    ## pdfConfig['externalConstr']['betaTimeEff'][1] = ({'runPeriod': ['p2012']}, ( -0.0138, 0. ))
+    pdfConfig['externalConstr']['betaTimeEff'] = ( 0., 0. )
+    pdfConfig['splitParams']['runPeriod'].remove('betaTimeEff')
+    pdfConfig['splitParams']['runPeriod'].append('Gamma')
+
+else:
+    timeEffFile2011 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
+    timeEffFile2012 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
+
 if pdfConfig['runPeriods'] == [ 2011 ] :
     pdfConfig['timeEffHistFiles']['file'] = timeEffFile2011
 elif pdfConfig['runPeriods'] == [ 2012 ] :
@@ -121,12 +145,15 @@ if generateData or manualTagCatBins :
 
 pdfConfig['paramKKMass']     = 'simultaneous'  # 'simultaneous'
 pdfConfig['KKMassBinBounds'] = [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
-pdfConfig['CSPValues']       = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.498 ] # [ 0.326 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.959, 0.770, 0.824, 0.968 ] # [ 0.959, 0.498, 0.968 ]
+pdfConfig['CSPValues']       = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.9152, 0.8797, 0.8357, 0.8599, 0.9207, 0.9624 ] # [ 0.9586, 0.9110, 0.8618, 0.8828, 0.9227, 0.9110 ] # [ 0.9178, 0.9022, 0.8619, 0.8875, 0.9360, 0.9641 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ]
 KKMassPars = pdfConfig['obsDict']['KKMass']
 pdfConfig['obsDict']['KKMass'] = ( KKMassPars[0], KKMassPars[1], KKMassPars[2]
                                   , 1020., pdfConfig['KKMassBinBounds'][0], pdfConfig['KKMassBinBounds'][-1] )
 
 pdfConfig['lambdaCPParam'] = 'lambPhi' # 'lambPhi_CPVDecay_PSWaves'  # 'lambPhi'
+
+if 'Parameterization' in pdfConfig['timeEffParameters'] and pdfConfig['timeEffParameters']['Parameterization'] == 'Spline' :
+    pdfConfig['splitParams']['hlt1_excl_biased_dec'] = [ 'tagCatCoef0_1' ]
 
 #pdfConfig['externalConstr'].pop('dM')
 #pdfConfig['externalConstr']['dM']          = (  17.768, 0.024  )
@@ -138,6 +165,8 @@ pdfConfig['lambdaCPParam'] = 'lambPhi' # 'lambPhi_CPVDecay_PSWaves'  # 'lambPhi'
 #for par in [ 'tres_placeholder', 'timeResMu', 'timeResFrac2', 'sf_mean_offset', 'sf_mean_slope', 'sf_sigma_offset', 'sf_sigma_slope' ] :
 #    pdfConfig['splitParams']['runPeriod'].remove(par)
 #    pdfConfig['externalConstr'].pop(par)
+
+#pdfConfig['splitParams']['hlt1_excl_biased_dec'] = [ 'sf_mean_offset' ]
 
 dGammaVal = 0.108
 dMVal     = 17.647
@@ -320,14 +349,6 @@ if 'lamb' in constLambdaCP.lower() :
 if 'phi' in constLambdaCP.lower() :
     pdfBuild['lambdaCP'].setConstant('phiCP')
     pdfBuild['lambdaCP'].parameter('phiCP').setVal(phiCPVal)
-for CEvenOdds in pdfBuild['taggingParams']['CEvenOdds'] :
-    if not pdfConfig['SSTagging'] :
-        CEvenOdds.setConstant('avgCEven.*')
-        if constAvgCEvenOdd : CEvenOdds.setConstant( 'avgCOdd.*', True )
-    else :
-        for CEvenOdd in CEvenOdds :
-            CEvenOdd.setConstant('avgCEven.*')
-            if constAvgCEvenOdd : CEvenOdd.setConstant( 'avgCOdd.*', True )
 
 if not constTagCatCoefs : pdfBuild['taggingParams'].setConstant( 'tagCatCoef.*', False )
 
@@ -394,14 +415,17 @@ if pdfConfig['lambdaCPParam'].startswith('lambPhi_CPVDecay') :
     if equalAbsLambdaCPs : pdfBuild['lambdaCP'].setConstant('rhoCP_A.*')
     else :                 pdfBuild['lambdaCP'].setConstant('rhoCP_m')
 
-if pdfConfig['timeEffParameters']['Fit'] :
-    for period in [ 'p2011', 'p2012' ] :
-        for cat, coefs in pdfBuild['timeResModels'][ '{bin0;%s}' % period ].shapes()[0].coefficients().iteritems() :
-            for coef in coefs :
-                if coef.GetName().endswith('001') :
-                    coef.setConstant(True)
-                if cat[2] == 'notExclB' :
-                    coef.setVal( 0.5 * coef.getVal() )
+## if pdfConfig['timeEffParameters']['Fit'] :
+##     for period in [ 'p2011', 'p2012' ] :
+##         for cat, coefs in pdfBuild['timeResModels'][ '{bin0;%s}' % period ].shapes()[0].coefficients().iteritems() :
+##             for coef in coefs :
+##                 if coef.GetName().endswith('001') :
+##                     coef.setConstant(True)
+##                 if cat[2] == 'notExclB' :
+##                     coef.setVal( 0.5 * coef.getVal() )
+
+#ws['timeResMu_p2011'].setVal(0.)
+#ws['timeResMu_p2012'].setVal(0.)
 
 #pdfBuild['lifetimeParams'].parameter('Gamma').setVal(0.72)
 
@@ -526,15 +550,18 @@ if doFit :
 
     else :
         if pdfConfig['sFit'] :
-            fitResult = pdf.fitTo( fitData, SumW2Error = True if corrSFitErr == 'matrix' else False
-                                  , Minos = RooMinPars, Save = True, Range = fitRange
-                                  , **fitOpts
-                                 )
+            for i in range(3):
+                fitResult = pdf.fitTo( fitData, SumW2Error = True if corrSFitErr == 'matrix' else False
+                                       , Minos = RooMinPars, Save = True, Range = fitRange
+                                       , **fitOpts)
+                if fitResult.status() == 0:
+                    break
         else :
-            fitResult = pdf.fitTo( fitData
-                                  , Minos = RooMinPars, Save = True, Range = fitRange
-                                  , **fitOpts
-                                 )
+            for i in range(3):
+                fitResult = pdf.fitTo( fitData, Minos = RooMinPars, Save = True, Range = fitRange
+                                       , **fitOpts)
+                if fitResult.status() == 0:
+                    break
 
     # reparameterize amplitudes
     if pdfConfig['amplitudeParam'] == 'bank' and pdfConfig['ASParam'] != 'ReIm' and pdfConfig['AparParam'] == 'Mag2ReIm' :

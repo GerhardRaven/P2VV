@@ -264,7 +264,7 @@ RooCubicSplineFun::productAnalyticalIntegral(Double_t umin, Double_t umax,
     }
     double sc[4]; for (int i=0;i<4;++i) sc[i] = pow(scale,i);
     double lo = scale*umin+offset;
-    double hi = scale*umax+offset;
+    double hi = scale*umax+offset+1.e-7;
     std::complex<double> sum(0,0);
     //TODO: verify we remain within [lo,hi]
     assert(hi>=u(0)); // front only if hi>u(0)!!!
