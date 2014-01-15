@@ -2,12 +2,15 @@ from P2VV.Load import LHCbStyle
 from P2VV.RooFitWrappers import *
 from ROOT import TFile
 
-f = TFile("dilution.root")
-data = f.Get("data")
-diff = data.get().find("diff")
+f = TFile("toy.root")
+data = f.Get("result_data")
 
 obj = RooObject( workspace = 'w')
 obj.ws().put(data)
+
+da = data.get().find('da')
+dft = data.get().find('dft')
+diff = FormulaVar(Name = 'diff', Formula = '@0 - @1', Arguments = (dft, da), data = data)
 
 mean = RealVar('mean', Value = -0.001, MinMax = (-1, 1))
 sigma = RealVar('sigma', Value = 0.0011, MinMax = (0.0001, 0.1))

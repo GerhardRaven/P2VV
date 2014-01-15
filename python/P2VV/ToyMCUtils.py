@@ -195,7 +195,7 @@ class FitToy(Toy):
                 if not data:
                     # Transform has failed
                     transform.set_params(data_params)
-                    self._data.fill()
+                    self._data.add(data_params)
                     continue
             
             if data.isWeighted() and 'SumW2Error' not in self.fit_opts():
@@ -222,9 +222,9 @@ class FitToy(Toy):
                     # This sets a symmetric error, but since we don't run Minos, that's ok
                     data_param.setError(result_param.getError())
             if transform:
-                transform.set_params(self, data_params)
+                transform.set_params(data_params)
                 
-            self._data.fill()
+            self._data.add(data_params)
 
         return self.data()
 
@@ -317,7 +317,7 @@ class DilutionToy(Toy):
             if transform:
                 transform.set_params(data_params)
             
-            self._data.fill()
+            self._data.add(result_params)
 
         return self.data()
 
