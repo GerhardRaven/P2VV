@@ -1,3 +1,14 @@
+import sys
+import os
+try:
+    from P2VV.ToyMCUtils import Toy
+except ImportError:
+    print 'Could not import P2VV version, trying local directory'
+    from ToyMCUtils import Toy
+
+toy = Toy()
+(options, args) = toy.configure()
+
 from P2VV.RooFitWrappers import *
 obj = RooObject( workspace = 'w')
 
@@ -44,87 +55,22 @@ from P2VV.Utilities.Resolution import SplitSigmat
 split = SplitSigmat('', st)
 sigmat_cat = split.split_cats()[0]
 
-from P2VV import Dilution
+from
 
-dilutions = []
-da = RealVar('da', Observable = True, MinMax = (0.01, 1.1))
-dft = RealVar('dft', Observable = True, MinMax = (0.01, 1.1))
-from ROOT import RooDataSet
-from ROOT import RooArgSet
-test_data = RooDataSet("test_data", "test_data", RooArgSet([da, dft]))
+## Fit options
+fitOpts = dict(  Optimize  = 2
+               , Timer     = True
+               , Strategy  = 1
+               , Save      = True
+               , Verbose   = False
+               , Minimizer = 'Minuit2')
 
-from multiprocessing import Process
-from multiprocessing import Queue
+toy.set_fit_opts(**fitOpts)
 
-class Calculator(Process):
-    def __init__(self, mass_pdf, pdf, sigmat_cat, t, st, n, n_event = 100000):
-        Process.__init__(self)
-        self.__pdf = pdf
-        self.__mass_pdf = mass_pdf
-        self.__st_cat = sigmat_cat
-        self.__t = t
-        self.__st = st
-        self.__n = n
-        from ROOT import RooFit
-        self.__spec = pdf.prepareMultiGen(RooArgSet(mpsi, t, st), RooFit.NumEvents(n_event))
-        self.__queue = Queue()
+## SWeights
+from P2VV.ToyMCUtils import SWeightTransform
+toy.set_transform(SWeightTransform(mass_pdf, 'one', fitOpts))
 
-    def run(self):
-        fitOpts = dict(NumCPU = 1, Timer = 1, Save = True, Minimizer = 'Minuit2',
-                       Optimize = 2, Offset = True)
-        i = 0
-        while i < self.__n:
-            data = self.__pdf.generate(self.__spec)
-            for i in range(3):
-                mass_result = self.__mass_pdf.fitTo(data, **fitOpts)
-                if mass_result.status() == 0:
-                    i += 1
-                    break
-            else:
-                continue
-            from P2VV.Utilities.SWeights import SData
-            sData = SData(Pdf = self.__mass_pdf, Data = data, Name = 'MassSPlot')
-            sdata = sData.data('one')
-            st_cat = sdata.addColumn(self.__st_cat._target_())
-            d_ft = Dilution.dilution_bins(sdata, self.__t, self.__st, st_cat, t_range = 2)
-            d_a = Dilution.signal_dilution_dg(sdata, self.__st, 1.2, 0.2, 2)
-            self.__queue.put((d_a, d_ft))
-        self.__queue.put('done')
+toy.run(Observables = [mpsi, t, st], Pdf = pdf)
 
-    def queue(self):
-        return self.__queue
-
-n_p = 1
-calculators = []
-n_toys = 10
-n_t = n_p * [n_toys / n_p]
-for i in range(n_toys % n_p):
-    n_t[i] += 1
-
-for n in n_t:
-    c = Calculator(mass_pdf, pdf, sigmat_cat, t, st, n)
-    calculators.append(c)
-    c.start()
-
-args = RooArgSet(da, dft)
-while len(calculators):
-    for i, calculator in enumerate(calculators):
-        msg = calculator.queue().get()
-        if msg == 'done':
-            calculator.join()
-            calculators.pop(i)
-            continue
-        else:
-            d_a, d_ft = msg
-        da.setVal(d_a[0])
-        dft.setVal(d_ft[0])
-        dft.setError(d_ft[1])
-        test_data.add(args)
-    if test_data.numEntries() % 100 == 0:
-        print 'completed ', test_data.numEntries()
-        
-diff = FormulaVar(Name = 'diff', Formula = '@0 - @1', Arguments = (dft, da), data = test_data)
-from ROOT import TFile
-f = TFile("dilution.root", "recreate")
-f.WriteTObject(test_data, "data")
-f.Close()
+toy.write_output()
