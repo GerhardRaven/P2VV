@@ -61,23 +61,15 @@ pdfBuild = PdfBuilder( **pdfConfig )
 pdf = pdfBuild.pdf()
 
 # fix values of some parameters
-for CEvenOdds in self._pdfBuild['taggingParams']['CEvenOdds'] :
-        if not self._pdfConfig['SSTagging'] :
-            if namePF:
-                CEvenOdds.setConstant( 'avgCEven.*')
-                CEvenOdds.setConstant( 'avgCOdd.*', True )
-            else: 
-                CEvenOdds.setConstant( 'avgCEven.*')
+for CEvenOdds in pdfBuild['taggingParams']['CEvenOdds'] :
+        if not pdfConfig['SSTagging'] :
+		CEvenOdds.setConstant( 'avgCEven.*')
                 CEvenOdds.setConstant( 'avgCOdd.*', True )
         else :
             for CEvenOdd in CEvenOdds :
-                if namePF:
-                    CEvenOdd.setConstant( 'avgCEven.*')
+		    CEvenOdd.setConstant('avgCEven.*')
                     CEvenOdd.setConstant( 'avgCOdd.*', True )
-                else: 
-                    CEvenOdd.setConstant('avgCEven.*')
-                    CEvenOdd.setConstant( 'avgCOdd.*', True )
-self._pdfBuild['amplitudes'].setConstant('C_SP')
+pdfBuild['amplitudes'].setConstant('C_SP')
 
 if parFileIn:
     # read parameters from file

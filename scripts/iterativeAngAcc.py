@@ -51,7 +51,6 @@ mcTupleName      = 'DecayTree'
 if MCProd == '2011': monteCarloData = dataSetsPath + mcData11FileName
 if MCProd == '2012': monteCarloData = dataSetsPath + mcData12FileName
 
-
 # target distribution
 dataPath     = dataSetsPath + 'P2VVDataSets%sReco14_I2Mass_6KKMassBins_2TagCats_kinematics_HLT2B.root'%MCProd
 fitDataPath  = dataSetsPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root' if doFit else None
@@ -101,6 +100,7 @@ if initialFitOnData and doFit:
     assert False
 
 # initialise physics matching class and build MC pdf
+print 'P2VV - INFO: Iteration Number %s. Running reweighting procedure in sample %s'%(iterNumb, mcData11FileName if MCProd=='2011' else mcData12FileName)
 PhysicsReweight = MatchPhysics( monteCarloData, mcTupleName , MonteCarloProduction=MCProd )
 
 # manage the weights (avoid creating too many datasets)
@@ -136,7 +136,7 @@ mcDataMngr['iterationNumber'] = iterNumb
 # source and target distributions    
 source = mcDataMngr.getDataSet()
 target = TFile.Open(dataPath).Get(sDataName)
-print 'P2VV - INFO: Source distribution file: %s. \nTarget distribution file: %s.'%(monteCarloData,dataPath)
+print 'P2VV - INFO:\nSource distribution file: %s. \nTarget distribution file: %s.'%(monteCarloData,dataPath)
 
 # match B momentum
 if reweightBmomentum:
@@ -170,8 +170,11 @@ elif reweightKKmom and RewApproach == 'horizontal':
     KinematicReweight.reweight( iterNumb, PhysicsReweight.getDataSet(weighted=True) )
     reweightedData = KinematicReweight.getDataSet()
   
-# compute angular efficiency moments from the new reweighted mc dataset.    
-PhysicsReweight.setDataFitParameters(dataParameters) # set data pars to pdf (reweighted data has the data physics now)
+# compute angular efficiency moments from the new reweighted mc dataset.
+if reweightPhysics: 
+    PhysicsReweight.setDataFitParameters(dataParameters) # set data pars to pdf (reweighted data has the data physics now)
+else:
+    PhysicsReweight.setMonteCarloParameters()
 physMoments = RealMomentsBuilder( Moments = ( RealEffMoment( Name = func.GetName(), 
                                                              BasisFunc = func,
                                                              Norm = 1., 
@@ -196,12 +199,23 @@ normalizeMoments( 'Sim08_{0}_{1}_Phys_{2}'.format(MCProd,outputEffMomentsBaselin
 
 # combine 2011,2012 acceptances
 if combineEffMoments:
-    combineMoments( ['Sim08_%s_%s_Phys_norm_%s'%(prod,outputEffMomentsBaselineName,iterNumb) for prod in ['2011','2012'] ],
-                    'Sim08_20112012_{0}_Phys_norm_{1}'.format(outputEffMomentsBaselineName,iterNumb),
-                    prefix     = 'mc',
-                    printMoms  = False
-                    )
-
+    angAcc2011 = 'Sim08_2011_%s_Phys_norm_%s'%(outputEffMomentsBaselineName,iterNumb) 
+    angAcc2012 = 'Sim08_2012_%s_Phys_norm_%s'%(outputEffMomentsBaselineName,iterNumb) 
+    
+    from time import sleep
+    while True:
+        try:
+            open(angAcc2011)
+            open(angAcc2012)
+            combineMoments( [ angAcc2011, angAcc2012 ], 'Sim08_20112012_{0}_Phys_norm_{1}'.format(outputEffMomentsBaselineName,iterNumb),
+                            prefix     = 'mc',
+                            printMoms  = False
+                            )
+            break
+        except IOError:
+            print 'P2VV - INFO: Waiting for the followig flies to combine efficiency moments:\n%s\n%s'%(angAcc2011,angAcc2012)
+            sleep(20)
+    
 # convert effyciency weights to efficiency moments
 correctedEfficiencyWeights = 'Sim08_{0}_{1}_Phys_norm_{2}'.format('20112012', outputEffMomentsBaselineName, iterNumb ) if combineEffMoments \
                         else 'Sim08_{0}_{1}_Phys_norm_{2}'.format( MCProd,    outputEffMomentsBaselineName, iterNumb )
@@ -242,12 +256,13 @@ if makePlots: # plot data after each reweighting step
     for wList in plotWeightsList: mcDataMngr.plotWeights(wList)
 
 # write weighted mc data to a file
-if writeWeightedData: # TODO: got errors fix this 
-    wMcFile = TFile.Open( mcData11FileName.partition('.root')[0] + '_' + str(iterNumb) + '.root', 'recreate')
+if writeWeightedData: # TODO: got errors fix this
+    weightedMcFileName = monteCarloData.partition(dataSetsPath)[2].partition('.root')[0] + '_' + str(iterNumb) + '.root'
+    wMcFile = TFile.Open( weightedMcFileName, 'recreate')
     mcDataMngr.getDataSet().Write()
     wMcFile.Close()
     del wMcFile
-    print 'P2VV -INFO: Wrote reweighted MC dataset to file %s'%mcData11FileName.partition('.root')[0] + '_' + str(iterNumb)
+    print 'P2VV -INFO: Wrote reweighted MC dataset to file %s'%weightedMcFileName
 
 # save memory
 del physMoments
