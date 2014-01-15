@@ -59,6 +59,9 @@ class Toy(object):
         except KeyError:
             pass
 
+        from ROOT import gROOT
+        gROOT.SetBatch(True)
+
         return (self._options, self._args)
 
     def run(self, **kwargs):
