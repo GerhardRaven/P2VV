@@ -93,3 +93,5 @@ fitResult.PrintSpecial( text = True, ParNames = parNames, ParValues = parValues 
 if parFileOut :
     pdfConfig.getParametersFromPdf( pdf,  fitData )
     pdfConfig.writeParametersToFile( filePath = parFileOut )
+
+print 120*'='

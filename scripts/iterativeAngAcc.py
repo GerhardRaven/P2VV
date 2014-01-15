@@ -4,7 +4,7 @@
 from optparse import OptionParser
 parser = OptionParser()
 parser.add_option('-r', '--KKmomRew',  dest='KKmomRew',   default = 'vertical',            help='KK momentum reweighting approach (vertical/horizontal)')
-parser.add_option('-o', '--rewSteps',  dest='rewSteps',   default = 'Bmom mkk phys KKmom', help='reweghting steps order')
+parser.add_option('-o', '--rewSteps',  dest='rewSteps',   default = 'Bmom_mkk_phys_KKmom', help='reweghting steps order')
 parser.add_option('-s', '--MCProd',    dest='MCProd',     default = '2011',                help='choose mc sample ( 2011,2012 )')
 parser.add_option('-n', '--iterNum',   dest='iterNum',    default = 1, type=int,           help='iteration number')
 parser.add_option('-a', '--nomAngAcc', dest='nomAngAcc',  default = '',                    help='nominal angular acceptance')
@@ -130,12 +130,13 @@ if RewApproach == 'horizontal':
 
 
 # begin reweighting procedure
-print 'P2VV - INFO: Iteratitive procedure, begining of iteration %s.'%str(iterNumb)
+print 'P2VV - INFO: Start reweighting mc data_%s.'%MCProd
 mcDataMngr['iterationNumber'] = iterNumb
 
 # source and target distributions    
 source = mcDataMngr.getDataSet()
 target = TFile.Open(dataPath).Get(sDataName)
+print 'P2VV - INFO: Source distribution file: %s. \nTarget distribution file: %s.'%(monteCarloData,dataPath)
 
 # match B momentum
 if reweightBmomentum:
@@ -212,7 +213,7 @@ convertEffWeightsToMoments( moments, OutputFilePath    = correctedEfficiencyWeig
                             WeightNamesPrefix = PhysicsReweight.getParNamePrefix(),
                             PrintMoments      = False
                             )
-  
+
 # perform sFit on data using the new angular acceptance and update the data physics parameters
 if doFit:
     ParFileOut = '20112012Reco14DataFitValues_6KKMassBins_angEff_%s.par'%iterNumb 
@@ -240,21 +241,22 @@ if makePlots: # plot data after each reweighting step
     if reweightMkk:       plotWeightsList += [ mKKWeightsName ]
     for wList in plotWeightsList: mcDataMngr.plotWeights(wList)
 
+# write weighted mc data to a file
+if writeWeightedData: # TODO: got errors fix this 
+    wMcFile = TFile.Open( mcData11FileName.partition('.root')[0] + '_' + str(iterNumb) + '.root', 'recreate')
+    mcDataMngr.getDataSet().Write()
+    wMcFile.Close()
+    del wMcFile
+    print 'P2VV -INFO: Wrote reweighted MC dataset to file %s'%mcData11FileName.partition('.root')[0] + '_' + str(iterNumb)
+
 # save memory
 del physMoments
 cleanP2VVPlotStash()
 mcDataMngr.clear()
 gc.collect()
 
-# write weighted mc data to a file
-if writeWeightedData:
-    wMcFile = TFile.Open( mcData11FileName.partition('.root')[0] + str(iterNumb) + '.root', 'recreate')
-    mcDataMngr.getDataSet().write()
-    wMcFile.Close()
-    del wMcFile
-
 # observables plot with the corrected angular acceptance
-if makePlots and plotFinalPdfonData:
+if makePlots and plotFinalPdfonData and doFit:
     from P2VV.Utilities.Plotting import plot
     from ROOT import RooAbsData, TCanvas, RooArgSet
     c = TCanvas( 'sFit: CorrAngAcc', 'sFit: CorrAngAcc' )
@@ -277,3 +279,5 @@ if makePlots and plotFinalPdfonData:
                                XErrorSize = 0)
               )
     c.Print( 'anglesTimeCorrAngAcc.pdf' )
+
+print 120*'='
