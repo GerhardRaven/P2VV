@@ -1,3 +1,5 @@
+from ROOT import gROOT
+gROOT.SetBatch(True)
 from P2VV.RooFitWrappers import *
 obj = RooObject( workspace = 'w')
 
@@ -94,9 +96,9 @@ class Calculator(Process):
     def queue(self):
         return self.__queue
 
-n_p = 1
+n_p = 4
 calculators = []
-n_toys = 10
+n_toys = 5000
 n_t = n_p * [n_toys / n_p]
 for i in range(n_toys % n_p):
     n_t[i] += 1
