@@ -1,10 +1,10 @@
 import sys
 import os
 try:
-    from P2VV.ToyMCUtils import Toy
+    from P2VV.ToyMCUtils import DilutionToy as Toy
 except ImportError:
     print 'Could not import P2VV version, trying local directory'
-    from ToyMCUtils import Toy
+    from ToyMCUtils import DilutionToy as Toy
 
 toy = Toy()
 (options, args) = toy.configure()
@@ -55,8 +55,6 @@ from P2VV.Utilities.Resolution import SplitSigmat
 split = SplitSigmat('', st)
 sigmat_cat = split.split_cats()[0]
 
-from
-
 ## Fit options
 fitOpts = dict(  Optimize  = 2
                , Timer     = True
@@ -71,6 +69,6 @@ toy.set_fit_opts(**fitOpts)
 from P2VV.ToyMCUtils import SWeightTransform
 toy.set_transform(SWeightTransform(mass_pdf, 'one', fitOpts))
 
-toy.run(Observables = [mpsi, t, st], Pdf = pdf)
+toy.run(Observables = [mpsi, t, st], Time = t, Sigmat = st, SigmatCat = sigmat_cat, Pdf = pdf)
 
 toy.write_output()

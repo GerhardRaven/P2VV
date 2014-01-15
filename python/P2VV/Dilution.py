@@ -31,7 +31,11 @@ def sigmaFromFT(hist, dMs, dMsErr, quiet = False):
 
     error = sqrt(error / (sdt * sdt) + sdterr * scos * scos / sdt ** 4)
 
-    rms = sqrt(sx2/s)
+    try:
+        rms = sqrt(sx2/s)
+    except ValueError:
+        rms = None
+
     D = scos / sdt
     sigma = sqrt( -2*log(D) ) / dMs
 

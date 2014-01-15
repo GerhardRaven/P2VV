@@ -77,7 +77,12 @@ class Toy(object):
         output_file.WriteTObject(self._data, self._data.GetName())
         gp = self.gen_params()
         if gp:
-            output_file.WriteTObject(gp, 'gen_params')
+            from ROOT import RooArgSet
+            gpars = RooArgSet()
+            for p in gp:
+                gpars.add(p)
+            gpars = gpars.snapshot(True)
+            output_file.WriteTObject(gpars, 'gen_params')
         output_file.Close()
         
     def set_fit_opts(self, **opts):
@@ -86,7 +91,7 @@ class Toy(object):
     def set_transform(self, t):
         self.__transform = t
 
-    def transfrom(self):
+    def transform(self):
         return self.__transform
 
     def gen_params(self):
@@ -98,9 +103,9 @@ class Toy(object):
     def options(self):
         return self._options
     
-def FitToy(Toy):
-    def __init__(self, *args, **kwargs):
-        Toy.__init__(self, *args, **kwargs)
+class FitToy(Toy):
+    def __init__(self):
+        Toy.__init__(self)
 
     def run(self, **kwargs):
         from ROOT import RooArgSet
@@ -139,10 +144,11 @@ def FitToy(Toy):
         # Make another ArgSet to put the fit results in
         result_params = RooArgSet(pdf_params, "result_params")
 
-        transfrom = self.transform():
+        transfrom = self.transform()
         if transfrom:
             trans_params = transform.gen_params(gen_obs_set)
-            result_params.add(trans_params)
+            for p in trans_params:
+                result_params.add(p)
             
         # Some extra numbers of interest
         from ROOT import RooRealVar
@@ -155,6 +161,7 @@ def FitToy(Toy):
         status.defineType('one', 1)
         status.defineType('two', 2)
         status.defineType('three', 3)
+        status.defineType('other', 4)
         result_params.add(status)
         result_params.add(NLL)
         result_params.add(ngen)
@@ -202,7 +209,10 @@ def FitToy(Toy):
             if fit_result.status() != 0:
                 print 'Fit result status = %s' % fit_result.status()
             NLL.setVal(fit_result.minNll())
-            status.setIndex(fit_result.status())
+            if fit_result.status() < 4:
+                status.setIndex(fit_result.status())
+            else:
+                status.setIndex(4)
             for result_param in result_params:
                 data_param = data_params.find(result_param.GetName())
                 if isinstance(result_param, RooCategory):
@@ -221,9 +231,10 @@ def FitToy(Toy):
     def gen_params(self):
         return self._gen_params
 
-def DilutionToy(Toy):
-    def __init__(self, *args, **kwargs):
-        Toy.__init__(self, *args, **kwargs)
+class DilutionToy(Toy):
+    def __init__(self):
+        Toy.__init__(self)
+        self._gen_params = []
 
     def run(self, **kwargs):
         from ROOT import RooArgSet
@@ -231,6 +242,7 @@ def DilutionToy(Toy):
         __check_req_kw__('Observables', kwargs)
         __check_req_kw__('Pdf', kwargs)
         __check_req_kw__('Sigmat', kwargs)
+        __check_req_kw__('Time', kwargs)
         __check_req_kw__('SigmatCat', kwargs)
 
         observables = kwargs.pop('Observables')
@@ -239,21 +251,25 @@ def DilutionToy(Toy):
         pdf = kwargs.pop('Pdf')
         sigmat_cat = kwargs.pop('SigmatCat')
         sigmat = kwargs.pop('Sigmat')
+        time = kwargs.pop('Time')
         
-        gen_obs_set = RooArgSet(*observables).snapshot(True)
+        gen_obs_set = RooArgSet(*observables)
 
         # Make another ArgSet to put the fit results in
         result_params = RooArgSet("result_params")
 
+        from P2VV.RooFitWrappers import RealVar
         da = RealVar('da', Observable = True, MinMax = (0.01, 1.1))
         dft = RealVar('dft', Observable = True, MinMax = (0.01, 1.1))
         result_params.add(da._target_())
         result_params.add(dft._target_())
         
-        transfrom = self.transform():
-        if transfrom:
+        transform = self.transform()
+        if transform:
             trans_params = transform.gen_params(gen_obs_set)
-            result_params.add(trans_params)
+            self._gen_params.extend(trans_params)
+            for p in trans_params:
+                result_params.add(p)
             
         # Some extra numbers of interest
         from ROOT import RooRealVar
@@ -268,34 +284,36 @@ def DilutionToy(Toy):
         from ROOT import RooRandom
         import struct, os
 
+        # Reset pdf parameters to initial values. Note: this does not reset the estimated errors...
+        args = dict(NumEvents = self.options().nevents)
+        if 'ProtoData' in kwargs:
+            args['ProtoData'] = kwargs.pop('ProtoData')
+        spec = pdf.prepareMultiGen(obs_set, **args)
+        
         while self._data.numEntries() < self.options().ntoys:
             # Get a good random seed, set it and store it
             s = struct.unpack('I', os.urandom(4))[0]    
             RooRandom.randomGenerator().SetSeed(s)
             seed.setVal(s)
-
-            # Reset pdf parameters to initial values. Note: this does not reset the estimated errors...
-            args = dict(NumEvents = self.options().nevents)
-            if 'ProtoData' in kwargs:
-                args['ProtoData'] = kwargs.pop('ProtoData')
             
-            data = pdf.generate(obs_set, **args)
+            data = pdf.generate(spec)
             if self.transform():
-                data = self.transform()(data)
+                old_data = data
+                data = self.transform()(old_data)
                 if not data:
                     transform.set_params(data_params)
-                    self._data.fill()
+                    self._data.add(data_params)
                     continue
 
             st_cat = data.addColumn(sigmat_cat._target_())
             from P2VV import Dilution
-            d_ft = Dilution.dilution_bins(sdata, self.__t, sigmat, st_cat, t_range = 2)
-            d_a = Dilution.signal_dilution_dg(sdata, sigmat, 1.2, 0.2, 2)
+            d_ft = Dilution.dilution_bins(data, time, sigmat, st_cat, t_range = 2)
+            d_a = Dilution.signal_dilution_dg(data, sigmat, 1.2, 0.2, 2)
             da.setVal(d_a[0])
-            da.setError(d_a[1])
+            da.setError(d_a[1] if d_a[1] != None else 0.)
             dft.setVal(d_ft[0])
-            dft.setError(d_ft[1])
-        
+            dft.setError(d_ft[1] if d_ft[1] != None else 0.)
+
             if transform:
                 transform.set_params(data_params)
             
@@ -313,17 +331,20 @@ class SWeightTransform(object):
         self.__fit_opts = fit_opts
         self.__result = None
 
+        from ROOT import RooCategory
         self.__status = RooCategory('sweight_status', 'sweight fit status')
         self.__status.defineType('success', 0)
         self.__status.defineType('one', 1)
         self.__status.defineType('two', 2)
         self.__status.defineType('three', 3)
+        self.__status.defineType('other', 4)
+        self.__parameters = None
         
     def __call__(self, data):
         pdf_pars = self.__pdf.getParameters(data.get())
-        if not hasattr(self, '__parameters'):
-            self.__parameters = pdf_pars.snapshot(True)
-            self.__parameters.add(self.__status)
+        if not self.__parameters:
+            self.__parameters = pdf_pars
+            self.__parameters = [p for p in pdf_pars] + [self.__status]
         else:
             for p in self.__parameters:
                 pdf_par = pdf_pars.find(p.GetName())
@@ -333,23 +354,28 @@ class SWeightTransform(object):
                 pdf_par.setError(p.getError())
 
         success = False
+        status = 4
         for i in range(3):
             self.__result = self.__pdf.fitTo(data, **self.__fit_opts)
-            if self.__result.status() == 0:
+            status = self.__result.status()
+            if  status == 0:
                 success = True
                 break
 
-        self.__status.setIndex(self.__result.status())
+        if status < 4:
+            self.__status.setIndex(self.__result.status())
+        else:
+            self.__status.setIndex(4)
         if success:
             from P2VV.Utilities.SWeights import SData
-            sData = SData(Pdf = self.__pdf, Data = data, Name = 'MassSPlot')
-            return sData.data(self.__comp)
+            self.__sData = SData(Pdf = self.__pdf, Data = data, Name = 'MassSPlot')
+            return self.__sData.data(self.__comp)
         else:
             return None
 
     def gen_params(self, observables = None):
         from ROOT import RooArgSet
-        if hasattr(self, '__parameters'):
+        if self.__parameters:
             return self.__parameters
         else:
             if observables and not isinstance(observables, RooArgSet):
@@ -358,8 +384,8 @@ class SWeightTransform(object):
                     obs.add(o._target_() if hasattr(o, '_target_') else o)
                 observables = obs
             params = self.__pdf.getParameters(observables)
-            params.add(self.__status)
-            return params
+            self.__parameters = [p for p in params] + [self.__status]
+            return self.__parameters
 
     def result_params(self):
         if not self.__result:
@@ -376,4 +402,4 @@ class SWeightTransform(object):
             else:
                 data_param.setVal(trans_param.getVal())
                 # This sets a symmetric error, but since we don't run Minos, that's ok
-                data_param.setError(result_param.getError())
+                data_param.setError(trans_param.getError())
