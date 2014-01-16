@@ -238,6 +238,7 @@ class Bs2Jpsiphi_PdfConfiguration( PdfConfiguration ) :
         self['timeResType']        = ''               # '' / 'event' / 'eventNoMean' / 'eventConstMean' / '3Gauss' / 'event3fb'
         self['constrainTResScale'] = ''               # '' / 'constrain' / 'fixed'
         self['timeEffType']        = 'paper2012'      # 'HLT1Unbiased' / 'HLT1ExclBiased' / 'paper2012' / 'fit'
+        self['timeEffConstraintType'] = 'multinomial' # 'multinomial' / 'average'
         self['constrainDeltaM']    = ''               # '' / 'constrain' / 'fixed'
 
         self['timeEffHistFiles']  = { }
@@ -584,7 +585,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         for par in [ 'sFit', 'KKMassBinBounds', 'obsDict', 'CSPValues', 'condTagging', 'contEstWTag', 'SSTagging', 'transAngles'
                     , 'numEvents', 'sigFrac', 'paramKKMass', 'amplitudeParam', 'ASParam', 'signalData', 'fitOptions', 'parNamePrefix'
                     , 'tagPdfType', 'timeEffType', 'timeEffHistFiles', 'timeEffParameters', 'anglesEffType', 'angEffMomsFiles'
-                    , 'readFromWS', 'splitParams', 'externalConstr', 'runPeriods' ] :
+                    , 'readFromWS', 'splitParams', 'externalConstr', 'runPeriods', 'timeEffConstraintType' ] :
             self[par] = getKWArg( self, { }, par )
 
         from P2VV.Parameterizations.GeneralUtils import setParNamePrefix, getParNamePrefix
@@ -1015,6 +1016,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         splitParsDict  = getKWArg( self, kwargs, 'splitParsDict' )
         pdf            = getKWArg( self, kwargs, 'pdf' )
         simulPdf       = getKWArg( self, kwargs, 'simulPdf' )
+        useAvEff       = getKWArg( self, kwargs, 'useAvEffConstraint' )
+        data           = getKWArg( self, kwargs, 'signalData' )
+        obsevables     = getKWArg( self, kwargs, 'observables' )
 
         from P2VV.Parameterizations.GeneralUtils import getParNamePrefix
         namePF = getParNamePrefix(True)
@@ -1043,75 +1047,11 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                     ]
                                     )
                                )
-
-        # Time res model constraints include those form the acceptance
-        from P2VV.Parameterizations.TimePDFs import Single_Exponent_Time
-        from P2VV.Parameterizations.TimeResolution import Truth_TimeResolution
-        truth_res = Truth_TimeResolution(time = self['obsSetP2VV'][0])
-        simple_time = Single_Exponent_Time(Name = 'constraint_time', time = self['obsSetP2VV'][0],
-                                           resolutionModel = truth_res.model(),
-                                           tau = self['lifetimeParams']['MeanLifetime'])
-        simple_time_pdf = simple_time.pdf()
-        acc_settings = externalConstr.pop('acceptance', None)
-        if simulPdf:
-            splitCat = simulPdf.indexCat()
-            from ROOT import RooArgList
-            inputCats = RooArgList(splitCat) if splitCat.isFundamental() else splitCat.inputCatList()
-
-        if acc_settings and simulPdf:
-            splitAccCats = [inputCats.find(c if type(c) == str else c.GetName()) for c in acc_settings.categories()]
-
-            ## Create a simultaneous pdf for the constraints.
-            from P2VV.Utilities.General import createSplitParsList
-
-            splitSet = set(k.GetName() for k in splitParsDict.iterkeys())
-            accSplitDict = dict((var, set(splitAccCats)) for var in simple_time_pdf.getVariables() if var.GetName() in splitSet)
-            accSplitPars = createSplitParsList(accSplitDict)
-
-            # build simultaneous PDF
-            from P2VV.RooFitWrappers import SimultaneousPdf
-            simul_time_pdf = SimultaneousPdf(simple_time_pdf.GetName() + '_simul',
-                                             MasterPdf       = simple_time_pdf,
-                                             SplitCategories = [pars[1] for pars in accSplitPars],
-                                             SplitParameters = [pars[0] for pars in accSplitPars])
-
-            from ROOT import RooRealVar
-            simulVars = simul_time_pdf.getVariables()
-            for v in simulPdf.getVariables():
-                if v.getAttribute('Observable'):
-                    continue
-                if not isinstance(v, RooRealVar):
-                    continue
-                sv = simulVars.find(v.GetName())
-                if sv:
-                    sv.setVal(v.getVal())
-                    sv.setError(v.getError())
-                            
-            acc_constraints = {}
-            simple_split_cat = simul_time_pdf.indexCat()
-            for (key, model) in self['timeResModels'].iteritems():
-                if key == 'prototype':
-                    continue
-                if not hasattr(model, 'build_constraints'):
-                    continue
-                splitCat.setLabel(key)
-                state = simple_split_cat.getLabel()
-                split_pdf = simul_time_pdf.getPdf(state)
-                print key, state, split_pdf.GetName()
-
-                sk = tuple((cat.GetName(), cat.getLabel()) for cat in splitAccCats)
-                values = acc_settings.getSettings(sk)
-                # I use a simple PDF with only the average lifetime here. I
-                # think this is a valid approximation.
-                ac = model.build_constraints(split_pdf, values)
-                for constraint in ac:
-                    if constraint.GetName() not in acc_constraints:
-                        acc_constraints[constraint.GetName()] = constraint
-            constraints |= set(acc_constraints.itervalues())
-        elif acc_settings:
-            acceptance = timeResModels['prototype']
-            if hasattr(acceptance, 'build_constraints'):
-                constraints |= set(acceptance.build_constraints(simple_time_pdf, acc_settings))
+        if self['timeEffConstraintType'] == 'multinomial':
+            constraints |= self.__multinomial_eff_constraints(externalConstr, simulPdf,
+                                                              data, observables['time'])
+        elif self['timeEffConstraintType'] == 'average':
+            constraints |= self.__av_eff_constraints(externalConstr)
 
         ws = pdf.ws()
         pdfVars = pdf.getVariables()
@@ -1151,6 +1091,105 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     
         pdf['ExternalConstraints'] = pdf['ExternalConstraints'] | constraints
 
+    def __multinomial_eff_constraints(self, externalConstr, simulPdf, data, time):
+        # Time res model constraints include those form the acceptance
+        acc_settings = externalConstr.pop('acceptance', None)
+        if simulPdf:
+            splitCat = simulPdf.indexCat()
+            from ROOT import RooArgList
+            inputCats = RooArgList(splitCat) if splitCat.isFundamental() else splitCat.inputCatList()
+
+        constraints = set()
+            
+        if acc_settings and simulPdf:
+            splitAccCats = [inputCats.find(c if type(c) == str else c.GetName()) for c in acc_settings.categories()]
+
+            ## Create a simultaneous pdf for the constraints.
+            from P2VV.Utilities.General import createSplitParsList
+                            
+            for (key, model) in self['timeResModels'].iteritems():
+                if key == 'prototype':
+                    continue
+                if not hasattr(model, 'build_av_constraints'):
+                    continue
+                splitCat.setLabel(key)
+                sk = tuple((cat.GetName(), cat.getLabel()) for cat in splitAccCats)
+                values = acc_settings.getSettings(sk)
+                # I use a simple PDF with only the average lifetime here. I
+                # think this is a valid approximation.
+                constraints |= acceptance.build_multinomial_constraints(data, time)
+        elif acc_settings:
+            acceptance = timeResModels['prototype']
+            if hasattr(acceptance, 'build_multinomial_constraints'):
+                constraints |= acceptance.build_multinomial_constraints(data, time)
+    
+    def __av_eff_constraints(self, externalConstr, simulPdf):
+        # Time res model constraints include those form the acceptance
+        from P2VV.Parameterizations.TimePDFs import Single_Exponent_Time
+        from P2VV.Parameterizations.TimeResolution import Truth_TimeResolution
+        truth_res = Truth_TimeResolution(time = self['obsSetP2VV'][0])
+        simple_time = Single_Exponent_Time(Name = 'constraint_time', time = self['obsSetP2VV'][0],
+                                           resolutionModel = truth_res.model(),
+                                           tau = self['lifetimeParams']['MeanLifetime'])
+        simple_time_pdf = simple_time.pdf()
+        acc_settings = externalConstr.pop('acceptance', None)
+        if simulPdf:
+            splitCat = simulPdf.indexCat()
+            from ROOT import RooArgList
+            inputCats = RooArgList(splitCat) if splitCat.isFundamental() else splitCat.inputCatList()
+
+        constraints = set()
+            
+        if acc_settings and simulPdf:
+            splitAccCats = [inputCats.find(c if type(c) == str else c.GetName()) for c in acc_settings.categories()]
+
+            ## Create a simultaneous pdf for the constraints.
+            from P2VV.Utilities.General import createSplitParsList
+
+            splitSet = set(k.GetName() for k in splitParsDict.iterkeys())
+            accSplitDict = dict((var, set(splitAccCats)) for var in simple_time_pdf.getVariables() if var.GetName() in splitSet)
+            accSplitPars = createSplitParsList(accSplitDict)
+
+            # build simultaneous PDF
+            from P2VV.RooFitWrappers import SimultaneousPdf
+            simul_time_pdf = SimultaneousPdf(simple_time_pdf.GetName() + '_simul',
+                                             MasterPdf       = simple_time_pdf,
+                                             SplitCategories = [pars[1] for pars in accSplitPars],
+                                             SplitParameters = [pars[0] for pars in accSplitPars])
+
+            from ROOT import RooRealVar
+            simulVars = simul_time_pdf.getVariables()
+            for v in simulPdf.getVariables():
+                if v.getAttribute('Observable'):
+                    continue
+                if not isinstance(v, RooRealVar):
+                    continue
+                sv = simulVars.find(v.GetName())
+                if sv:
+                    sv.setVal(v.getVal())
+                    sv.setError(v.getError())
+                            
+            simple_split_cat = simul_time_pdf.indexCat()
+            for (key, model) in self['timeResModels'].iteritems():
+                if key == 'prototype':
+                    continue
+                if not hasattr(model, 'build_av_constraints'):
+                    continue
+                splitCat.setLabel(key)
+                state = simple_split_cat.getLabel()
+                split_pdf = simul_time_pdf.getPdf(state)
+
+                sk = tuple((cat.GetName(), cat.getLabel()) for cat in splitAccCats)
+                values = acc_settings.getSettings(sk)
+                # I use a simple PDF with only the average lifetime here. I
+                # think this is a valid approximation.
+                constraints |= model.build_av_constraints(split_pdf, values)
+        elif acc_settings:
+            acceptance = timeResModels['prototype']
+            if hasattr(acceptance, 'build_av_constraints'):
+                constraints |= acceptance.build_av_constraints(simple_time_pdf, acc_settings)
+
+        return constraints
 
 ###########################################################################################################################################
 ## Helper functions ##

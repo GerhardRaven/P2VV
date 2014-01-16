@@ -29,8 +29,42 @@ def fitAverageExpToHist(hist,knots, tau) :
     #coefficients.Print()
     return coefficients
 
+class BinCounter(object):
+    def __init__(self, data, time, binning):
+        self.__data = data
+        self.__time = data.get().find(time.GetName())
+        self.__binning = binning
 
+        from collections import defaultdict
+        self.__levels = defaultdict(dict)
+        self.__categories = defaultdict(set)
+        
+    def add_bins(self, level, cat_def):
+        d = sorted(['{0} == {0}::{1}'.format(c, s) for c, s in cat_def.iteritems()])
+        self.__levels[level][tuple(d)] = self.__binning.numBins() * [0.]
+        self.__categories[level] |= set(cat_def.iterkeys())
+        
+    def run(self):
+        obs = self.__data.get()
+        categories = dict([(c, obs.find(c)) for cats in self.__categories.itervalues() for c in cats])
+        assert(all(categories.itervalues()))
+        for i in range(self.__data.numEntries()):
+            self.__data.get(i)
+            for level, cats in self.__categories.iteritems():
+                k = tuple(sorted(['{0} == {0}::{1}'.format(c, categories[c].getLabel()) for c in cats]))
+                b = self.__binning.binNumber(self.__time.getVal())
+                self.__levels[level][k][b] += self.__data.weight()
 
+    def get_n(self, level, cat_def):
+        k = tuple(sorted(['{0} == {0}::{1}'.format(c, s) for c, s in cat_def.iteritems()]))
+        return self.__levels[level][k]
+
+    def levels(self):
+        return self.__levels
+
+    def categories(self):
+        return self.__categories
+    
 ## Since all time acceptances are implemented in the resolution model, we inherit from there
 class TimeAcceptance ( TimeResolution ) :
     def __init__( self, **kwargs ) :
@@ -187,12 +221,14 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
         TimeAcceptance.__init__(self, Acceptance = acceptance, Cache = kwargs.pop('Cache', True))
         self._check_extraneous_kw( kwargs )
 
-    def build_constraints(self, original, values):
+    def build_av_constraints(self, original, values):
         # We're fitting and using the average constraint, first
         # create a shape and then the constraint.
         binning = self._shape.base_binning()
-        constraints = []
+        constraints = set()
         for (prefix, cat, state), parameters in self._shape.coefficients().iteritems():
+            if len(parameters) == 1:
+                parameters[0].setConstant(True)
             if prefix:
                 shape_name = '_'.join([prefix, cat, state, 'shape'])
             else:
@@ -218,10 +254,50 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
             from P2VV.RooFitWrappers import RealVar, Pdf
             mean  = RealVar(Name = av_name + '_constraint_mean', Value = values[(cat, state)][0], Constant = True)
             sigma = RealVar(Name = av_name + '_constraint_sigma', Value = values[(cat, state)][1], Constant = True)
-            constraints.append(Pdf(Name = av_name + '_constraint', Type = 'RooAvEffConstraint',
-                                   Parameters = [original, eff_model, mean, sigma]))
+            constraints.add(Pdf(Name = av_name + '_constraint', Type = 'RooAvEffConstraint',
+                                Parameters = [original, eff_model, mean, sigma]))
         return constraints
 
+    def build_multinomial_constraints(self, data, time):
+        # We're fitting and using the average constraint, first
+        # create a shape and then the constraint.
+        binning = self._shape.base_binning()
+        constraints = set()
+        from collections import defaultdict
+        epsilons = defaultdict(defaultdict(dict))
+        for (prefix, cat, state), parameters in self._shape.coefficients().iteritems():
+            epsilons[prefix][cat[ : 4]][(cat, state)] = parameters
+
+        for prefix, rest in epsilons.iteritems():
+            for level, parameters in rest.iteritems():
+                ## Move this one up
+                constraint_name = '_'.join((prefix, 'hlt' + level, 'multinomial'))
+                if constraint_name in RooObject._ws._rooobjects:
+                    continue
+                for (cat, state), eps in parameters.iteritems():
+                    if len(eps) == 1:
+                        eps_a = RooArgList()
+                        for i in range(binning.numBins()):
+                            eps_a.add(eps[0])
+                        eps = eps_a
+                    else:
+                        eps_b = RooArgList()
+                        for i in range(binning.numBins()):
+                            eps_a.add(eps[i])
+                        eps = eps_b
+
+        import pdb; pdf.set_trace()
+                        
+        bc = BinCounter(data, time, binning)
+        for prefix, rest in epsilons.iteritems():
+            for level, parameters in rest.iteritems():
+                d = {'runPeriod' : prefix}
+                d.update(dict(parameters.iterkeys()))
+                print 'adding: ', level, d
+                bc.add_bins(level, d)
+        bc.run()
+        
+        
     def shapes(self):
         return [self._shape]
 
