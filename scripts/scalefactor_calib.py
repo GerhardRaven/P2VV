@@ -10,7 +10,7 @@ parser = optparse.OptionParser(usage = '%prog data_type')
 
 from P2VV.Utilities.Resolution import input_data, prefix
 
-if len(args) != 1:
+if len(args) not in [1, 2]:
     print parser.print_usage()
     sys.exit(-2)
 elif args[0] not in input_data.keys():
@@ -66,6 +66,12 @@ for key, d in dirs.iteritems():
         continue
     interesting[key] = d
 
+if len(args) == 1:
+    print 'possible top level directories are:'
+    for k in interesting.iterkeys():
+        print k
+    sys.exit(0)
+    
 titles = {}
 for k, d in interesting.items():
     cut = d.Get('cut')
@@ -84,6 +90,7 @@ for k, d in interesting.items():
     titles[k] = dc
     print k, dc
 
+top_dir = args[1]
 if args[0] == '2011':
     ## good = {'1243785060103642893' : 4, 'm2334064025374600976' : 3,
     ##         '1626518906014697943' : 2, 'm3832912631969227654' : 1,
@@ -103,10 +110,10 @@ elif args[0] == 'MC11a':
             'm1545059518337894505' : 6, 'm8342219958663192955' : 5}
     sig_name = 'signal'
 elif args[0] == 'MC2012':
-    good = {'m4074732224475561764' : 1}
+    good = {'m8673867318518908571' : 1}
     sig_name = 'signal'
 elif args[0] == 'MC2011_Sim08a':
-    good = {'m4074732224475561764' : 1}
+    good = {'m8673867318518908571' : 1}
     sig_name = 'signal'
 elif args[0] == 'MC2011_Sim08a_incl_Jpsi':
     good = {'2027465761870101697' : 1}
@@ -116,7 +123,7 @@ elif args[0] == 'MC2012_incl_Jpsi':
     sig_name = 'psi_ll'
 
 PDFs = defaultdict(dict)
-for k, cache_dir in filter(lambda k: k[0].split('/')[0] in ['9bins_14.10fs_simul'], interesting.iteritems()):
+for k, cache_dir in filter(lambda k: k[0].split('/')[0] in [top_dir], interesting.iteritems()):
     hd = k.split('/')[-1]
     try:
         index = good[hd]
@@ -145,7 +152,9 @@ __histos = []
 __fit_funcs = []
 
 fit_type = 'double_RMS_Gauss'
-
+if args[0] in ['MC2012', 'MC2011_Sim08a']:
+    fit_type = 'double_RMS_Rest'
+    
 __fit_results = defaultdict(list)
 from array import array
 
@@ -193,15 +202,24 @@ def draw_res_graph(res_graph, hist_events):
     res_graph.Draw('P')
     hist_events.GetXaxis().SetTitle('estimated decay time resolution [ps]')
     return hist_events
+
+if top_dir.split('_')[0].startswith('momentum'):
+    split_cat_name = 'B_P_cat'
+    binning_name = 'momentum_binning'
+    obs_name = 'B_P'
+else:
+    split_cat_name = 'sigmat_cat'
+    binning_name = 'st_binning'
+    obs_name = 'sigmat'
     
 ffs = defaultdict(dict)
 for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split('/')[-1]]):
     index = good[key.split('/')[-1]]
     full_sdata = sdatas[index]['sig_sdata']
-    st = full_sdata.get().find('sigmat')
-    st_cat = full_sdata.get().find('sigmat_cat')
-    st_binning = st.getBinning('st_binning')
-    split_bounds = array('d', [st_binning.binLow(0)] + [st_binning.binHigh(k) for k in range(st_binning.numBins())])
+    observable = full_sdata.get().find(obs_name)
+    split_cat = full_sdata.get().find(split_cat_name)
+    binning = observable.getBinning(binning_name)
+    split_bounds = array('d', [binning.binLow(0)] + [binning.binHigh(k) for k in range(binning.numBins())])
     
     name = 'canvas_%s' % index
     canvas = TCanvas(name, titles[key], 1000, 500)
@@ -225,7 +243,7 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
     mean_es = array('d')
     sfo_es = array('d')
     total = full_sdata.sumEntries()
-    for b, ct in enumerate(st_cat):
+    for b, ct in enumerate(split_cat):
         d = split_bounds[b + 1] - split_bounds[b]
         bin_name = '_'.join(('N', sig_name, ct.GetName()))
         events = mass_fpf.find(bin_name)
@@ -254,8 +272,8 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
             means.append(mean_var.getVal())
             mean_es.append(mean_var.getError())
 
-        range_cut = '{0} == {0}::{1}'.format(st_cat.GetName(), ct.GetName())
-        mean = full_sdata.mean(st, range_cut)
+        range_cut = '{0} == {0}::{1}'.format(split_cat.GetName(), ct.GetName())
+        mean = full_sdata.mean(observable, range_cut)
         res_x.append(mean)
         comb.append(sf)
         comb_e.append(sf_e)
@@ -282,7 +300,7 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
                  'pol2_no_offset' : ('x ++ x * x', 'S0+'),
                  'pol2_mean_param' : ('[1] + [2] * (x - [0]) + [3] * (x - [0])^2', 'S0+')}
     print titles[key]
-    st_mean = full_sdata.mean(st)
+    mean = full_sdata.mean(observable)
     graphs = [res_graph, sfo_graph]
     if split_mean:
         graphs.append(mean_graph)
@@ -292,7 +310,7 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
         for i, (name, (func, opts)) in enumerate(fit_funcs.iteritems()):
             fit_func = TF1(name, func, split_bounds[0], split_bounds[-1])
             if name.endswith('mean_param'):
-                fit_func.FixParameter(0, st_mean)
+                fit_func.FixParameter(0, mean)
             print name
             fit_result = g.Fit(fit_func, opts, "L")
             fit_result.SetName('result_' + name)
@@ -305,7 +323,7 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
     print ''
 
     def draw_calib_graph(prefix):
-        calib_result = fit_results[time_result.GetName() + '_linear']
+        calib_result = fit_results.get(time_result.GetName() + '_linear', None)
         if not calib_result:
             return
         calib_fpf = dict([(p.GetName(), [p.getVal(), p.getError()]) for p in calib_result.floatParsFinal()])
@@ -314,7 +332,7 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
         calib_func = TF1(prefix + '_simul', '[0] + [1] * (x - [2])',
                          (split_bounds[0] + split_bounds[1]) / 2.,
                          (split_bounds[-2] + split_bounds[-1]) / 2.)
-        for i, (v, e) in [(0, offset), (1, slope), (2, (st_mean, 0))]:
+        for i, (v, e) in [(0, offset), (1, slope), (2, (mean, 0))]:
             calib_func.SetParameter(i, v)
             calib_func.SetParError(i, e)
         from ROOT import kBlue
