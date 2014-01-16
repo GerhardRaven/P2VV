@@ -18,7 +18,9 @@ void addSWeightToTree(const std::vector<double>& weights, TTree& tree, const std
 void addSWeightToTree(double* weights, size_t n, TTree& tree, const std::string& branch_name);
 void addSWeightToTree(const RooDataSet& ds, TTree& tree, const std::string& branchname,
                       const std::string& cut = std::string("1"));
-void addIntegerToTree(TTree& tree, Int_t period, const char* branchName);
+void addIntegerToTree(TTree& tree, Int_t value, const char* branchName);
+void addFloatToTree(TTree& tree, Double_t value, const char* branchName);
+void copyFloatInTree(TTree& tree, const char* inBranch, const char* outBranch);
 void addCategoryToTree(TTree& tree, const char* floatBranch,
     const char* catBranch, std::vector<Double_t> boundaries,
     std::vector<Int_t> indices);

@@ -3,7 +3,7 @@
 #####################
 
 #nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs2JpsiPhi_2011_2012_s20_dv33r6p1_20131217_tupleB_selTrig.root'
-nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_December28.root'
+nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_2014_weighted_add.root'
 #nTupleFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_MC2011_Sim08a_ntupleB_20130909_add.root'
 #nTupleFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_MC2012_ntupleB_20130904_add.root'
 nTupleName       = 'DecayTree'
@@ -15,13 +15,13 @@ parFileIn        = 'eventYields6KKBins_HLT2.par' #'eventYields6KKBins.par' #'eve
 parFileOut       = ''
 
 simulation       = False
-weightName       = 'wMC'
+weightName       = 'pbkgWeight'
 runPeriods       = [ 2011, 2012 ]
 triggerSel       = 'timeEffFit' # 'paper2012' # 'HLT1Unbiased' # 'paper2012'
 dataCuts         = 'nominal2011'
 addCuts          = '' # 'hlt2_biased == 1' # 'runPeriod == 2011 && hlt1_excl_biased_dec == 1' # 'wMC > 0.'
 dataSample       = '(bkgcat==0 || bkgcat==50)' if simulation else ''
-sWeightName      = 'sigWeight_I2'
+sWeightName      = 'sigWeight_I2' # 'sWeights_ipatia' # 'sigWeight_I2'
 addSWeights      = False
 addKKMassCat     = True
 addTrackMomenta  = False
@@ -107,7 +107,7 @@ RooInf  = RooNumber.infinity()
 KKMMin  = KKMassBinBounds[0]
 KKMMax  = KKMassBinBounds[-1]
 
-obsKeys = [  'sWeights_ipatia', 'runPeriod'
+obsKeys = [  'sWeights_ipatia', 'wMC', 'runPeriod'
            , 'mass', 'KKMass'#, 'mumuMass'
            , 'time', 'timeRes'
            #, 'truetime'
@@ -131,6 +131,7 @@ if addTrackMomenta :
     obsKeys += [ '%s_P%s' % ( part, comp ) for part in [ 'Kplus', 'Kminus', 'muplus', 'muminus' ] for comp in ( 'X', 'Y', 'Z' ) ]
 
 obsDict = dict(  runPeriod = ( 'runPeriod',            'run period', dict( [ ( 'p%d' % period, period ) for period in runPeriods ] ) )
+               , wMC       = ( 'wMC',                  'pbkgWeight',              '',          0.,     -RooInf, +RooInf     )
                , mass      = ( 'mass',                 'm(J/#psi K^{+}K^{-})',    'MeV/c^{2}', 5368.,  5200.,   5550.       )
                , mumuMass  = ( 'mdau1',                'm(#mu^{+}#mu^{-})',       'MeV/c^{2}', 3096.,  3030.,   3150.       )
                , KKMass    = ( 'mdau2',                'm(K^{+}K^{-})',           'MeV/c^{2}', 1020.,  KKMMin,  KKMMax      )
