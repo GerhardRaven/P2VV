@@ -33,12 +33,15 @@ public:
       return new RooEffConstraint(*this,newname);
    }
    
-   // virtual Bool_t forceAnalyticalInt(const RooAbsArg& /*dep*/) const;
-   // virtual Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const ;
-   // virtual Double_t analyticalIntegral(Int_t code, const char* rangeName=0) const ;
+   virtual Bool_t forceAnalyticalInt(const RooAbsArg& /*dep*/) const;
+   virtual Int_t getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const ;
+   virtual Double_t analyticalIntegral(Int_t code, const char* rangeName=0) const ;
 
    virtual Double_t getLogVal(const RooArgSet* nset = 0) const;
 
+   virtual const RooArgList& epsA() const { return _eps_a; }
+   virtual const RooArgList& epsB() const { return _eps_b; }
+   
    virtual ~RooEffConstraint();
 
 protected:
@@ -47,10 +50,13 @@ protected:
    
 private:
 
-   void initialize();
+   inline Double_t fraction(const double f, std::vector<double>& v, const int i) const;
 
    RooListProxy _eps_a;
    RooListProxy _eps_b;
+   mutable std::vector<double> _f_a;
+   mutable std::vector<double> _f_b;
+   mutable std::vector<double> _f_ab;
    std::vector<double> _N_a;
    std::vector<double> _N_b;
    std::vector<double> _N_ab;

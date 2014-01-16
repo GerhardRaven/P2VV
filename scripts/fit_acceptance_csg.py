@@ -152,7 +152,7 @@ tree_name = 'DecayTree'
 ## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
 
 ## Fit options
-fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Optimize = 1,
+fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Optimize = 2,
                Strategy = 2, Minimizer = 'Minuit2')
 
 valid_definition = [[(hlt1_excl_biased_dec, 'exclB'), (hlt1_excl_biased_dec, 'notExclB')], [(hlt2_biased, 'B'), (hlt2_unbiased, 'UB')]]
@@ -222,35 +222,28 @@ if ntuple_file:
         data = input_file.Get(dataset_name)
         data = data.reduce('runPeriod == runPeriod::p2011')
 else:
+    ## PDF for sigmat
+    from P2VV.Parameterizations.SigmatPDFs import DoubleLogNormal
+    dln = DoubleLogNormal(st, frac_ln2 = dict(Value = 0.312508), k1 = dict(Value = 0.801757),
+                          k2 = dict(Value = 1.37584), median = dict(Value = 0.0309409))
+    ln = dln.pdf()
+    gen_pdf = ProdPdf('gen_pdf', [pdf, ln])
+    
     ## Generate
     from P2VV.Load import MultiCatGen
-    data = pdf.generate([t, hlt1_excl_biased_dec, hlt2_unbiased, hlt2_biased], 50000)
+    data = gen_pdf.generate([t, st, hlt1_excl_biased_dec, hlt2_unbiased, hlt2_biased], 50000)
     ## Use the valid combinations to create a cut to remove wrong events
     cut = ' || '.join('(' + ' && '.join('{0} == {0}::{1}'.format(c.GetName(), s) for c, s in comb) + ')' for comb in valid)
     data = data.reduce(Cut = cut, EventRange = (0, 30000))
 
-    
 # Make PDF without acceptance for the constraints
-from P2VV.Parameterizations.TimeResolution import Truth_TimeResolution
-truth_res = Truth_TimeResolution(time = t)
+constraints = set()
+from copy import copy
+obs = copy(categories)
+obs['time'] = t
+constraints |= acceptance.build_multinomial_constraints(data, obs)
 
-pdf_no_acc = Single_Exponent_Time(Name = 'pdf_no_acc', time = t, resolutionModel = truth_res.model())
-pdf_no_acc = pdf_no_acc.pdf()
-constraints = []
-from itertools import chain
-acc_average = {}
-for c, s in chain.from_iterable([zip([c] * c.numTypes(), [s.GetName() for s in c]) for c in hists.iterkeys()]):
-    if not s in hists[c]:
-        continue
-    heights = hists[c][s]['heights']
-    if len(heights) <= 1:
-        continue
-    val, err = hists[c][s]['average']
-    acc_average[(c.GetName(), s)] = (val, err)
-
-constraints.extend(acceptance.build_constraints(pdf_no_acc, acc_average))
-
-pdf.setExternalConstraints(pdf.ExternalConstraints() | set(constraints))
+pdf.setExternalConstraints(pdf.ExternalConstraints() | constraints)
 
 ## Fit
 print 'fitting data'
@@ -338,8 +331,17 @@ def plot_shape(p, o, shape, errorOpts = {}, pdfOpts = {}):
     frame.GetYaxis().SetTitleOffset(1.05)
     frame.Draw()
     __frames.append(frame)
-    
-shapes = [s.efficiency() for s in pdf.ExternalConstraints() if hasattr(s, 'efficiency')]
+
+shapes = []
+for s in pdf.ExternalConstraints():
+    if hasattr(s, 'efficiency'):
+        shapes.append(s.efficiency())
+    elif hasattr(s, 'epsB'):
+        binning = acceptance.shapes()[0].base_binning()
+        from P2VV.RooFitWrappers import BinnedPdf
+        shapes.append(BinnedPdf(s.GetName() + '_shape', Observable = t, Binning = binning,
+                                Coefficients = (s.epsB() if s.epsB().getSize() > 1 else s.epsA())))
+
 eff_canvases = {}
 from ROOT import kYellow, kOrange
 for p in ['p2011', 'p2012']:

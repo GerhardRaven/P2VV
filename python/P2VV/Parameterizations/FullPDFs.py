@@ -421,8 +421,8 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
             splitConstr['betaTimeEff']['2012'] = ( -0.0083, None )
         else:
             splitConstr['betaTimeEff']['2012'] = ( 0., 0. )
-        splitConstr['tres_placeholder']['2011'] = (  0.0349,  0. ) #( 0.0352, 0. )
-        splitConstr['tres_placeholder']['2012'] = (  0.0347,  0. ) #( 0.0352, 0. )
+        splitConstr['sf_placeholder']['2011'] = (  0.0349,  0. ) #( 0.0352, 0. )
+        splitConstr['sf_placeholder']['2012'] = (  0.0347,  0. ) #( 0.0352, 0. )
         splitConstr['timeResMu']['2011']        = ( -0.00259, 0. ) #( 0.,     0. )
         splitConstr['timeResMu']['2012']        = ( -0.00333, 0. ) #( 0.,     0. )
         splitConstr['timeResFrac2']['2011']     = (  0.242,   0. ) #( 0.220,  0. )
@@ -436,14 +436,14 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
         splitConstr['sf_sigma_slope']['2011']   = ( -0.63,    0. ) #( -0.117, 0. )
         splitConstr['sf_sigma_slope']['2012']   = ( -2.80,    0. ) #( -0.172, 0. )
         if runPeriods in [ '2011', '2012' ] :
-            self['externalConstr']['betaTimeEff']      = splitConstr['betaTimeEff']     [runPeriods]
-            self['externalConstr']['tres_placeholder'] = splitConstr['tres_placeholder'][runPeriods]
-            self['externalConstr']['timeResMu']        = splitConstr['timeResMu']       [runPeriods]
-            self['externalConstr']['timeResFrac2']     = splitConstr['timeResFrac2']    [runPeriods]
-            self['externalConstr']['sf_mean_offset']   = splitConstr['sf_mean_offset']  [runPeriods]
-            self['externalConstr']['sf_mean_slope']    = splitConstr['sf_mean_slope']   [runPeriods]
-            self['externalConstr']['sf_sigma_offset']  = splitConstr['sf_sigma_offset'] [runPeriods]
-            self['externalConstr']['sf_sigma_slope']   = splitConstr['sf_sigma_slope']  [runPeriods]
+            self['externalConstr']['betaTimeEff']     = splitConstr['betaTimeEff']     [runPeriods]
+            self['externalConstr']['sf_placeholder']  = splitConstr['sf_placeholder'][runPeriods]
+            self['externalConstr']['timeResMu']       = splitConstr['timeResMu']       [runPeriods]
+            self['externalConstr']['timeResFrac2']    = splitConstr['timeResFrac2']    [runPeriods]
+            self['externalConstr']['sf_mean_offset']  = splitConstr['sf_mean_offset']  [runPeriods]
+            self['externalConstr']['sf_mean_slope']   = splitConstr['sf_mean_slope']   [runPeriods]
+            self['externalConstr']['sf_sigma_offset'] = splitConstr['sf_sigma_offset'] [runPeriods]
+            self['externalConstr']['sf_sigma_slope']  = splitConstr['sf_sigma_slope']  [runPeriods]
         else :
             self['splitParams']['runPeriod'] = [ ]
             for par, vals in splitConstr.iteritems() :
@@ -1012,13 +1012,13 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 multiplyByAngularAcceptance( catPdf, self, angEffMomsFile = effFile, coefNamePF = cNamePF )
 
     def _createExternalConstraints( self, **kwargs ) :
-        externalConstr = getKWArg( self, kwargs, 'externalConstr' )
-        splitParsDict  = getKWArg( self, kwargs, 'splitParsDict' )
-        pdf            = getKWArg( self, kwargs, 'pdf' )
-        simulPdf       = getKWArg( self, kwargs, 'simulPdf' )
-        useAvEff       = getKWArg( self, kwargs, 'useAvEffConstraint' )
-        data           = getKWArg( self, kwargs, 'signalData' )
-        obsevables     = getKWArg( self, kwargs, 'observables' )
+        externalConstr        = getKWArg( self, kwargs, 'externalConstr' )
+        splitParsDict         = getKWArg( self, kwargs, 'splitParsDict' )
+        pdf                   = getKWArg( self, kwargs, 'pdf' )
+        simulPdf              = getKWArg( self, kwargs, 'simulPdf' )
+        timeEffConstraintType = getKWArg( self, kwargs, 'timeEffConstraintType' )
+        data                  = getKWArg( self, kwargs, 'signalData' )
+        observables           = getKWArg( self, kwargs, 'observables' )
 
         from P2VV.Parameterizations.GeneralUtils import getParNamePrefix
         namePF = getParNamePrefix(True)
@@ -1047,10 +1047,10 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                     ]
                                     )
                                )
-        if self['timeEffConstraintType'] == 'multinomial':
+        if timeEffConstraintType == 'multinomial':
             constraints |= self.__multinomial_eff_constraints(externalConstr, simulPdf,
-                                                              data, observables['time'])
-        elif self['timeEffConstraintType'] == 'average':
+                                                              data, observables)
+        elif timeEffConstraintType == 'average':
             constraints |= self.__av_eff_constraints(externalConstr)
 
         ws = pdf.ws()
@@ -1070,6 +1070,9 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                       , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: found splitting categories for parameter "%s", but no simultaneous PDF' % par
 
                 catsStrings = set()
+                splitCat = simulPdf.indexCat()
+                from ROOT import RooArgList
+                inputCats = RooArgList(splitCat) if splitCat.isFundamental() else splitCat.inputCatList()
                 for splitCatState in splitCat:
                     splitCat.setIndex( splitCatState.getVal() )
                     catLabels = [ ( cat.GetName(), cat.getLabel() ) for cat in inputCats if cat in splitCats ]
@@ -1091,7 +1094,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     
         pdf['ExternalConstraints'] = pdf['ExternalConstraints'] | constraints
 
-    def __multinomial_eff_constraints(self, externalConstr, simulPdf, data, time):
+    def __multinomial_eff_constraints(self, externalConstr, simulPdf, data, observables):
         # Time res model constraints include those form the acceptance
         acc_settings = externalConstr.pop('acceptance', None)
         if simulPdf:
@@ -1117,11 +1120,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                 values = acc_settings.getSettings(sk)
                 # I use a simple PDF with only the average lifetime here. I
                 # think this is a valid approximation.
-                constraints |= acceptance.build_multinomial_constraints(data, time)
+                constraints |= model.build_multinomial_constraints(data, observables)
         elif acc_settings:
             acceptance = timeResModels['prototype']
             if hasattr(acceptance, 'build_multinomial_constraints'):
                 constraints |= acceptance.build_multinomial_constraints(data, time)
+        return constraints
     
     def __av_eff_constraints(self, externalConstr, simulPdf):
         # Time res model constraints include those form the acceptance
@@ -1303,7 +1307,7 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
                                , sf_mean_slope    = dict( Value =  0.,   Constant = True ) #dict( Value = -0.0526273, Constant = True )
                                , sf_sigma_offset  = dict( Value =  0.,   Constant = True ) #dict( Value =  0.381861,  Constant = True )
                                , sf_sigma_slope   = dict( Value =  0.,   Constant = True ) #dict( Value = -0.0147151, Constant = True )
-                               , tres_placeholder = dict( Value =  0.,   Constant = True ) #dict( Value =  0.032,     Constant = True )
+                               , sf_placeholder   = dict( Value =  0.,   Constant = True ) #dict( Value =  0.032,     Constant = True )
                               )
         else :
             from P2VV.Parameterizations.TimeResolution import Paper2012_TimeResolution as TimeResolution
