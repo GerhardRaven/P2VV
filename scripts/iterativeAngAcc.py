@@ -38,10 +38,8 @@ doFit            = True if 'True' in options.fit else False
 nCPU             = 8
 initialFitOnData = False
 
-
 # plotig configuration
-makePlots          = True if 'True' in options.makePlots else False
-plotFinalPdfonData = False
+makePlots = True if 'True' in options.makePlots else False
 
 # source distribution
 dataSetsPath     = '/project/bfys/jleerdam/data/Bs2Jpsiphi/angEff/'
@@ -59,7 +57,7 @@ sWeightsName = 'sWeights_ipatia'
 
 # nominal angluar acceptance 
 nomAngEffMomentsFile = options.nomAngAcc if options.nomAngAcc \
-    else '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
+    else '/project/bfys/vsyropou/data/uncorrecteEffMoments/MC20112012_Sim08/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_weights'
 outputEffMomentsBaselineName = 'hel_UB_UT_trueTime_BkgCat050_KK30'
 
 # source generating physics  parameters
@@ -69,7 +67,7 @@ from P2VV.Utilities.MCReweighting import parValuesMcSim08_6KKmassBins as monteCa
 
 # target physics parameters
 dataParameters = options.physPars if options.physPars\
-    else '/project/bfys/vsyropou/PhD/macros/iterativeAngAcc/output/nominalFitResults/20112012Reco14DataFitValues_6KKMassBins.par'
+    else '/project/bfys/vsyropou/data/nominalFitResults/20112012Reco14DataFitValues_6KKMassBins.par'
 
 ###########################################################################################################################
 ## Begin iterative procedure  ##
@@ -217,16 +215,15 @@ if combineEffMoments:
             sleep(20)
     
 # convert effyciency weights to efficiency moments
-correctedEfficiencyWeights = 'Sim08_{0}_{1}_Phys_norm_{2}'.format('20112012', outputEffMomentsBaselineName, iterNumb ) if combineEffMoments \
-                        else 'Sim08_{0}_{1}_Phys_norm_{2}'.format( MCProd,    outputEffMomentsBaselineName, iterNumb )
+    correctedEfficiencyWeights = 'Sim08_{0}_{1}_Phys_norm_{2}'.format('20112012', outputEffMomentsBaselineName, iterNumb )
 
-moments, correlations = {}, {}
-readMoments( correctedEfficiencyWeights, BasisFuncNames = [], Moments = moments, Correlations = correlations, ProcessAll = True )
-convertEffWeightsToMoments( moments, OutputFilePath    = correctedEfficiencyWeights.replace('Phys','weights').replace('_norm',''),
-                            Scale             = scaleFactor,
-                            WeightNamesPrefix = PhysicsReweight.getParNamePrefix(),
-                            PrintMoments      = False
-                            )
+    moments, correlations = {}, {}
+    readMoments( correctedEfficiencyWeights, BasisFuncNames = [], Moments = moments, Correlations = correlations, ProcessAll = True )
+    convertEffWeightsToMoments( moments, OutputFilePath    = correctedEfficiencyWeights.replace('Phys','weights').replace('_norm',''),
+                                Scale             = scaleFactor,
+                                WeightNamesPrefix = PhysicsReweight.getParNamePrefix(),
+                                PrintMoments      = False
+                                )
 
 # perform sFit on data using the new angular acceptance and update the data physics parameters
 if doFit:
@@ -240,8 +237,8 @@ if doFit:
 # comparition plots
 if makePlots: # plot data after each reweighting step
     compPlots = compareDistributions( mcData          = mcDataMngr.getDataSet('initSource'),
-                                      mcDataPhysRew   = mcDataMngr.getDataSet(physWeightName),
-                                      MomRewData      = mcDataMngr.getDataSet(KmomentaWeightsName),
+                                      mcDataPhysRew   = mcDataMngr.getDataSet(physWeightName) if reweightPhysics else '',
+                                      MomRewData      = mcDataMngr.getDataSet(KmomentaWeightsName) if reweightKKmom else '',
                                       BmomRewData     = mcDataMngr.getDataSet(BmomentumWeightsName) if reweightBmomentum else '', 
                                       mkkRewData      = mcDataMngr.getDataSet(mKKWeightsName) if reweightMkk else '',
                                       sData           = target,
@@ -250,7 +247,9 @@ if makePlots: # plot data after each reweighting step
                                       )
     
     # plot weights
-    plotWeightsList = [physWeightName, KmomentaWeightsName]
+    plotWeightsList = []
+    if reweightKKmom:     plotWeightsList += [ KmomentaWeightsName ]    
+    if reweightPhysics:   plotWeightsList += [ physWeightName ]
     if reweightBmomentum: plotWeightsList += [ BmomentumWeightsName ]
     if reweightMkk:       plotWeightsList += [ mKKWeightsName ]
     for wList in plotWeightsList: mcDataMngr.plotWeights(wList)
@@ -269,30 +268,3 @@ del physMoments
 cleanP2VVPlotStash()
 mcDataMngr.clear()
 gc.collect()
-
-# observables plot with the corrected angular acceptance
-if makePlots and plotFinalPdfonData and doFit:
-    from P2VV.Utilities.Plotting import plot
-    from ROOT import RooAbsData, TCanvas, RooArgSet
-    c = TCanvas( 'sFit: CorrAngAcc', 'sFit: CorrAngAcc' )
-    c.Divide(2,2)
-
-    pdf  = Bs2JpsiKKFit.getPdf()
-    data = Bs2JpsiKKFit.getDataSet()
-    projectionArgSet = RooArgSet( list( pdf.ConditionalObservables() ) + [ pdf.indexCat() ] )
-
-    for can, obs, Logy in zip( [ c.cd(i) for i in xrange(1,5) ],  
-                               angles + time, 
-                               3*[False] + [True]
-                               ):
-        plot( can, obs, data, pdf, plotResidHist=True, logy=Logy, 
-              pdfOpts = dict( ProjWData = ( data.reduce(projectionArgSet), False ),
-                              LineWidth = 1 
-                              ),
-              dataOpts = dict( MarkerSize = .5, 
-                               DataError  = RooAbsData.SumW2,
-                               XErrorSize = 0)
-              )
-    c.Print( 'anglesTimeCorrAngAcc.pdf' )
-
-print 120*'='

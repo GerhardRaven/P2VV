@@ -11,9 +11,11 @@ dataPath    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
 dataSetFile = options.FitData if options.FitData else dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
 dataSetName = 'JpsiKK_sigSWeight'
 
+myPath = '/project/bfys/vsyropou/data/'
+
 # read / write fited parameters from file
 parFileIn = options.ParFileIn if options.ParFileIn \
-    else '/project/bfys/jleerdam/softDevel/P2VV2/test/20112012Reco14DataFitValues_6KKMassBins.par'
+    else myPath + 'nominalFitResults/20112012Reco14DataFitValues_6KKMassBins.par'
 parFileOut = options.ParFileOut if options.ParFileOut else '20112012Reco14DataFitValues_6KKMassBins.par'
 
 fitOpts = dict(  NumCPU    = 8
@@ -39,7 +41,7 @@ pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file'
 pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] )['file'] = timeEffFile2012
 pdfConfig['anglesEffType'] = 'weights'
 pdfConfig['angEffMomsFiles'] = options.AngAccFile if options.AngAccFile \
-    else dataPath + 'Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
+    else myPath + 'uncorrecteEffMoments/MC20112012_Sim08/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_weights'
 
 # workspace
 from P2VV.RooFitWrappers import RooObject
@@ -81,6 +83,12 @@ print '-' * 80 + '\n\n'
 fitResult = pdf.fitTo( fitData, SumW2Error = False, Save = True, **fitOpts )
 from P2VV.Imports import parNames, parValues
 fitResult.PrintSpecial( text = True, ParNames = parNames, ParValues = parValues )
+fitResult.SetName( parFileOut.replace('.par','') )
+from ROOT import TFile
+resultFile = TFile.Open( parFileOut.replace('.par','.root'), 'recreate')
+resultFile.cd()
+fitResult.Write()
+resultFile.Close()
 
 if parFileOut :
     pdfConfig.getParametersFromPdf( pdf,  fitData )

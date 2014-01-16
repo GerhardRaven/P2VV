@@ -72,7 +72,7 @@ def _info( s, n, opts, what, indent=False ):
 ###############################
 # begin iterative prcedure ####
 ###############################
-print 'P2VV - INFO: Begin Iteartive procedure'
+print 'P2VV - INFO: Begin Iteartive procedure, %s iteration(s)'%numberOfIterations
 for itNum in range(1, numberOfIterations + 1):
 
     # set script options
@@ -99,16 +99,19 @@ for itNum in range(1, numberOfIterations + 1):
     _info( '', itNum, cmdfit, 'fit' )
     fit3fb = subprocess.call(cmdfit, stdin = None, stdout = None, stderr = subprocess.STDOUT)
 
-logs = [open('log_%d' % i, 'w') for i in range(len(processes))]
-while any(e[1] for e in processes):
-    for i, (p, d) in enumerate(processes):
-        if not d:
-            continue
-        readable = select.select([p.stdout], [], [])
-        for line in readable[0][0]:
-            if not line.strip(): continue
-            logs[i].write(line)
-        logs[i].flush()
-        if p.poll() != None:
-            processes[i][1] = False
-            logs[i].close()
+    # append parallel processes to save the output
+    if parallelReweighting:
+        processes += [ [rew_11, True] ]
+        logs = [open('log_%d' % i, 'w') for i in range(len(processes))]
+        while any(e[1] for e in processes):
+            for i, (p, d) in enumerate(processes):
+                if not d:
+                    continue
+                readable = select.select([p.stdout], [], [])
+                for line in readable[0][0]:
+                    if not line.strip(): continue
+                    logs[i].write(line)
+                logs[i].flush()
+                if p.poll() != None:
+                    processes[i][1] = False
+                    logs[i].close()
