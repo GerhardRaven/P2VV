@@ -11,9 +11,11 @@ dataPath    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
 dataSetFile = options.FitData if options.FitData else dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
 dataSetName = 'JpsiKK_sigSWeight'
 
+myPath = '/project/bfys/vsyropou/data/'
+
 # read / write fited parameters from file
 parFileIn = options.ParFileIn if options.ParFileIn \
-    else '/project/bfys/jleerdam/softDevel/P2VV2/test/20112012Reco14DataFitValues_6KKMassBins.par'
+    else myPath + 'nominalFitResults/20112012Reco14DataFitValues_6KKMassBins.par'
 parFileOut = options.ParFileOut if options.ParFileOut else '20112012Reco14DataFitValues_6KKMassBins.par'
 
 fitOpts = dict(  NumCPU    = 8
@@ -39,7 +41,7 @@ pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file'
 pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] )['file'] = timeEffFile2012
 pdfConfig['anglesEffType'] = 'weights'
 pdfConfig['angEffMomsFiles'] = options.AngAccFile if options.AngAccFile \
-    else dataPath + 'Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
+    else myPath + 'uncorrecteEffMoments/MC20112012_Sim08/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_weights'
 
 # workspace
 from P2VV.RooFitWrappers import RooObject
@@ -60,52 +62,36 @@ from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
 pdfBuild = PdfBuilder( **pdfConfig )
 pdf = pdfBuild.pdf()
 
-# # fix values of some parameters
-# for CEvenOdds in self._pdfBuild['taggingParams']['CEvenOdds'] :
-#         if not self._pdfConfig['SSTagging'] :
-#             if namePF:
-#                 CEvenOdds.setConstant( 'avgCEven.*')
-#                 CEvenOdds.setConstant( 'avgCOdd.*', True )
-#             else: 
-#                 CEvenOdds.setConstant( 'avgCEven.*')
-#                 CEvenOdds.setConstant( 'avgCOdd.*', True )
-#         else :
-#             for CEvenOdd in CEvenOdds :
-#                 if namePF:
-#                     CEvenOdd.setConstant( 'avgCEven.*')
-#                     CEvenOdd.setConstant( 'avgCOdd.*', True )
-#                 else: 
-#                     CEvenOdd.setConstant('avgCEven.*')
-#                     CEvenOdd.setConstant( 'avgCOdd.*', True )
-# self._pdfBuild['amplitudes'].setConstant('C_SP')
+# fix values of some parameters
+for CEvenOdds in pdfBuild['taggingParams']['CEvenOdds'] :
+        if not pdfConfig['SSTagging'] :
+		CEvenOdds.setConstant( 'avgCEven.*')
+                CEvenOdds.setConstant( 'avgCOdd.*', True )
+        else :
+            for CEvenOdd in CEvenOdds :
+		    CEvenOdd.setConstant('avgCEven.*')
+                    CEvenOdd.setConstant( 'avgCOdd.*', True )
+pdfBuild['amplitudes'].setConstant('C_SP')
 
 if parFileIn:
     # read parameters from file
     pdfConfig.readParametersFromFile( filePath = parFileIn )
     pdfConfig.setParametersInPdf(pdf)
-
-# print PDF values
-from ROOT import RooArgSet
-angSet = RooArgSet( ws[var] for var in [ 'helcosthetaK', 'helcosthetaL', 'helphi' ] )
-timeAngSet = RooArgSet( ws[var] for var in [ 'time', 'helcosthetaK', 'helcosthetaL', 'helphi' ] )
-print '\n\n' + '-' * 80
-for period in [ 2011, 2012 ] :
-    ws['runPeriod'].setIndex(period)
-    for cat in [ 0, 1 ] :
-        ws['hlt1_excl_biased_dec'].setIndex(cat)
-        print 'PDF values "%d"/"%s":' % ( ws['runPeriod'].getIndex(), ws['hlt1_excl_biased_dec'].getLabel() )
-        print 'unnormalized:', pdf.getVal()
-        print 'angle-normalized:', pdf.getVal(angSet)
-        print 'time-angle-normalized:', pdf.getVal(timeAngSet)
-        print
 print '-' * 80 + '\n\n'
 
-if fit :
-    # fit data
-    fitResult = pdf.fitTo( fitData, SumW2Error = False, Save = True, **fitOpts )
-    from P2VV.Imports import parNames, parValues
-    fitResult.PrintSpecial( text = True, ParNames = parNames, ParValues = parValues )
+# fit data
+fitResult = pdf.fitTo( fitData, SumW2Error = False, Save = True, **fitOpts )
+from P2VV.Imports import parNames, parValues
+fitResult.PrintSpecial( text = True, ParNames = parNames, ParValues = parValues )
+fitResult.SetName( parFileOut.replace('.par','') )
+from ROOT import TFile
+resultFile = TFile.Open( parFileOut.replace('.par','.root'), 'recreate')
+resultFile.cd()
+fitResult.Write()
+resultFile.Close()
 
 if parFileOut :
     pdfConfig.getParametersFromPdf( pdf,  fitData )
     pdfConfig.writeParametersToFile( filePath = parFileOut )
+
+print 120*'='
