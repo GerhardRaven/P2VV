@@ -72,20 +72,17 @@ dataParameters = options.physPars if options.physPars\
 ###########################################################################################################################
 ## Begin iterative procedure  ##
 ################################
-if RewApproach == 'vertical':  
-    from P2VV.Utilities.MCReweighting import TwoDimentionalVerticalReweighting, OneDimentionalVerticalReweighting
-elif RewApproach == 'horizontal': 
-    from P2VV.Utilities.MCReweighting import MatchWeightedDistributions
-if doFit: 
-    from P2VV.Utilities.MCReweighting import  BuildBs2JpsiKKFit
-from P2VV.Utilities.MCReweighting import MatchPhysics
+if RewApproach == 'horizontal': from P2VV.Utilities.MCReweighting import MatchWeightedDistributions
+if doFit: from P2VV.Utilities.MCReweighting import  BuildBs2JpsiKKFit
+from P2VV.Utilities.MCReweighting import TwoDimentionalVerticalReweighting, OneDimentionalVerticalReweighting
+from P2VV.Utilities.MCReweighting import MatchPhysics, combineMoments
 from P2VV.Utilities.MCReweighting import compareDistributions, cleanP2VVPlotStash, WeightedDataSetsManager
-from P2VV.Utilities.DataMoments import RealMomentsBuilder, normalizeMoments, combineMoments, convertEffWeightsToMoments, readMoments
+from P2VV.Utilities.DataMoments import RealMomentsBuilder, normalizeMoments, convertEffWeightsToMoments, readMoments
 from P2VV.RooFitWrappers import RooObject, RealEffMoment
 from P2VV import RooFitDecorators
 from ROOT import TFile 
 from math import pi, sqrt
-import gc
+import os, gc
 
 # define a workspace
 worksp = RooObject( workspace = 'iterativeProcedure' ).ws()
@@ -99,7 +96,7 @@ if initialFitOnData and doFit:
 
 # initialise physics matching class and build MC pdf
 print 'P2VV - INFO: Iteration Number %s. Running reweighting procedure in sample %s'%(iterNumb, mcData11FileName if MCProd=='2011' else mcData12FileName)
-PhysicsReweight = MatchPhysics( monteCarloData, mcTupleName , MonteCarloProduction=MCProd )
+PhysicsReweight = MatchPhysics( monteCarloData, mcTupleName , MonteCarloProduction = MCProd )
 
 # manage the weights (avoid creating too many datasets)
 mcDataMngr = WeightedDataSetsManager( source = PhysicsReweight.getDataSet() )
@@ -115,62 +112,59 @@ Bmomenta   = [ worksp['B_P'], worksp['B_Pt'] ]
 KKMass     = [worksp['mdau2']]
 KKMassCat  = PhysicsReweight.getPdf().indexCat()
 
-# initialise horizontal kinematic reweighting classs
-if RewApproach == 'horizontal':
-    KinematicReweight = MatchWeightedDistributions( outTree        = Bs2JpsiKKFit.getDataSet(), # Target: Distribution to be matched with
-                                                    reweightVars   = ['Kminus_P'],              # Variables that enter the transformation
-                                                    inWeightName   = physWeightName,
-                                                    outWeightName  = sWeightsName,
-                                                    observables    = angles + time + truetime,
-                                                    nonObsVars     = muMomenta + Kmomenta + Bmomenta + KKMass,
-                                                    nBins          = 1000                       # preceision of the transformation
-                                                    )
-
-
 # begin reweighting procedure
 print 'P2VV - INFO: Start reweighting mc data_%s.'%MCProd
-mcDataMngr['iterationNumber'] = iterNumb
-
-# source and target distributions    
-source = mcDataMngr.getDataSet()
-target = TFile.Open(dataPath).Get(sDataName)
 print 'P2VV - INFO:\nSource distribution file: %s. \nTarget distribution file: %s.'%(monteCarloData,dataPath)
+source = lambda: mcDataMngr.getDataSet()
+target = TFile.Open(dataPath).Get(sDataName)
+mcDataMngr['iterationNumber'] = iterNumb
 
 # match B momentum
 if reweightBmomentum:
-    BmomentumWeights = TwoDimentionalVerticalReweighting( source, target, TwoDverticalRewNbins, ['B_P','B_Pt'],
-                                                          equalStatsBins = EqualStatsBins,
+    BmomentumWeights = TwoDimentionalVerticalReweighting( source(), target, TwoDverticalRewNbins, ['B_P','B_Pt'],
+                                                          equalStatsBins = EqualStatsBins
                                                           )
     mcDataMngr.appendWeights( BmomentumWeightsName, BmomentumWeights, permanetnWeigts=True )
 
 # match mKK
 if reweightMkk:
-    mKKweights = OneDimentionalVerticalReweighting( source, target,
-                                                    OneDverticalRewNbins, 'mdau2', iterationNumber = iterNumb, # nBins, variable
+    mKKweights = OneDimentionalVerticalReweighting( source(), target, OneDverticalRewNbins, 'mdau2', 
                                                     equalStatsBins = EqualStatsBins
                                                     )
-    mcDataMngr.appendWeights( mKKWeightsName, mKKweights )
+    mcDataMngr.appendWeights( mKKWeightsName, mKKweights, permanetnWeigts=True )
 
 # match physics
 if reweightPhysics:
+    PhysicsReweight.setDataSet( source() )
     physWeights = PhysicsReweight.calculateWeights( iterNumb, dataParameters )
     mcDataMngr.appendWeights( physWeightName, physWeights )
           
 # match KK momenta
 if reweightKKmom and RewApproach == 'vertical':
-    KKMomWeights = TwoDimentionalVerticalReweighting(source, target,
-                                                     TwoDverticalRewNbins, ['Kplus_P','Kminus_P'], iterationNumber = iterNumb ,
-                                                     # number of bins per dimention, variables
-                                                     equalStatsBins = EqualStatsBins
+    KKMomWeights = TwoDimentionalVerticalReweighting(source(), target, TwoDverticalRewNbins, ['Kplus_P','Kminus_P'], 
+                                                     iterationNumber = iterNumb, equalStatsBins = EqualStatsBins
                                                      )
     mcDataMngr.appendWeights( KmomentaWeightsName, KKMomWeights )
 elif reweightKKmom and RewApproach == 'horizontal':
-    KinematicReweight.reweight( iterNumb, PhysicsReweight.getDataSet(weighted=True) )
-    reweightedData = KinematicReweight.getDataSet()
-  
+    KinematicReweight = MatchWeightedDistributions( outTree        = target, # Target: Distribution to be matched with
+                                                    reweightVars   = ['Kminus_P'],  # Variables that enter the transformation
+                                                    inWeightName   = mcDataMngr.getWeightName(),
+                                                    outWeightName  = sWeightsName,
+                                                    observables    = angles + time + truetime,
+                                                    nonObsVars     = muMomenta + Kmomenta + Bmomenta + KKMass,
+                                                    nBins          = 1000           # preceision of the transformation
+                                                    )
+    
+    KinematicReweight.reweight( iterNumb, source() )
+    for k,v in mcDataMngr.iteritems(): print k,v
+    mcDataMngr.setDataSet( source(), 'hor' + KmomentaWeightsName )
+    for k,v in mcDataMngr.iteritems(): print k,v
+    print 
+    assert False
+      
 # compute angular efficiency moments from the new reweighted mc dataset.
-if reweightPhysics: 
-    PhysicsReweight.setDataFitParameters(dataParameters) # set data pars to pdf (reweighted data has the data physics now)
+if reweightPhysics: # set data pars to pdf (reweighted data has the data physics now)
+    PhysicsReweight.setDataFitParameters(dataParameters) 
 else:
     PhysicsReweight.setMonteCarloParameters()
 physMoments = RealMomentsBuilder( Moments = ( RealEffMoment( Name = func.GetName(), 
@@ -194,32 +188,19 @@ normalizeMoments( 'Sim08_{0}_{1}_Phys_{2}'.format(MCProd,outputEffMomentsBaselin
                   normMoment = 'mc_Re_ang_A0_A0',
                   printMoms  = False
                   )
+os.remove('Sim08_{0}_{1}_Phys_{2}'.format(MCProd,outputEffMomentsBaselineName,iterNumb) )
 
 # combine 2011,2012 acceptances
 if combineEffMoments:
-    angAcc2011 = 'Sim08_2011_%s_Phys_norm_%s'%(outputEffMomentsBaselineName,iterNumb) 
-    angAcc2012 = 'Sim08_2012_%s_Phys_norm_%s'%(outputEffMomentsBaselineName,iterNumb) 
-    
-    from time import sleep
-    while True:
-        try:
-            open(angAcc2011)
-            open(angAcc2012)
-            combineMoments( [ angAcc2011, angAcc2012 ], 'Sim08_20112012_{0}_Phys_norm_{1}'.format(outputEffMomentsBaselineName,iterNumb),
-                            prefix     = 'mc',
-                            printMoms  = False
-                            )
-            break
-        except IOError:
-            print 'P2VV - INFO: Waiting for the followig flies to combine efficiency moments:\n%s\n%s'%(angAcc2011,angAcc2012)
-            sleep(20)
+    angAcc2011  = 'Sim08_2011_%s_Phys_norm_%s'%(outputEffMomentsBaselineName,iterNumb) 
+    angAcc2012  = 'Sim08_2012_%s_Phys_norm_%s'%(outputEffMomentsBaselineName,iterNumb) 
+    combAccName = 'Sim08_20112012_{0}_Phys_norm_{1}'.format(outputEffMomentsBaselineName,iterNumb)
+    combineMoments( angAcc2011, angAcc2012, combAccName, Prefix = 'mc' )
     
 # convert effyciency weights to efficiency moments
-    correctedEfficiencyWeights = 'Sim08_{0}_{1}_Phys_norm_{2}'.format('20112012', outputEffMomentsBaselineName, iterNumb )
-
     moments, correlations = {}, {}
-    readMoments( correctedEfficiencyWeights, BasisFuncNames = [], Moments = moments, Correlations = correlations, ProcessAll = True )
-    convertEffWeightsToMoments( moments, OutputFilePath    = correctedEfficiencyWeights.replace('Phys','weights').replace('_norm',''),
+    readMoments( combAccName, BasisFuncNames = [], Moments = moments, Correlations = correlations, ProcessAll = True )
+    convertEffWeightsToMoments( moments, OutputFilePath = combAccName.replace('Phys','weights').replace('_norm',''),
                                 Scale             = scaleFactor,
                                 WeightNamesPrefix = PhysicsReweight.getParNamePrefix(),
                                 PrintMoments      = False
@@ -228,7 +209,7 @@ if combineEffMoments:
 # perform sFit on data using the new angular acceptance and update the data physics parameters
 if doFit:
     ParFileOut = '20112012Reco14DataFitValues_6KKMassBins_angEff_%s.par'%iterNumb 
-    Bs2JpsiKKFit.doFit( angAccFile = correctedEfficiencyWeights.replace('Phys','weights'), 
+    Bs2JpsiKKFit.doFit( angAccFile = combAccName.replace('Phys','weights'), 
                         parFileOut = ParFileOut, 
                         itNum      = iterNumb 
                         )
@@ -250,8 +231,8 @@ if makePlots: # plot data after each reweighting step
     plotWeightsList = []
     if reweightKKmom:     plotWeightsList += [ KmomentaWeightsName ]    
     if reweightPhysics:   plotWeightsList += [ physWeightName ]
-    if reweightBmomentum: plotWeightsList += [ BmomentumWeightsName ]
     if reweightMkk:       plotWeightsList += [ mKKWeightsName ]
+    if reweightBmomentum and RewApproach == 'vertical' : plotWeightsList += [ BmomentumWeightsName ]
     for wList in plotWeightsList: mcDataMngr.plotWeights(wList)
 
 # write weighted mc data to a file

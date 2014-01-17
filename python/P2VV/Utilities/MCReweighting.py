@@ -22,9 +22,7 @@ def compareDistributions( **kwargs ):
     # TODO: Make kwargs kwargs keys the same as data keys and compact object grabing
     from ROOT import RooFit, RooDataSet
     data = dict( mcBefore = kwargs.pop('mcData'), Sdata = kwargs.pop('sData') )
-    if kwargs.has_key('mcDataPhysRew'): data['mcAfter']     = kwargs.pop('mcDataPhysRew')
-    if kwargs.has_key('MomRewData'):    data['MomRewData']  = kwargs.pop('MomRewData')
-    for key in ['mkkRewData','BmomRewData']:
+    for key in [ 'mkkRewData','BmomRewData', 'mcDataPhysRew', 'MomRewData' ]:
         if kwargs[key]: data[key] = kwargs.pop(key) 
           
     # get observables and x ranges
@@ -74,12 +72,12 @@ def compareDistributions( **kwargs ):
     KKMassCanv.Divide(2,2)
 
     # set some data drawing options
-    colors      = dict(mcBefore=2, mcAfter=kGreen+3, MomRewData=4, Sdata=kMagenta+2, mkkRewData=1, BmomRewData=5 )
+    colors      = dict(mcBefore=2, mcDataPhysRew=kGreen+3, MomRewData=4, Sdata=kMagenta+2, mkkRewData=1, BmomRewData=5 )
     stdDrawOpts = dict( DataError = RooAbsData.SumW2, MarkerSize = .6, XErrorSize = 0. )
     dataOpts    = dict()    
     for key in colors.keys():
         if data.has_key(key): dataOpts[key] = dict( MarkerColor = colors[key], **stdDrawOpts  )
-    
+        
     # plot angles and decay time
     for canv, assymCanv, obs, logY, assymYrange in zip( 
         [obsCanv.cd(i+1) for i in xrange(len(observables))], 
@@ -130,9 +128,9 @@ def compareDistributions( **kwargs ):
     # make a legend and draw it
     legend, assym_legend = TPaveText(.587, .66, .893, .902, 'NDC' ), TPaveText( .269, .247, .569, .489, 'NDC' )
     for l in [legend,assym_legend]: l.SetFillColor(0)
-    entriesNames = dict(mcBefore='mcNominal', mcAfter='mcPhysRew', mkkRewData = 'mcMkkRew', \
+    entriesNames = dict(mcBefore='mcNominal', mcDataPhysRew='mcPhysRew', mkkRewData = 'mcMkkRew', \
                             MomRewData='mKKMomRew', Sdata='data', BmomRewData = 'mcBmomRew' )
-    for key in ['mcBefore', 'BmomRewData', 'mcAfter', 'mkkRewData', 'MomRewData', 'Sdata']:
+    for key in ['mcBefore', 'BmomRewData', 'mcDataPhysRew', 'mkkRewData', 'MomRewData', 'Sdata']:
         if data.has_key(key):
             legend.AddText('#color[%s]{%s}'%(colors[key],entriesNames[key]))
         if data.has_key(key) and key!='Sdata': 
@@ -160,30 +158,6 @@ def cleanP2VVPlotStash():
     while len(_P2VVPlotStash) > 0: 
         for plot in _P2VVPlotStash: _P2VVPlotStash.remove(plot)
     print 'P2VV - INFO: cleanP2VVPlotStash: Emptied P2VVplotStash.'
-
-# combine datasets
-def _combineDataSetParts( files, name, weightName='' ):
-    print 'P2VV - INFO: combineDataSetParts: Combining the following datasets with common name, %s'%name
-    for f in files: print f
-
-    # import args into current workspace
-    from P2VV.RooFitWrappers import RooObject
-    ws = RooObject().ws()
-        
-    import ROOT 
-    from ROOT import TFile
-    dataSets = [ TFile.Open(f,'READ').Get(name) for f in files ]
-    for d in dataSets:
-        ROOT.SetOwnership(d, True)
-    data = dataSets.pop()
-    for arg in data.get():
-        if not ws[arg.GetName()]: ws.put(arg) 
-    for i in range(len(dataSets)):
-        d = dataSets.pop()
-        data.append(d)
-        del d
-
-    print 'P2VV - INFO: combineDataSetParts: Read combined dataset with %d entries.'% data.numEntries()
     
 # easily create an observable using information from the PdfConfig class
 def _createGetObservable(name):
@@ -210,6 +184,22 @@ def _createGetObservable(name):
     obs.setObservable(True)
     del PdfConfig
     return obs 
+
+# combine moments function with waiting feature.
+def combineMoments( accFile1, accFile2, outName, Prefix=''):
+    from time import sleep
+    import os
+    from P2VV.Utilities.DataMoments import combineMoments
+    while True:
+        try:
+            open(accFile1)
+            open(accFile2)
+            combineMoments( [ accFile1, accFile2 ], outName, prefix = Prefix, printMoms = False )
+            for angAcc in [accFile1,accFile2]: os.remove(angAcc)
+            break
+        except IOError:
+            print 'P2VV - INFO: combineMoments: Waiting for the followig flies to combine efficiency moments:\n%s\n%s'%(accFile1,accFile2)
+            sleep(30)
 
 # Reweighting tools
 class UniFunc(object):
@@ -354,13 +344,13 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     weights = []
     count = 0 # count how many events have a problematic weight
     for event in source:
-        bin = sourceHist.FindFixBin( _valX(event),  _valY(event) ) # get the bin with given (Kplus_P,Kminus_P)
+        bin = sourceHist.FindFixBin( _valX(event),  _valY(event) ) # get bin with the given varible values
         if targetHist.GetBinContent(bin)==0 or sourceHist.GetBinContent(bin)==0:# do not weight the event if not possible with current binning
             weights += [0.] 
             count += 1
         else: 
             weights += [targetHist.GetBinContent(bin) / sourceHist.GetBinContent(bin)] # calculate weight
-    if count>0: print 'P2VV - INFO: TwoDimentionalVerticalReweighting: Could not assign weight for %s out of %s events, excluding them from the sample.'%(count,source.numEntries())
+    if count>0: print 'P2VV - INFO: TwoDimentionalVerticalReweighting: Could not assign weight for %s out of %s events with current binning, excluding them from the sample.'%(count,source.numEntries())
 
     # fill weights to histogram for xcheck
     if plot: 
@@ -546,14 +536,14 @@ class WeightedDataSetsManager(dict):
         self['combinedWeights'] =  ( n_events / sumW ) * self['combinedWeights'] 
         
         # write weights
-        wName = ''
-        for name in self['WeightsLists'].keys() + self['permanetnWeigtsLists'].keys(): wName += name + '_'
-        wName += str(self['iterationNumber'])
+        self._wName = ''
+        for name in self['WeightsLists'].keys() + self['permanetnWeigtsLists'].keys(): self._wName += name + '_'
+        self._wName += str(self['iterationNumber'])
         self['dataSets'][weightsName] = self.writeWeights(self['dataSets'][self['latestDataSetPointer']], \
-                                        'weight_' + wName, self['initSource'].GetName() + '_' + wName )
+                                        'weight_' + self._wName, self['initSource'].GetName() + '_' + self._wName )
 
         if permanentDataSet:
-            print 'P2VV - INFO: appendWeights: Dataset %s will be put in permanentDataSets, and will not be deleted.'%wName
+            print 'P2VV - INFO: appendWeights: Dataset %s will be put in permanentDataSets, and will not be deleted.'%self._wName
             self['permanentDataSets'][weightsName] = self['dataSets'][weightsName]
             
         # delete intermediate dataset, except if it is the initial source and/or you want to keep them for plotting 
@@ -564,7 +554,7 @@ class WeightedDataSetsManager(dict):
 
         # bookkeeping flag 
         self['latestDataSetPointer'] = weightsName
-        self['combinedWeightsName']  = 'weight_' + wName
+        self['combinedWeightsName']  = 'weight_' + self._wName 
         
     def writeWeights( self, dataset, weightsName, writeDatasetName ):
         print 'P2VV - INFO: writeWeights: Creating dataset with name %s and weight name %s:'%(writeDatasetName,weightsName)
@@ -587,7 +577,19 @@ class WeightedDataSetsManager(dict):
         if which in self['permanentDataSets'].keys(): return self['permanentDataSets'][which]
         else: return self['dataSets'][dataSetKey]
 
-    def plotWeights(self, which = '', Range=() ):
+    def setDataSet ( self, data, weightsName ):
+        # set weights name
+        self['combinedWeightsName'] = data.GetName()[:-1] + weightsName + data.GetName()[-2:]
+        
+        # delete previous data and point to the new one
+        for key in self['dataSets'].keys():
+            if key == self['latestDataSetPointer']: del self['dataSets'][key]
+        self['dataSets'][weightsName] = data
+
+        #set dataset pointer
+        self['latestDataSetPointer'] = weightsName
+
+    def plotWeights( self, which = '', Range=() ):
         from ROOT import TCanvas, TH1F
         from P2VV.Utilities.Plotting import _P2VVPlotStash
 
@@ -611,6 +613,8 @@ class WeightedDataSetsManager(dict):
         c.Print( 'weights_%s_.pdf'%which )
         _P2VVPlotStash +=[c,weghtsHist]
 
+    def getWeightName( self ): return self._wName    
+        
     def clear( self ):
         del self['dataSets'], self['WeightsLists'],  self['combinedWeights']
         
@@ -883,7 +887,7 @@ class MatchPhysics( ):
         
         # read ntuple
         from P2VV.Utilities.DataHandling import readData
-        readOpts = {}
+        readOpts = { 'ntupleCuts' : 'mass>5350 && mass<5355' }  # {} # { 'ntupleCuts' : 'mass>5350 && mass<5355' }
         self._data = readData( nTupleFile, dataSetName=nTupleName, NTuple=True, observables=self._obsSet, **readOpts)
         self._data.SetName( 'mcData_' + MCProd )
            
@@ -1026,6 +1030,7 @@ class MatchPhysics( ):
         return self._physWeights
     
     def getDataSet(self):           return self._data
+    def setDataSet(self, data):     self._data = data 
     def getPdf(self):               return self._pdf
     def getAngleFunctions(self):    return self._angleFuncs
     def getMcTime(self):            return  [ o for o in self._pdf.Observables() if 'time' in o.GetName() ]
@@ -1047,16 +1052,6 @@ class MatchWeightedDistributions():
         self._vars  = kwargs.pop('reweightVars', 'Kminus_P')
         self._itNum = kwargs.pop('itNum',            0     )
        
-        from ROOT import RooDataSet, gROOT
-        if self._inTree and type(self._inTree) == RooDataSet:
-            self._inSumW = self._inTree.sumEntries()
-            gROOT.cd('PyROOT:/')
-            self._inTree  = self._inTree.buildTree( WeightName=self._inWeightName)
-        if type(self._outTree) == RooDataSet:
-            self._outSumW = self._outTree.sumEntries()
-            gROOT.cd('PyROOT:/')
-            self._outTree = self._outTree.buildTree( WeightName=self._outWeightName )
-                 
         # make some usefull sets.
         if self._copyVars:
             self._muonSet, self._KaonSet, self._BmomSet = [], [],[]
@@ -1068,15 +1063,15 @@ class MatchWeightedDistributions():
             
     def _mimicWeights(self):
         for var in self._vars:
-            print 'P2VV - INFO: _mimicWeights: Mimicing weighteed distribution of source variable:', var
+            print 'P2VV - INFO: _mimicWeights: Mimicing weighted distribution of source variable:', var
             self._mimicedVars['inDistr'][var] = self._MimicWeightedDistribution( self._inTree,  var, self._inWeightName , self._nBins, 'in')
             
             if self._mimicedVars.has_key('outDistr'):
                 if not self._mimicedVars['outDistr'].has_key(var):
-                    print 'P2VV - INFO: _mimicWeights: Mimicing weighteed distribution of target variable:', var
+                    print 'P2VV - INFO: _mimicWeights: Mimicing weighted distribution of target variable:', var
                     self._mimicedVars['outDistr'][var] = self._MimicWeightedDistribution( self._outTree, var, self._outWeightName, self._nBins, 'out') 
             else:
-                print 'P2VV - INFO: _mimicWeights: Mimicing weighteed distribution of target variable:', var
+                print 'P2VV - INFO: _mimicWeights: Mimicing weighted distribution of target variable:', var
                 self._mimicedVars['outDistr'] = {}
                 self._mimicedVars['outDistr'][var] = self._MimicWeightedDistribution( self._outTree, var, self._outWeightName, self._nBins, 'out')            
 
@@ -1111,7 +1106,7 @@ class MatchWeightedDistributions():
         del c
         return newDistribution
 
-    def reweight( self, itNum, data, reweightingType='horizontal' ):
+    def reweight( self, itNum, data ):
         # get rid of the previous tree if any
         self._inTree = data
         self._itNum = itNum
@@ -1122,26 +1117,17 @@ class MatchWeightedDistributions():
             RooInf = RooNumber.infinity()
             self._physWeightsVar = RooRealVar( self._inWeightName, self._inWeightName, -RooInf, RooInf )
         else: self._physWeightsVar = self._inTree.get().find( self._inWeightName )
-
-        # get dataset scales
-        self._inSumW = self._inTree.sumEntries()
-        self._dataSetsScale = self._outSumW / self._inSumW
-        self._physRewScale  = self._inSumW / self._inTree.numEntries()
-        assert self._physRewScale < 1.01, \
-            'P2VV - WARNING: Scale between original MC and physics reweighted MC is %s, remove weights and then perform momentum reweighting.' %self._physRewScale 
         
         # convert roodataset to tree
-        from ROOT import RooDataSet
         from ROOT import gROOT
         gROOT.cd('PyROOT:/')
         self._inTree = self._inTree.buildTree(WeightName=self._inWeightName)
+        self._outTree = self._outTree.buildTree(WeightName=self._outWeightName)
 
         # mimic the weights, transform Kaon momenta and recalculate angles 
-        if reweightingType == 'horizontal':
-            self._mimicWeights()
-            self._TransformKaonMomentaAndRecalculateAngles()
-        else: print 'do verical reweighting'
-
+        self._mimicWeights()
+        self._TransformKaonMomentaAndRecalculateAngles()
+        
     def _constructTransformation( self ):
         source = self._mimicedVars['inDistr'][self._vars[0]]
         target = self._mimicedVars['outDistr'][self._vars[0]]
@@ -1185,8 +1171,9 @@ class MatchWeightedDistributions():
         # construct datasets 
         recalculatedVars = RooArgSet( [helcosthetaK,helcosthetaL,helphi] + self._KaonSet + self._BmomSet ) 
         copiedVars       = RooArgSet( self._KKMass + self._muonSet + [truetime,time,self._physWeightsVar] )
-        recalculatedData = RooDataSet( 'MomRewMC_%s_Iter'%self._itNum, 'MomRewMC_%s_Iter'%self._itNum, recalculatedVars         )        
-        copiedData       = RooDataSet( 'copiedData',                   'copiedData',                   self._inTree, copiedVars )
+        name = self._inTree.GetName()[:-1] + 'hor_KKmom' + self._inTree.GetName()[-2:]
+        self._recalculatedData = RooDataSet( name, name, recalculatedVars  )        
+        copiedData             = RooDataSet('copiedData', 'copiedData', self._inTree, copiedVars )
 
         # get particle masses
         from ROOT import TDatabasePDG
@@ -1206,7 +1193,7 @@ class MatchWeightedDistributions():
         # build the Kmomenta transformation
         print 'P2VV - INFO: _ReweightAndTransformAngles: Building Kaon momenta transformation.'
         self._constructTransformation()
-        print 'P2VV - INFO: _ReweightAndTransformAngles: Transforming K+, K- momenta and recalculating decay angles.'
+        print 'P2VV - INFO: _ReweightAndTransformAngles: Transforming p(K+),p(K-) and recalculating decay angles.'
         for entry in self._inTree:
             k1_3P = _E2V(entry,'Kplus')
             k2_3P = _E2V(entry,'Kminus')
@@ -1239,24 +1226,17 @@ class MatchWeightedDistributions():
             BP.setVal( _B3PMAG(k1_3P,k2_3P,mu1_3P,mu2_3P) )
             BPt.setVal( _BPT(k1_3P,k2_3P,mu1_3P,mu2_3P)   )
 
-            recalculatedData.addFast( recalculatedVars )
+            self._recalculatedData.addFast( recalculatedVars )
         
-        recalculatedData.merge( copiedData )
-        self._recalculatedData = RooDataSet(recalculatedData.GetName(), recalculatedData.GetTitle(), 
+        self._recalculatedData.merge( copiedData )
+        self._recalculatedData = RooDataSet(self._recalculatedData.GetName(), self._recalculatedData.GetTitle(), 
                                             RooArgSet(recalculatedVars, copiedVars), 
-                                            Import = recalculatedData, 
+                                            Import = self._recalculatedData, 
                                             WeightVar = (self._physWeightsVar, True)
                                             )
-        self._recalculatedDataNoPhysWeights = recalculatedData
+        del self._inTree, self._outTree
   
-    def getDataSet(self, tree=False, noPhysWeights=False): 
-        if tree:
-            from ROOT import gROOT
-            gROOT.cd('PyROOT:/')
-            return self._recalculatedData.buildTree(WeightName = self._inWeightName)
-        else: 
-            if noPhysWeights: return self._recalculatedDataNoPhysWeights
-            else:             return self._recalculatedData
+    def getDataSet( self ): return self._recalculatedData
 
 
 # MC generating conditions  
@@ -1284,12 +1264,12 @@ parValuesMcSim08_6KKmassBins = dict(
     ,f_S_bin3          = 0.
     ,f_S_bin4          = 0.
     ,f_S_bin5          = 0.
-    ,C_SP_bin0         = 1. 
-    ,C_SP_bin1         = 1. 
-    ,C_SP_bin2         = 1. 
-    ,C_SP_bin3         = 1. 
-    ,C_SP_bin4         = 1. 
-    ,C_SP_bin5         = 1.   
+     ,mc_C_SP_bin0     = 0.9660
+     ,mc_C_SP_bin1     = 0.9560
+     ,mc_C_SP_bin2     = 0.9260
+     ,mc_C_SP_bin3     = 0.9260
+     ,mc_C_SP_bin4     = 0.9560
+     ,mc_C_SP_bin5     = 0.9660
     )
 
 trackMomentaRanges = dict(
