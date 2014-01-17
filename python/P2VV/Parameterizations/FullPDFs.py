@@ -265,7 +265,7 @@ class Bs2Jpsiphi_PdfConfiguration( PdfConfiguration ) :
 
         self['paramKKMass']     = 'simultaneous'       # '' / 'parameters' / 'simultaneous'
         self['KKMassBinBounds'] = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ]    # KK-mass bin boundaries
-        self['CSPValues']       = [ 0.959, 0.770, 0.824, 0.968 ]                      # S-P coupling factors for KK-mass bins
+        self['CSPValues']       = [ 0.9178, 0.9022, 0.8619, 0.8875, 0.9360, 0.9641 ]  # S-P coupling factors for KK-mass bins
 
         if not sFit :
             self['bkgAnglePdfType'] = 'hybrid'
@@ -402,16 +402,16 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
         self['angEffMomsFiles'] = 'data/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
 
         self['KKMassBinBounds'] = [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ]
-        self['CSPValues']       = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ]
+        self['CSPValues']       = [ 0.9178, 0.9022, 0.8619, 0.8875, 0.9360, 0.9641 ]
 
-        self['externalConstr'] = dict(  wTagP0OS       = (  0.379,  0.011  )
-                                      , wTagP1OS       = (  1.00,   0.06   )
-                                      , wTagDelP0OS    = (  0.0137, 0.0012 )
-                                      , wTagDelP1OS    = (  0.070,  0.012  )
-                                      , wTagP0SS       = (  0.437,  0.008  )
-                                      , wTagP1SS       = (  1.00,   0.12   )
-                                      , wTagDelP0SS    = ( -0.016,  0.002  )
-                                      , wTagDelP1SS    = (  0.015,  0.019  )
+        self['externalConstr'] = dict(  wTagP0OS       = (  0.3853, 0.0044 )
+                                      , wTagP1OS       = (  1.000,  0.035  )
+                                      , wTagDelP0OS    = (  0.0140, 0.     )
+                                      , wTagDelP1OS    = (  0.066,  0.     )
+                                      , wTagP0SS       = (  0.450,  0.005  )
+                                      , wTagP1SS       = (  1.00,   0.09   )
+                                      , wTagDelP0SS    = ( -0.016,  0.     )
+                                      , wTagDelP1SS    = (  0.007,  0.     )
                                       , dM             = (  17.768, 0.024  )
                                      )
         from collections import defaultdict
@@ -421,20 +421,20 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
             splitConstr['betaTimeEff']['2012'] = ( -0.0083, None )
         else:
             splitConstr['betaTimeEff']['2012'] = ( 0., 0. )
-        splitConstr['sf_placeholder']['2011'] = (  0.0349,  0. ) #( 0.0352, 0. )
-        splitConstr['sf_placeholder']['2012'] = (  0.0347,  0. ) #( 0.0352, 0. )
-        splitConstr['timeResMu']['2011']        = ( -0.00259, 0. ) #( 0.,     0. )
-        splitConstr['timeResMu']['2012']        = ( -0.00333, 0. ) #( 0.,     0. )
-        splitConstr['timeResFrac2']['2011']     = (  0.242,   0. ) #( 0.220,  0. )
-        splitConstr['timeResFrac2']['2012']     = (  0.239,   0. ) #( 0.248,  0. )
-        splitConstr['sf_mean_offset']['2011']   = (  1.4273,  0. ) #( 1.4761, 0. )
-        splitConstr['sf_mean_offset']['2012']   = (  1.4887,  0. ) #( 1.4877, 0. )
-        splitConstr['sf_mean_slope']['2011']    = ( -1.93,    0. ) #( -0.190, 0. )
-        splitConstr['sf_mean_slope']['2012']    = ( -3.88,    0. ) #( -0.228, 0. )
-        splitConstr['sf_sigma_offset']['2011']  = (  0.3857,  0. ) #( 0.3844, 0. )
-        splitConstr['sf_sigma_offset']['2012']  = (  0.4143,  0. ) #( 0.4118, 0. )
-        splitConstr['sf_sigma_slope']['2011']   = ( -0.63,    0. ) #( -0.117, 0. )
-        splitConstr['sf_sigma_slope']['2012']   = ( -2.80,    0. ) #( -0.172, 0. )
+        splitConstr['sf_placeholder']['2011']   = (  0.0349,  0. )
+        splitConstr['sf_placeholder']['2012']   = (  0.0347,  0. )
+        splitConstr['timeResMu']['2011']        = ( -0.00259, 0. )
+        splitConstr['timeResMu']['2012']        = ( -0.00333, 0. )
+        splitConstr['timeResFrac2']['2011']     = (  0.242,   0. )
+        splitConstr['timeResFrac2']['2012']     = (  0.239,   0. )
+        splitConstr['sf_mean_offset']['2011']   = (  1.4273,  0. )
+        splitConstr['sf_mean_offset']['2012']   = (  1.4887,  0. )
+        splitConstr['sf_mean_slope']['2011']    = ( -1.93,    0. )
+        splitConstr['sf_mean_slope']['2012']    = ( -3.88,    0. )
+        splitConstr['sf_sigma_offset']['2011']  = (  0.3857,  0. )
+        splitConstr['sf_sigma_offset']['2012']  = (  0.4143,  0. )
+        splitConstr['sf_sigma_slope']['2011']   = ( -0.63,    0. )
+        splitConstr['sf_sigma_slope']['2012']   = ( -2.80,    0. )
         if runPeriods in [ '2011', '2012' ] :
             self['externalConstr']['betaTimeEff']     = splitConstr['betaTimeEff']     [runPeriods]
             self['externalConstr']['sf_placeholder']  = splitConstr['sf_placeholder'][runPeriods]
@@ -454,15 +454,15 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
                 self['externalConstr'][par] = constr
 
         from P2VV.Imports import extConstraintValues
-        extConstraintValues.setVal( 'DM',      ( 17.768, 0.024   ) )
-        extConstraintValues.setVal( 'P0OS',    (  0.379,  0.011, 0.379 ) )
-        extConstraintValues.setVal( 'P1OS',    (  1.00,   0.06   ) )
-        extConstraintValues.setVal( 'DelP0OS', (  0.0137, 0.0012 ) )
-        extConstraintValues.setVal( 'DelP1OS', (  0.070,  0.012  ) )
-        extConstraintValues.setVal( 'P0SS',    (  0.437,  0.008, 0.437 ) )
-        extConstraintValues.setVal( 'P1SS',    (  1.00,   0.12   ) )
+        extConstraintValues.setVal( 'DM',      ( 17.768,  0.024   ) )
+        extConstraintValues.setVal( 'P0OS',    (  0.3853, 0.0044, 0.3853 ) )
+        extConstraintValues.setVal( 'P1OS',    (  1.00,   0.035  ) )
+        extConstraintValues.setVal( 'DelP0OS', (  0.0140, 0.0012 ) )
+        extConstraintValues.setVal( 'DelP1OS', (  0.066,  0.012  ) )
+        extConstraintValues.setVal( 'P0SS',    (  0.450,  0.005, 0.450 ) )
+        extConstraintValues.setVal( 'P1SS',    (  1.00,   0.09   ) )
         extConstraintValues.setVal( 'DelP0SS', ( -0.016,  0.002  ) )
-        extConstraintValues.setVal( 'DelP1SS', (  0.015,  0.019  ) )
+        extConstraintValues.setVal( 'DelP1SS', (  0.007,  0.019  ) )
 
         # check for remaining keyword arguments
         assert not kwargs, 'P2VV - ERROR: Bs2Jpsiphi_RunIAnalysis: superfluous keyword arguments found: %s' % kwargs
