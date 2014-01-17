@@ -11,17 +11,17 @@ pdfConfig = PdfConfig( RunPeriods = runPeriods )
 # job parameters
 from P2VV.Parameterizations.FullPDFs import SimulCatSettings
 generateData        = False
-doFit               = False #'NLL'
+doFit               = True #'NLL'
 makeObservablePlots = False
 makeKKMassPlots     = False
 plotAnglesNoEff     = False
 corrSFitErr         = ( 'sumWeight', [ 'runPeriod', 'KKMassCat' ] )
 randomParVals       = ( ) #( 0.2, 12345 )
-dataPath            = '/project/bfys/raaij/p2vv/data/'
+dataPath            = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
 
 plotsFile     = 'temp.ps'   #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.ps'
 plotsROOTFile = 'temp.root' #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.root'
-parFileIn     = 'parameterEstimates.par' #'20112012Reco14DataFitValues_6KKMassBins.par' # '20112012Reco14DataFitValues_4KKMassBins.par'
+parFileIn     = '20112012Reco14DataFitValues_6KKMassBins.par' # '20112012Reco14DataFitValues_4KKMassBins.par'
 parFileOut    = ( 'parameterEstimates.par', dict( Format = 'common' ) )
 
 if generateData :
@@ -72,10 +72,11 @@ constAmplitudes   = False
 constLambdaCP     = ''  # 'lamb'
 equalAbsLambdaCPs = False
 
-pdfConfig['timeResType']   = 'event3fb' # 'eventNoMean'
-pdfConfig['timeEffType']   = 'fit' #'paper2012' # 'paper2012' # 'HLT1Unbiased'
-pdfConfig['timeEffParameters'] = dict(RandomBinOrder = False)
-pdfConfig['constrainBeta'] = ''  # '' / 'constrain' / 'fixed' / 'noBeta'
+# PDF options
+pdfConfig['timeResType']       = 'event3fb' # 'eventNoMean'
+pdfConfig['timeEffType']       = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
+pdfConfig['timeEffParameters'] = { } # dict(RandomBinOrder = False) # dict( Parameterization = 'Spline', Fit = False ) # dict( Fit = False, RandomBinOrder = False )
+pdfConfig['constrainBeta']     = ''  # '' / 'constrain' / 'fixed' / 'noBeta'
 
 if pdfConfig['timeEffType'] == 'fit':
     timeEffFile2011 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
@@ -548,18 +549,15 @@ if doFit :
 
     else :
         if pdfConfig['sFit'] :
-            for i in range(3):
-                fitResult = pdf.fitTo( fitData, SumW2Error = True if corrSFitErr == 'matrix' else False
-                                       , Minos = RooMinPars, Save = True, Range = fitRange
-                                       , **fitOpts)
-                if fitResult.status() == 0:
-                    break
+            fitResult = pdf.fitTo( fitData, SumW2Error = True if corrSFitErr == 'matrix' else False
+                                  , Minos = RooMinPars, Save = True, Range = fitRange
+                                  , **fitOpts
+                                 )
         else :
-            for i in range(3):
-                fitResult = pdf.fitTo( fitData, Minos = RooMinPars, Save = True, Range = fitRange
-                                       , **fitOpts)
-                if fitResult.status() == 0:
-                    break
+            fitResult = pdf.fitTo( fitData
+                                  , Minos = RooMinPars, Save = True, Range = fitRange
+                                  , **fitOpts
+                                 )
 
     # reparameterize amplitudes
     if pdfConfig['amplitudeParam'] == 'bank' and pdfConfig['ASParam'] != 'ReIm' and pdfConfig['AparParam'] == 'Mag2ReIm' :
