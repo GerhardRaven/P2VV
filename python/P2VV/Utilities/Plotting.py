@@ -157,7 +157,7 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
         xAxis.SetLabelSize(0.15)
         xAxis.SetTitleSize(0.15)
         xAxis.SetLabelOffset(0.02)
-        xAxis.SetTitleOffset(1.0)
+        xAxis.SetTitleOffset(1.1)
         yAxis = residFrame.GetYaxis()
         yAxis.SetTitle('')
         yAxis.SetLabelSize(0.13)
