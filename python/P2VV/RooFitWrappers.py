@@ -1046,12 +1046,21 @@ class Pdf(RooObject):
     @wraps(RooAbsPdf.generate)
     def generate(self, whatvars, *args, **kwargs):
         #if not whatvars : whatvars = [ i for i in self._var.getVariables() if i.getAttribute('Observable') ]
-        whatvars = RooArgSet([ __dref__(i) for i in whatvars] if not isinstance(__dref__(whatvars),RooAbsCategory) else __dref__(whatvars))
+        from ROOT import RooAbsPdf
+        if isinstance(whatvars, RooAbsPdf.GenSpec):
+            spec = True
+        else:
+            spec = False
+            whatvars = RooArgSet([ __dref__(i) for i in whatvars] if isinstance(__dref__(whatvars),RooAbsCategory) else __dref__(whatvars))
+
         conditionals = set(o.GetName() for o in self.ConditionalObservables())
         pdfVars = self._var.getVariables()
         for v in pdfVars:
             if v.GetName() in conditionals: v.setAttribute("GenerateConditional", True)
-        data = self._var.generate(whatvars, *args,**kwargs)
+        if spec:
+            data = self._var.generate(whatvars)
+        else:
+            data = self._var.generate(whatvars, *args,**kwargs)
         for v in pdfVars:
             if v.GetName() in conditionals: v.setAttribute("GenerateConditional", False)
         return data
@@ -1757,6 +1766,44 @@ class Customizer(Pdf) :
 
     def _make_pdf(self) : pass
 
+class EffConstraint(Pdf):
+    def __init__( self, **kwargs ) :
+        __check_req_kw__('Name', kwargs )
+        __check_req_kw__('Epsilons', kwargs )
+        __check_req_kw__('N', kwargs )
+
+        name = kwargs.pop('Name')
+        epsilons =  kwargs.pop('Epsilons')
+        N =  kwargs.pop('N')
+        assert(len(epsilons) == 2)
+        assert(len(N) in [2, 3])
+
+        def __make_vector(bins):
+            from ROOT import std
+            vbins = std.vector('double')(len(bins))
+            for i in range(len(bins)):
+                vbins[i] = bins[i]
+            return vbins
+        N = [__make_vector(b) for b in N]
+
+        from ROOT import RooArgList
+        for i, eps in enumerate(epsilons):
+            l = RooArgList()
+            for e in eps:
+                l.add(e)
+            epsilons[i] = l
+        
+        if name in self.ws():
+            # initialize PDF
+            self._init(name, 'RooEffConstraint')
+        else:
+            from ROOT import RooEffConstraint
+            self._addObject(RooEffConstraint(name, name, *tuple(epsilons + N)))
+            self._init(name, 'RooEffConstraint')
+
+        Pdf.__init__(self, Name = name, Type = 'RooEffConstraint')
+
+    def _make_pdf(self) : pass    
 
 class ResolutionModel(Pdf):
     def __init__(self, **kwargs):
@@ -2026,9 +2073,6 @@ class BinnedFun(RooObject):
                 if not self.__fit:
                     # If we're not fitting set all bins constant
                     for h in heights: h.setConstant(True)
-                elif len(heights) == 1:
-                    # Fix the bin if there is only one.
-                    heights[0].setConstant(True)
                 if not self.__base_bounds or len(bounds) > len(self.__base_bounds):
                     self.__base_bounds = bounds
                     self.__binning = shape_binning
@@ -2041,8 +2085,7 @@ class BinnedFun(RooObject):
         ## build the average constraint.
         for c, state_info in coefficients.iteritems():
             for state, i in state_info.iteritems():
-                if len(i['heights']) > 1:
-                    self.__coefficients[(self.__namePF, c.GetName(), state)] =  i['heights']
+                self.__coefficients[(self.__namePF.strip('_'), c.GetName(), state)] = i['heights']
             
         # Make one combination by looping over the entries and taking the first
         # state for each.
@@ -2449,7 +2492,7 @@ class Component(object):
                 for i,j in args[0].iteritems() : self[i] = j
             else :
                 for j in args[0] : self.append(j)
-        if 'Yield' in kw : self.setYield( *kw.pop('Yield') )
+        self.setYield(*kw.pop('Yield', []))
         if kw : raise IndexError('unknown keyword arguments %s' % kw.keys() )
     def _yieldName(self) : return 'N_%s' % self.name
     def getYield(self):
@@ -2459,13 +2502,13 @@ class Component(object):
         y = None
         if len(args) == 1 and type(args[0]) == RealVar:
             y = args[0]
-        else :
+        elif len(args) == 3:
             n, nlo, nhi = args
             assert n>=nlo
             assert n<=nhi
             y = RealVar(self._yieldName(), MinMax=(nlo,nhi), Value=n)
         Component._d[self.name]['Yield'] = y
-        Component._d[self.name]['Yield'].setAttribute('Yield',True)
+        if y: Component._d[self.name]['Yield'].setAttribute('Yield',True)
     def __iadd__(self,pdf) :
         self.append(pdf)
         return self
@@ -2554,7 +2597,8 @@ def buildPdf( Components, Observables, Name ) :
     for comp in Components:
         # build PDF
         pdf = comp[obsList]
-        if len(Components) > 1 : args['Yields'][pdf.GetName()] = comp['Yield']
+        if len(Components) > 1 and comp['Yield']:
+            args['Yields'][pdf.GetName()] = comp['Yield']
         args['PDFs'].append(pdf)
 
         # add external constraints

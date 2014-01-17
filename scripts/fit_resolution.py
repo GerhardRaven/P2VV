@@ -61,10 +61,12 @@ parser.add_option("--no-cache", dest = "cache", default = True, action = 'store_
                   help = 'Use a cache to store results and reuse them.')
 parser.add_option("--constrain", dest = "constrain", default = '', action = 'store', type = 'string',
                   help = 'Which parameters to constrain')
-parser.add_option("--write-constraints", dest = "write_constraints", default = False,
-                  action = 'store_true', help = 'Write contraints to database.')
+parser.add_option("--write-constraints", dest = "write_constraints", default = '',
+                  action = 'store', type = 'string', help = 'Write contraints to database.')
 parser.add_option("--mass-parameterisation", dest = "mass_param", default = '',
                   action = 'store', type = 'string', help = 'Reparameterise the mass PDF')
+parser.add_option("--make-binning", dest = "make_binning", default = 0,
+                  action = 'store', type = 'int', help = 'Reparameterise the mass PDF')
 
 (options, args) = parser.parse_args()
 
@@ -86,7 +88,7 @@ if args[0] not in input_data.keys():
     print "Possible samples are: %s" % ' '.join(input_data.keys())
     sys.exit(-2)
 
-if options.wpv and not options.wpv_type in ['Mixing', 'Gauss']:
+if options.wpv and not options.wpv_type in ['Mixing', 'Gauss', 'Rest']:
     print parser.print_usage()
     print "Wring mixing type; allowed types: %s" % ' '.join(['Mixing', 'Gauss'])
     sys.exit(-2)
@@ -123,11 +125,7 @@ elif options.wpv and options.wpv_type == 'Gauss':
 else:
     t_minmax = (-5, 14)
 t  = RealVar('time' if not options.use_refit else 'time_refit', Title = 'decay time', Unit='ps', Observable = True, MinMax = t_minmax)
-m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5200, 5550),
-             Ranges =  { 'leftsideband'  : ( None, 5330 )
-                         , 'signal'        : ( 5330, 5410 )
-                         , 'rightsideband' : ( 5410, None )
-                         } )
+m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5200, 5550))
 mpsi = RealVar('mdau1', Title = 'J/psi mass', Unit = 'MeV', Observable = True, MinMax = (3025, 3165))
 st = RealVar('sigmat' if not options.use_refit else 'sigmat_refit',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.01, 0.07))
 
@@ -148,7 +146,7 @@ t_st = RealVar('time_sigmat' if not options.use_refit else 'time_sigmat_refit', 
 observables = [t, t_st, m, mpsi, st, hlt1_unbiased, hlt2_unbiased, selected, nPV, momentum, pt, zerr]
 if signal_MC:
     t_true = RealVar('truetime', Title = 'true decay time', Unit='ps', Observable = True, MinMax=(-1100, 14))
-    t_diff = RealVar('time_diff' if not options.use_refit else 'time_diff_refit', Unit = 'ps', Observable = True, MinMax = (-1, 1) if not options.peak_only else tdiff_minmax)
+    t_diff = RealVar('time_diff' if not options.use_refit else 'time_diff_refit', Unit = 'ps', Observable = True, MinMax = (-0.5, 0.5) if not options.peak_only else tdiff_minmax)
     t_diff_st = RealVar('time_diff_sigmat' if not options.use_refit else 'time_diff_sigmat_refit', Title = 'time / sigmat', Observable = True, MinMax = (-30, 40))
     observables.extend([t_true, t_diff, t_diff_st])
 
@@ -185,6 +183,8 @@ elif args[1] == 'double':
                      ScaleFactors = [(2, 2.00), (1, 1.174)] if options.pee else [(2, 0.1), (1, 0.06)],
                      Fractions = [(2, 0.143)], SplitMean = options.split_mean,
                      MeanParameterisation = options.mu_param)
+    if args[0] == 'MC2012':
+        tres_args['timeResFrac2'] = dict(Value = 0.015)
     sig_tres = TimeResolution(Name = 'sig_tres', **tres_args)
     if options.add_background:
         bkg_tres = TimeResolution(Name = 'bkg_tres', ParNamePrefix = 'bkg', **tres_args)
@@ -333,7 +333,6 @@ if not fit_mass and options.cache:
                 bkg_sdata_full = single_bin_bkg_sdata
         except KeyError:
             fit_mass = True
-        ## CHECK ST BINNING
 
     from copy import copy
     sdatas = copy(sdatas_full)
@@ -370,7 +369,10 @@ if not fit_mass and options.cache:
             results.append(tr)
 
     if options.simultaneous:
-        split_cats = [split_util.split_cats(sig_sdata)]
+        sc = split_util.split_cats(sig_sdata, options.make_binning)
+        if not sc:
+            fit_mass = True
+        split_cats = [sc]
 
 ## Fitting opts
 fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 1, Offset = True,
@@ -481,7 +483,7 @@ if fit_mass and options.simultaneous:
     from P2VV.Utilities.General import getSplitPar
     # categories for splitting the PDF
     # get mass parameters that are split
-    split_cats = [split_util.split_cats(data)]
+    split_cats = [split_util.split_cats(data, options.make_binning)]
     split_pars = [[par for par in mass_pdf.Parameters() if par.getAttribute('Yield')]]
 
     # build simultaneous mass PDF
@@ -628,16 +630,13 @@ if options.cache:
         cache_file.Delete('%s;*' % tree_name)
 
 # Define default components
-if signal_MC:
-    from ROOT import RooIpatia2 as Ipatia2
-    from P2VV.RooFitWrappers import Pdf
-
+if signal_MC and options.wpv_type == "Rest":
     from P2VV.Parameterizations.TimeResolution import Rest_TimeResolution
     rest_tres = Rest_TimeResolution(Name = 'rest_tres', CoreModel = sig_tres)
 
     rest_t = Prompt_Peak(time_obs, resolutionModel = rest_tres.model(), Name = 'rest_t')
 
-    rest = Component('rest', (rest_t.pdf(),), Yield = (5e3, 1, 1e5))
+    rest = Component('rest', (rest_t.pdf(),), Yield = (100, 1, 1e5))
 
     components = [signal, rest]
 elif signal_MC:
@@ -731,8 +730,12 @@ if options.simultaneous:
     if options.wpv and options.wpv_type == 'Gauss':
         split_pars[0].extend([sig_wpv.getYield()])
         ## split_pars[0].extend([wpv_sigma])
-
-    if options.sf_param or options.mu_param:
+    elif options.wpv and signal_MC and options.wpv_type == 'Rest':
+        split_pars[0].append(rest.getYield())
+        ## split_pars[0].append(rest_tres._left_rlifeSF)
+        ## split_pars[0].append(rest_tres._frac_left)
+    
+    if options.sf_param or (options.mu_param and 'sigmat' not in options.mu_param):
         assert(len(split_cats[0]) == 1)
         split_cat = split_cats[0][0]
         if hasattr(split_cat, '_target_'):
@@ -745,7 +748,7 @@ if options.simultaneous:
         ## (mean_in_bin - overall_mean) / (first_bin_mean - last_bin_mean).
         ## This should make the parameters comparable for different
         ## splitting observables.
-        placeholder = sig_tres.sigmatPlaceHolder()
+        placeholder = sig_tres.sfPlaceHolder()
         from ROOT import RooCustomizer
         customizer = RooCustomizer(time_pdf._target_(), split_cat, splitLeaves)
         to_split = RooArgSet(*(split_pars[0] + [placeholder._target_()]))
@@ -772,8 +775,9 @@ if options.simultaneous:
                                    , MasterPdf       = time_pdf
                                    , SplitCategories = split_cats
                                    , SplitParameters = split_pars)
-elif options.mu_param:
-    placeholder = sig_tres.sigmatPlaceHolder()
+
+if (not options.simultaneous and options.mu_param) or 'sigmat' in options.mu_param:
+    placeholder = sig_tres.muPlaceHolder()
     placeholder.setVal(sig_sdata.mean(st._target_()))
 
 if options.reuse_result and options.cache:
@@ -812,9 +816,8 @@ if options.constrain:
     cinfo = dbase[cid]
     from ROOT import TMatrixDSym
     from ROOT import TVectorD
-    param_key = {'mu' : options.mu_param, 'sf' : options.sf_param}
-    cinfo = cinfo[str(param_key)]
-    parameters = cinfo['parameters']
+    param_key = {'mu' : options.mu_param.split('_')[0], 'sf' : options.sf_param}
+    parameters = cinfo[str(param_key)]
     if options.constrain != 'all':
         cpars = set()
         for exp in options.constrain.split(','):
@@ -823,28 +826,24 @@ if options.constrain:
             cpars |= set(filter(exp.match, parameters.keys()))
     parameters = dict([(p, parameters[p]) for p in cpars])
 
-    ## mu = array('d', [parameters[p][0] for p in sorted(parameters.keys())])
-    ## mu = TVectorD(len(mu), mu)
-    ## m = cinfo['covariance']
-    ## cov = TMatrixDSym(len(m))
-    ## for i, row in enumerate(m):
-    ##     cr = cov[i]
-    ##     for j, e in enumerate(row):
-    ##         cr[j] = e
     cv = RooArgList()
     for p in parameters.keys():
         pdf_par = pdf_vars.find(p)
         # Set values in pdf
+        if not pdf_par:
+            print 'Cannot find parameter %s in PDF' % p
+            continue
         pdf_par.setVal(parameters[p][0])
         pdf_par.setError(parameters[p][1])
         pdf_par.setConstant(True)
         assert(pdf_par)
         cv.add(pdf_par)
-    ## c = MultiVarGaussian(Name = 'constraint', Parameters = cv, CentralValues = mu,
-    ##                      Covariance = cov)
-    ## constraints.add(c)
     dbase.close()
 
+    print 'constrained parameters:'
+    for p in sorted(list(cpars)):
+        print p, parameters[p]
+    
 time_pdf.Print("t")
 
 ## Fit
@@ -902,10 +901,11 @@ def cut_binning(t, binning):
     return binning[mm[0] : mm[1]]
 
 from ROOT import RooBinning
-
+bounds = {}
+zoom_bounds = {}
 if options.wpv and options.wpv_type == 'Mixing':
-    bounds = array('d', [-5 + i * 0.1 for i in range(48)] + [-0.2 + i * 0.01 for i in range(40)] + \
-                   [0.2 + i * 0.1 for i in range(58)])
+    bounds = array('d', [-5 + i * 0.1 for i in range(48)] + [-0.2 + i * 0.01 for i in range(40)] + 
+                             [0.2 + i * 0.1 for i in range(58)])
     zoom_bounds = array('d', [-0.2 + i * 0.005 for i in range(81)])
 elif signal_MC:
     bounds = array('d', [-1.5 + i * 0.1 for i in range(12)] + [-0.3 + i * 0.05 for i in range(12)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(6)])
@@ -926,8 +926,6 @@ zoom_binning.SetName('zoom')
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack, kOrange
 from P2VV.Utilities.Plotting import plot
 
-print 'plotting'
-
 binnings = [binning, zoom_binning]
 plotLog = [True, False]
 __canvases = []
@@ -936,22 +934,27 @@ from ROOT import SetOwnership
 from ROOT import TCanvas
 
 for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
-    if not options.make_plots or not time_result or options.split != 'sigmat':
+    if not options.make_plots or not time_result:
         continue
     if options.simultaneous:
-        st_cat = split_cats[0][0]
+        split_cat = time_pdf.indexCat()
         r = (bins.binLow(0), bins.binHigh(bins.numBins() - 1))
-        for ct in st_cat:
+        for ct in split_cat:
             name = 'time_canvas_%s_%d' % (ct.GetName(), i)
             canvas = TCanvas(name, name, 600, 400)
             __canvases.append(canvas)
             p = canvas.cd(1)
-
+            
             projSet = RooArgSet(st, time_pdf.indexCat())
-            pdfOpts  = dict(Slice = (st_cat, ct.GetName()), ProjWData = (projSet, fit_data_full, True))
+            pdfOpts  = dict(Slice = (split_cat, ct.GetName()), ProjWData = (projSet, fit_data_full, True))
+            if split_cat.isFundamental():
+                cut = '{0} == {0}::{1}'.format(split_cat.GetName(), ct.GetName())
+            else:
+                split_cat.setLabel(ct.GetName())
+                cut = ' && '.join(['{0} == {0}::{1}'.format(sc.GetName(), sc.getLabel()) for sc in split_cat.inputCatList()])
             ps = plot(p, time_obs, pdf = time_pdf, data = fit_data_full
                       , frameOpts = dict(Range = r, Title = "")
-                      , dataOpts = dict(MarkerSize = 0.8, Binning = bins, MarkerColor = kBlack, Cut = '{0} == {0}::{1}'.format(st_cat.GetName(), ct.GetName()))
+                      , dataOpts = dict(MarkerSize = 0.8, Binning = bins, MarkerColor = kBlack, Cut = cut)
                       , pdfOpts  = dict(LineWidth = 4, **pdfOpts)
                       , xTitle = 'decay time [ps]'
                       , yTitle = 'Candidates / (XX ps)'
@@ -966,7 +969,7 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
             for frame in ps:
                 plot_name = '_'.join((t.GetName(), bins.GetName(), ct.GetName(), frame.GetName()))
                 frame.SetName(plot_name)
-
+            
             plots.append(ps)
     else:
         canvas = TCanvas('time_canvas_%d' % i, 'time_canvas_%d' % i, 600, 533)
@@ -984,11 +987,11 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
                   , yTitleOffset = 1
                   , logy = pl
                   , plotResidHist = 'BX')
-
+        
         for frame in ps:
             plot_name = '_'.join((t.GetName(), bins.GetName(), frame.GetName()))
             frame.SetName(plot_name)
-
+        
         plots.append(ps)
 
 from P2VV.Utilities import Resolution as ResolutionUtils
@@ -1032,37 +1035,43 @@ if options.cache:
 
             plots_dir.Write(plots_dir.GetName(), TObject.kOverwrite)
 
-if options.write_constraints:
+def write_constraints(constraints):
     ca = RooArgList()
     for p in sorted(list(constraint_pars)):
         rp = time_result.floatParsFinal().find(p)
         if rp:
             ca.add(rp)
-
-    cov = time_result.reducedCovarianceMatrix(ca)
-    m = []
-
-    for i in range(cov.GetNrows()):
-        m.append([])
-        row = cov[i]
-        for j in range(cov.GetNcols()):
-            m[i].append(row[j])
-
-    if options.fit:
-        dbase = shelve.open('constraints.db')
-        key_pars = args
-        if options.use_refit:
-            key_pars += ['refit']
-
-        base_key = ' '.join(key_pars)
-        param_key = {'mu' : options.mu_param, 'sf' : options.sf_param}
-        if base_key in dbase:
-            d = dbase[base_key]
-            d.update({str(param_key) : {'parameters' : dict([(p.GetName(), (p.getVal(), p.getError())) for p in ca]),
-                                        'covariance' : m}})
-            dbase[base_key] = d
+    
+    dbase = shelve.open('constraints.db')
+    key_pars = args
+    if options.use_refit:
+        key_pars += ['refit']
+    
+    base_key = ' '.join(key_pars)
+    param_key = {'mu' : options.mu_param.split('_')[0], 'sf' : options.sf_param}
+    
+    cpars = set()
+    for exp in constraints:
+        import re
+        exp = re.compile(exp)
+        cpars |= set(filter(exp.match, parameters.keys()))
+    print 'writing values for the following parameters:'
+    for p in sorted(list(cpars)):
+        print p
+    
+    dv = dict([(p.GetName(), (p.getVal(), p.getError())) for p in ca if p.GetName() in cpars])
+    if base_key in dbase:
+        d = dbase[base_key]
+        if str(param_key) in d:
+            pv = d[str(param_key)]
+            pv.update(dv)
         else:
-            dbase[base_key] = {str(param_key) : {'parameters' : dict([(p.GetName(), (p.getVal(), p.getError())) for p in ca]),
-                                                 'covariance' : m}}
-        dbase.close()
+            pv = dv
+        d.update({str(param_key) : pv})
+        dbase[base_key] = d
+    else:
+        dbase[base_key] = {str(param_key) : dv}
+    dbase.close()
 
+if options.fit and options.write_constraints:
+    write_constraints(options.write_constraints)

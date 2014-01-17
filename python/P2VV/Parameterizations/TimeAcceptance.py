@@ -29,8 +29,44 @@ def fitAverageExpToHist(hist,knots, tau) :
     #coefficients.Print()
     return coefficients
 
+class BinCounter(object):
+    def __init__(self, data, time, binning):
+        self.__data = data
+        self.__time = data.get().find(time.GetName())
+        self.__binning = binning
 
+        from collections import defaultdict
+        self.__levels = defaultdict(dict)
+        self.__categories = defaultdict(set)
+        
+    def add_bins(self, level, cat_def):
+        d = sorted(['{0} == {0}::{1}'.format(c, s) for c, s in cat_def.iteritems()])
+        self.__levels[level][tuple(d)] = self.__binning.numBins() * [0.]
+        self.__categories[level] |= set(cat_def.iterkeys())
+        
+    def run(self):
+        obs = self.__data.get()
+        categories = dict([(c, obs.find(c)) for cats in self.__categories.itervalues() for c in cats])
+        assert(all(categories.itervalues()))
+        for i in range(self.__data.numEntries()):
+            self.__data.get(i)
+            for level, cats in self.__categories.iteritems():
+                k = tuple(sorted(['{0} == {0}::{1}'.format(c, categories[c].getLabel()) for c in cats]))
+                b = self.__binning.binNumber(self.__time.getVal())
+                if k not in self.__levels[level]:
+                    continue
+                self.__levels[level][k][b] += self.__data.weight()
 
+    def get_bins(self, level, cat_def):
+        k = tuple(sorted(['{0} == {0}::{1}'.format(c, s) for c, s in cat_def.iteritems()]))
+        return self.__levels[level][k]
+
+    def levels(self):
+        return self.__levels
+
+    def categories(self):
+        return self.__categories
+    
 ## Since all time acceptances are implemented in the resolution model, we inherit from there
 class TimeAcceptance ( TimeResolution ) :
     def __init__( self, **kwargs ) :
@@ -187,12 +223,14 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
         TimeAcceptance.__init__(self, Acceptance = acceptance, Cache = kwargs.pop('Cache', True))
         self._check_extraneous_kw( kwargs )
 
-    def build_constraints(self, original, values):
+    def build_av_constraints(self, original, values):
         # We're fitting and using the average constraint, first
         # create a shape and then the constraint.
         binning = self._shape.base_binning()
-        constraints = []
+        constraints = set()
         for (prefix, cat, state), parameters in self._shape.coefficients().iteritems():
+            if len(parameters) == 1:
+                parameters[0].setConstant(True)
             if prefix:
                 shape_name = '_'.join([prefix, cat, state, 'shape'])
             else:
@@ -218,10 +256,109 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
             from P2VV.RooFitWrappers import RealVar, Pdf
             mean  = RealVar(Name = av_name + '_constraint_mean', Value = values[(cat, state)][0], Constant = True)
             sigma = RealVar(Name = av_name + '_constraint_sigma', Value = values[(cat, state)][1], Constant = True)
-            constraints.append(Pdf(Name = av_name + '_constraint', Type = 'RooAvEffConstraint',
-                                   Parameters = [original, eff_model, mean, sigma]))
+            constraints.add(Pdf(Name = av_name + '_constraint', Type = 'RooAvEffConstraint',
+                                Parameters = [original, eff_model, mean, sigma]))
         return constraints
 
+    def build_multinomial_constraints(self, data, observables):
+        # We're fitting and using the average constraint, first
+        # create a shape and then the constraint.
+        binning = self._shape.base_binning()
+        constraints = set()
+        from collections import defaultdict
+        epsilons = defaultdict(dict)
+        from P2VV.RooFitWrappers import RooObject
+        for (prefix, cat, state), parameters in self._shape.coefficients().iteritems():
+            level = cat[ : 4]
+            constraint_name = '_'.join([e for e in (prefix, level, 'multinomial') if e])
+            if constraint_name in RooObject._ws._rooobjects:
+                continue
+            if not level in epsilons[prefix]:
+                epsilons[prefix][level] = {(cat, state) : parameters}
+            else:
+                epsilons[prefix][level][(cat, state)] = parameters
+
+        if not(epsilons):
+            return constraints
+                
+        obs = dict([(o.GetName(), o) for o in observables.itervalues()])
+        time = obs['time']
+
+        from P2VV.Parameterizations.GeneralUtils import valid_combinations
+        bc = BinCounter(data, time, binning)
+        for prefix, rest in epsilons.iteritems():
+            for level, parameters in rest.iteritems():
+                valid = valid_combinations([[(obs[c], s) for c, s in parameters.iterkeys()]])
+                for e in valid:
+                    d = {}
+                    if prefix and '_' in prefix and prefix.split('_')[0] in observables:
+                        d.update(dict([prefix.split('_')]))
+                    for c, l in e:
+                        d[c.GetName()] = l
+                    bc.add_bins(level, d)
+        bc.run()
+        
+        from ROOT import RooArgList
+        for prefix, rest in epsilons.iteritems():
+            for level, parameters in rest.iteritems():
+                args = {'Epsilons' : [], 'N' : []}
+                par_keys = set(parameters.iterkeys())
+                ## Calculate the valid combinations for this level, 2 for HLT1 like
+                ## 3 for HLT2 like
+                valid = valid_combinations([[(obs[c], s) for c, s in par_keys]])
+                for e in valid:
+                    ## Add the cut on the prefix
+                    d = {}
+                    if prefix and '_' in prefix and prefix.split('_')[0] in observables:
+                        d.update(dict([prefix.split('_')]))
+                    m = set()
+                    for c, l in e:
+                        d[c.GetName()] = l
+                        m.add((c.GetName(), l))
+                    m &= par_keys
+                    bins = bc.get_bins(level, d)
+                    if len(m) == 1:
+                        ## A single entry is a signal state, this is either N_a or N_b
+                        k = list(m)[0]
+                        eps = parameters[k]
+                        args['Epsilons'].insert(0, parameters[k])
+                        args['N'].insert(0, bins)
+                    elif len(m) == 2:
+                        ## Both entries are a signal state, this must be N_ab
+                        args['N'].append(bins)
+                ## Calculate values of epsilon from the number of events in the different
+                ## categories in each bin 
+                ea, eb = args['Epsilons']
+                if len(ea) > 1 and len(eb) == 1:
+                    ## Ensure that if there if either of the lists of epsilons
+                    ## contains only a single entry, it is the first one.
+                    eb, ea = ea, eb
+                if len(valid) == 2:
+                    ## HLT1 like combination
+                    na, nb = args['N']
+                    for e in ea: e.setConstant(True)
+                    if len(ea) == 1:
+                        eav = len(na) * [ea[0].getVal()]
+                    else:
+                        eav = [e.getVal() for e in ea]
+                    ebv = [eav[i] * ( na[i] / nb[i] * (1 - eav[i]) + 1) for i in range(len(na))]
+                else:
+                    ## HLT2 like combination
+                    na, nb, nab = args['N']
+                    eav = [nab[i] / (nb[i] + nab[i]) for i in range(len(na))]
+                    ebv = [nab[i] / (na[i] + nab[i]) for i in range(len(na))]
+                if len(ea) == 1:
+                    ## If there is only one bin, use the average of the
+                    ## calculated values.
+                    ea[0].setVal(sum(eav) / float(len(eav)))
+                else:
+                    for i, e in enumerate(eav): ea[i].setVal(e)
+                for i, e in enumerate(ebv): eb[i].setVal(e)
+                ## Build constraint 
+                from P2VV.RooFitWrappers import EffConstraint
+                constraint_name = '_'.join([e for e in (prefix, level, 'multinomial') if e])
+                constraints.add(EffConstraint(Name = constraint_name, **args))
+        return constraints
     def shapes(self):
         return [self._shape]
 
