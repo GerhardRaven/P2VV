@@ -887,7 +887,7 @@ class MatchPhysics( ):
         
         # read ntuple
         from P2VV.Utilities.DataHandling import readData
-        readOpts = { 'ntupleCuts' : 'mass>5350 && mass<5355' }  # {} # { 'ntupleCuts' : 'mass>5350 && mass<5355' }
+        readOpts = { }  # {} # { 'ntupleCuts' : 'mass>5350 && mass<5355' }
         self._data = readData( nTupleFile, dataSetName=nTupleName, NTuple=True, observables=self._obsSet, **readOpts)
         self._data.SetName( 'mcData_' + MCProd )
            
