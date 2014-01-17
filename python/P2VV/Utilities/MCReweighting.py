@@ -199,7 +199,7 @@ def combineMoments( accFile1, accFile2, outName, Prefix=''):
             break
         except IOError:
             print 'P2VV - INFO: combineMoments: Waiting for the followig flies to combine efficiency moments:\n%s\n%s'%(accFile1,accFile2)
-            sleep(30)
+            sleep(60)
 
 # Reweighting tools
 class UniFunc(object):
