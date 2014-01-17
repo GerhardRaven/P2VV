@@ -1096,35 +1096,17 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
     def __multinomial_eff_constraints(self, externalConstr, simulPdf, data, observables):
         # Time res model constraints include those form the acceptance
-        acc_settings = externalConstr.pop('acceptance', None)
-        if simulPdf:
-            splitCat = simulPdf.indexCat()
-            from ROOT import RooArgList
-            inputCats = RooArgList(splitCat) if splitCat.isFundamental() else splitCat.inputCatList()
-
         constraints = set()
-            
+        acc_settings = externalConstr.pop('acceptance', None)
         if acc_settings and simulPdf:
-            splitAccCats = [inputCats.find(c if type(c) == str else c.GetName()) for c in acc_settings.categories()]
-
-            ## Create a simultaneous pdf for the constraints.
-            from P2VV.Utilities.General import createSplitParsList
-                            
             for (key, model) in self['timeResModels'].iteritems():
-                if key == 'prototype':
+                if key == 'prototype' or not hasattr(model, 'build_multinomial_constraints'):
                     continue
-                if not hasattr(model, 'build_av_constraints'):
-                    continue
-                splitCat.setLabel(key)
-                sk = tuple((cat.GetName(), cat.getLabel()) for cat in splitAccCats)
-                values = acc_settings.getSettings(sk)
-                # I use a simple PDF with only the average lifetime here. I
-                # think this is a valid approximation.
                 constraints |= model.build_multinomial_constraints(data, observables)
         elif acc_settings:
             acceptance = timeResModels['prototype']
             if hasattr(acceptance, 'build_multinomial_constraints'):
-                constraints |= acceptance.build_multinomial_constraints(data, time)
+                constraints |= acceptance.build_multinomial_constraints(data, observables)
         return constraints
     
     def __av_eff_constraints(self, externalConstr, simulPdf):
@@ -1953,11 +1935,11 @@ def multiplyByTimeAcceptance( pdf, self, **kwargs ) :
             assert all( cat.GetName() not in indexCatNames for cat in [ hlt1ExclB, hlt2B, hlt2UB ] )\
                    , 'P2VV - ERROR: multiplyByTimeAcceptance(): acceptance function depends on the index category of the simultaneous mother PDF'
 
-            hists = {  hlt1ExclB : {  'exclB'    : { 'histogram' : histExclBName, 'average' : ( 6.285e-01, 1.633e-02 ) }
-                                    , 'notExclB' : { 'bins'      : time.getRange(), 'heights' : [0.5]                 }
+            hists = {  hlt1ExclB : {  'exclB'    : { 'histogram' : histExclBName }
+                                    , 'notExclB' : { 'bins'      : time.getRange(), 'heights' : [0.5] }
                                    }
-                     , hlt2B     : { 'B'         : { 'histogram' : histUBName, 'average' : ( 6.3290e-01, 1.65e-02 ) } }
-                     , hlt2UB    : { 'UB'        : { 'bins'      : time.getRange(), 'heights' : [0.5]                 } }
+                     , hlt2B     : { 'B'  : { 'histogram' : histUBName } }
+                     , hlt2UB    : { 'UB' : { 'histogram' : histUBName } }
                     }
 
             from P2VV.Parameterizations.TimeAcceptance import Paper2012_csg_TimeAcceptance as TimeAcceptance
