@@ -34,8 +34,8 @@ elif pdfConfig['sFit'] :
     elif pdfConfig['runPeriods'] == [ 2012 ] :
         dataSetFile = dataPath + 'P2VVDataSets2012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
     else :
+        #dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats.root'
         dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
-        #dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_exclBiased_narrowKKMass_2TagCats.root'
 else :
     dataSetName = 'JpsiKK'
     dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats.root'
@@ -75,11 +75,34 @@ equalAbsLambdaCPs = False
 # PDF options
 pdfConfig['timeResType']       = 'event3fb' # 'eventNoMean'
 pdfConfig['timeEffType']       = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
-pdfConfig['timeEffParameters'] = { } # dict( Parameterization = 'Spline', Fit = False ) # dict( Fit = False, RandomBinOrder = False )
+pdfConfig['timeEffParameters'] = { } # dict(RandomBinOrder = False) # dict( Parameterization = 'Spline', Fit = False ) # dict( Fit = False, RandomBinOrder = False )
 pdfConfig['constrainBeta']     = ''  # '' / 'constrain' / 'fixed' / 'noBeta'
 
-timeEffFile2011 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
-timeEffFile2012 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
+if pdfConfig['timeEffType'] == 'fit':
+    timeEffFile2011 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
+    timeEffFile2012 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
+    ## timeEffFile2011 = dataPath + 'start_values.root'
+    ## timeEffFile2012 = dataPath + 'start_values.root'
+    ## pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] ).update(dict(hlt1UB = 'hlt2_shape', hlt1ExclB = 'hlt1_shape'))
+    ## pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] ).update(dict(hlt1UB = 'hlt2_shape', hlt1ExclB = 'hlt1_shape'))
+    ## Hack...
+    pdfConfig['externalConstr']['acceptance'] = SimulCatSettings('acceptanceConstr')
+    pdfConfig['externalConstr']['acceptance'].addSettings(['runPeriod'], [['p2011']],
+                                                          {('hlt1_excl_biased_dec', 'exclB') : (0.65, 0.01),
+                                                           ('hlt2_biased', 'B') : (0.65, 0.01)})
+    pdfConfig['externalConstr']['acceptance'].addSettings(['runPeriod'], [['p2012']],
+                                                          {('hlt1_excl_biased_dec', 'exclB') : (0.65, 0.01),
+                                                           ('hlt2_biased', 'B') : (0.65, 0.01)})
+    ## pdfConfig['externalConstr']['betaTimeEff'][0] = ({'runPeriod': ['p2011']}, ( -0.0083, 0.004 ))
+    ## pdfConfig['externalConstr']['betaTimeEff'][1] = ({'runPeriod': ['p2012']}, ( -0.0138, 0. ))
+    pdfConfig['externalConstr']['betaTimeEff'] = ( 0., 0. )
+    pdfConfig['splitParams']['runPeriod'].remove('betaTimeEff')
+    pdfConfig['splitParams']['runPeriod'].append('Gamma')
+
+else:
+    timeEffFile2011 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
+    timeEffFile2012 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
+
 if pdfConfig['runPeriods'] == [ 2011 ] :
     pdfConfig['timeEffHistFiles']['file'] = timeEffFile2011
 elif pdfConfig['runPeriods'] == [ 2012 ] :
@@ -121,7 +144,7 @@ if generateData or manualTagCatBins :
 
 pdfConfig['paramKKMass']     = 'simultaneous'  # 'simultaneous'
 pdfConfig['KKMassBinBounds'] = [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
-pdfConfig['CSPValues']       = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.9152, 0.8797, 0.8357, 0.8599, 0.9207, 0.9624 ] # [ 0.9586, 0.9110, 0.8618, 0.8828, 0.9227, 0.9110 ] # [ 0.9178, 0.9022, 0.8619, 0.8875, 0.9360, 0.9641 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ]
+pdfConfig['CSPValues']       = [ 0.9178, 0.9022, 0.8619, 0.8875, 0.9360, 0.9641 ] # [ 0.9152, 0.8797, 0.8357, 0.8599, 0.9207, 0.9624 ] # [ 0.9586, 0.9110, 0.8618, 0.8828, 0.9227, 0.9110 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ]
 KKMassPars = pdfConfig['obsDict']['KKMass']
 pdfConfig['obsDict']['KKMass'] = ( KKMassPars[0], KKMassPars[1], KKMassPars[2]
                                   , 1020., pdfConfig['KKMassBinBounds'][0], pdfConfig['KKMassBinBounds'][-1] )
@@ -391,15 +414,14 @@ if pdfConfig['lambdaCPParam'].startswith('lambPhi_CPVDecay') :
     if equalAbsLambdaCPs : pdfBuild['lambdaCP'].setConstant('rhoCP_A.*')
     else :                 pdfBuild['lambdaCP'].setConstant('rhoCP_m')
 
-if 'Fit' in pdfConfig['timeEffParameters'] and pdfConfig['timeEffParameters']['Fit']\
-       and ( not 'Parameterization' in pdfConfig['timeEffParameters'] or pdfConfig['timeEffParameters']['Parameterization'] != 'Spline' ) :
-    for period in [ 'p2011', 'p2012' ] :
-        for cat, coefs in pdfBuild['timeResModels'][ '{bin0;%s}' % period ].shapes()[0].coefficients().iteritems() :
-            for coef in coefs :
-                if coef.GetName().endswith('001') :
-                    coef.setConstant(True)
-                if cat[2] == 'notExclB' :
-                    coef.setVal( 0.5 * coef.getVal() )
+## if pdfConfig['timeEffParameters']['Fit'] :
+##     for period in [ 'p2011', 'p2012' ] :
+##         for cat, coefs in pdfBuild['timeResModels'][ '{bin0;%s}' % period ].shapes()[0].coefficients().iteritems() :
+##             for coef in coefs :
+##                 if coef.GetName().endswith('001') :
+##                     coef.setConstant(True)
+##                 if cat[2] == 'notExclB' :
+##                     coef.setVal( 0.5 * coef.getVal() )
 
 #ws['timeResMu_p2011'].setVal(0.)
 #ws['timeResMu_p2012'].setVal(0.)

@@ -114,5 +114,7 @@ def make_binning(data, var, n_bins):
         if total >= d:
             total = 0
             bounds.append(v)
-    bounds.append(var.getMax())
+
+    bounds[-1] = var.getMax()
+    bounds = [float('%4.3e' % e) for e in bounds]
     return bounds

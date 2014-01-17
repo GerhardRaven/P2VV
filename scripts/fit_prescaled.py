@@ -90,8 +90,7 @@ fitOpts = dict(NumCPU = 4, Timer = 1, Save = True,
                Verbose = False, Optimize = 2, Minimizer = 'Minuit2')
 
 # make sweighted dataset. TODO: use mumu mass as well...
-from P2VV.Utilities.SWeights import SData, splot
-
+from P2VV.Utilities.SWeights import SData
 result = mass_pdf.fitTo(data, **fitOpts)
 
 # Plot mass pdf

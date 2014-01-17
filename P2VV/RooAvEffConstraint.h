@@ -42,6 +42,8 @@ public:
 
    virtual const RooAbsReal* efficiency() const;
 
+   virtual void setPdf(RooAbsPdf& pdf);
+
    virtual ~RooAvEffConstraint();
 
 protected:
@@ -49,15 +51,18 @@ protected:
    Double_t evaluate() const;
    
 private:
-   
+
+   void initialize();
+
    RooRealProxy _mean;
    RooRealProxy _sigma;
-   mutable RooRealProxy* _integral;
-   RooListProxy _integrals;
-   RooListProxy _efficiencies;
+   mutable RooRealProxy* _integral; //!
+   RooListProxy* _integrals; //!
+   RooListProxy* _efficiencies; //!
    RooRealProxy _model;
+   RooRealProxy* _pdf;
    
-   ClassDef(RooAvEffConstraint, 2) // Your description goes here...
+   ClassDef(RooAvEffConstraint, 1) // Your description goes here...
 };
 
 #endif
