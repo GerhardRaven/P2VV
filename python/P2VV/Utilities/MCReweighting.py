@@ -969,7 +969,7 @@ class MatchPhysics( ):
         from P2VV.Utilities.MCReweighting import parValuesMcSim08_6KKmassBins as mcPars
                 
         for par in self._pdf.Parameters():
-           if par.GetName() == 'dummyBlindState':continue
+           if par.GetName() == 'dummyBlindState' or par.isConstant(): continue
            key = par.GetName().replace('mc_', mcParPrefix)
            if mcPars.has_key(key): 
                par.setVal( mcPars[key] )
@@ -984,6 +984,7 @@ class MatchPhysics( ):
                 
         # print currect pdf parameter values
         for par in self._pdf.Parameters():
+            if par.GetName() == 'dummyBlindState' or par.isConstant(): continue
             key = par.GetName().replace('mc_', dataParPrefix)
             if key == 'dummyBlindState': continue
             if pdfConfig.parameters().has_key(key):
@@ -1264,12 +1265,6 @@ parValuesMcSim08_6KKmassBins = dict(
     ,f_S_bin3          = 0.
     ,f_S_bin4          = 0.
     ,f_S_bin5          = 0.
-     ,mc_C_SP_bin0     = 0.9660
-     ,mc_C_SP_bin1     = 0.9560
-     ,mc_C_SP_bin2     = 0.9260
-     ,mc_C_SP_bin3     = 0.9260
-     ,mc_C_SP_bin4     = 0.9560
-     ,mc_C_SP_bin5     = 0.9660
     )
 
 trackMomentaRanges = dict(
