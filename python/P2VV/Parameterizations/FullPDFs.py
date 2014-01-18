@@ -75,6 +75,9 @@ class PdfConfiguration( dict ) :
         import re
         nameExpr = re.compile( kwargs.pop('Names') ) if 'Names' in kwargs else None
 
+        # check for remaining keyword arguments
+        assert not kwargs, 'P2VV - ERROR: PdfConfiguration.writeParametersToFile(): superfluous keyword arguments: %s' % kwargs
+
         # loop over lines and read parameters
         numPars = 0
         fitStatus = ( )
@@ -151,6 +154,9 @@ class PdfConfiguration( dict ) :
 
         # get fit status
         fitStat = kwargs.pop( 'FitStatus', ( -1, 0., 0. ) )
+
+        # check for remaining keyword arguments
+        assert not kwargs, 'P2VV - ERROR: PdfConfiguration.writeParametersToFile(): superfluous keyword arguments: %s' % kwargs
 
         # write parameters to content string
         cont = ''
