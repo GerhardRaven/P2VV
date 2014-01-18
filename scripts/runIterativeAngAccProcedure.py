@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 from optparse import OptionParser
 parser = OptionParser()
-parser.add_option('-n', '--numIters',  dest='numIters',  default=8,     type=int,         help='number of iterations'  )
-parser.add_option('-p', '--makePlots', dest='makePlots', default='False',                   help='switch on/off plotting')
+parser.add_option('-n', '--numIters',  dest='numIters',  default=8,       type=int,       help='number of iterations'  )
+parser.add_option('-p', '--makePlots', dest='makePlots', default = 'False',               help='switch on/off plotting')
 parser.add_option('-o', '--rewSteps',  dest='rewSteps',  default = 'Bmom_mkk_phys_KKmom', help='reweghting steps order')
-parser.add_option('-r', '--paralRew',  dest='paralRew',  default='True',                    help='switch on/off plotting')
+parser.add_option('-r', '--paralRew',  dest='paralRew',  default = 'True',                help='switch on/off plotting')
 (options, args) = parser.parse_args()
 
 # paths and paramteres
@@ -12,11 +12,11 @@ numberOfIterations = options.numIters
 oneIterationScript = 'python /project/bfys/vsyropou/Repository/p2vv/scripts/iterativeAngAcc.py'
 fittingScript      = 'python /project/bfys/vsyropou/Repository/p2vv/scripts/vsFit.py'
 fitData            = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
-parameterEstimates = '/project/bfys/vsyropou/PhD/macros/iterativeAngAcc/output/nominalFitResults/20112012Reco14DataFitValues_6KKMassBins.par'
-startingAngAccFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
+parameterEstimates = '/project/bfys/vsyropou/data/nominalFitResults/20112012Reco14DataFitValues_6KKMassBins.par'
+startingAngAccFile = '/project/bfys/vsyropou/data/uncorrecteEffMoments/MC20112012_Sim08/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_weights'
 
-correctedAngAccBaseName    = 'Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_norm_'
-parameterEstimatesName = lambda n: '20112012Reco14DataFitValues_6KKMassBins.par'.replace('.par','_%s.par'%n)
+correctedAngAccBaseName = 'Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_norm_'
+parameterEstimatesName  = lambda n: '20112012Reco14DataFitValues_6KKMassBins.par'.replace('.par','_%s.par'%n)
 
 # set up subproceses options
 import subprocess, shlex, select
@@ -34,6 +34,7 @@ rewOpts = lambda s, n: '-n%i -s%s -d%s -o%s -fFalse'%( n, s, parameterEstimatesN
 fitOpts = lambda n:  '-d%s -a%s -i%s -o%s'%( fitData, (correctedAngAccBaseName + str(n)).replace('Phys_norm','weights'), parameterEstimatesName(n-1), parameterEstimatesName(n) ) if n!=1 else \
                      '-d%s -a%s -i%s -o%s'%( fitData, (correctedAngAccBaseName + str(n)).replace('Phys_norm','weights'), parameterEstimates, parameterEstimatesName(n) )
 
+# info printing function
 rewOptsLegend = {'-c' : 'Combine eff. moments      ',
                  '-w' : 'Write weightied mc to file',
                  '-p' : 'Plot after reweighting    ',
@@ -49,7 +50,6 @@ fitOptsLegend = {'-d' : 'Fiting dataset          ',
                  '-o' : 'Fitted parameters values', 
                  }
 
-# info printing function
 def _info( s, n, opts, what, indent=False ):
     if 'rew' in what:
         indnt = '    ' if indent else ''
@@ -68,6 +68,7 @@ def _info( s, n, opts, what, indent=False ):
                 if entry in o:
                     print ' ' + fitOptsLegend[entry] + ' (' + o.partition(entry)[1] + '): ', o.partition(entry)[2]
         print 
+
 
 ###############################
 # begin iterative prcedure ####

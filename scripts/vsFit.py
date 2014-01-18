@@ -32,7 +32,7 @@ fitOpts = dict(  NumCPU    = 8
 from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_RunIAnalysis as PdfConfig
 pdfConfig = PdfConfig( RunPeriods = '3fb' )
 
-pdfConfig['splitParams']['hlt1_excl_biased_dec'] = [ 'tagCatCoef0_1' ]
+
 pdfConfig['timeEffParameters'] = dict()
 
 timeEffFile2011 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
@@ -62,16 +62,16 @@ from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
 pdfBuild = PdfBuilder( **pdfConfig )
 pdf = pdfBuild.pdf()
 
-# fix values of some parameters
-for CEvenOdds in pdfBuild['taggingParams']['CEvenOdds'] :
-        if not pdfConfig['SSTagging'] :
-		CEvenOdds.setConstant( 'avgCEven.*')
-                CEvenOdds.setConstant( 'avgCOdd.*', True )
-        else :
-            for CEvenOdd in CEvenOdds :
-		    CEvenOdd.setConstant('avgCEven.*')
-                    CEvenOdd.setConstant( 'avgCOdd.*', True )
-pdfBuild['amplitudes'].setConstant('C_SP')
+# # fix values of some parameters
+# for CEvenOdds in pdfBuild['taggingParams']['CEvenOdds'] :
+#         if not pdfConfig['SSTagging'] :
+# 		CEvenOdds.setConstant( 'avgCEven.*')
+#                 CEvenOdds.setConstant( 'avgCOdd.*', True )
+#         else :
+#             for CEvenOdd in CEvenOdds :
+# 		    CEvenOdd.setConstant('avgCEven.*')
+#                     CEvenOdd.setConstant( 'avgCOdd.*', True )
+# pdfBuild['amplitudes'].setConstant('C_SP')
 
 if parFileIn:
     # read parameters from file
