@@ -829,62 +829,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
             else:
                 origResParams = {prototype.GetName() : prototype['Parameters']}
 
-            def __find_param(var):
-                splitCats = self['splitParsDict'].get( ws[ var.GetName() ], set() )
-                if not var.isFundamental() :
-                    split = False
-                    for splVar, splCats in self['splitParsDict'].iteritems() :
-                        if var.dependsOn(splVar) : split = True
-                        splitCats |= splCats
-                    if not split : splitCats = set()
-                if not splitCats :
-                    return var
-                else :
-                    catLabels = [(cat.GetName(), cat.getLabel()) for cat in inputCats if cat in splitCats]
-                    catsStr = ';'.join(lab[1] for lab in catLabels)
-                    if len(catLabels) > 1 : catsStr = '{' + catsStr + '}'
-                    from P2VV.Utilities.General import getSplitPar
-                    splitVar = getSplitPar(var.GetName(), catsStr, splitCatPars)
-                    assert splitVar, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: parameter "%s" is set to be constrained for category "%s", but it is not found in PDF'\
-                           % (var.GetName(), catsStr)
-                    from ROOT import RooRealVar, RooCategory, RooFormulaVar
-                    from P2VV.RooFitWrappers import RealVar, Category, FormulaVar
-                    wrappers = { RooRealVar : RealVar, RooCategory : Category, RooFormulaVar : FormulaVar }
-                    assert type(splitVar) in wrappers\
-                           , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: wrapping of RooFit object "%s" of type "%s" not implemented (yet)'\
-                             % ( splitVar.GetName(), type(splitVar) )
-                    return wrappers[ type(splitVar) ]( Name = splitVar.GetName() )
-
-            def __make_wrapper(orig_params, split_model):
-                params = [ ]
-                for var in orig_params:
-                    params.append(__find_param(var))
-                from P2VV.RooFitWrappers import ResolutionModel
-                return ResolutionModel(Name = split_model.GetName()), params
-
-            def __orig_params(orig_params, name):
-                params = filter(lambda e: e[0] in name, orig_params.iteritems())
-                assert(len(params) == 1)
-                return params[0][1]
-
-            def __make_model(split_model):
-                from P2VV.Parameterizations.TimeResolution import TimeResolution
-                from ROOT import RooAddModel
-                if isinstance(split_model, RooAddModel):
-                    models = []
-                    for model in split_model.pdfList():
-                        model, params = __make_wrapper(__orig_params(origResParams, model.GetName()), model)
-                        model._target_()._parameters = params
-                        model['ConditionalObservables'] = prototype['ConditionalObservables']
-                        models.append(model)
-                    fractions = [__find_param(f) for f in __orig_params(origResParams, split_model.GetName())]
-                    return TimeResolution(Model = AddModel(split_model.GetName(), Models = models, Fractions = fractions))
-                else:
-                    model, params = __make_wrapper(origResParams.values()[0], split_model)
-                    return TimeResolution(Model = model, Parameters = params)
-            
+            from P2VV.Utilities.Splitting import replacement_model
             # Figure out which way the time resolution model is to be split
-            from itertools import chain
             pfLen = len(namePF)
             resParams = set( var.GetName()[ pfLen : ] for var in timeResModelsOrig['prototype']['model'].getVariables() )
             splitResCats = [c for c, pars in splitParams.iteritems() if set(pars).intersection(resParams)]
@@ -900,7 +846,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     for comp in filter( lambda x : isinstance( x, RooBTagDecay ), catPdf.getComponents() ) :
                         # TODO: don't do this with RooBTagDecay, but move RooBTagDecay::resModel() to RooAbsAnaConvPdf
                         assert resModelCount < 1, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: multiple resolution models found for simultaneous category "%s"' % splitCatState.GetName()
-                        replacements[k] = __make_model(comp.resolutionModel())
+                        replacements[k] = replacement_model(prototype, comp.resolutionModel(), inputCats, self['splitParsDict'], splitCatPars, origResParams)
                         resModelCount += 1
                     assert resModelCount > 0, ('P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: no resolution'
                                                + ' model found for simultaneous category "%s"' % splitCatState.GetName())
@@ -1936,7 +1882,7 @@ def multiplyByTimeAcceptance( pdf, self, **kwargs ) :
                    , 'P2VV - ERROR: multiplyByTimeAcceptance(): acceptance function depends on the index category of the simultaneous mother PDF'
 
             hists = {  hlt1ExclB : {  'exclB'    : { 'histogram' : histExclBName }
-                                    , 'notExclB' : { 'bins'      : time.getRange(), 'heights' : [0.5] }
+                                    , 'notExclB' : { 'bins'      : time.getRange(), 'heights' : [0.7] }
                                    }
                      , hlt2B     : { 'B'  : { 'histogram' : histUBName } }
                      , hlt2UB    : { 'UB' : { 'histogram' : histUBName } }
