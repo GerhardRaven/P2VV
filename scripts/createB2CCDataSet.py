@@ -15,13 +15,13 @@ parFileIn        = 'eventYields6KKBins_HLT2.par' #'eventYields6KKBins.par' #'eve
 parFileOut       = ''
 
 simulation       = False
-weightName       = 'pbkgWeight'
+weightName       = 'pbkgWeight' # 'wMC' # 'pbkgWeight'
 runPeriods       = [ 2011, 2012 ]
 triggerSel       = 'timeEffFit' # 'paper2012' # 'HLT1Unbiased' # 'paper2012'
 dataCuts         = 'nominal2011'
 addCuts          = '' # 'hlt2_biased == 1' # 'runPeriod == 2011 && hlt1_excl_biased_dec == 1' # 'wMC > 0.'
 dataSample       = '(bkgcat==0 || bkgcat==50)' if simulation else ''
-sWeightName      = 'sigWeight_I2' # 'sWeights_ipatia' # 'sigWeight_I2'
+sWeightName      = 'sWeights_ipatia' # 'sigWeight_I2'
 addSWeights      = False
 addKKMassCat     = True
 addTrackMomenta  = False
@@ -46,47 +46,16 @@ constSplitPars = [ ]
 constSplitCats = [ ]
 constSplitVals = { }
 if sigMassModel == 'Ipatia2' :
-    constSplitCats = [ 'hlt1ExclB', 'KKMassCat' ]
-    #constSplitCats = [ 'KKMassCat' ]
+    #constSplitCats = [ 'hlt1ExclB', 'KKMassCat' ]
+    constSplitCats = [ 'KKMassCat' ]
     constSplitPars = [ 'm_sig_alpha_1', 'm_sig_alpha_2', 'm_sig_n_1', 'm_sig_n_2', 'm_sig_lambda', 'm_sig_zeta' ]
-
-    if len(KKMassBinBounds) == 5 :
-        # smeared MC, no truth requirement, 4 KK-mass bins
-        constSplitVals = {  ( 'notExclB', 'bin0' ) : [ 3.090242001004567, 2.448740313493132, 7.865481777002969e-07, 0.3772603020305554, -1.8028256514259358, 0.0032161538679723045 ]
-                          , ( 'notExclB', 'bin1' ) : [ 2.7357926724807715, 2.5325078527657405, 1.410324206500183, 2.1356073743749593, -2.7476260304874316, 3.6501861834237204e-05  ]
-                          , ( 'notExclB', 'bin2' ) : [ 3.0203918214648766, 2.3616839764894775, 1.3457820727430088, 1.7328167019210972, -2.7338157946318313, 0.0005618710817781314  ]
-                          , ( 'notExclB', 'bin3' ) : [ 2.9828710959611295, 3.023748092386514, 0.3922908133091868, 0.4080097456480669, -2.2104022388970668, 0.0071672915683015925   ]
-                          , ( 'exclB',    'bin0' ) : [ 3.0587485511296966, 2.484099316157297, 0.057889921045197745, 0.5528670977674432, -3.007467407061461, 0.1095519817428861     ]
-                          , ( 'exclB',    'bin1' ) : [ 2.5950094079868706, 2.540489018460561, 1.5945389901143097, 2.050949882410599, -2.730273102035722, 0.0004971111831370001     ]
-                          , ( 'exclB',    'bin2' ) : [ 3.0552471411002733, 2.152609753853441, 1.329325140262283, 2.019935753077858, -2.484855452835132, 0.7630080085121052         ]
-                          , ( 'exclB',    'bin3' ) : [ 3.075124852599962, 2.877808057134126, 0.3713565137662156, 0.5448414118880873, -2.316218692561214, 0.0010592756615862564     ]
-                         }
-
-    elif len(KKMassBinBounds) == 7 :
-        # smeared MC, no truth requirement, 6 KK-mass bins
-        constSplitVals = {  ( 'notExclB', 'bin0' ) : [ 3.0322459762528475, 2.447864335272964, 0.010000000234995435, 0.3761600406855794, -1.7819601169940276, 6.59900444615058e-05  ]
-                          , ( 'notExclB', 'bin1' ) : [ 2.2345975396331355, 2.2733096038422564, 1.1520163546544167, 1.6942069968363522, -2.66798830193635, 0.20854507860559107      ]
-                          , ( 'notExclB', 'bin2' ) : [ 2.866727015029009, 2.52785976502023, 1.9694393775246413, 2.643343246963921, -2.8552062219784524, 9.674595605263514e-05      ]
-                          , ( 'notExclB', 'bin3' ) : [ 3.13640772719914, 2.164273316995139, 1.6880545260328532, 2.625937585938297, -2.742728647811494, 0.38557682029282614         ]
-                          , ( 'notExclB', 'bin4' ) : [ 2.691388719858974, 2.1765693301510467, 1.1328053404011302, 1.3535888755187133, -2.6834400853733795, 0.006669749679341086    ]
-                          , ( 'notExclB', 'bin5' ) : [ 2.985877329806639, 3.1190879158936817, 0.392737190065505, 0.36203589944356046, -2.1461396103494774, 0.0004175978121001567   ]
-                          , ( 'exclB',    'bin0' ) : [ 3.042217322789827, 2.4700042960827178, 0.06194035223910982, 0.5597726690852415, -2.928065834264261, 0.0048085653574805876   ]
-                          , ( 'exclB',    'bin1' ) : [ 2.2304631405694995, 2.2681661243312385, 1.218192799968996, 1.6767301735939948, -2.641095299127259, 0.14207389372690699      ]
-                          , ( 'exclB',    'bin2' ) : [ 2.5697808515643894, 2.5119962645338587, 2.28395543514728, 2.4915556694437684, -2.8809822628631334, 7.761444933496175e-05    ]
-                          , ( 'exclB',    'bin3' ) : [ 3.1153599082377905, 2.1319443211850606, 1.6421649419097952, 2.6368700437507004, -2.7839454814253495, 1.5078269163915081e-05 ]
-                          , ( 'exclB',    'bin4' ) : [ 2.6456511462439103, 1.9878672383403715, 1.214951242924778, 1.5843436697596214, -2.8417604939372745, 0.06797317803125186     ]
-                          , ( 'exclB',    'bin5' ) : [ 3.0757264652220297, 2.8829257202136667, 0.3704700122418063, 0.5435778339755468, -2.3207566521696803, 0.001582721837209422   ]
-                         }
-
-    #constSplitVals = {  ( 'bin0', ) : [ 3.0, 2.5, 0.1, 0.5, -2.5, 0.01 ]
-    #                  , ( 'bin1', ) : [ 3.0, 2.5, 1.5, 2.0, -2.5, 0.01 ]
-    #                  , ( 'bin2', ) : [ 3.0, 2.5, 1.5, 2.0, -2.5, 0.01 ]
-    #                  , ( 'bin3', ) : [ 3.0, 3.0, 0.5, 0.5, -2.5, 0.01 ]
-    #                 }
-    #constSplitVals = {  ( 'bin0', ) : [ 3.0, 2.5, 0.1, 0.5, -2.5, 0.01 ]
-    #                  , ( 'bin1', ) : [ 3.0, 2.5, 1.5, 2.0, -2.5, 0.01 ]
-    #                  , ( 'bin2', ) : [ 3.0, 3.0, 0.5, 0.5, -2.5, 0.01 ]
-    #                 }
+    constSplitVals = {  ( 'bin0', ) : [ 3.1265598805552086, 2.4478555551857504, 0.01,                0.4626575371693939,  -1.940905888712173, 0.0010225614571429675  ]
+                      , ( 'bin1', ) : [ 2.235667390313107,  2.296350006990024,  1.1725685774531813,  1.696945683056572,   -2.590902278024503, 0.2967019395179116     ]
+                      , ( 'bin2', ) : [ 2.8232366360188683, 2.570677068540935,  2.046626071513164,   2.6043347350995187,  -2.76448170618875,  0.00019473384424262274 ]
+                      , ( 'bin3', ) : [ 3.1064191306717484, 2.096424131956603,  1.69939291075719,    2.7310345435871,     -2.903782724519466, 0.0007918143518637066  ]
+                      , ( 'bin4', ) : [ 2.5929196863701067, 2.1195375110354044, 1.2511053016584157,  1.432994401017839,   -2.626462929014679, 0.19046609538221904    ]
+                      , ( 'bin5', ) : [ 3.0236236294665466, 3.033593188175826,  0.39183360830444464, 0.43646654437298116, -2.216215361029956, 0.00019353774759423015 ]
+                     }
 
 numMassBins      = [ 140, 56, 40, 44, 24 ]
 massLogPlotRange = ( 5.e2, 2.e4 ) # ( 1.e2, 6.e3 ) # ( 4.e2, 1.3e4 )
@@ -108,6 +77,7 @@ KKMMin  = KKMassBinBounds[0]
 KKMMax  = KKMassBinBounds[-1]
 
 obsKeys = [  'sWeights_ipatia', 'wMC', 'runPeriod'
+             #'wMC', 'runPeriod'
            , 'mass', 'KKMass'#, 'mumuMass'
            , 'time', 'timeRes'
            #, 'truetime'
@@ -116,7 +86,7 @@ obsKeys = [  'sWeights_ipatia', 'wMC', 'runPeriod'
            #, 'wTag', 'tagDec'
            , 'wTagOS'#, 'tagDecOS'
            , 'wTagSS'#, 'tagDecSS'
-           #, 'sel', 'sel_cleantail', 'selA', 'selB'
+           #, 'sel', 'selClTail', 'selA', 'selB'
            , 'hlt1ExclB', 'hlt2B', 'hlt2UB'#, 'hlt1B', 'hlt1UB'
            #, 'trigDecUnb', 'trigDecExclB'
            #, 'B_P', 'B_Pt', 'B_eta', 'B_phi'
@@ -465,7 +435,7 @@ if not simulation :
             #    for parName in bkgParNames : splitCats[ observables['KKMassCat'].GetName() ].add(parName)
 
         # split parameters for HLT1 category
-        splitCats[ observables['hlt1ExclB'].GetName() ] = set(yieldNames)
+        #splitCats[ observables['hlt1ExclB'].GetName() ] = set(yieldNames)
         #if sigMassModel.startswith('Ipatia2') :
         #    for parName in sigParNames : splitCats[ observables['hlt1ExclB'].GetName() ].add(parName)
         #if 'FreeCBkg' in SWeightsType :
@@ -473,6 +443,9 @@ if not simulation :
 
         # split parameters for HLT2 category
         splitCats[ observables['hlt2B'].GetName() ] = set(yieldNames)
+        if sigMassModel.startswith('Ipatia2') :
+            for parName in sigParNames :
+                if 'sigma' in parName : splitCats[ observables['hlt2B'].GetName() ].add(parName)
         if 'FreeCBkg' in SWeightsType :
             for parName in bkgParNames : splitCats[ observables['hlt2B'].GetName() ].add(parName)
 
@@ -624,7 +597,11 @@ if not simulation :
 
         # determine mass parameters in each subsample with a fit
         print 'P2VV - INFO: createB2CCDataSet: fitting with simultaneous mass PDF'
-        simMassFitResult = sWeightMassPdf.fitTo( dataSets['pre'][0], Save = True, SumW2Error = False, **fitOpts )
+        #from P2VV.Utilities.DataHandling import correctWeights
+        #fitData = correctWeights( dataSets['pre'][0], [ 'runPeriod', 'hlt2_biased', 'KKMassCat' ] )
+        fitData = dataSets['pre'][0]
+        simMassFitResult = sWeightMassPdf.fitTo( fitData, Save = True, SumW2Error = False, **fitOpts )
+        #del fitData
 
         if parFileOut :
             # write parameters to file
@@ -724,7 +701,7 @@ if not simulation and plotsFilePath :
                              , [ massLogPlotRange, ( None, None ), ( None, None ), ( None, None ), ( None, None ) ]
                              #, [ False, False, False, False, False ]
                              #, [ ( None, None ), ( None, None ), ( None, None ), ( None, None ), ( None, None ) ]
-                             , [ 1.00, 1.20, 1.15, 1.15, 1.15 ]
+                             , [ 1.00, 1.30, 1.15, 1.15, 1.15 ]
                              , [ 0.6,  0.7,  0.8,  0.8,  0.8  ]
                              , [ 2,    3,    3,    3,    3    ]
                        ) ) :
@@ -737,7 +714,8 @@ if not simulation and plotsFilePath :
         plot(  pad, observables['mass'], dataSets['pre'][0], sWeightMassPdf, logy = logy, yScale = scale
              , xTitle = 'm(J/#psi K^{+}K^{-}) [MeV/c^{2}]', yTitle = 'Candidates / (%.1f MeV/c^{2})' % binWidth
              , xTitleOffset = 1.10, yTitleOffset = yTitleOffset
-             , plotResidHist = 'E3', normalize = True, symmetrize = True
+             #, plotResidHist = 'E3', normalize = True, symmetrize = True
+             , plotResidHist = 'BX', normalize = True, symmetrize = True
              , frameOpts  = dict( Range = frameRange, Bins = nBins, Title = plotTitle, Name = plotName )
              , dataOpts   = dict( MarkerStyle = kFullDotLarge, MarkerSize = markSize, LineWidth = markLineWidth )
              , pdfOpts    = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = 3, Precision = 1.e-4 )
@@ -784,7 +762,8 @@ if not simulation and plotsFilePath :
             plot(  massCanvs[-1], observables['mass'], dataSets['pre'][0], pdf
                  , xTitle = 'm(J/#psi K^{+}K^{-}) [MeV/c^{2}]', yTitle = 'Candidates / (%.1f MeV/c^{2})' % binWidth
                  , xTitleOffset = 1.10, yTitleOffset = 1.20
-                 , plotResidHist = 'E3', normalize = True, symmetrize = True
+                 #, plotResidHist = 'E3', normalize = True, symmetrize = True
+                 , plotResidHist = 'BX', normalize = True, symmetrize = True
                  , frameOpts  = dict( Range = 'Signal', Bins = numMassBins[1], Title = plotTitle )
                  , dataOpts   = dict( MarkerStyle = kFullDotLarge, MarkerSize = 0.4, **dataCutStr )
                  , pdfOpts    = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm )
@@ -1034,7 +1013,7 @@ if not simulation and plotsFilePath :
         #graph.SetMaximum(1.15)
         graph.GetXaxis().SetLimits( observables['mass'].getMin(range), observables['mass'].getMax(range) )
         graph.GetXaxis().SetTitle('m(J/#psi K^{+}K^{-}) [MeV/c^{2}]')
-        graph.GetYaxis().SetTitle('sWeight')
+        graph.GetYaxis().SetTitle('signal weight')
         graph.GetXaxis().SetTitleOffset(1.1)
         graph.GetYaxis().SetTitleOffset(1.0)
 
@@ -1106,5 +1085,6 @@ for dataKey, data in dataSets.iteritems() :
                 else :
                     print 'P2VV - INFO: createB2CCDataSet: no entries in "%s", not saving data set' % subData.GetName()
 
-dataSetsFile.Write()
+from ROOT import TObject
+dataSetsFile.Write( dataSetsFilePath, TObject.kOverwrite )
 dataSetsFile.Close()

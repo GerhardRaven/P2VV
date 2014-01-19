@@ -11,17 +11,17 @@ pdfConfig = PdfConfig( RunPeriods = runPeriods )
 # job parameters
 from P2VV.Parameterizations.FullPDFs import SimulCatSettings
 generateData        = False
-doFit               = False #'NLL'
+doFit               = True #'NLL'
 makeObservablePlots = False
 makeKKMassPlots     = False
 plotAnglesNoEff     = False
 corrSFitErr         = ( 'sumWeight', [ 'runPeriod', 'KKMassCat' ] )
 randomParVals       = ( ) #( 0.2, 12345 )
-dataPath            = '/project/bfys/raaij/p2vv/data/'
+dataPath            = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
 
 plotsFile     = 'temp.ps'   #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.ps'
 plotsROOTFile = 'temp.root' #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.root'
-parFileIn     = 'parameterEstimates.par' #'20112012Reco14DataFitValues_6KKMassBins.par' # '20112012Reco14DataFitValues_4KKMassBins.par'
+parFileIn     = '20112012Reco14DataFitValues_6KKMassBins.par' # '20112012Reco14DataFitValues_4KKMassBins.par'
 parFileOut    = ( 'parameterEstimates.par', dict( Format = 'common' ) )
 
 if generateData :
@@ -34,10 +34,8 @@ elif pdfConfig['sFit'] :
     elif pdfConfig['runPeriods'] == [ 2012 ] :
         dataSetFile = dataPath + 'P2VVDataSets2012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
     else :
-        #dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2MassNoMC_6KKMassBins_2TagCats_newTagging_trig.root'
-        dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats.root'
-        #dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2DiegoMass_6KKMassBins_2TagCats.root'
-        #dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_exclBiased_narrowKKMass_2TagCats.root'
+        #dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats.root'
+        dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
 else :
     dataSetName = 'JpsiKK'
     dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats.root'
@@ -74,10 +72,11 @@ constAmplitudes   = False
 constLambdaCP     = ''  # 'lamb'
 equalAbsLambdaCPs = False
 
-pdfConfig['timeResType']   = 'event3fb' # 'eventNoMean'
-pdfConfig['timeEffType']   = 'fit' #'paper2012' # 'paper2012' # 'HLT1Unbiased'
-pdfConfig['timeEffParameters'] = dict(RandomBinOrder = False)
-pdfConfig['constrainBeta'] = ''  # '' / 'constrain' / 'fixed' / 'noBeta'
+# PDF options
+pdfConfig['timeResType']       = 'event3fb' # 'eventNoMean'
+pdfConfig['timeEffType']       = 'paper2012' # 'paper2012' # 'HLT1Unbiased'
+pdfConfig['timeEffParameters'] = { } # dict(RandomBinOrder = False) # dict( Parameterization = 'Spline', Fit = False ) # dict( Fit = False, RandomBinOrder = False )
+pdfConfig['constrainBeta']     = ''  # '' / 'constrain' / 'fixed' / 'noBeta'
 
 if pdfConfig['timeEffType'] == 'fit':
     timeEffFile2011 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
@@ -145,7 +144,7 @@ if generateData or manualTagCatBins :
 
 pdfConfig['paramKKMass']     = 'simultaneous'  # 'simultaneous'
 pdfConfig['KKMassBinBounds'] = [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ] # [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ] # [ 988., 1020. - 12., 1020., 1020. + 12., 1050. ]
-pdfConfig['CSPValues']       = [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.9152, 0.8797, 0.8357, 0.8599, 0.9207, 0.9624 ] # [ 0.9586, 0.9110, 0.8618, 0.8828, 0.9227, 0.9110 ] # [ 0.9178, 0.9022, 0.8619, 0.8875, 0.9360, 0.9641 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ]
+pdfConfig['CSPValues']       = [ 0.9178, 0.9022, 0.8619, 0.8875, 0.9360, 0.9641 ] # [ 0.9152, 0.8797, 0.8357, 0.8599, 0.9207, 0.9624 ] # [ 0.9586, 0.9110, 0.8618, 0.8828, 0.9227, 0.9110 ] # [ 0.966, 0.956, 0.926, 0.926, 0.956, 0.966 ] # [ 0.498 ] # [ 0.326 ]
 KKMassPars = pdfConfig['obsDict']['KKMass']
 pdfConfig['obsDict']['KKMass'] = ( KKMassPars[0], KKMassPars[1], KKMassPars[2]
                                   , 1020., pdfConfig['KKMassBinBounds'][0], pdfConfig['KKMassBinBounds'][-1] )
@@ -550,18 +549,15 @@ if doFit :
 
     else :
         if pdfConfig['sFit'] :
-            for i in range(3):
-                fitResult = pdf.fitTo( fitData, SumW2Error = True if corrSFitErr == 'matrix' else False
-                                       , Minos = RooMinPars, Save = True, Range = fitRange
-                                       , **fitOpts)
-                if fitResult.status() == 0:
-                    break
+            fitResult = pdf.fitTo( fitData, SumW2Error = True if corrSFitErr == 'matrix' else False
+                                  , Minos = RooMinPars, Save = True, Range = fitRange
+                                  , **fitOpts
+                                 )
         else :
-            for i in range(3):
-                fitResult = pdf.fitTo( fitData, Minos = RooMinPars, Save = True, Range = fitRange
-                                       , **fitOpts)
-                if fitResult.status() == 0:
-                    break
+            fitResult = pdf.fitTo( fitData
+                                  , Minos = RooMinPars, Save = True, Range = fitRange
+                                  , **fitOpts
+                                 )
 
     # reparameterize amplitudes
     if pdfConfig['amplitudeParam'] == 'bank' and pdfConfig['ASParam'] != 'ReIm' and pdfConfig['AparParam'] == 'Mag2ReIm' :
