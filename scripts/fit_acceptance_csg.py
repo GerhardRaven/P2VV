@@ -29,7 +29,7 @@ from P2VV.Parameterizations.GeneralUtils import valid_combinations
 #from P2VV.Load import RooFitOutput
 
 from ROOT import RooMsgService
-## RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.ObjectHandling))
+RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Generation))
 ## RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Integration))
 
 obj = RooObject( workspace = 'w')
@@ -71,56 +71,42 @@ signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =
                      MinMax = (1., 2.5))
 
 # Time resolution model
-from P2VV.Parameterizations.TimeResolution import Paper2012_TimeResolution as TimeResolution
-mu = dict(MinMax = (-0.010, 0.010))
-mu_values = {'MC11a_incl_Jpsi' : -0.000408, '2011_Reco14' : -0.00259,  
-             '2011' : -0.00407301, '2012' : -0.00333,
-             'MC2011_Sim08a_incl_Jpsi' : -0.00076}
-mu['Value'] = mu_values.get(args[0], 0)
-mu['Constant'] = True
-from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
-tres_args = dict(time = t, sigmat = st, Cache = False,
-                 PerEventError = True, Parameterise = 'RMS',
-                 TimeResSFParam = 'linear', timeResMu = mu, 
-                 ScaleFactors = [(2, 2.00), (1, 1.174)],
-                 Fractions = [(2, 0.239)],
-                 sf_mean_offset = dict(Value = 1.4887, MinMax = (0.1, 2), Constant = True),
-                 sf_mean_slope = dict(Value = -3.88, MinMax = (-5, 5), Constant = True),
-                 sf_sigma_offset = dict(Value = 0.4143, MinMax = (0.1, 2), Constant = True),
-                 sf_sigma_slope = dict(Value = -2.81, MinMax = (-5, 5), Constant = True),
-                 timeResFrac2 = dict(Value = 0.239, MinMax = (0.01, 0.99), Constant = True))
-sig_tres = TimeResolution(Name = 'sig_tres', **tres_args)
-
-## from P2VV.Parameterizations.TimeResolution import LP2011_TimeResolution
-## tres = LP2011_TimeResolution(time = t)
-## from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
-## tres = TimeResolution(time = t)
-
-# Signal time pdf
-from P2VV.Parameterizations.TimePDFs import Single_Exponent_Time
-sig_t = Single_Exponent_Time(Name = 'sig_t', time = t, resolutionModel = sig_tres.model())
+if ntuple_file:
+    from P2VV.Parameterizations.TimeResolution import Paper2012_TimeResolution as TimeResolution
+    mu = dict(MinMax = (-0.010, 0.010))
+    mu_values = {'MC11a_incl_Jpsi' : -0.000408, '2011_Reco14' : -0.00259,  
+                 '2011' : -0.00407301, '2012' : -0.00333,
+                 'MC2011_Sim08a_incl_Jpsi' : -0.00076}
+    mu['Value'] = mu_values.get(args[0], 0)
+    mu['Constant'] = True
+    from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
+    tres_args = dict(time = t, sigmat = st, Cache = False,
+                     PerEventError = True, Parameterise = 'RMS',
+                     TimeResSFParam = 'linear', timeResMu = mu, 
+                     ScaleFactors = [(2, 2.00), (1, 1.174)],
+                     Fractions = [(2, 0.239)],
+                     sf_mean_offset = dict(Value = 1.4887, MinMax = (0.1, 2), Constant = True),
+                     sf_mean_slope = dict(Value = -3.88, MinMax = (-5, 5), Constant = True),
+                     sf_sigma_offset = dict(Value = 0.4143, MinMax = (0.1, 2), Constant = True),
+                     sf_sigma_slope = dict(Value = -2.81, MinMax = (-5, 5), Constant = True),
+                     timeResFrac2 = dict(Value = 0.239, MinMax = (0.01, 0.99), Constant = True))
+    sig_tres = TimeResolution(Name = 'sig_tres', **tres_args)
+else:
+    from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+    sig_tres = TimeResolution(time = t, timeResSigma = dict(Value = 0.045, Constant = True),
+                              timeResMu = dict(Value = 0, Constant = True),
+                              BiasScaleFactor = False)
 
 # B mass pdf
 from P2VV.Parameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
 sig_m = Signal_BMass(Name = 'sig_m', mass = m, m_sig_mean = dict( Value = 5365, MinMax = (5363,5372)))
 
-# J/psi mass pdf
-from P2VV.Parameterizations.MassPDFs import DoubleCB_Psi_Mass as PsiMassPdf
-psi_m = PsiMassPdf(mpsi, Name = 'psi_m', mpsi_alpha_1 = dict(Value = 1.6832, Constant = True),
-                   mpsi_frac = dict(Value = 0.521806), mpsi_mean = dict(Value = 3099.23),
-                   mpsi_sigma_1 = dict(Value = 10.3741), mpsi_sigma_sf = dict(Value = 1.60555))
-
-# J/psi background
-psi_c = RealVar( 'psi_c',  Unit = '1/MeV', Value = -0.00081, MinMax = (-0.1, -0.0000001))
-bkg_mpsi = Pdf(Name = 'bkg_mpsi',  Type = Exponential, Parameters = [mpsi, psi_c])
-
 # Create combinatorical background component
-bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm_bkg_exp' ) )
+bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp = dict( Name = 'm_bkg_exp' ) )
 
 # Create components
-signal_mass = Component('signal', (sig_m.pdf(), psi_m.pdf()), Yield = (30000,100,100000))
-psi_background_mass = Component('psi_background', (bkg_m.pdf(), psi_m.pdf()), Yield= (100000,500,200000) )
-background_mass = Component('background', (bkg_m.pdf(), bkg_mpsi), Yield = (100000,100,300000) )
+signal_mass = Component('signal', (sig_m.pdf(),), Yield = (30000,100,100000))
+background_mass = Component('background', (bkg_m.pdf(),), Yield = (100000,100,300000) )
 
 ## Build mass PDF
 mass_pdf = buildPdf(Components = (signal_mass, background_mass), Observables = (m, ), Name='mass_pdf')
@@ -144,7 +130,6 @@ acceptance = TimeAcceptance(time = t, ResolutionModel = sig_tres, Input = input_
                             Histograms = hists, Fit = True, Cache = False)
 pdf = Single_Exponent_Time(Name = 'pdf', time = t, resolutionModel = acceptance.model())
 pdf = pdf.pdf()
-pdf.Print('t')
 
 # Read input data
 from P2VV.Utilities.DataHandling import readData
@@ -220,18 +205,12 @@ if ntuple_file:
     else:
         dataset_name = 'JpsiKK_sigSWeight'
         data = input_file.Get(dataset_name)
-        data = data.reduce('runPeriod == runPeriod::p2011')
 else:
-    ## PDF for sigmat
-    from P2VV.Parameterizations.SigmatPDFs import DoubleLogNormal
-    dln = DoubleLogNormal(st, frac_ln2 = dict(Value = 0.312508), k1 = dict(Value = 0.801757),
-                          k2 = dict(Value = 1.37584), median = dict(Value = 0.0309409))
-    ln = dln.pdf()
-    gen_pdf = ProdPdf('gen_pdf', [pdf, ln])
+    n_evt = int(5e4)
+    from P2VV.Load import MultiCatGen
     
     ## Generate
-    from P2VV.Load import MultiCatGen
-    data = gen_pdf.generate([t, st, hlt1_excl_biased_dec, hlt2_unbiased, hlt2_biased], 50000)
+    data = pdf.generate([t, hlt1_excl_biased_dec, hlt2_unbiased, hlt2_biased], NumEvents = n_evt)
     ## Use the valid combinations to create a cut to remove wrong events
     cut = ' || '.join('(' + ' && '.join('{0} == {0}::{1}'.format(c.GetName(), s) for c, s in comb) + ')' for comb in valid)
     data = data.reduce(Cut = cut, EventRange = (0, 30000))
@@ -339,8 +318,9 @@ for s in pdf.ExternalConstraints():
     elif hasattr(s, 'epsB'):
         binning = acceptance.shapes()[0].base_binning()
         from P2VV.RooFitWrappers import BinnedPdf
+        l = s.epsB() if s.epsB().getSize() > 1 else s.epsA()
         shapes.append(BinnedPdf(s.GetName() + '_shape', Observable = t, Binning = binning,
-                                Coefficients = (s.epsB() if s.epsB().getSize() > 1 else s.epsA())))
+                                Coefficients = [c for c in l]))
 
 eff_canvases = {}
 from ROOT import kYellow, kOrange
