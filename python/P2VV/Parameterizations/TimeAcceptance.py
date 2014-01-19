@@ -262,16 +262,29 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
                                 Parameters = [original, eff_model, mean, sigma]))
         return constraints
 
-    def build_multinomial_constraints(self, data, observables):
-        # We're fitting and using the average constraint, first
-        # create a shape and then the constraint.
+    def build_multinomial_constraints(self, data, observables, extra_cat = None):
+        from P2VV.RooFitWrappers import RooObject
+        from collections import defaultdict
+        from itertools import product
+
+        ## We're fitting and using the multinomial constraint, first count the
+        ## number of events of a types N_a, N_b and N_ab in data and use them to
+        ## set the values of the parameters close to the minimum. Then construct
+        ## the constraint.
         binning = self._shape.base_binning()
         constraints = set()
-        from collections import defaultdict
+
+        ## Reorganise the coefficients returned by the shape for convenience. If
+        ## no prefix has been defined and an extra category to split on has been
+        ## given, replace the prefixes.
         epsilons = defaultdict(dict)
-        from P2VV.RooFitWrappers import RooObject
-        for (prefix, cat, state), parameters in self._shape.coefficients().iteritems():
+        coefficients = self._shape.coefficients()
+        if extra_cat and all((not k[0] for k in coefficients.iterkeys())):
+            states = [(c.GetName(), s.GetName()) for c, s in product([extra_cat], extra_cat)]
+            coefficients = dict([(('_'.join(prefix), cat, state), v) for (prefix, ((p, cat, state), v)) in product(states, coefficients.iteritems())])
+        for (prefix, cat, state), parameters in coefficients.iteritems():
             level = cat[ : 4]
+            ## Check if a constraint for this combination already exists.
             constraint_name = '_'.join([e for e in (prefix, level, 'multinomial') if e])
             if constraint_name in RooObject._ws._rooobjects:
                 continue
@@ -283,6 +296,8 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
         obs = dict([(o.GetName(), o) for o in observables.itervalues()])
         time = obs['time']
 
+        ## Count the number of events of types N_a, N_b and N_ab in bins in the
+        ## data.
         from P2VV.Parameterizations.GeneralUtils import valid_combinations
         self.__bc = BinCounter(data, time, binning)
         for (prefix, level), parameters in epsilons.iteritems():
@@ -295,7 +310,8 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
                     d[c.GetName()] = l
                 self.__bc.add_bins(level, d)
         self.__bc.run()
-        
+
+        ## Build the constraint
         from ROOT import RooArgList
         for (prefix, level), parameters in epsilons.iteritems():
             args = {'Epsilons' : [], 'N' : []}
@@ -315,7 +331,9 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
                 m &= par_keys
                 bins = self.__bc.get_bins(level, d)
                 if len(m) == 1:
-                    ## A single entry is a signal state, this is either N_a or N_b
+                    ## A single entry is a signal state, this is either N_a or N_b.
+                    ## Insert at the front so it is sure they will be either the first
+                    ## or the second argument to the EffConstraint constructor.
                     k = list(m)[0]
                     eps = parameters[k]
                     args['Epsilons'].insert(0, parameters[k])
