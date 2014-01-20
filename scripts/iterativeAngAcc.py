@@ -200,7 +200,6 @@ if combineEffMoments:
     moments, correlations = {}, {}
     readMoments( combAccName, BasisFuncNames = [], Moments = moments, Correlations = correlations, ProcessAll = True )
     convertEffWeightsToMoments( moments, OutputFilePath = combAccName.replace('Phys','weights').replace('_norm',''),
-                                Scale             = scaleFactor,
                                 WeightNamesPrefix = PhysicsReweight.getParNamePrefix(),
                                 PrintMoments      = False
                                 )
