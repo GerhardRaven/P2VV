@@ -155,6 +155,14 @@ if 'Parameterization' in pdfConfig['timeEffParameters'] and pdfConfig['timeEffPa
     pdfConfig['splitParams']['hlt1_excl_biased_dec'] = [ 'tagCatCoef0_1' ]
 
 #pdfConfig['externalConstr'].pop('dM')
+#pdfConfig['externalConstr']['wTagP0OS'] = ( 0.3853, None )
+#pdfConfig['externalConstr']['wTagP1OS'] = ( 1.000,  None )
+#pdfConfig['externalConstr']['wTagP0SS'] = ( 0.450,  None )
+#pdfConfig['externalConstr']['wTagP1SS'] = ( 1.00,   None )
+#pdfConfig['externalConstr']['wTagDelP0OS'] = (  0.0140, 0. )
+#pdfConfig['externalConstr']['wTagDelP1OS'] = (  0.066,  0. )
+#pdfConfig['externalConstr']['wTagDelP0SS'] = ( -0.016,  0. )
+#pdfConfig['externalConstr']['wTagDelP1SS'] = (  0.007,  0. )
 #pdfConfig['externalConstr']['dM']          = (  17.768, 0.024  )
 #pdfConfig['externalConstr'].pop('betaTimeEff')
 #pdfConfig['externalConstr']['betaTimeEff'] = ( 0., 0. )
