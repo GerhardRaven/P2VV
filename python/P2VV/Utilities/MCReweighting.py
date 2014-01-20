@@ -84,7 +84,7 @@ def compareDistributions( **kwargs ):
         [assymObsCanv.cd(i+1) for i in xrange(len(observables))], 
         observables,
         3 * [False] + [True],
-        [ [],[],[], [-3,3] ]
+        3 * [(-.1,.1),] + [(-3,3)]
         ):
         print 'P2VV - INFO: compareDistributions: Plotting %s'%obs.GetName()
         anglesFrames= compareDataSets( canv, obs, data = data, dataOpts = dataOpts, logy = logY,
@@ -96,10 +96,11 @@ def compareDistributions( **kwargs ):
 
     # plot Kaon and muon momenta
     print 'P2VV - INFO: compareDistributions: Plotting track momenta.'
-    for canv, assymCanv, obs in zip( 
+    for canv, assymCanv, obs, assymYrange in zip( 
         [ KaonCanv.cd(k+1) for k in xrange(len(Kmomenta)) ]      + [ muonCanv.cd(m+1) for m in xrange(len(muMomenta)) ],
         [ assymKaonCanv.cd(k+1) for k in xrange(len(Kmomenta)) ] + [ assymMuonCanv.cd(m+1) for m in xrange(len(muMomenta)) ],
         Kmomenta + muMomenta,
+        16 * [(-.4,.4),] 
         ):
         print 'P2VV - INFO: compareDistributions: Plotting %s'%obs.GetName()
         momFrame = compareDataSets( canv, obs, data = data, dataOpts = dataOpts,
@@ -107,7 +108,7 @@ def compareDistributions( **kwargs ):
                                     )
         # make assymetry plots
         print 'P2VV - INFO: compareDistributions: Creating assymentry plot for %s'%obs.GetName()
-        makeAssymetryPlot( assymCanv, momFrame, referenceHistName, len(data.keys()) ) 
+        makeAssymetryPlot( assymCanv, momFrame, referenceHistName, len(data.keys()), yRange=assymYrange ) 
 
     # plot KKMass
     if data.has_key('mkkRewData'):
@@ -582,11 +583,12 @@ class WeightedDataSetsManager(dict):
         self['combinedWeightsName'] = data.GetName()[:-1] + weightsName + data.GetName()[-2:]
         
         # delete previous data and point to the new one
-        if not self['saveIntermediateDatasets']:
-            for key in self['dataSets'].keys():
+        if self['saveIntermediateDatasets']: self['dataSets'][weightsName] = data
+        else:
+            for key in self['dataSets'].keys(): 
                 if key == self['latestDataSetPointer']: del self['dataSets'][key]
             self['dataSets'][weightsName] = data
-
+        
         #set dataset pointer
         self['latestDataSetPointer'] = weightsName
 
@@ -888,7 +890,7 @@ class MatchPhysics( ):
         
         # read ntuple
         from P2VV.Utilities.DataHandling import readData
-        readOpts = { 'ntupleCuts' : 'mass>5350 && mass<5355' }  # {} # { 'ntupleCuts' : 'mass>5350 && mass<5355' }
+        readOpts = { 'ntupleCuts' : 'mass>5350 && mass<5355' } if kwargs.pop('Reduced', False) else  { }
         self._data = readData( nTupleFile, dataSetName=nTupleName, NTuple=True, observables=self._obsSet, **readOpts)
         self._data.SetName( 'mcData_' + MCProd )
            
@@ -1173,7 +1175,7 @@ class MatchWeightedDistributions():
         # construct datasets 
         recalculatedVars = RooArgSet( [helcosthetaK,helcosthetaL,helphi] + self._KaonSet + self._BmomSet ) 
         copiedVars       = RooArgSet( self._KKMass + self._muonSet + [truetime,time,self._physWeightsVar] )
-        name = self._inTree.GetName()[:-1] + 'hor_KKmom' + self._inTree.GetName()[-2:]
+        name = self._inTree.GetName()[:-1] + 'horKKmom' + self._inTree.GetName()[-2:]
         self._recalculatedData = RooDataSet( name, name, recalculatedVars  )        
         copiedData             = RooDataSet('copiedData', 'copiedData', self._inTree, copiedVars )
 

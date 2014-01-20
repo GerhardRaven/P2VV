@@ -13,6 +13,7 @@ parser.add_option('-f', '--fit',       dest='fit',        default = 'False',    
 parser.add_option('-w', '--writeData', dest='writeData',  default = 'False',               help='save mc datasets to file')
 parser.add_option('-p', '--makePlots', dest='makePlots',  default = 'False',               help='switch on/off plotting')
 parser.add_option('-c', '--combMoms',  dest='combMoms',   default = 'False',               help='combine 2011,2012 moments')
+parser.add_option('-R', '--reduced',   dest='reduced',    default = 'False',                help='apply a mass cut for a reduced sample')
 (options, args) = parser.parse_args()
 
 # reweightng flow control
@@ -32,6 +33,7 @@ KmomentaWeightsName   = 'KKmom'
 BmomentumWeightsName  = 'Bmom'
 writeWeightedData     = True if 'True' in options.writeData else False
 combineEffMoments     = True if 'True' in options.combMoms else False
+reduced               = True if 'True' in options.reduced else False
 
 # fit configuration
 doFit            = True if 'True' in options.fit else False
@@ -96,7 +98,7 @@ if initialFitOnData and doFit:
 
 # initialise physics matching class and build MC pdf
 print 'P2VV - INFO: Iteration Number %s. Running reweighting procedure in sample %s'%(iterNumb, mcData11FileName if MCProd=='2011' else mcData12FileName)
-PhysicsReweight = MatchPhysics( monteCarloData, mcTupleName , MonteCarloProduction = MCProd )
+PhysicsReweight = MatchPhysics( monteCarloData, mcTupleName , MonteCarloProduction = MCProd, Reduced = reduced )
 
 # manage the weights (avoid creating too many datasets)
 mcDataMngr = WeightedDataSetsManager( source = PhysicsReweight.getDataSet() )
@@ -156,10 +158,8 @@ elif reweightKKmom and RewApproach == 'horizontal':
                                                     )
     
     KinematicReweight.reweight( iterNumb, source() )
-    #for k,v in mcDataMngr.iteritems(): print k,v
-    mcDataMngr.setDataSet( KinematicReweight.getDataSet(), 'hor' + KmomentaWeightsName )
-    #for k,v in mcDataMngr.iteritems(): print k,v
-    
+    KmomentaWeightsName = 'hor' + KmomentaWeightsName
+    mcDataMngr.setDataSet( KinematicReweight.getDataSet(),  KmomentaWeightsName )
       
 # compute angular efficiency moments from the new reweighted mc dataset.
 if reweightPhysics: # set data pars to pdf (reweighted data has the data physics now)
@@ -227,10 +227,10 @@ if makePlots: # plot data after each reweighting step
     
     # plot weights
     plotWeightsList = []
-    if reweightKKmom:     plotWeightsList += [ KmomentaWeightsName ]    
-    if reweightPhysics:   plotWeightsList += [ physWeightName ]
-    if reweightMkk:       plotWeightsList += [ mKKWeightsName ]
-    if reweightBmomentum and RewApproach == 'vertical' : plotWeightsList += [ BmomentumWeightsName ]
+    if (reweightKKmom,RewApproach)==(True,'vertical'):  plotWeightsList += [ KmomentaWeightsName ]    
+    if reweightPhysics:                                 plotWeightsList += [ physWeightName ]
+    if reweightMkk:                                     plotWeightsList += [ mKKWeightsName ]
+    if reweightBmomentum:                               plotWeightsList += [ BmomentumWeightsName ]
     for wList in plotWeightsList: mcDataMngr.plotWeights(wList)
 
 # write weighted mc data to a file

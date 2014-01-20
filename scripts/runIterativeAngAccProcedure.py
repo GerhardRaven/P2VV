@@ -18,7 +18,7 @@ correctedAngAccBaseName = 'Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_weig
 parameterEstimatesName  = lambda n: '20112012Reco14DataFitValues_6KKMassBins.par'.replace('.par','_%s.par'%n)
 
 # set up subproceses options
-import subprocess, shlex, select
+import subprocess, shlex, select, sys
 processes  = []
 parallelReweighting = True if 'True' in options.paralRew else False
 
@@ -60,14 +60,13 @@ def _info( s, n, opts, what, indent=False ):
                     print indnt + ' ', rewOptsLegend[entry] + ' (' + o.partition(entry)[1] + '): ', o.partition(entry)[2]
         print
     elif 'fit' in what:
-        print 'Iteration number %s. Running 3fb Fit script with options:'%n
+        print '\nIteration number %s. Running 3fb Fit script with options:'%n
         print 50*'-'
         for o in opts[2:]:
             for entry in fitOptsLegend.keys():
                 if entry in o:
                     print ' ' + fitOptsLegend[entry] + ' (' + o.partition(entry)[1] + '): ', o.partition(entry)[2]
         print 
-
 
 ###############################
 # begin iterative prcedure ####
@@ -82,26 +81,31 @@ for itNum in range(1, numberOfIterations + 1):
     # reweight 2011 mc
     cmd_11 = shlex.split( oneIterationScript + ' ' + rew11_Opts )
     if parallelReweighting:
-        print 'P2VV - INFO: Reweighting of mc2011 and mc2012 samples will run in parallel.'
+        print '\nP2VV - INFO: Reweighting of mc2011 and mc2012 samples will run in parallel.'
         _info( '2011', itNum, cmd_11, 'rew', indent=parallelReweighting )
+        sys.stdout.flush()
         rew_11 = subprocess.Popen(cmd_11, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
         processes += [ [rew_11, True] ] # append parallel processes to save the output
     else: 
         rew_11 = subprocess.call(cmd_11, stdin = None, stdout = None, stderr = subprocess.STDOUT)
+        print
         _info( '2011', itNum, cmd_11, 'rew' )
+        sys.stdout.flush()
 
     # reweight 2012 mc
     cmd_12 = shlex.split( oneIterationScript + ' ' + rew12_Opts + combMomOpt )
     _info( '2012', itNum, cmd_12, 'rew', indent=parallelReweighting )
+    sys.stdout.flush()
     rew_12 = subprocess.call(cmd_12, stdin = None, stdout = None, stderr = subprocess.STDOUT)
-    
+
     # perform 3fb fit
     cmdfit = shlex.split( fittingScript + ' ' + fitOpts(itNum) )
     _info( '', itNum, cmdfit, 'fit' )
+    sys.stdout.flush()
     fit3fb = subprocess.call(cmdfit, stdin = None, stdout = None, stderr = subprocess.STDOUT)
 
 # print the terminal output into a file
-logs = [open('log_%d' % i, 'w') for i in range(len(processes))]
+logs = [open('logRew2011_%d' % i, 'w') for i in range(len(processes))]
 while any(e[1] for e in processes):
     for i, (p, d) in enumerate(processes):
         if not d:
