@@ -314,9 +314,10 @@ else:
                 (('hlt1_excl_biased_dec', 'unbiased'), ('hlt2_biased', 'biased'), ('hlt2_unbiased', 'not_unbiased')) : 0.433,
                 (('hlt1_excl_biased_dec', 'excl_biased'), ('hlt2_biased', 'biased'), ('hlt2_unbiased', 'unbiased')) : None}
     spec['Relative'] = dict([(tuple((categories[c], l) for c, l in k), {'Constant' : True, 'Value' : v} if v else None) for k, v in rel_spec.iteritems()])
-    for comb in valid:
-        cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in comb])
-        rel_spec[comb] = {'Value' : 1. / len(valid), "Constant" : True},
+
+    ## for comb in valid:
+    ##     cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in comb])
+    ##     rel_spec[comb] = {'Value' : 1. / len(valid), "Constant" : True},
 
     from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
     tres = TimeResolution(time = t, timeResSigma = dict(Value = 0.5, Constant = True),

@@ -19,8 +19,8 @@ gauss = Pdf(Name = 'gauss', Type = RooGaussian, Parameters = [diff, mean, sigma]
 
 result = gauss.fitTo(data, Minimizer = 'Minuit2', Save = True, Optimize = 2)
 
-frame = diff.frame(Range = (-0.016, -0.004))
-data.plotOn(frame, Binning = (40, -0.016, -0.004))
+frame = diff.frame(Range = (-0.04, 0.04))
+data.plotOn(frame, Binning = (200, -0.04, 0.04))
 gauss.plotOn(frame)
 frame.GetXaxis().SetTitle('D_{FT} - D')
 frame.Draw()
