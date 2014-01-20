@@ -16,7 +16,7 @@ trigger     = ''
 timeInt     = False
 addInvPdf   = False
 weightVar   = '' # 'sWeights_ipatia'
-doSelection = False
+doSelection = True
 blind       = { } # { 'phiCP' : ( 'UnblindUniform', 'BsPhisCombination', 0.2 ), 'dGamma' : ( 'UnblindUniform', 'BsDGsCombination', 0.02 ) }
 parFileIn   = '' # '../it6/fitPars.par'
 

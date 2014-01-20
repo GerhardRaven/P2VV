@@ -96,7 +96,8 @@ class RooObject(object) :
             self.setWorkspace(workspace)
             self._var = self.ws()
 
-    def ws(self) :
+    @staticmethod
+    def ws(self = None):
         if not RooObject._ws : raise RuntimeError('No workspace defined!')
         return RooObject._ws
 

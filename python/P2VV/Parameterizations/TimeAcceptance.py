@@ -181,24 +181,26 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
         fit = kwargs.pop('Fit', False)
         namePF = self.getNamePrefix(kwargs)
         rbo = kwargs.pop('RandomBinOrder', False)
-        with TFile.Open(input_file) as acceptance_file :
-            if not acceptance_file:
-                raise ValueError, "Cannot open histogram file %s" % input_file
-            print 'P2VV - INFO: Paper2012_csg_TimeAcceptance: using time efficiency histograms file "%s"' % input_file
-            # transform histograms in map of cat state -> histo name
-            # assume only one category for now (compositing could be implemented later)
-            for (cat, v) in self._histograms.iteritems():
-                for (s, info) in v.iteritems() :
-                    hist = info.get('histogram', None)
-                    if not hist:
-                        continue
+        self.__bc = None
+        
+        print 'P2VV - INFO: Paper2012_csg_TimeAcceptance: using time efficiency histograms file "%s"' % input_file
+        # transform histograms in map of cat state -> histo name
+        # assume only one category for now (compositing could be implemented later)
+        for (cat, v) in self._histograms.iteritems():
+            for (s, info) in v.iteritems() :
+                hist = info.get('histogram', None)
+                if not hist:
+                    continue
+                with TFile.Open(input_file) as acceptance_file:
+                    if not acceptance_file:
+                        raise ValueError, "Cannot open histogram file %s" % input_file
                     hist = acceptance_file.Get(info['histogram'])
-                    if not hist : raise ValueError, ('Failed to get histrogram %s from file %s' \
+                    if not hist : raise ValueError, ('Failed to get histogram %s from file %s' \
                                                      % (info['histogram'], input_file))
                     hist.SetDirectory(0) # disconnect self._hist from file... otherwise it is deleted when file is closed
                     info['histogram'] = hist
                     print 'P2VV - INFO: Paper2012_csg_TimeAcceptance: time efficiency category "%s/%s": using histogram "%s"'\
-                          % ( cat.GetName(), s, hist.GetName() )
+                           % ( cat.GetName(), s, hist.GetName() )
 
         parameterization = kwargs.pop('Parameterization','CubicSplineGaussModel')
         assert parameterization in [ 'CubicSplineGaussModel','EffResModel' ]
@@ -260,23 +262,33 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
                                 Parameters = [original, eff_model, mean, sigma]))
         return constraints
 
-    def build_multinomial_constraints(self, data, observables):
-        # We're fitting and using the average constraint, first
-        # create a shape and then the constraint.
+    def build_multinomial_constraints(self, data, observables, extra_cat = None):
+        from P2VV.RooFitWrappers import RooObject
+        from collections import defaultdict
+        from itertools import product
+
+        ## We're fitting and using the multinomial constraint, first count the
+        ## number of events of a types N_a, N_b and N_ab in data and use them to
+        ## set the values of the parameters close to the minimum. Then construct
+        ## the constraint.
         binning = self._shape.base_binning()
         constraints = set()
-        from collections import defaultdict
+
+        ## Reorganise the coefficients returned by the shape for convenience. If
+        ## no prefix has been defined and an extra category to split on has been
+        ## given, replace the prefixes.
         epsilons = defaultdict(dict)
-        from P2VV.RooFitWrappers import RooObject
-        for (prefix, cat, state), parameters in self._shape.coefficients().iteritems():
+        coefficients = self._shape.coefficients()
+        if extra_cat and all((not k[0] for k in coefficients.iterkeys())):
+            states = [(c.GetName(), s.GetName()) for c, s in product([extra_cat], extra_cat)]
+            coefficients = dict([(('_'.join(prefix), cat, state), v) for (prefix, ((p, cat, state), v)) in product(states, coefficients.iteritems())])
+        for (prefix, cat, state), parameters in coefficients.iteritems():
             level = cat[ : 4]
+            ## Check if a constraint for this combination already exists.
             constraint_name = '_'.join([e for e in (prefix, level, 'multinomial') if e])
             if constraint_name in RooObject._ws._rooobjects:
                 continue
-            if not level in epsilons[prefix]:
-                epsilons[prefix][level] = {(cat, state) : parameters}
-            else:
-                epsilons[prefix][level][(cat, state)] = parameters
+            epsilons[(prefix, level)][(cat, state)] = parameters
 
         if not(epsilons):
             return constraints
@@ -284,84 +296,96 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
         obs = dict([(o.GetName(), o) for o in observables.itervalues()])
         time = obs['time']
 
+        ## Count the number of events of types N_a, N_b and N_ab in bins in the
+        ## data.
         from P2VV.Parameterizations.GeneralUtils import valid_combinations
-        bc = BinCounter(data, time, binning)
-        for prefix, rest in epsilons.iteritems():
-            for level, parameters in rest.iteritems():
-                valid = valid_combinations([[(obs[c], s) for c, s in parameters.iterkeys()]])
-                for e in valid:
-                    d = {}
-                    if prefix and '_' in prefix and prefix.split('_')[0] in observables:
-                        d.update(dict([prefix.split('_')]))
-                    for c, l in e:
-                        d[c.GetName()] = l
-                    bc.add_bins(level, d)
-        bc.run()
-        
+        self.__bc = BinCounter(data, time, binning)
+        for (prefix, level), parameters in epsilons.iteritems():
+            valid = valid_combinations([[(obs[c], s) for c, s in parameters.iterkeys()]])
+            for e in valid:
+                d = {}
+                if prefix and '_' in prefix and prefix.split('_')[0] in observables:
+                    d.update(dict([prefix.split('_')]))
+                for c, l in e:
+                    d[c.GetName()] = l
+                self.__bc.add_bins(level, d)
+        self.__bc.run()
+
+        ## Build the constraint
         from ROOT import RooArgList
-        for prefix, rest in epsilons.iteritems():
-            for level, parameters in rest.iteritems():
-                args = {'Epsilons' : [], 'N' : []}
-                par_keys = set(parameters.iterkeys())
-                ## Calculate the valid combinations for this level, 2 for HLT1 like
-                ## 3 for HLT2 like
-                valid = valid_combinations([[(obs[c], s) for c, s in par_keys]])
-                for e in valid:
-                    ## Add the cut on the prefix
-                    d = {}
-                    if prefix and '_' in prefix and prefix.split('_')[0] in observables:
-                        d.update(dict([prefix.split('_')]))
-                    m = set()
-                    for c, l in e:
-                        d[c.GetName()] = l
-                        m.add((c.GetName(), l))
-                    m &= par_keys
-                    bins = bc.get_bins(level, d)
-                    if len(m) == 1:
-                        ## A single entry is a signal state, this is either N_a or N_b
-                        k = list(m)[0]
-                        eps = parameters[k]
-                        args['Epsilons'].insert(0, parameters[k])
-                        args['N'].insert(0, bins)
-                    elif len(m) == 2:
-                        ## Both entries are a signal state, this must be N_ab
-                        args['N'].append(bins)
-                ## Calculate values of epsilon from the number of events in the different
-                ## categories in each bin 
-                ea, eb = args['Epsilons']
+        for (prefix, level), parameters in epsilons.iteritems():
+            args = {'Epsilons' : [], 'N' : []}
+            par_keys = set(parameters.iterkeys())
+            ## Calculate the valid combinations for this level, 2 for HLT1 like
+            ## 3 for HLT2 like
+            valid = valid_combinations([[(obs[c], s) for c, s in par_keys]])
+            for e in valid:
+                ## Add the cut on the prefix
+                d = {}
+                if prefix and '_' in prefix and prefix.split('_')[0] in observables:
+                    d.update(dict([prefix.split('_')]))
+                m = set()
+                for c, l in e:
+                    d[c.GetName()] = l
+                    m.add((c.GetName(), l))
+                m &= par_keys
+                bins = self.__bc.get_bins(level, d)
+                if len(m) == 1:
+                    ## A single entry is a signal state, this is either N_a or N_b.
+                    ## Insert at the front so it is sure they will be either the first
+                    ## or the second argument to the EffConstraint constructor.
+                    k = list(m)[0]
+                    eps = parameters[k]
+                    args['Epsilons'].insert(0, parameters[k])
+                    args['N'].insert(0, bins)
+                elif len(m) == 2:
+                    ## Both entries are a signal state, this must be N_ab
+                    args['N'].append(bins)
+            ## Calculate values of epsilon from the number of events in the different
+            ## categories in each bin 
+            ea, eb = args['Epsilons']
+            if len(valid) == 2:
+                na, nb = args['N']
                 if len(ea) > 1 and len(eb) == 1:
                     ## Ensure that if there if either of the lists of epsilons
                     ## contains only a single entry, it is the first one.
                     eb, ea = ea, eb
-                if len(valid) == 2:
-                    ## HLT1 like combination
-                    na, nb = args['N']
-                    for e in ea: e.setConstant(True)
-                    if len(ea) == 1:
-                        eav = len(na) * [ea[0].getVal()]
-                    else:
-                        eav = [e.getVal() for e in ea]
-                    ebv = [eav[i] * ( na[i] / nb[i] * (1 - eav[i]) + 1) for i in range(len(na))]
-                else:
-                    ## HLT2 like combination
-                    na, nb, nab = args['N']
-                    eav = [nab[i] / (nb[i] + nab[i]) for i in range(len(na))]
-                    ebv = [nab[i] / (na[i] + nab[i]) for i in range(len(na))]
+                    nb, na = na, nb
+                ## HLT1 like combination
+                for e in ea: e.setConstant(True)
                 if len(ea) == 1:
-                    ## If there is only one bin, use the average of the
-                    ## calculated values.
-                    ea[0].setVal(sum(eav) / float(len(eav)))
+                    eav = len(na) * [ea[0].getVal()]
                 else:
-                    for i, e in enumerate(eav): ea[i].setVal(e)
-                for i, e in enumerate(ebv): eb[i].setVal(e)
-                ## Build constraint 
-                from P2VV.RooFitWrappers import EffConstraint
-                constraint_name = '_'.join([e for e in (prefix, level, 'multinomial') if e])
-                constraints.add(EffConstraint(Name = constraint_name, **args))
+                    eav = [e.getVal() for e in ea]
+                ebv = [eav[i] * nb[i] / na[i] for i in range(len(na))]
+            else:
+                ## HLT2 like combination
+                na, nb, nab = args['N']
+                if len(ea) > 1 and len(eb) == 1:
+                    ## Ensure that if there if either of the lists of epsilons
+                    ## contains only a single entry, it is the first one.
+                    eb, ea = ea, eb
+                    nb, na, nab = na, nb, nab
+                eav = [nab[i] / (nb[i] + nab[i]) for i in range(len(na))]
+                ebv = [nab[i] / (na[i] + nab[i]) for i in range(len(na))]
+            if len(ea) == 1:
+                ## If there is only one bin, use the average of the
+                ## calculated values.
+                ea[0].setVal(sum(eav) / float(len(eav)))
+            else:
+                for i, e in enumerate(eav): ea[i].setVal(e)
+            for i, e in enumerate(ebv): eb[i].setVal(e)
+            ## Build constraint 
+            from P2VV.RooFitWrappers import EffConstraint
+            constraint_name = '_'.join([e for e in (prefix, level, 'multinomial') if e])
+            constraints.add(EffConstraint(Name = constraint_name, **args))
         return constraints
     def shapes(self):
         return [self._shape]
 
+    def bin_counter(self):
+        return self.__bc
+    
 class Paper2012_mer_TimeAcceptance(TimeAcceptance):
     def __init__(self, **kwargs ) :
         from ROOT import TFile
