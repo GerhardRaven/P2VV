@@ -156,10 +156,10 @@ elif reweightKKmom and RewApproach == 'horizontal':
                                                     )
     
     KinematicReweight.reweight( iterNumb, source() )
-    for k,v in mcDataMngr.iteritems(): print k,v
-    mcDataMngr.setDataSet( source(), 'hor' + KmomentaWeightsName )
-    for k,v in mcDataMngr.iteritems(): print k,v
-    assert False
+    #for k,v in mcDataMngr.iteritems(): print k,v
+    mcDataMngr.setDataSet( KinematicReweight.getDataSet(), 'hor' + KmomentaWeightsName )
+    #for k,v in mcDataMngr.iteritems(): print k,v
+    
       
 # compute angular efficiency moments from the new reweighted mc dataset.
 if reweightPhysics: # set data pars to pdf (reweighted data has the data physics now)

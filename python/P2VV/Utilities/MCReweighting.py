@@ -582,9 +582,10 @@ class WeightedDataSetsManager(dict):
         self['combinedWeightsName'] = data.GetName()[:-1] + weightsName + data.GetName()[-2:]
         
         # delete previous data and point to the new one
-        for key in self['dataSets'].keys():
-            if key == self['latestDataSetPointer']: del self['dataSets'][key]
-        self['dataSets'][weightsName] = data
+        if not self['saveIntermediateDatasets']:
+            for key in self['dataSets'].keys():
+                if key == self['latestDataSetPointer']: del self['dataSets'][key]
+            self['dataSets'][weightsName] = data
 
         #set dataset pointer
         self['latestDataSetPointer'] = weightsName
@@ -887,7 +888,7 @@ class MatchPhysics( ):
         
         # read ntuple
         from P2VV.Utilities.DataHandling import readData
-        readOpts = { }  # {} # { 'ntupleCuts' : 'mass>5350 && mass<5355' }
+        readOpts = { 'ntupleCuts' : 'mass>5350 && mass<5355' }  # {} # { 'ntupleCuts' : 'mass>5350 && mass<5355' }
         self._data = readData( nTupleFile, dataSetName=nTupleName, NTuple=True, observables=self._obsSet, **readOpts)
         self._data.SetName( 'mcData_' + MCProd )
            
@@ -1227,7 +1228,7 @@ class MatchWeightedDistributions():
             BP.setVal( _B3PMAG(k1_3P,k2_3P,mu1_3P,mu2_3P) )
             BPt.setVal( _BPT(k1_3P,k2_3P,mu1_3P,mu2_3P)   )
 
-            self._recalculatedData.addFast( recalculatedVars )
+            self._recalculatedData.add( recalculatedVars )
         
         self._recalculatedData.merge( copiedData )
         self._recalculatedData = RooDataSet(self._recalculatedData.GetName(), self._recalculatedData.GetTitle(), 
