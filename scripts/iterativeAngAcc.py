@@ -4,7 +4,8 @@
 from optparse import OptionParser
 parser = OptionParser()
 parser.add_option('-r', '--KKmomRew',  dest='KKmomRew',   default = 'vertical',            help='KK momentum reweighting approach (vertical/horizontal)')
-parser.add_option('-o', '--rewSteps',  dest='rewSteps',   default = 'Bmom_mkk_phys_KKmom', help='reweghting steps order')
+parser.add_option('-o', '--rewSteps',  dest='rewSteps',   default = 'BmommkkphysKKmom',    help='reweghting steps order')
+parser.add_option('-b', '--Bmom2DRew', dest='Bmom2DRew',  default = 'True',                help='2 dimentional Bmom reweighting switch')
 parser.add_option('-s', '--MCProd',    dest='MCProd',     default = '2011',                help='choose mc sample ( 2011,2012 )')
 parser.add_option('-n', '--iterNum',   dest='iterNum',    default = 1, type=int,           help='iteration number')
 parser.add_option('-a', '--nomAngAcc', dest='nomAngAcc',  default = '',                    help='nominal angular acceptance')
@@ -24,6 +25,7 @@ reweightBmomentum     = True if 'Bmom'  in options.rewSteps else False
 reweightMkk           = True if 'mkk'   in options.rewSteps else False
 reweightPhysics       = True if 'phys'  in options.rewSteps else False
 reweightKKmom         = True if 'KKmom' in options.rewSteps else False
+twoDimensionalBmomRew = True if 'True'  in options.Bmom2DRew else False
 EqualStatsBins        = True
 OneDverticalRewNbins  = 1000
 TwoDverticalRewNbins  = 50
@@ -125,6 +127,9 @@ mcDataMngr['iterationNumber'] = iterNumb
 if reweightBmomentum:
     BmomentumWeights = TwoDimentionalVerticalReweighting( source(), target, TwoDverticalRewNbins, ['B_P','B_Pt'],
                                                           equalStatsBins = EqualStatsBins
+                                                          ) if twoDimensionalBmomRew else \
+                       OneDimentionalVerticalReweighting( source(), target, TwoDverticalRewNbins, 'B_P',
+                                                          equalStatsBins = EqualStatsBins
                                                           )
     mcDataMngr.appendWeights( BmomentumWeightsName, BmomentumWeights, permanetnWeigts=True )
 
@@ -213,25 +218,32 @@ if doFit:
                         )
     dataParameters = ParFileOut
   
-# comparition plots
-if makePlots: # plot data after each reweighting step
-    compPlots = compareDistributions( mcData          = mcDataMngr.getDataSet('initSource'),
-                                      mcDataPhysRew   = mcDataMngr.getDataSet(physWeightName) if reweightPhysics else '',
-                                      MomRewData      = mcDataMngr.getDataSet(KmomentaWeightsName) if reweightKKmom else '',
-                                      BmomRewData     = mcDataMngr.getDataSet(BmomentumWeightsName) if reweightBmomentum else '', 
-                                      mkkRewData      = mcDataMngr.getDataSet(mKKWeightsName) if reweightMkk else '',
-                                      sData           = target,
-                                      obsSet          = angles + time + muMomenta + Kmomenta + Bmomenta + KKMass,
-                                      itNumb          = iterNumb
-                                      )
-    
-    # plot weights
-    plotWeightsList = []
-    if (reweightKKmom,RewApproach)==(True,'vertical'):  plotWeightsList += [ KmomentaWeightsName ]    
-    if reweightPhysics:                                 plotWeightsList += [ physWeightName ]
-    if reweightMkk:                                     plotWeightsList += [ mKKWeightsName ]
-    if reweightBmomentum:                               plotWeightsList += [ BmomentumWeightsName ]
-    for wList in plotWeightsList: mcDataMngr.plotWeights(wList)
+# plot data after each reweighting step
+if makePlots: 
+    from P2VV.Utilities.MCReweighting import plotingScenarios, weightNamesDataKeysMap
+    plot = True
+    try: plotingScenarios[options.rewSteps]
+    except KeyError: plot = False         
+    if plot:
+        for keys in plotingScenarios[options.rewSteps]:
+            dataSets = { keys[0]: mcDataMngr.getDataSet(weightNamesDataKeysMap[ keys[0] ]),
+                         keys[1]: mcDataMngr.getDataSet(weightNamesDataKeysMap[ keys[1] ])
+                         }
+            compPlots = compareDistributions( sData    = target,
+                                              obsSet   = angles + time + muMomenta + Kmomenta + Bmomenta + KKMass,
+                                              itNumb   = iterNumb,
+                                              prodData = MCProd,
+                                              **dataSets
+                                              )
+
+        # plot weights
+        plotWeightsList = []
+        if (reweightKKmom,RewApproach)==(True,'vertical'):  plotWeightsList += [ KmomentaWeightsName ]    
+        if reweightPhysics:                                 plotWeightsList += [ physWeightName ]
+        if reweightMkk:                                     plotWeightsList += [ mKKWeightsName ]
+        if reweightBmomentum:                               plotWeightsList += [ BmomentumWeightsName ]
+        for wList in plotWeightsList: mcDataMngr.plotWeights(wList)
+    else: print 'P2VV - WARNING: There is no point in ploting with this reweighting configuration, skipping plotting.'
 
 # write weighted mc data to a file
 if writeWeightedData: # TODO: got errors fix this

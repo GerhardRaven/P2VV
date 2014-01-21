@@ -19,12 +19,15 @@ def compareDistributions( **kwargs ):
     nullTest        = kwargs.pop('nullTest',        None)
     
     # get datasets
-    # TODO: Make kwargs kwargs keys the same as data keys and compact object grabing
     from ROOT import RooFit, RooDataSet
-    data = dict( mcBefore = kwargs.pop('mcData'), Sdata = kwargs.pop('sData') )
-    for key in [ 'mkkRewData','BmomRewData', 'mcDataPhysRew', 'MomRewData' ]:
-        if kwargs[key]: data[key] = kwargs.pop(key) 
-          
+    data = dict( Sdata = kwargs.pop('sData') )
+    for key in [ 'mcData', 'mkkRewData','BmomRewData', 'mcDataPhysRew', 'MomRewData' ]:
+        if kwargs.has_key(key):
+            if kwargs[key]: data[key] = kwargs.pop(key)
+    names = ''
+    for d in data.itervalues(): names +=  d.GetName() + '\n'
+    print 'P2VV - INFO: compareDistributions: Making comparition plots for datasets:', names
+    
     # get observables and x ranges
     observables, Kmomenta, muMomenta, trackMomRangeX = [], [], [], {}
     for obs in obsSet:
@@ -54,14 +57,16 @@ def compareDistributions( **kwargs ):
     from math import pi
 
     # make canvases
-    obsCanv         = TCanvas('anglesTime_%s'%itNumb,'anglesTime_%s'%itNumb)
-    assymObsCanv    = TCanvas('assymAnglesTime_%s'%itNumb,'assymAnglesTime_%s'%itNumb)
-    KaonCanv        = TCanvas('KaonMomenta_%s'%itNumb,'KaonMomenta_%s'%itNumb)
-    muonCanv        = TCanvas('muonMomenta_%s'%itNumb,'muonMomenta_%s'%itNumb)    
-    assymKaonCanv   = TCanvas('assymKaonMomenta_%s'%itNumb,'assymKaonMomenta_%s'%itNumb)
-    assymMuonCanv   = TCanvas('assymmuonMomenta_%s'%itNumb,'assymmuonMomenta_%s'%itNumb)
-    KKMassCanv      = TCanvas('KKMass_%s'%itNumb,'KKMass_%s'%itNumb)
-    BmomCanv        = TCanvas('B_P_%s'%itNumb,'B_P_%s'%itNumb)
+    canvnamesMap = dict(mcData='Init', mcDataPhysRew='Phys', MomRewData='KKmom', Sdata='tar', mkkRewData='mkk', BmomRewData='B' )
+    namePF          = '_' + data.keys()[0] + data.keys()[1] + '_' + kwargs.pop('prodData')
+    obsCanv         = TCanvas('anglesTime_%s'%itNumb + namePF       ,'anglesTime_%s'%itNumb)
+    assymObsCanv    = TCanvas('assymAnglesTime_%s'%itNumb + namePF  ,'assymAnglesTime_%s'%itNumb)
+    KaonCanv        = TCanvas('KaonMomenta_%s'%itNumb + namePF      ,'KaonMomenta_%s'%itNumb)
+    muonCanv        = TCanvas('muonMomenta_%s'%itNumb + namePF      ,'muonMomenta_%s'%itNumb)    
+    assymKaonCanv   = TCanvas('assymKaonMomenta_%s'%itNumb + namePF ,'assymKaonMomenta_%s'%itNumb)
+    assymMuonCanv   = TCanvas('assymmuonMomenta_%s'%itNumb + namePF ,'assymmuonMomenta_%s'%itNumb)
+    KKMassCanv      = TCanvas('KKMass_%s'%itNumb + namePF           ,'KKMass_%s'%itNumb)
+    BmomCanv        = TCanvas('B_P_%s'%itNumb + namePF              ,'B_P_%s'%itNumb)
     obsCanv.Divide(2,2)
     assymObsCanv.Divide(2,2)
     muonCanv.Divide(4,2)
@@ -72,7 +77,7 @@ def compareDistributions( **kwargs ):
     KKMassCanv.Divide(2,2)
 
     # set some data drawing options
-    colors      = dict(mcBefore=2, mcDataPhysRew=kGreen+3, MomRewData=4, Sdata=kMagenta+2, mkkRewData=1, BmomRewData=5 )
+    colors      = dict(mcData=2, mcDataPhysRew=kGreen+3, MomRewData=4, Sdata=kMagenta+2, mkkRewData=1, BmomRewData=5 )
     stdDrawOpts = dict( DataError = RooAbsData.SumW2, MarkerSize = .6, XErrorSize = 0. )
     dataOpts    = dict()    
     for key in colors.keys():
@@ -91,7 +96,7 @@ def compareDistributions( **kwargs ):
                                        frameOpts = dict( Bins = 30 ), 
                                        )
         # make assymetry plots
-        print 'P2VV - INFO: compareDistributions: Creating assymentry plot for %s'%obs.GetName()
+        # print 'P2VV - INFO: compareDistributions: Creating assymentry plot for %s'%obs.GetName()
         makeAssymetryPlot(assymCanv, anglesFrames, referenceHistName, len(data.keys()), yRange=assymYrange ) 
 
     # plot Kaon and muon momenta
@@ -107,14 +112,14 @@ def compareDistributions( **kwargs ):
                                     frameOpts = dict( Bins = 30, Range=trackMomRangeX[obs.GetName()] )
                                     )
         # make assymetry plots
-        print 'P2VV - INFO: compareDistributions: Creating assymentry plot for %s'%obs.GetName()
+        # print 'P2VV - INFO: compareDistributions: Creating assymentry plot for %s'%obs.GetName()
         makeAssymetryPlot( assymCanv, momFrame, referenceHistName, len(data.keys()), yRange=assymYrange ) 
 
     # plot KKMass
     if data.has_key('mkkRewData'):
         print 'P2VV - INFO: compareDistributions: Plotting KKmass.'
         KKMassFrame = compareDataSets( KKMassCanv.cd(1), KKMass, data = data, dataOpts = dataOpts, frameOpts = dict( Bins = 40 ))
-        print 'P2VV - INFO: compareDistributions: Creating assymentry plot for KKmass'
+        # print 'P2VV - INFO: compareDistributions: Creating assymentry plot for KKmass'
         makeAssymetryPlot( KKMassCanv.cd(2), KKMassFrame, referenceHistName, len(data.keys()) )
 
     # plot B_P and B_Pt
@@ -123,15 +128,15 @@ def compareDistributions( **kwargs ):
             # for key in dataOpts.keys(): dataOpts[key]['Binning'] = B_P.getBinning()
             print 'P2VV - INFO: compareDistributions: Plotting %s'%obs.GetName()
             BmomFrame = compareDataSets( BmomCanv.cd(pad), obs, data = data, dataOpts = dataOpts, frameOpts = dict( Bins=70, Range=rangeY ))
-            print 'P2VV - INFO: compareDistributions: Creating assymentry plot for %s'%obs.GetName()
+            # print 'P2VV - INFO: compareDistributions: Creating assymentry plot for %s'%obs.GetName()
             makeAssymetryPlot( BmomCanv.cd(pad+2), BmomFrame, referenceHistName, len(data.keys()) )
 
     # make a legend and draw it
     legend, assym_legend = TPaveText(.587, .66, .893, .902, 'NDC' ), TPaveText( .269, .247, .569, .489, 'NDC' )
     for l in [legend,assym_legend]: l.SetFillColor(0)
-    entriesNames = dict(mcBefore='mcNominal', mcDataPhysRew='mcPhysRew', mkkRewData = 'mcMkkRew', \
+    entriesNames = dict(mcData='mcNominal', mcDataPhysRew='mcPhysRew', mkkRewData = 'mcMkkRew', \
                             MomRewData='mKKMomRew', Sdata='data', BmomRewData = 'mcBmomRew' )
-    for key in ['mcBefore', 'BmomRewData', 'mcDataPhysRew', 'mkkRewData', 'MomRewData', 'Sdata']:
+    for key in ['mcData', 'BmomRewData', 'mcDataPhysRew', 'mkkRewData', 'MomRewData', 'Sdata']:
         if data.has_key(key):
             legend.AddText('#color[%s]{%s}'%(colors[key],entriesNames[key]))
         if data.has_key(key) and key!='Sdata': 
@@ -150,7 +155,7 @@ def compareDistributions( **kwargs ):
     _P2VVPlotStash.append(assym_legend)
     
     # print canvases in file
-    for canv in [obsCanv,KaonCanv,muonCanv,assymObsCanv,assymMuonCanv,assymKaonCanv,KKMassCanv,BmomCanv]: canv.Print(canv.GetName()+'.pdf')
+    for canv in [obsCanv,KaonCanv,muonCanv,assymObsCanv,assymMuonCanv,assymKaonCanv,KKMassCanv,BmomCanv]: canv.Print(canv.GetName() +  '.pdf')
     return [obsCanv,KaonCanv,muonCanv,assymObsCanv,assymMuonCanv,assymKaonCanv,KKMassCanv,BmomCanv]
 
 # clean P2VVPlotStash to save memory
@@ -762,23 +767,6 @@ class BuildBs2JpsiKKFit():
             self._pdfConfig.writeParametersToFile(  filePath = parFileOut )
 
         print 120 * '=' + '\n'
-
-    # def updateDataParameters(self, oldPars, itNum=0):
-    #     fitResult = self._FitResults['iter_%s'%itNum]
-    #     cloneOldPars = oldPars.copy()
-    #     parkeys = oldPars.keys()
-    #     parkeys.remove('A0Phase')
-    #     for par in parkeys:
-    #         if par.startswith('__'):
-    #             fitResultParKey = '__%s_'%self._pdfConfig['parNamePrefix'] + par.partition('__')[2]
-    #         else:
-    #             fitResultParKey =  self._pdfConfig['parNamePrefix'] + '_' + par
-    #         try: oldPars[par] = fitResult.floatParsFinal().find(fitResultParKey).getVal()
-    #         except AttributeError: 
-    #             print 'P2VV - WARNING: updateDataParameters: Parameter %s not found in fit result %s, parameter value will not change.'\
-    #                 %( fitResultParKey, fitResult.GetName() )
-    #     print 'P2VV - INFO: updateDataParameters: Updating physics parameters from sFit.'
-    #     for k in parkeys: print '%20s  %.4f --> %.4f'%(k,cloneOldPars[k],oldPars[k])
         
     def _multiplyPdfWithAcc( self, effFile, iterNumb=None ):
         # read moments file and multiply pure pdf with angular acceptance
@@ -1291,9 +1279,15 @@ trackMomentaRanges = dict(
     B_Pt       = [ 2 , 94406 ]    
     )
 
-# for i in range1.keys():
-#     min = range1[i][0]
-#     max = range1[i][1]
-#     if range2[i][0]<min: min = range2[i][0]
-#     if range2[i][1]>max: max = range2[i][1]
-#     final[i] = [min,max]
+plotingScenarios = dict( BmommkkphysKKmom = [ ('mcData','BmomRewData'), ('BmomRewData','mkkRewData'), ('mkkRewData','mcDataPhysRew'), ('mcDataPhysRew','MomRewData') ],
+                         BmomphysKKmom    = [ ('mcData','BmomRewData'), ('BmomRewData','mcDataPhysRew'), ('mcDataPhysRew','MomRewData') ],
+                         mkkphysKKmom     = [ ('mcData','mkkRewData'), ('mkkRewData','mcDataPhysRew'), ('mcDataPhysRew','MomRewData') ],
+                         physKKmom        = [ ('mcData','mcDataPhysRew' ), ('mcDataPhysRew','MomRewData') ]
+                         )
+
+weightNamesDataKeysMap = dict( mcData        = 'initSource', 
+                               mcDataPhysRew = 'phys',
+                               mkkRewData    = 'mKK',
+                               MomRewData    = 'KKmom',
+                               BmomRewData   = 'Bmom'
+                               )
