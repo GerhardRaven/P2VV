@@ -29,8 +29,44 @@ def fitAverageExpToHist(hist,knots, tau) :
     #coefficients.Print()
     return coefficients
 
+class BinCounter(object):
+    def __init__(self, data, time, binning):
+        self.__data = data
+        self.__time = data.get().find(time.GetName())
+        self.__binning = binning
 
+        from collections import defaultdict
+        self.__levels = defaultdict(dict)
+        self.__categories = defaultdict(set)
+        
+    def add_bins(self, level, cat_def):
+        d = sorted(['{0} == {0}::{1}'.format(c, s) for c, s in cat_def.iteritems()])
+        self.__levels[level][tuple(d)] = self.__binning.numBins() * [0.]
+        self.__categories[level] |= set(cat_def.iterkeys())
+        
+    def run(self):
+        obs = self.__data.get()
+        categories = dict([(c, obs.find(c)) for cats in self.__categories.itervalues() for c in cats])
+        assert(all(categories.itervalues()))
+        for i in range(self.__data.numEntries()):
+            self.__data.get(i)
+            for level, cats in self.__categories.iteritems():
+                k = tuple(sorted(['{0} == {0}::{1}'.format(c, categories[c].getLabel()) for c in cats]))
+                b = self.__binning.binNumber(self.__time.getVal())
+                if k not in self.__levels[level]:
+                    continue
+                self.__levels[level][k][b] += self.__data.weight()
 
+    def get_bins(self, level, cat_def):
+        k = tuple(sorted(['{0} == {0}::{1}'.format(c, s) for c, s in cat_def.iteritems()]))
+        return self.__levels[level][k]
+
+    def levels(self):
+        return self.__levels
+
+    def categories(self):
+        return self.__categories
+    
 ## Since all time acceptances are implemented in the resolution model, we inherit from there
 class TimeAcceptance ( TimeResolution ) :
     def __init__( self, **kwargs ) :
@@ -145,24 +181,26 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
         fit = kwargs.pop('Fit', False)
         namePF = self.getNamePrefix(kwargs)
         rbo = kwargs.pop('RandomBinOrder', False)
-        with TFile.Open(input_file) as acceptance_file :
-            if not acceptance_file:
-                raise ValueError, "Cannot open histogram file %s" % input_file
-            print 'P2VV - INFO: Paper2012_csg_TimeAcceptance: using time efficiency histograms file "%s"' % input_file
-            # transform histograms in map of cat state -> histo name
-            # assume only one category for now (compositing could be implemented later)
-            for (cat, v) in self._histograms.iteritems():
-                for (s, info) in v.iteritems() :
-                    hist = info.get('histogram', None)
-                    if not hist:
-                        continue
+        self.__bc = None
+        
+        print 'P2VV - INFO: Paper2012_csg_TimeAcceptance: using time efficiency histograms file "%s"' % input_file
+        # transform histograms in map of cat state -> histo name
+        # assume only one category for now (compositing could be implemented later)
+        for (cat, v) in self._histograms.iteritems():
+            for (s, info) in v.iteritems() :
+                hist = info.get('histogram', None)
+                if not hist:
+                    continue
+                with TFile.Open(input_file) as acceptance_file:
+                    if not acceptance_file:
+                        raise ValueError, "Cannot open histogram file %s" % input_file
                     hist = acceptance_file.Get(info['histogram'])
-                    if not hist : raise ValueError, ('Failed to get histrogram %s from file %s' \
+                    if not hist : raise ValueError, ('Failed to get histogram %s from file %s' \
                                                      % (info['histogram'], input_file))
                     hist.SetDirectory(0) # disconnect self._hist from file... otherwise it is deleted when file is closed
                     info['histogram'] = hist
                     print 'P2VV - INFO: Paper2012_csg_TimeAcceptance: time efficiency category "%s/%s": using histogram "%s"'\
-                          % ( cat.GetName(), s, hist.GetName() )
+                           % ( cat.GetName(), s, hist.GetName() )
 
         parameterization = kwargs.pop('Parameterization','CubicSplineGaussModel')
         assert parameterization in [ 'CubicSplineGaussModel','EffResModel' ]
@@ -187,12 +225,14 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
         TimeAcceptance.__init__(self, Acceptance = acceptance, Cache = kwargs.pop('Cache', True))
         self._check_extraneous_kw( kwargs )
 
-    def build_constraints(self, original, values):
+    def build_av_constraints(self, original, values):
         # We're fitting and using the average constraint, first
         # create a shape and then the constraint.
         binning = self._shape.base_binning()
-        constraints = []
+        constraints = set()
         for (prefix, cat, state), parameters in self._shape.coefficients().iteritems():
+            if len(parameters) == 1:
+                parameters[0].setConstant(True)
             if prefix:
                 shape_name = '_'.join([prefix, cat, state, 'shape'])
             else:
@@ -218,13 +258,134 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
             from P2VV.RooFitWrappers import RealVar, Pdf
             mean  = RealVar(Name = av_name + '_constraint_mean', Value = values[(cat, state)][0], Constant = True)
             sigma = RealVar(Name = av_name + '_constraint_sigma', Value = values[(cat, state)][1], Constant = True)
-            constraints.append(Pdf(Name = av_name + '_constraint', Type = 'RooAvEffConstraint',
-                                   Parameters = [original, eff_model, mean, sigma]))
+            constraints.add(Pdf(Name = av_name + '_constraint', Type = 'RooAvEffConstraint',
+                                Parameters = [original, eff_model, mean, sigma]))
         return constraints
 
+    def build_multinomial_constraints(self, data, observables, extra_cat = None):
+        from P2VV.RooFitWrappers import RooObject
+        from collections import defaultdict
+        from itertools import product
+
+        ## We're fitting and using the multinomial constraint, first count the
+        ## number of events of a types N_a, N_b and N_ab in data and use them to
+        ## set the values of the parameters close to the minimum. Then construct
+        ## the constraint.
+        binning = self._shape.base_binning()
+        constraints = set()
+
+        ## Reorganise the coefficients returned by the shape for convenience. If
+        ## no prefix has been defined and an extra category to split on has been
+        ## given, replace the prefixes.
+        epsilons = defaultdict(dict)
+        coefficients = self._shape.coefficients()
+        if extra_cat and all((not k[0] for k in coefficients.iterkeys())):
+            states = [(c.GetName(), s.GetName()) for c, s in product([extra_cat], extra_cat)]
+            coefficients = dict([(('_'.join(prefix), cat, state), v) for (prefix, ((p, cat, state), v)) in product(states, coefficients.iteritems())])
+        for (prefix, cat, state), parameters in coefficients.iteritems():
+            level = cat[ : 4]
+            ## Check if a constraint for this combination already exists.
+            constraint_name = '_'.join([e for e in (prefix, level, 'multinomial') if e])
+            if constraint_name in RooObject._ws._rooobjects:
+                continue
+            epsilons[(prefix, level)][(cat, state)] = parameters
+
+        if not(epsilons):
+            return constraints
+                
+        obs = dict([(o.GetName(), o) for o in observables.itervalues()])
+        time = obs['time']
+
+        ## Count the number of events of types N_a, N_b and N_ab in bins in the
+        ## data.
+        from P2VV.Parameterizations.GeneralUtils import valid_combinations
+        self.__bc = BinCounter(data, time, binning)
+        for (prefix, level), parameters in epsilons.iteritems():
+            valid = valid_combinations([[(obs[c], s) for c, s in parameters.iterkeys()]])
+            for e in valid:
+                d = {}
+                if prefix and '_' in prefix and prefix.split('_')[0] in observables:
+                    d.update(dict([prefix.split('_')]))
+                for c, l in e:
+                    d[c.GetName()] = l
+                self.__bc.add_bins(level, d)
+        self.__bc.run()
+
+        ## Build the constraint
+        from ROOT import RooArgList
+        for (prefix, level), parameters in epsilons.iteritems():
+            args = {'Epsilons' : [], 'N' : []}
+            par_keys = set(parameters.iterkeys())
+            ## Calculate the valid combinations for this level, 2 for HLT1 like
+            ## 3 for HLT2 like
+            valid = valid_combinations([[(obs[c], s) for c, s in par_keys]])
+            for e in valid:
+                ## Add the cut on the prefix
+                d = {}
+                if prefix and '_' in prefix and prefix.split('_')[0] in observables:
+                    d.update(dict([prefix.split('_')]))
+                m = set()
+                for c, l in e:
+                    d[c.GetName()] = l
+                    m.add((c.GetName(), l))
+                m &= par_keys
+                bins = self.__bc.get_bins(level, d)
+                if len(m) == 1:
+                    ## A single entry is a signal state, this is either N_a or N_b.
+                    ## Insert at the front so it is sure they will be either the first
+                    ## or the second argument to the EffConstraint constructor.
+                    k = list(m)[0]
+                    eps = parameters[k]
+                    args['Epsilons'].insert(0, parameters[k])
+                    args['N'].insert(0, bins)
+                elif len(m) == 2:
+                    ## Both entries are a signal state, this must be N_ab
+                    args['N'].append(bins)
+            ## Calculate values of epsilon from the number of events in the different
+            ## categories in each bin 
+            ea, eb = args['Epsilons']
+            if len(valid) == 2:
+                na, nb = args['N']
+                if len(ea) > 1 and len(eb) == 1:
+                    ## Ensure that if there if either of the lists of epsilons
+                    ## contains only a single entry, it is the first one.
+                    eb, ea = ea, eb
+                    nb, na = na, nb
+                ## HLT1 like combination
+                for e in ea: e.setConstant(True)
+                if len(ea) == 1:
+                    eav = len(na) * [ea[0].getVal()]
+                else:
+                    eav = [e.getVal() for e in ea]
+                ebv = [eav[i] * nb[i] / na[i] for i in range(len(na))]
+            else:
+                ## HLT2 like combination
+                na, nb, nab = args['N']
+                if len(ea) > 1 and len(eb) == 1:
+                    ## Ensure that if there if either of the lists of epsilons
+                    ## contains only a single entry, it is the first one.
+                    eb, ea = ea, eb
+                    nb, na, nab = na, nb, nab
+                eav = [nab[i] / (nb[i] + nab[i]) for i in range(len(na))]
+                ebv = [nab[i] / (na[i] + nab[i]) for i in range(len(na))]
+            if len(ea) == 1:
+                ## If there is only one bin, use the average of the
+                ## calculated values.
+                ea[0].setVal(sum(eav) / float(len(eav)))
+            else:
+                for i, e in enumerate(eav): ea[i].setVal(e)
+            for i, e in enumerate(ebv): eb[i].setVal(e)
+            ## Build constraint 
+            from P2VV.RooFitWrappers import EffConstraint
+            constraint_name = '_'.join([e for e in (prefix, level, 'multinomial') if e])
+            constraints.add(EffConstraint(Name = constraint_name, **args))
+        return constraints
     def shapes(self):
         return [self._shape]
 
+    def bin_counter(self):
+        return self.__bc
+    
 class Paper2012_mer_TimeAcceptance(TimeAcceptance):
     def __init__(self, **kwargs ) :
         from ROOT import TFile

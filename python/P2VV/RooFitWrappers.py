@@ -96,7 +96,8 @@ class RooObject(object) :
             self.setWorkspace(workspace)
             self._var = self.ws()
 
-    def ws(self) :
+    @staticmethod
+    def ws(self = None):
         if not RooObject._ws : raise RuntimeError('No workspace defined!')
         return RooObject._ws
 
@@ -1766,6 +1767,44 @@ class Customizer(Pdf) :
 
     def _make_pdf(self) : pass
 
+class EffConstraint(Pdf):
+    def __init__( self, **kwargs ) :
+        __check_req_kw__('Name', kwargs )
+        __check_req_kw__('Epsilons', kwargs )
+        __check_req_kw__('N', kwargs )
+
+        name = kwargs.pop('Name')
+        epsilons =  kwargs.pop('Epsilons')
+        N =  kwargs.pop('N')
+        assert(len(epsilons) == 2)
+        assert(len(N) in [2, 3])
+
+        def __make_vector(bins):
+            from ROOT import std
+            vbins = std.vector('double')(len(bins))
+            for i in range(len(bins)):
+                vbins[i] = bins[i]
+            return vbins
+        N = [__make_vector(b) for b in N]
+
+        from ROOT import RooArgList
+        for i, eps in enumerate(epsilons):
+            l = RooArgList()
+            for e in eps:
+                l.add(e)
+            epsilons[i] = l
+        
+        if name in self.ws():
+            # initialize PDF
+            self._init(name, 'RooEffConstraint')
+        else:
+            from ROOT import RooEffConstraint
+            self._addObject(RooEffConstraint(name, name, *tuple(epsilons + N)))
+            self._init(name, 'RooEffConstraint')
+
+        Pdf.__init__(self, Name = name, Type = 'RooEffConstraint')
+
+    def _make_pdf(self) : pass    
 
 class ResolutionModel(Pdf):
     def __init__(self, **kwargs):
@@ -2035,9 +2074,6 @@ class BinnedFun(RooObject):
                 if not self.__fit:
                     # If we're not fitting set all bins constant
                     for h in heights: h.setConstant(True)
-                elif len(heights) == 1:
-                    # Fix the bin if there is only one.
-                    heights[0].setConstant(True)
                 if not self.__base_bounds or len(bounds) > len(self.__base_bounds):
                     self.__base_bounds = bounds
                     self.__binning = shape_binning
@@ -2050,8 +2086,7 @@ class BinnedFun(RooObject):
         ## build the average constraint.
         for c, state_info in coefficients.iteritems():
             for state, i in state_info.iteritems():
-                if len(i['heights']) > 1:
-                    self.__coefficients[(self.__namePF, c.GetName(), state)] = i['heights']
+                self.__coefficients[(self.__namePF.strip('_'), c.GetName(), state)] = i['heights']
             
         # Make one combination by looping over the entries and taking the first
         # state for each.

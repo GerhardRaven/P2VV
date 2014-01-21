@@ -7,7 +7,7 @@ parser = optparse.OptionParser(usage = 'usage: %prog year')
 (options, args) = parser.parse_args()
 
 prefix = '/stuff/PhD' if os.path.exists('/stuff') else '/bfys/raaij'
-input_data = {'Combined' : os.path.join(prefix, 'p2vv/data/P2VVDataSets20112012Reco14_I2MassNoMC_6KKMassBins_2TagCats_newTagging_trig.root'),
+input_data = {'Combined' : os.path.join(prefix, 'p2vv/data/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats.root'),
               '2012' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2012_s20r0p1_dv33r6p1_20131107_tupleB_add.root'),
               'MC2012' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC2012_ntupleB_20130904_add.root')}
 
@@ -21,6 +21,7 @@ if args[0] in input_data.keys():
     ntuple_file = input_data[args[0]]
 
 from P2VV.Load import P2VVLibrary
+from P2VV.Load import RooFitOutput
 from P2VV.RooFitWrappers import *
 
 from itertools import product
@@ -29,7 +30,7 @@ from P2VV.Parameterizations.GeneralUtils import valid_combinations
 #from P2VV.Load import RooFitOutput
 
 from ROOT import RooMsgService
-## RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.ObjectHandling))
+RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Generation))
 ## RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Integration))
 
 obj = RooObject( workspace = 'w')
@@ -49,78 +50,39 @@ hlt1_excl_biased_dec = Category('hlt1_excl_biased_dec', States = {'exclB' : 1, '
 hlt2_biased = Category('hlt2_biased', States = {'B' : 1, 'notB' : 0}, Observable = True)
 hlt2_unbiased = Category('hlt2_unbiased', States = {'UB' : 1, 'notUB' : 0}, Observable = True)
 hlt2_excl_biased = Category('hlt2_excl_biased', States = {'excl_biased' : 1, 'unbiased' : 0}, Observable = True)
-
+run_period = Category('runPeriod', States = {'p2011' : 2011, 'p2012' : 2012}, Observable = True)
 ## project_vars = [hlt1_biased, hlt1_unbiased, hlt2_biased, hlt2_unbiased, st]
 categories = [hlt1_biased, hlt1_unbiased, hlt1_excl_biased_dec,
-              hlt2_biased, hlt2_unbiased, hlt2_excl_biased]
+              hlt2_biased, hlt2_unbiased, hlt2_excl_biased, run_period]
 categories = dict([(c.GetName(), c) for c in categories])
 
-project_vars = [hlt1_excl_biased_dec, hlt1_unbiased, hlt2_biased, hlt2_unbiased, st]
+project_vars = [hlt1_excl_biased_dec, hlt1_unbiased, hlt2_biased, hlt2_unbiased, run_period, st]
 
 selected = Category('sel', States = {'Selected' : 1, 'NotSelected' : 0})
 
 observables = [t, m, mpsi, st, hlt1_biased, hlt1_unbiased, hlt1_excl_biased_dec,
-               hlt2_biased, hlt2_unbiased, hlt2_excl_biased, selected, nPV]
+               hlt2_biased, hlt2_unbiased, hlt2_excl_biased, selected, nPV, run_period]
 
 # now build the actual signal PDF...
 from ROOT import RooGaussian as Gaussian
 from ROOT import RooExponential as Exponential
 from ROOT import RooDecay as Decay
 
-signal_tau = RealVar('signal_tau', Title = 'mean lifetime', Unit = 'ps', Value =  1.5,
-                     MinMax = (1., 2.5))
-
-# Time resolution model
-from P2VV.Parameterizations.TimeResolution import Paper2012_TimeResolution as TimeResolution
-mu = dict(MinMax = (-0.010, 0.010))
-mu_values = {'MC11a_incl_Jpsi' : -0.000408, '2011_Reco14' : -0.00259,  
-             '2011' : -0.00407301, '2012' : -0.00333,
-             'MC2011_Sim08a_incl_Jpsi' : -0.00076}
-mu['Value'] = mu_values.get(args[0], 0)
-mu['Constant'] = True
-from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
-tres_args = dict(time = t, sigmat = st, Cache = False,
-                 PerEventError = True, Parameterise = 'RMS',
-                 TimeResSFParam = 'linear', timeResMu = mu, 
-                 ScaleFactors = [(2, 2.00), (1, 1.174)],
-                 Fractions = [(2, 0.239)],
-                 sf_mean_offset = dict(Value = 1.4887, MinMax = (0.1, 2), Constant = True),
-                 sf_mean_slope = dict(Value = -3.88, MinMax = (-5, 5), Constant = True),
-                 sf_sigma_offset = dict(Value = 0.4143, MinMax = (0.1, 2), Constant = True),
-                 sf_sigma_slope = dict(Value = -2.81, MinMax = (-5, 5), Constant = True),
-                 timeResFrac2 = dict(Value = 0.239, MinMax = (0.01, 0.99), Constant = True))
-sig_tres = TimeResolution(Name = 'sig_tres', **tres_args)
-
-## from P2VV.Parameterizations.TimeResolution import LP2011_TimeResolution
-## tres = LP2011_TimeResolution(time = t)
-## from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
-## tres = TimeResolution(time = t)
-
-# Signal time pdf
-from P2VV.Parameterizations.TimePDFs import Single_Exponent_Time
-sig_t = Single_Exponent_Time(Name = 'sig_t', time = t, resolutionModel = sig_tres.model())
+from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
+tres = TimeResolution(Name = 'resolution', time = t, BiasScaleFactor = False,
+                      timeResSigma = dict(Value = 0.045, Constant = True),
+                      timeResMu = dict(Value = 0, Constant = True), Cache = False)
 
 # B mass pdf
 from P2VV.Parameterizations.MassPDFs import LP2011_Signal_Mass as Signal_BMass, LP2011_Background_Mass as Background_BMass
 sig_m = Signal_BMass(Name = 'sig_m', mass = m, m_sig_mean = dict( Value = 5365, MinMax = (5363,5372)))
 
-# J/psi mass pdf
-from P2VV.Parameterizations.MassPDFs import DoubleCB_Psi_Mass as PsiMassPdf
-psi_m = PsiMassPdf(mpsi, Name = 'psi_m', mpsi_alpha_1 = dict(Value = 1.6832, Constant = True),
-                   mpsi_frac = dict(Value = 0.521806), mpsi_mean = dict(Value = 3099.23),
-                   mpsi_sigma_1 = dict(Value = 10.3741), mpsi_sigma_sf = dict(Value = 1.60555))
-
-# J/psi background
-psi_c = RealVar( 'psi_c',  Unit = '1/MeV', Value = -0.00081, MinMax = (-0.1, -0.0000001))
-bkg_mpsi = Pdf(Name = 'bkg_mpsi',  Type = Exponential, Parameters = [mpsi, psi_c])
-
 # Create combinatorical background component
-bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp  = dict( Name = 'm_bkg_exp' ) )
+bkg_m = Background_BMass( Name = 'bkg_m', mass = m, m_bkg_exp = dict( Name = 'm_bkg_exp' ) )
 
 # Create components
-signal_mass = Component('signal', (sig_m.pdf(), psi_m.pdf()), Yield = (30000,100,100000))
-psi_background_mass = Component('psi_background', (bkg_m.pdf(), psi_m.pdf()), Yield= (100000,500,200000) )
-background_mass = Component('background', (bkg_m.pdf(), bkg_mpsi), Yield = (100000,100,300000) )
+signal_mass = Component('signal', (sig_m.pdf(),), Yield = (30000,100,100000))
+background_mass = Component('background', (bkg_m.pdf(),), Yield = (100000,100,300000) )
 
 ## Build mass PDF
 mass_pdf = buildPdf(Components = (signal_mass, background_mass), Observables = (m, ), Name='mass_pdf')
@@ -134,25 +96,66 @@ input_file = os.path.join(base_location, 'data/start_values.root')
 
 ## hists = {hlt1_excl_biased_dec : {'excl_biased' : {'histogram' : 'hlt1_shape', 'average' : (6.285e-01, 1.633e-02)},
 ##                                  'unbiased' : { 'bins' : t.getRange(), 'heights' : [0.5]}}}
-hists = {hlt1_excl_biased_dec : {'exclB' : {'histogram' : 'hlt1_shape', 'average' : (6.285e-01, 1.633e-02)},
+hists = {hlt1_excl_biased_dec : {'exclB' : {'histogram' : 'hlt1_shape'},
                                  'notExclB' : { 'bins' : t.getRange(), 'heights' : [0.7]}},
-         hlt2_biased : { 'B' : {'histogram' : 'hlt2_shape', 'average' : (6.3290e-01, 1.65e-02)}},
-         hlt2_unbiased : { 'UB' : { 'bins' : t.getRange(), 'heights' : [0.5]}}}
+         hlt2_biased : { 'B' : {'histogram' : 'hlt2_shape'}},
+         hlt2_unbiased : { 'UB' : {'histogram' : 'hlt2_shape'}}}
 
+from P2VV.Parameterizations.TimePDFs import Single_Exponent_Time
+pdf_wrapper = Single_Exponent_Time(Name = 'pdf', time = t, resolutionModel = tres.model())
+tau = pdf_wrapper._tau
+pdf = pdf_wrapper.pdf()
+split_cats = [[run_period]]
+from itertools import chain
+split_pars = [[tau]]
+sim_pdf = SimultaneousPdf(pdf.GetName() + '_simul', MasterPdf = pdf,
+                          SplitCategories = split_cats, SplitParameters = split_pars)
+
+
+from ROOT import RooArgSet, RooArgList
+split_cat_pars = RooArgSet()
+sim_pdf.treeNodeServerList(split_cat_pars)
+split_cat = sim_pdf.indexCat()
+input_cats = RooArgList(split_cat) if split_cat.isFundamental() else split_cat.inputCatList()
+prototype = tres.model()
+from P2VV.RooFitWrappers import AddModel
+## NOTE, this only works for either a single resolution model or an AddModel which does
+## not contain further add models
+if isinstance(prototype, AddModel):
+    orig_res_params = {}
+    for model in prototype.models():
+        assert(not isinstance(model, AddModel))
+        orig_res_params[model.GetName()] = model['Parameters']
+    orig_res_params[prototype.GetName()] = prototype.fractions()
+else:
+    orig_res_params = {prototype.GetName() : prototype['Parameters']}
+
+split_models = {}
+from P2VV.Utilities.Splitting import replacement_model
+# Figure out which way the time resolution model is to be split
+res_params = set(var.GetName() for var in prototype.getVariables())
+split_res_cats = [run_period]
+replacements = {( ) : prototype}
+for split_state in split_cat:
+    comp_pdf = sim_pdf.getPdf(split_state.GetName())
+    res_model = comp_pdf.getComponents().find(tres.model().GetName())
+    split_models[split_state.GetName()] = replacement_model(prototype, res_model, input_cats,
+                                                            {tau._target_() : set([run_period])},
+                                                            split_cat_pars, orig_res_params)
+
+## Multiply by acceptances
 from P2VV.Parameterizations.TimeAcceptance import Paper2012_csg_TimeAcceptance as TimeAcceptance
-acceptance = TimeAcceptance(time = t, ResolutionModel = sig_tres, Input = input_file,
-                            Histograms = hists, Fit = True, Cache = False)
-pdf = Single_Exponent_Time(Name = 'pdf', time = t, resolutionModel = acceptance.model())
-pdf = pdf.pdf()
-pdf.Print('t')
-
-# Read input data
-from P2VV.Utilities.DataHandling import readData
-tree_name = 'DecayTree'
-## input_file = '/stuff/PhD/p2vv/data/Bs2JpsiPhiPrescaled_ntupleB_for_fitting_20120110.root'
-
+acceptances = {}
+for s, model in split_models.iteritems():
+    acceptance = TimeAcceptance(time = t, ParNamePrefix = '_'.join((run_period.GetName(), s)),
+                                ResolutionModel = model, Input = input_file, Histograms = hists,
+                                Fit = True, Cache = False)
+    acceptances[s] = acceptance
+    comp_pdf = sim_pdf.getPdf(s)
+    comp_pdf.changeModel(acceptance.acceptance()._target_())
+    
 ## Fit options
-fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Optimize = 1,
+fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Optimize = 2,
                Strategy = 2, Minimizer = 'Minuit2')
 
 valid_definition = [[(hlt1_excl_biased_dec, 'exclB'), (hlt1_excl_biased_dec, 'notExclB')], [(hlt2_biased, 'B'), (hlt2_unbiased, 'UB')]]
@@ -162,8 +165,10 @@ data = None
 if ntuple_file:
     from ROOT import TFile
     input_file = TFile(ntuple_file)
+    tree_name = 'DecayTree'
     if input_file.FindKey(tree_name):
         input_file.Close()
+        from P2VV.Utilities.DataHandling import readData
         data = readData(ntuple_file, tree_name, cuts = 'sel == 1 && (hlt1_biased == 1 || hlt1_unbiased_dec == 1) && (hlt2_biased == 1 || hlt2_unbiased == 1)',
                         NTuple = True, observables = observables)
 
@@ -220,43 +225,29 @@ if ntuple_file:
     else:
         dataset_name = 'JpsiKK_sigSWeight'
         data = input_file.Get(dataset_name)
-        data = data.reduce('runPeriod == runPeriod::p2011')
 else:
-    ## Generate
+    n_evt = int(5e4)
     from P2VV.Load import MultiCatGen
-    data = pdf.generate([t, hlt1_excl_biased_dec, hlt2_unbiased, hlt2_biased], 50000)
+    
+    ## Generate
+    data = pdf.generate([t, hlt1_excl_biased_dec, hlt2_unbiased, hlt2_biased], NumEvents = n_evt)
     ## Use the valid combinations to create a cut to remove wrong events
     cut = ' || '.join('(' + ' && '.join('{0} == {0}::{1}'.format(c.GetName(), s) for c, s in comb) + ')' for comb in valid)
     data = data.reduce(Cut = cut, EventRange = (0, 30000))
 
-    
 # Make PDF without acceptance for the constraints
-from P2VV.Parameterizations.TimeResolution import Truth_TimeResolution
-truth_res = Truth_TimeResolution(time = t)
-
-pdf_no_acc = Single_Exponent_Time(Name = 'pdf_no_acc', time = t, resolutionModel = truth_res.model())
-pdf_no_acc = pdf_no_acc.pdf()
-constraints = []
-from itertools import chain
-acc_average = {}
-for c, s in chain.from_iterable([zip([c] * c.numTypes(), [s.GetName() for s in c]) for c in hists.iterkeys()]):
-    if not s in hists[c]:
-        continue
-    heights = hists[c][s]['heights']
-    if len(heights) <= 1:
-        continue
-    val, err = hists[c][s]['average']
-    acc_average[(c.GetName(), s)] = (val, err)
-
-constraints.extend(acceptance.build_constraints(pdf_no_acc, acc_average))
-
-pdf.setExternalConstraints(pdf.ExternalConstraints() | set(constraints))
+constraints = set()
+from copy import copy
+obs = copy(categories)
+obs['time'] = t
+for acceptance in acceptances.itervalues():
+    constraints |= acceptance.build_multinomial_constraints(data, obs, extra_cat = run_period)
 
 ## Fit
 print 'fitting data'
 ## from profiler import profiler_start, profiler_stop
 ## profiler_start("acceptance.log")
-result = pdf.fitTo(data, SumW2Error = False, **fitOpts)
+result = sim_pdf.fitTo(data, ExternalConstraints = pdf.ExternalConstraints() | constraints, SumW2Error = False, **fitOpts)
 ## profiler_stop()
 
 from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
@@ -290,26 +281,27 @@ def make_title(combination):
     return '_X_'.join(title)
     
 # Plot the lifetime shapes
-canv = TCanvas('canvas', 'canvas', 900, 700)
+__canvases = []
 obs = [t]
-for states, (p, o) in zip(sorted(valid, key = sort_combination),
-                          (i for i in product(canv.pads(3, 2), obs))):
-    name = '__'.join(['%s_%s' % (state.GetName(), label) for state, label in states])
-    title = make_title(states)
-    cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in states])
-    cat_data = data.reduce(cuts)
-    project_set = RooArgSet(*project_vars)
-    pdfOpts = dict(ProjWData = (project_set, cat_data, True))
-    from P2VV.Utilities.Plotting import plot
-    binning = acceptance.shapes()[0].base_binning()
-    plot( p, o, cat_data, pdf, components = {'sig*' : dict(LineColor = kGreen, LineStyle = kDashed)}
-          , plotResidHist = True
-          , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack, Binning = binning)
-          , frameOpts = {'Title' : title}
-          , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
-          , logy = False
-          , logx = True
-          )
+for s in run_period:
+    cname = '_'.join((run_period.GetName(), s.GetName(), 'canvas'))
+    canv = TCanvas(cname, cname, 900, 700)
+    __canvases.append(canv)
+    for states, (p, o) in zip(sorted(valid, key = sort_combination),
+                              (i for i in product(canv.pads(3, 2), obs))):
+        name = '__'.join(['%s_%s' % (state.GetName(), label) for state, label in states])
+        title = make_title(states)
+        cuts = ' && '.join(['{0} == {0}::{1}'.format(state.GetName(), label) for state, label in states + ((run_period, s.GetName()),)])
+        cat_data = data.reduce(cuts)
+        project_set = RooArgSet(*project_vars)
+        pdfOpts = dict(ProjWData = (project_set, cat_data, True), Slice = (run_period, s.GetName()))
+        from P2VV.Utilities.Plotting import plot
+        binning = acceptance.shapes()[0].base_binning()
+        plot( p, o, cat_data, sim_pdf, plotResidHist = True,
+              dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack, Binning = binning),
+              frameOpts = {'Title' : title},
+              pdfOpts  = dict(LineWidth = 2, **pdfOpts),
+              logy = False, logx = True)
     
 # plot the efficiency shapes
 __frames = []
@@ -338,45 +330,27 @@ def plot_shape(p, o, shape, errorOpts = {}, pdfOpts = {}):
     frame.GetYaxis().SetTitleOffset(1.05)
     frame.Draw()
     __frames.append(frame)
-    
-shapes = [s.efficiency() for s in pdf.ExternalConstraints() if hasattr(s, 'efficiency')]
+
+shapes = dict([(s.GetName(), []) for s in run_period])
+for s, constraint in product(shapes.iterkeys(), constraints):
+    if not s in constraint.GetName():
+        continue
+    if hasattr(constraint, 'efficiency'):
+        shapes.append(s.efficiency())
+    elif hasattr(constraint, 'epsB'):
+        binning = acceptance.shapes()[0].base_binning()
+        from P2VV.RooFitWrappers import BinnedPdf
+        for n, l in [('epsA', constraint.epsA()), ('epsB', constraint.epsB())]:
+            if l.getSize() <= 1:
+                continue
+            shapes[s].append(BinnedPdf('_'.join((constraint.GetName(), n, 'shape')), Observable = t,
+                                       Binning = binning, Coefficients = [c for c in l]))
+
 eff_canvases = {}
 from ROOT import kYellow, kOrange
-for p in ['p2011', 'p2012']:
-    n = 'eff_canvas_' + p
-    eff_canvas = TCanvas(n, n, 1200, 400)
-    eff_canvases[p] = eff_canvas
-    for p, shape in zip(eff_canvas.pads(2, 1), sorted(shapes, key = lambda s: s.GetName())):
+for period, s in shapes.iteritems():
+    n = 'eff_canvas_' + period
+    eff_canvas = TCanvas(n, n, 1200, 300)
+    eff_canvases[period] = eff_canvas
+    for p, shape in zip(eff_canvas.pads(3, 1), sorted(s, key = lambda e: e.GetName())):
         plot_shape(p, t, shape, errorOpts = {'result' : result, 2 : kYellow, 1 : kOrange})
-
-output = {'hlt1_shape_10' : 'hlt1_excl_biased_dec_exclB',
-          'hlt2_shape_10' : 'hlt2_biased_B'}
-output_file = os.path.join(prefix, 'p2vv/data/start_values.root')
-if os.path.exists(output_file):
-    open_mode = 'update'
-else:
-    open_mode = 'new'
-
-from ROOT import TFile
-output_file = TFile(output_file, open_mode)
-
-allVars = ws.allVars()
-from ROOT import TH1D
-from itertools import product
-from array import array
-
-for (name, pat), period in product(output.items(), ['p2011', 'p2012']):
-    binning = time.getBinning(pat + '_binning')
-    bins = array('d', [binning.binLow(i) for i in range(binning.numBins())] + [binning.highBound()])
-    n = len(bins)
-    heights = [v for v in allVars if '_'.join((period, pat)) in v.GetName()]
-    heights = sorted(heights, key = lambda v: int(v.GetName().rsplit('_', 1)[-1]))
-    v = [(h.getVal(), h.getError()) for h in heights]
-    name = '_'.join((name, period))
-    hist = TH1D(name, name, n - 1, bins)
-    for i in range(1, n):
-        hist.SetBinContent(i, v[i - 1][0])
-        hist.SetBinError(i, v[i - 1][1])
-    output_file.WriteTObject(hist, hist.GetName(), 'overwrite')
-
-output_file.Close()
