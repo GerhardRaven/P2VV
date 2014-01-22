@@ -8,9 +8,8 @@ from math import sqrt
 parser = optparse.OptionParser(usage = 'usage: %prog year model')
 
 def mb_callback(option, opt_str, value, parser):
-    mb = tuple(int(i) for i in opt_str.split(','))
-    import pdb; pdb.set_trace()
-    setattr(parser.values, option.dest, )
+    mb = tuple(int(i) for i in value.split(','))
+    setattr(parser.values, option.dest, mb)
 
 parser.add_option("--no-pee", dest = "pee", default = True,
                   action = 'store_false', help = 'Do not use per-event proper-time error')
@@ -70,7 +69,7 @@ parser.add_option("--write-constraints", dest = "write_constraints", default = '
                   action = 'store', type = 'string', help = 'Write contraints to database.')
 parser.add_option("--mass-parameterisation", dest = "mass_param", default = '',
                   action = 'store', type = 'string', help = 'Reparameterise the mass PDF')
-parser.add_option("--make-binning", action="callback", callback=mb_callback,
+parser.add_option("--make-binning", action="callback", callback=mb_callback, type = 'string',
                   dest = "make_binning", default = (0,), help = 'Make binning with n_bins for each ' +
                   'observable; comma separated list')
 
@@ -303,7 +302,7 @@ tree_name = 'DecayTree'
 extra_name = [args[1]]
 for a, n in [('parameterise', None), ('wpv', 'wpv_type'), ('sf_param', None),
              ('peak_only', 'peak'), ('add_background', 'cfit'),
-             ('use_refit', 'PVRefit'), ('pee', None)]:
+             ('use_refit', 'PVRefit'), ('pee', 'pee')]:
     v = getattr(options, a)
     if v:
         if n and n != v and hasattr(options, n):
