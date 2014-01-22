@@ -115,6 +115,13 @@ def make_binning(data, var, n_bins):
             total = 0
             bounds.append(v)
 
-    bounds[-1] = var.getMax()
+    def __ae(a, b, tol):
+        return (abs(a-b) / max(abs(a), abs(b))) < tol
+
+    if __ae(bounds[-1], var.getMax(), 0.05):
+        bounds[-1] = var.getMax()
+    else:
+        bounds.append(var.getMax())
+
     bounds = [float('%4.3e' % e) for e in bounds]
     return bounds
