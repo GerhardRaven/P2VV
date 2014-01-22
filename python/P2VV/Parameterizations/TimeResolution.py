@@ -222,11 +222,11 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
             else:
                 from math import sqrt
                 self._sf_mean = self._parseArg('timeResSFMean', kwargs
-                                               , Value = ((1. - fracs[-1][1]) * sigmasSFs[-1][1]
-                                                           + fracs[-1][1] * sigmasSFs[-2][1])
-                                               , MinMax = (0.5, 5))
-                self._sf_sigma = self._parseArg('timeResSFSigma', kwargs, Value = sqrt((1 - fracs[-1][1]) * sigmasSFs[-1][1] * sigmasSFs[-1][1]
-                                                                                        + fracs[-1][1] * sigmasSFs[-2][1] * sigmasSFs[-2][1]
+                                               , Value = ((1. - fracs[-1][1]) * sigmasSFs[-2][1]
+                                                           + fracs[-1][1] * sigmasSFs[-1][1])
+                                               , MinMax = (0.01, 5))
+                self._sf_sigma = self._parseArg('timeResSFSigma', kwargs, Value = sqrt((1 - fracs[-1][1]) * sigmasSFs[-2][1] * sigmasSFs[-2][1]
+                                                                                        + fracs[-1][1] * sigmasSFs[-1][1] * sigmasSFs[-1][1]
                                                                                         - self._sf_mean.getVal() ** 2),
                                                  MinMax = (0.01, 5))
             self._timeResSigmasSFs[-1] = self._parseArg(Name + '_SF1', kwargs, Formula = '- sqrt(@0 / (1 - @0)) * @1 + @2',
