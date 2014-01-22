@@ -163,3 +163,186 @@ class WritableCacheFile(CacheFiles):
             self._rootFile.Flush()
             self._rootFile.Close()
             self.unlock(self._rootFile)
+
+class Cache(object):
+    def __init__(self, cache_def, directory):
+        from P2VV.CacheUtils import CacheFiles
+        self.__cache_files = CacheFiles(*cache_def)
+        self.__directory = directory
+        self.__cache_dir, self.__cache_file = self.__cache_files.getFromCache(directory)
+
+    def directory(self):
+        return self.__directory
+
+    def cache_files(self):
+        return self.__cache_files
+
+    def cache_dir(self):
+        return self.__cache_dir
+        
+    def _get_make_dir(self, d, top = None):
+        if top == None:
+            top = self.cache_dir()
+        tmp = top.Get(d)
+        if not tmp:
+            top.mkdir(d)
+            tmp = top.Get(d)
+        return tmp
+
+    def read_data(self):
+        ## Read sdata
+        cache_dir = self.cache_dir()
+        if not cache_dir:
+            return None, {}
+        data_dir = cache_dir.Get('data')
+        if not data_dir:
+            return None, {}
+        keys = data_dir.GetListOfKeys()
+        if keys.GetEntries() != 1:
+            return None, {}
+        else:
+            data = data_dir.Get(keys.At(0).GetName())
+
+        sdata_dir = cache_dir.Get('sdata')
+        sdatas = {}
+        if not sdata_dir:
+            return data, sdatas
+        dss = []
+        for e in sdata_dir.GetListOfKeys():
+            if e.GetClassName() == 'RooDataSet':
+                dss.append(e.GetName())
+        for e in dss:
+            sdata = sdata_dir.Get(e)
+            if not sdata:
+                return data, {}
+            else:
+                sdatas[e] = sdata
+        return data, sdatas
+
+    def read_results(self):
+        # Read results
+        rd = self.cache_dir().Get('results')
+        if not rd:
+            return {}
+        results = {}
+        for key in rd.GetListOfKeys():
+            if key.GetClassName() != 'RooFitResult':
+                continue
+            results[key.GetName()] = rd.Get(key.GetName())
+        return results
+
+    def write_cut(self, cut):
+        with WritableCacheFile(self.cache_files(), self.directory()) as cache_file:
+            cache_dir = cache_file.Get(self.directory())
+            from ROOT import TObjString
+            cut_string = TObjString(cut)
+            cache_dir.WriteTObject(cut_string, 'cut')
+
+    def write_data(self, data, sdatas):
+        with WritableCacheFile(self.cache_files(), self.directory()) as cache_file:
+            cache_dir = cache_file.Get(self.directory())
+
+            from ROOT import TObject    
+            sdata_dir = self._get_make_dir('sdata', cache_dir)
+            sdata_sub_dir = None
+            for name, ds in sdatas.iteritems():
+                split_name = name.split('/')
+                if len(split_name) > 1:
+                    sub_dir, name = split_name
+                    sdata_sub_dir = self._get_make_dir(sub_dir + '/sdata', cache_dir)
+                    sdata_sub_dir.WriteTObject(ds, name, 'Overwrite')
+                else:
+                    sdata_dir.WriteTObject(ds, name, "Overwrite")
+            if sdata_sub_dir:
+                sdata_sub_dir.Write(sdata_sub_dir.GetName(), TObject.kOverwrite)
+            sdata_dir.Write(sdata_dir.GetName(), TObject.kOverwrite)
+
+            data_dir = self._get_make_dir('data', cache_dir)
+            data_dir.WriteTObject(data, data.GetName(), "Overwrite")
+            data_dir.Write(data_dir.GetName(), TObject.kOverwrite)
+
+            # Delete the input TTree which was automatically attached.
+            cache_file.Delete('%s;*' % 'DecayTree')
+
+    def write_results(self, results):
+        from ROOT import TObject
+        with WritableCacheFile(self.cache_files(), self.directory()) as cache_file:
+            cache_dir = cache_file.Get(self.directory())
+            ## Write mass fit results
+            result_dir = self._get_make_dir('results', cache_dir)
+            result_sub_dir = None
+            for name, result in results.iteritems():
+                split_name = name.split('/')
+                if len(split_name) > 1:
+                    sub_dir, name = split_name
+                    result_sub_dir = self._get_make_dir(sub_dir + '/results', cache_dir)
+                    result_sub_dir.WriteTObject(result, name, 'Overwrite')
+                else:
+                    result_dir.WriteTObject(result, name, "Overwrite")
+            if result_sub_dir:
+                result_sub_dir.Write(result_sub_dir.GetName(), TObject.kOverwrite)
+            result_dir.Write(result_dir.GetName(), TObject.kOverwrite)
+
+    def write_plots(self, plots):
+        from ROOT import TObject
+        with WritableCacheFile(self.cache_files(), self.directory()) as cache_file:
+            cache_dir = cache_file.Get(self.directory())
+            ## Write plots
+            dirs = {}
+            for d in plots.iterkeys():
+                if not d:
+                    dirs[d] = self._get_make_dir('plots', cache_dir)
+                else:
+                    sub_dir = self._get_make_dir(d, cache_dir)
+                    dirs[d] = self._get_make_dir('plots', sub_dir)
+            for d, ps in plots.iteritems():
+                for p in ps:
+                    dirs[d].WriteTObject(p[0], p[0].GetName(), 'overwrite')
+            for d in dirs.itervalues():
+                d.Write(d.GetName(), TObject.kOverwrite)
+        
+class SimCache(Cache):
+    def __init__(self, cache_def, directory, sub_dir):
+        self.__sub_dir = sub_dir
+        Cache.__init__(self, cache_def, directory)
+        
+    def read_results(self):
+        cache_dir = self.cache_dir()
+        results = {}
+        if not cache_dir:
+            return results
+        for d in ('', self.__sub_dir + '/'):
+            rd = cache_dir.Get(d + 'results')
+            if not rd:
+                return {}
+            for key in rd.GetListOfKeys():
+                if key.GetClassName() != 'RooFitResult':
+                    continue
+                results[d + key.GetName()] = rd.Get(key.GetName())
+        return results
+
+    def read_data(self):
+        cache_dir = self.cache_dir()
+        if not cache_dir:
+            return None, {}
+        data_dir = cache_dir.Get('data')
+        if not data_dir:
+            return None, {}
+        keys = data_dir.GetListOfKeys()
+        if keys.GetEntries() != 1:
+            return None, {}
+        else:
+            data = data_dir.Get(keys.At(0).GetName())
+        
+        ## Read sdata
+        cache_dir = self.cache_dir()
+        sdatas = {}
+        for d in ('', self.__sub_dir + '/'):
+            sdata_dir = cache_dir.Get(d + 'sdata')
+            if not sdata_dir:
+                return data, {}
+            for key in sdata_dir.GetListOfKeys():
+                if key.GetClassName() != 'RooDataSet':
+                    continue
+                sdatas[d + key.GetName()] = sdata_dir.Get(key.GetName())
+        return data, sdatas
