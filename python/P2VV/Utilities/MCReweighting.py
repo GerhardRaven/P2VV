@@ -299,7 +299,7 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     plot           = kwargs.pop('xCheckPlots',     False )
     equalStatsBins = kwargs.pop('equalStatsBins',  False )
 
-    from ROOT import TH2F, TH1F, TCanvas
+    from ROOT import TH2D, TH1D, TCanvas
   
     _valX = lambda ev: ev.find(var[0]).getVal() # value getter of the first variable
     _valY = lambda ev: ev.find(var[1]).getVal() # value getter of the first variable
@@ -331,15 +331,19 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
         lowboundsX += [ xMax ]
         lowboundsY += [ yMax ]
         lowboundsX, lowboundsY = array('f',lowboundsX), array('f',lowboundsY)
+        
+        sourceHist = TH2D('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, lowboundsX, nbins, lowboundsY )
+        targetHist = TH2D('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, lowboundsX, nbins, lowboundsY )
+
     else: # import binning
-        from P2VV.Utilities.MCReweighting import createMomentaBinning
-        lowboundsX = createMomentaBinning( nbins, endpoint=xMax,typeSpec='f' )
-        lowboundsY = createMomentaBinning( nbins, endpoint=yMax,typeSpec='f' )
-    
+        # from P2VV.Utilities.MCReweighting import createMomentaBinning
+        # lowboundsX = createMomentaBinning( nbins, endpoint=xMax,typeSpec='f' )
+        # lowboundsY = createMomentaBinning( nbins, endpoint=yMax,typeSpec='f' ) 
+        sourceHist = TH2D('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, xMin, xMax, nbins, yMin, yMax )
+        targetHist = TH2D('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, xMin, xMax, nbins, yMin, yMax )
+
     # create 2D histrograms and fill
-    sourceHist = TH2F('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, lowboundsX, nbins, lowboundsY )
-    targetHist = TH2F('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, lowboundsX, nbins, lowboundsY )
-    for evnt in source: sourceHist.Fill( _valX(evnt), _valY(evnt), source.weight() )
+        for evnt in source: sourceHist.Fill( _valX(evnt), _valY(evnt), source.weight() )
     for evnt in target: targetHist.Fill( _valX(evnt), _valY(evnt), target.weight() )
        
     # rescale
@@ -358,27 +362,19 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
             weights += [targetHist.GetBinContent(bin) / sourceHist.GetBinContent(bin)] # calculate weight
     if count>0: print 'P2VV - INFO: TwoDimentionalVerticalReweighting: Could not assign weight for %s out of %s events with current binning, excluding them from the sample.'%(count,source.numEntries())
 
-    # fill weights to histogram for xcheck
-    if plot: 
-        weightsHist = TH1F('Weights', 'Weights',  2*nbins, .9*min(weights), 1.1*min(weights))
-        for w in weights: weightsHist.Fill(w)
-      
     # plot and print the 2d histograms
     if plot: 
-        canvSourc, canvTarg, canvWeights = [ TCanvas(n,n) for n in ['source','target','momWeights'] ]
+        canvSourc, canvTarg = [ TCanvas(n,n) for n in ['source','target'] ]
         for hist, canv in zip([sourceHist,targetHist], [canvSourc,canvTarg]): 
             hist.SetStats(False)
             canv.cd()
             hist.Draw('LEGO')
             canv.Print(canv.GetName() + '_%s.pdf'%iterIdx)
-        canvWeights.cd()
-        weightsHist.Draw()
-        canvWeights.Print(canvWeights.GetName() + '_%s.pdf'%iterIdx )
 
-        testS0 = TH1F('testBP0S','testBP0S',3*nbins, xMin, xMax )
-        testT0 = TH1F('testBP0T','testBP0T',3*nbins, xMin, xMax )
-        testS1 = TH1F('testBpt1S','testBpt1S',3*nbins, yMin, yMax )
-        testT1 = TH1F('testBpt1T','testBpt1T',3*nbins, yMin, yMax )
+        testS0 = TH1D('test%s0S'%var[0],'test%s0S'%var[0],3*nbins, xMin, xMax )
+        testT0 = TH1D('test%s0T'%var[0],'test%s0T'%var[0],3*nbins, xMin, xMax )
+        testS1 = TH1D('test%s1S'%var[1],'test%s1S'%var[1],3*nbins, yMin, yMax )
+        testT1 = TH1D('test%s1T'%var[1],'test%s1T'%var[1],3*nbins, yMin, yMax )
         sourceBp, sourceBPt = [], []
         for ev in source: 
             sourceBp += [ev.find(var[0]).getVal()]
@@ -417,7 +413,7 @@ def OneDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     plot           = kwargs.pop('xCheckPlots',     False )
     equalStatsBins = kwargs.pop('equalStatsBins',  False )
 
-    from ROOT import TH1F, TCanvas
+    from ROOT import TH1D, TCanvas
     from array import array
 
     # dataset value getter 
@@ -446,11 +442,11 @@ def OneDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     # create histrograms
     print 'P2VV - INFO: OneDimentionalVerticalReweighting: Using %s binnning with #bins = %s.'%('equal statistics' if equalStatsBins else 'uniform',nbins)
     if equalStatsBins:
-        sourceHist  = TH1F('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, array('f',lowbounds) )
-        targetHist  = TH1F('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, array('f',lowbounds) )
+        sourceHist  = TH1D('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, array('f',lowbounds) )
+        targetHist  = TH1D('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, array('f',lowbounds) )
     else:
-        sourceHist  = TH1F('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, xMin, xMax )
-        targetHist  = TH1F('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, xMin, xMax )
+        sourceHist  = TH1D('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, xMin, xMax )
+        targetHist  = TH1D('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, xMin, xMax )
 
     # fill reweighting histograms
     for evnt in source: sourceHist.Fill( _valX(evnt), source.weight() )
@@ -475,11 +471,8 @@ def OneDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     if count>0: print 'P2VV - INFO: OneDimentionalVerticalReweighting: Could not assign weight for %s out of %s events, excluding them from sample.'%(count,source.numEntries())
 
     if plot: # check the result of the reweighting 
-        weightsHist = TH1F('Weights', 'Weights',  3*nbins, .9*min(weights), 1.1*min(weights))
-        for w in weights: weightsHist.Fill(w)
-
-        test_s = TH1F('test_s','test_s', 3*nbins, xMin,xMax)
-        test_t = TH1F('test_t','test_t', 3*nbins, xMin,xMax)
+        test_s = TH1D('test_s','test_s', 3*nbins, xMin,xMax)
+        test_t = TH1D('test_t','test_t', 3*nbins, xMin,xMax)
         sourceEvtList, targetEvtList = [],[]
         for ev in source: sourceEvtList+=[ _valX(ev) ]
         for ev in target: targetEvtList+=[ _valX(ev) ]
@@ -493,8 +486,6 @@ def OneDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
        
         from P2VV.Utilities.Plotting import _P2VVPlotStash
         _P2VVPlotStash += [test_s,test_t]
-        testCanv.Print( testCanv.GetName() + '_%s.pdf'%iterIdx )
-        
         del source, target
         return weights, testCanv
     else: 
@@ -1258,26 +1249,49 @@ parValuesMcSim08_6KKmassBins = dict(
     ,f_S_bin5          = 0.
     )
 
+# trackMomentaRanges = dict(
+#     Kminus_PX  = [ -17294 , 18421 ],
+#     Kminus_PY  = [ -16579 , 13946 ],
+#     Kminus_PZ  = [ 1647 , 427105 ],
+#     Kminus_P   = [ 1712 , 427234 ],
+#     Kplus_PX   = [ -19961 , 18023 ],
+#     Kplus_PY   = [ -14371 , 21139 ],
+#     Kplus_PZ   = [ 1714 , 412061 ],
+#     Kplus_P    = [ 1767 , 412185 ],    
+#     muminus_PX = [ -68298 , 49671 ],
+#     muminus_PY = [ -41161 , 48935 ],
+#     muminus_PZ = [ 2852 , 782041 ],
+#     muminus_P  = [ 3001 , 782337 ],
+#     muplus_PX  = [ -49519 , 43508 ],
+#     muplus_PY  = [ -39317 , 41500 ],
+#     muplus_PZ  = [ 2822 , 937801 ],
+#     muplus_P   = [ 3002 , 938078 ],
+#     B_P        = [ 0 , 1518286 ],
+#     B_Pt       = [ 2 , 94406 ]    
+#     )
+
+
 trackMomentaRanges = dict(
-    Kminus_PX  = [ -17294 , 18421 ],
-    Kminus_PY  = [ -16579 , 13946 ],
-    Kminus_PZ  = [ 1647 , 427105 ],
-    Kminus_P   = [ 1712 , 427234 ],
-    Kplus_PX   = [ -19961 , 18023 ],
-    Kplus_PY   = [ -14371 , 21139 ],
-    Kplus_PZ   = [ 1714 , 412061 ],
-    Kplus_P    = [ 1767 , 412185 ],    
-    muminus_PX = [ -68298 , 49671 ],
-    muminus_PY = [ -41161 , 48935 ],
-    muminus_PZ = [ 2852 , 782041 ],
-    muminus_P  = [ 3001 , 782337 ],
-    muplus_PX  = [ -49519 , 43508 ],
-    muplus_PY  = [ -39317 , 41500 ],
-    muplus_PZ  = [ 2822 , 937801 ],
-    muplus_P   = [ 3002 , 938078 ],
-    B_P        = [ 18324 , 1518286 ],
-    B_Pt       = [ 2 , 94406 ]    
+    Kminus_PX  = [ -5e5 , 5e5 ],
+    Kminus_PY  = [ -5e5 , 5e5 ],
+    Kminus_PZ  = [    0 , 5e5 ],
+    Kminus_P   = [    0 , 5e5 ],
+    Kplus_PX   = [ -5e5 , 5e5 ],
+    Kplus_PY   = [ -5e5 , 5e5 ],
+    Kplus_PZ   = [    0 , 5e5 ],
+    Kplus_P    = [    0 , 5e5 ],
+    muminus_PX = [ -9e5 , 6e5 ],
+    muminus_PY = [ -9e5 , 6e5 ],
+    muminus_PZ = [    0 , 1e6 ],
+    muminus_P  = [    0 , 1e6 ],
+    muplus_PX  = [ -5e5 , 6e5 ],
+    muplus_PY  = [ -5e5 , 6e5 ],
+    muplus_PZ  = [ -5e5 , 1e6 ],
+    muplus_P   = [    0 , 1e6 ],
+    B_P        = [    0 , 2e6 ],
+    B_Pt       = [    0 , 2e5 ]    
     )
+
 
 plotingScenarios = dict( BmommkkphysKKmom = [ ('mcData','BmomRewData'), ('BmomRewData','mkkRewData'), ('mkkRewData','mcDataPhysRew'), ('mcDataPhysRew','MomRewData') ],
                          BmomphysKKmom    = [ ('mcData','BmomRewData'), ('BmomRewData','mcDataPhysRew'), ('mcDataPhysRew','MomRewData') ],

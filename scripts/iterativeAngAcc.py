@@ -5,7 +5,7 @@ from optparse import OptionParser
 parser = OptionParser()
 parser.add_option('-r', '--KKmomRew',  dest='KKmomRew',   default = 'vertical',            help='KK momentum reweighting approach (vertical/horizontal)')
 parser.add_option('-o', '--rewSteps',  dest='rewSteps',   default = 'BmommkkphysKKmom',    help='reweghting steps order')
-parser.add_option('-b', '--Bmom2DRew', dest='Bmom2DRew',  default = 'True',                help='2 dimentional Bmom reweighting switch')
+parser.add_option('-b', '--Bmom2DRew', dest='Bmom2DRew',  default = 'False',               help='2 dimentional Bmom reweighting switch')
 parser.add_option('-s', '--MCProd',    dest='MCProd',     default = '2011',                help='choose mc sample ( 2011,2012 )')
 parser.add_option('-n', '--iterNum',   dest='iterNum',    default = 1, type=int,           help='iteration number')
 parser.add_option('-a', '--nomAngAcc', dest='nomAngAcc',  default = '',                    help='nominal angular acceptance')
@@ -14,7 +14,7 @@ parser.add_option('-f', '--fit',       dest='fit',        default = 'False',    
 parser.add_option('-w', '--writeData', dest='writeData',  default = 'False',               help='save mc datasets to file')
 parser.add_option('-p', '--makePlots', dest='makePlots',  default = 'False',               help='switch on/off plotting')
 parser.add_option('-c', '--combMoms',  dest='combMoms',   default = 'False',               help='combine 2011,2012 moments')
-parser.add_option('-R', '--reduced',   dest='reduced',    default = 'False',                help='apply a mass cut for a reduced sample')
+parser.add_option('-R', '--reduced',   dest='reduced',    default = 'False',               help='apply a mass cut for a reduced sample')
 (options, args) = parser.parse_args()
 
 # reweightng flow control
@@ -26,9 +26,9 @@ reweightMkk           = True if 'mkk'   in options.rewSteps else False
 reweightPhysics       = True if 'phys'  in options.rewSteps else False
 reweightKKmom         = True if 'KKmom' in options.rewSteps else False
 twoDimensionalBmomRew = True if 'True'  in options.Bmom2DRew else False
-EqualStatsBins        = True
-OneDverticalRewNbins  = 1000
-TwoDverticalRewNbins  = 50
+EqualStatsBins        = False
+OneDverticalRewNbins  = 100
+TwoDverticalRewNbins  = 100
 physWeightName        = 'phys'
 mKKWeightsName        = 'mKK'
 KmomentaWeightsName   = 'KKmom'
@@ -138,7 +138,7 @@ if reweightMkk:
     mKKweights = OneDimentionalVerticalReweighting( source(), target, OneDverticalRewNbins, 'mdau2', 
                                                     equalStatsBins = EqualStatsBins
                                                     )
-    mcDataMngr.appendWeights( mKKWeightsName, mKKweights, permanetnWeigts=True )
+    mcDataMngr.appendWeights( mKKWeightsName, mKKweights, permanetnWeigts=True)
 
 # match physics
 if reweightPhysics:
@@ -153,7 +153,7 @@ if reweightKKmom and RewApproach == 'vertical':
                                                      )
     mcDataMngr.appendWeights( KmomentaWeightsName, KKMomWeights )
 elif reweightKKmom and RewApproach == 'horizontal':
-    KinematicReweight = MatchWeightedDistributions( outTree        = target, # Target: Distribution to be matched with
+    KKmomentaReweight = MatchWeightedDistributions( outTree        = target, # Target: Distribution to be matched with
                                                     reweightVars   = ['Kminus_P'],  # Variables that enter the transformation
                                                     inWeightName   = mcDataMngr.getWeightName(),
                                                     outWeightName  = sWeightsName,
@@ -162,9 +162,9 @@ elif reweightKKmom and RewApproach == 'horizontal':
                                                     nBins          = 1000           # preceision of the transformation
                                                     )
     
-    KinematicReweight.reweight( iterNumb, source() )
+    KKmomentaReweight.reweight( iterNumb, source() )
     KmomentaWeightsName = 'hor' + KmomentaWeightsName
-    mcDataMngr.setDataSet( KinematicReweight.getDataSet(),  KmomentaWeightsName )
+    mcDataMngr.setDataSet( KKmomentaReweight.getDataSet(),  KmomentaWeightsName )
       
 # compute angular efficiency moments from the new reweighted mc dataset.
 if reweightPhysics: # set data pars to pdf (reweighted data has the data physics now)
