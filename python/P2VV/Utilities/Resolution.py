@@ -18,7 +18,7 @@ class SplitUtil(object):
 
     def binning(self, observable):
         assert(observable in self.__observables)
-        return self.__binnings[o]
+        return self.__binnings[observable]
 
     def split_cat(self, observable, prefix, data = None, make_binning = 0):
         assert(observable in self.__observables)
@@ -43,6 +43,7 @@ class SplitUtil(object):
         else:
             if make_binning != 0:
                 bins = __mb(data, observable, make_binning)
+                self.__binnings[observable] = bins
             else:
                 bins = self.__binnings[observable]
             binning = RooBinning(len(bins) - 1, bins, prefix + '_binning')
@@ -54,15 +55,22 @@ class SplitUtil(object):
             self.__cats[observable] = BinningCategory(observable.GetName() + '_cat', **args)
         return self.__cats[observable]
 
-    def split_cats(self, data = None, mb = 0):
-        sc = [self.split_cat(o, self.__prefixes[o], data, mb) for o in self.observables()]
+    def split_cats(self, data = None, mb = (0,)):
+        sc = [self.split_cat(o, self.__prefixes[o], data, n) for o, n in zip(self.observables(), mb)]
         if all(e == None for e in sc):
             return []
         else:
             return sc
     
-    def directory(self, hd):
-        return self.__format + '/' + hd
+    def directory(self, hd, make_binning = None):
+        return os.path.join(self.__format, hd)
+
+    def sub_dir(self, make_binning = None):
+        if make_binning != None and all(i for i in make_binning):
+            n_bins = make_binning
+        else:
+            n_bins = [len(self.binning(o)) for o in self.observables()]
+        return '_'.join([str(i) for i in n_bins] + ['bins'])
     
 class SplitPPT(object):
     def __init__(self, data_type, p, pt):
@@ -71,7 +79,7 @@ class SplitPPT(object):
         bins = {pt : array('d', [0., 1871.9, 3352.0, 1e6]),
                 p : array('d', [0., 58962., 88835., 1e6])}
         prefixes = {pt : 'pt', p : 'momentum'}
-        fmt = 'p_pt_{0}bins_simul'.format(len(bins[pt]) * len(bins[p]))
+        fmt = 'p_pt_simul'
         SplitUtil.__init__(self, [p, pt], bins, prefixes, fmt)
 
 class SplitSigmat(SplitUtil):
@@ -83,25 +91,27 @@ class SplitSigmat(SplitUtil):
                     'MC2011_Sim08a' : [0.01, 0.02147, 0.02473, 0.02728, 0.0296, 0.03186,
                                        0.03423, 0.0369, 0.04029, 0.04556, 0.07],
                     'MC2012' : [0.01, 0.02083, 0.02385, 0.02618, 0.02822, 0.03016, 0.03209,
-                                0.03409, 0.03629, 0.03887, 0.04218, 0.04752, 0.07]}
-        default = array('d', [0.01000, 0.02410, 0.02727, 0.02969, 0.03186,
-                              0.03398, 0.03632, 0.03923, 0.04378, 0.07000])
-        bins = binnings.get(data_type, default)
-        fmt = '%sbins_%4.2ffs_simul' % (len(bins) - 1, (1000 * (bins[1] - bins[0])))
+                                0.03409, 0.03629, 0.03887, 0.04218, 0.04752, 0.07],
+                    'MC2012_incl_Jpsi' : [0.01, 0.0263, 0.02969, 0.03221, 0.03447, 0.03681,
+                                          0.0393, 0.0424, 0.04742, 0.07]}
+        default = [0.01000, 0.02410, 0.02727, 0.02969, 0.03186,
+                   0.03398, 0.03632, 0.03923, 0.04378, 0.07000]
+        bins = array('d', binnings.get(data_type, default))
+        fmt = 'sigmat_simul'
         SplitUtil.__init__(self, [st], {st : bins}, {st : 'st'}, fmt)
         
 class SplitMomentum(SplitUtil):
     def __init__(self, data_type, p):
         bins = array('d', [0, 42071.68, 49609.56, 56558.79, 63839.62, 71925.85,
                            81359.74, 92988.52, 1.2e5, 1e6])
-        fmt = 'momentum_{0}bins_simul'.format(len(bins))
+        fmt = 'momentum_simul'
         SplitUtil.__init__(self, [p], {p : bins}, {p : 'momentum'}, fmt)
         
 class SplitPT(SplitUtil):
     def __init__(self, data_type, pt):
         bins = array('d', [0, 976.79, 1385.08, 1750.6, 2123.96, 2529.76,
                            2991.73, 3560.23, 4330.62, 5603.08, 1e5])
-        fmt = 'pt_{0}bins_simul'.format(len(self.__bins))
+        fmt = 'pt_simul'
         SplitUtil.__init__(self, [pt], {pt : bins}, {pt : 'pt'}, fmt)
 
 class SplitPVZerr(SplitUtil):
@@ -113,7 +123,7 @@ class SplitPVZerr(SplitUtil):
 class SplitNPV(SplitUtil):
     def __init__(self, data_type, nPV):
         bins = array('d', [-0.5 + i for i in range(5)] + [12])
-        fmt = 'nPV_{0}bins_simul'.format(len(bins))
+        fmt = 'nPV_simul'
         SplitUtil.__init__(self, [nPV], {nPV : bins}, {nPV : 'nPV'}, fmt)
 
 parNames = {'N_prompt'      : ('#prompt', '\\# prompt \jpsi'),
