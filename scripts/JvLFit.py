@@ -21,8 +21,8 @@ dataPath            = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
 
 plotsFile     = 'temp.ps'   #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.ps'
 plotsROOTFile = 'temp.root' #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.root'
-parFileIn     = '20112012Reco14DataFitValues_6KKMassBins.par' # '20112012Reco14DataFitValues_4KKMassBins.par'
-parFileOut    = ( 'parameterEstimates.par', dict( Format = 'common' ) )
+parFileIn     = '20112012Reco14DataFitValues_6KKMassBins.par' # '20112012Reco14DataFitValues_6KKMassBins.par' # '20112012Reco14DataFitValues_6KKMassBins_CPVDecay.par'
+parFileOut    = '' # ( 'fitResults/Reco14/comparisons/20140122_20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_CPVDecayRel.par', dict( Format = 'common' ) )
 
 if generateData :
     dataSetName = 'JpsiphiData'
@@ -149,7 +149,7 @@ KKMassPars = pdfConfig['obsDict']['KKMass']
 pdfConfig['obsDict']['KKMass'] = ( KKMassPars[0], KKMassPars[1], KKMassPars[2]
                                   , 1020., pdfConfig['KKMassBinBounds'][0], pdfConfig['KKMassBinBounds'][-1] )
 
-pdfConfig['lambdaCPParam'] = 'lambPhi' # 'lambPhi_CPVDecay_PSWaves'  # 'lambPhi'
+pdfConfig['lambdaCPParam'] = 'lambPhi' # 'lambPhi' # 'lambPhi_CPVDecay' # 'lambPhiRel_CPVDecay' # 'lambRelPhiRel_CPVDecay' # 'lambPhi_CPVDecay_PSWaves'
 
 if 'Parameterization' in pdfConfig['timeEffParameters'] and pdfConfig['timeEffParameters']['Parameterization'] == 'Spline' :
     pdfConfig['splitParams']['hlt1_excl_biased_dec'] = [ 'tagCatCoef0_1' ]
