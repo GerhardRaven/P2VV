@@ -26,9 +26,9 @@ reweightMkk           = True if 'mkk'   in options.rewSteps else False
 reweightPhysics       = True if 'phys'  in options.rewSteps else False
 reweightKKmom         = True if 'KKmom' in options.rewSteps else False
 twoDimensionalBmomRew = True if 'True'  in options.Bmom2DRew else False
-EqualStatsBins        = False
-OneDverticalRewNbins  = 100
-TwoDverticalRewNbins  = 100
+mkkBins               = 100
+BmomBins              = 200
+KKmomBins             = 100 # per dimention
 physWeightName        = 'phys'
 mKKWeightsName        = 'mKK'
 KmomentaWeightsName   = 'KKmom'
@@ -125,19 +125,13 @@ mcDataMngr['iterationNumber'] = iterNumb
 
 # match B momentum
 if reweightBmomentum:
-    BmomentumWeights = TwoDimentionalVerticalReweighting( source(), target, TwoDverticalRewNbins, ['B_P','B_Pt'],
-                                                          equalStatsBins = EqualStatsBins
-                                                          ) if twoDimensionalBmomRew else \
-                       OneDimentionalVerticalReweighting( source(), target, TwoDverticalRewNbins, 'B_P',
-                                                          equalStatsBins = EqualStatsBins
-                                                          )
+    BmomentumWeights = TwoDimentionalVerticalReweighting( source(), target, BmomBins, ['B_P','B_Pt'] ) if twoDimensionalBmomRew else \
+                       OneDimentionalVerticalReweighting( source(), target, BmomBins, 'B_P'          )
     mcDataMngr.appendWeights( BmomentumWeightsName, BmomentumWeights, permanetnWeigts=True )
 
 # match mKK
 if reweightMkk:
-    mKKweights = OneDimentionalVerticalReweighting( source(), target, OneDverticalRewNbins, 'mdau2', 
-                                                    equalStatsBins = EqualStatsBins
-                                                    )
+    mKKweights = OneDimentionalVerticalReweighting( source(), target, mkkBins, 'mdau2' )
     mcDataMngr.appendWeights( mKKWeightsName, mKKweights, permanetnWeigts=True)
 
 # match physics
@@ -148,9 +142,7 @@ if reweightPhysics:
           
 # match KK momenta
 if reweightKKmom and RewApproach == 'vertical':
-    KKMomWeights = TwoDimentionalVerticalReweighting(source(), target, TwoDverticalRewNbins, ['Kplus_P','Kminus_P'], 
-                                                     iterationNumber = iterNumb, equalStatsBins = EqualStatsBins
-                                                     )
+    KKMomWeights = TwoDimentionalVerticalReweighting(source(), target, KKmomBins, ['Kplus_P','Kminus_P'] )
     mcDataMngr.appendWeights( KmomentaWeightsName, KKMomWeights )
 elif reweightKKmom and RewApproach == 'horizontal':
     KKmomentaReweight = MatchWeightedDistributions( outTree        = target, # Target: Distribution to be matched with

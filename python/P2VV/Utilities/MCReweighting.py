@@ -343,7 +343,7 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
         targetHist = TH2D('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, xMin, xMax, nbins, yMin, yMax )
 
     # create 2D histrograms and fill
-        for evnt in source: sourceHist.Fill( _valX(evnt), _valY(evnt), source.weight() )
+    for evnt in source: sourceHist.Fill( _valX(evnt), _valY(evnt), source.weight() )
     for evnt in target: targetHist.Fill( _valX(evnt), _valY(evnt), target.weight() )
        
     # rescale
@@ -371,22 +371,22 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
             hist.Draw('LEGO')
             canv.Print(canv.GetName() + '_%s.pdf'%iterIdx)
 
-        testS0 = TH1D('test%s0S'%var[0],'test%s0S'%var[0],3*nbins, xMin, xMax )
-        testT0 = TH1D('test%s0T'%var[0],'test%s0T'%var[0],3*nbins, xMin, xMax )
-        testS1 = TH1D('test%s1S'%var[1],'test%s1S'%var[1],3*nbins, yMin, yMax )
-        testT1 = TH1D('test%s1T'%var[1],'test%s1T'%var[1],3*nbins, yMin, yMax )
-        sourceBp, sourceBPt = [], []
+        testS0 = TH1D('test%s_Source'%var[0],'test%s_Source'%var[0], nbins, xMin, xMax )
+        testT0 = TH1D('test%s_Target'%var[0],'test%s_Target'%var[0], nbins, xMin, xMax )
+        testS1 = TH1D('test%s_Source'%var[1],'test%s_Source'%var[1], nbins, yMin, yMax )
+        testT1 = TH1D('test%s_Target'%var[1],'test%s_Target'%var[1], nbins, yMin, yMax )
+        source0, source1, = [], []
         for ev in source: 
-            sourceBp += [ev.find(var[0]).getVal()]
-            sourceBPt+= [ev.find(var[1]).getVal()]
-        for Bp,Bpt,weight in zip(sourceBp,sourceBPt,weights):
-            testS0.Fill(Bp,weight)
-            testS1.Fill(Bpt,weight)
+            source0 += [ _valX(ev) ]
+            source1 += [ _valY(ev) ]
+        for var0, var1, weight in zip( source0, source1, weights ):
+            testS0.Fill(var0,weights)
+            testS1.Fill(var1,weights)
         for ev in target:
-            testT0.Fill(ev.find(var[0]).getVal(),target.weight())
-            testT1.Fill(ev.find(var[1]).getVal(),target.weight())
-        testS0.Scale( target.sumEntries() / source.sumEntries() )
-        testS1.Scale( target.sumEntries() / source.sumEntries() )
+            testT0.Fill(_valX(ev),target.weight())
+            testT1.Fill(_valY(ev),target.weight())
+        testS0.Scale( target.sumEntries() /  )
+        testS1.Scale( target.sumEntries() /  )
 
         can = TCanvas('test','test')
         can.Divide(2,2)
@@ -471,8 +471,8 @@ def OneDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     if count>0: print 'P2VV - INFO: OneDimentionalVerticalReweighting: Could not assign weight for %s out of %s events, excluding them from sample.'%(count,source.numEntries())
 
     if plot: # check the result of the reweighting 
-        test_s = TH1D('test_s','test_s', 3*nbins, xMin,xMax)
-        test_t = TH1D('test_t','test_t', 3*nbins, xMin,xMax)
+        test_s = TH1D('test_s','test_s', nbins, xMin,xMax)
+        test_t = TH1D('test_t','test_t', nbins, xMin,xMax)
         sourceEvtList, targetEvtList = [],[]
         for ev in source: sourceEvtList+=[ _valX(ev) ]
         for ev in target: targetEvtList+=[ _valX(ev) ]
@@ -1249,28 +1249,6 @@ parValuesMcSim08_6KKmassBins = dict(
     ,f_S_bin5          = 0.
     )
 
-# trackMomentaRanges = dict(
-#     Kminus_PX  = [ -17294 , 18421 ],
-#     Kminus_PY  = [ -16579 , 13946 ],
-#     Kminus_PZ  = [ 1647 , 427105 ],
-#     Kminus_P   = [ 1712 , 427234 ],
-#     Kplus_PX   = [ -19961 , 18023 ],
-#     Kplus_PY   = [ -14371 , 21139 ],
-#     Kplus_PZ   = [ 1714 , 412061 ],
-#     Kplus_P    = [ 1767 , 412185 ],    
-#     muminus_PX = [ -68298 , 49671 ],
-#     muminus_PY = [ -41161 , 48935 ],
-#     muminus_PZ = [ 2852 , 782041 ],
-#     muminus_P  = [ 3001 , 782337 ],
-#     muplus_PX  = [ -49519 , 43508 ],
-#     muplus_PY  = [ -39317 , 41500 ],
-#     muplus_PZ  = [ 2822 , 937801 ],
-#     muplus_P   = [ 3002 , 938078 ],
-#     B_P        = [ 0 , 1518286 ],
-#     B_Pt       = [ 2 , 94406 ]    
-#     )
-
-
 trackMomentaRanges = dict(
     Kminus_PX  = [ -5e5 , 5e5 ],
     Kminus_PY  = [ -5e5 , 5e5 ],
@@ -1288,7 +1266,7 @@ trackMomentaRanges = dict(
     muplus_PY  = [ -5e5 , 6e5 ],
     muplus_PZ  = [ -5e5 , 1e6 ],
     muplus_P   = [    0 , 1e6 ],
-    B_P        = [    0 , 2e6 ],
+    B_P        = [    0 , 1e6 ],
     B_Pt       = [    0 , 2e5 ]    
     )
 

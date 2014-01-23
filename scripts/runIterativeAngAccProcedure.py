@@ -5,6 +5,8 @@ parser.add_option('-n', '--numIters',  dest='numIters',  default=8,       type=i
 parser.add_option('-p', '--makePlots', dest='makePlots', default = 'False',               help='switch on/off plotting')
 parser.add_option('-o', '--rewSteps',  dest='rewSteps',  default = 'Bmom_mkk_phys_KKmom', help='reweghting steps order')
 parser.add_option('-r', '--paralRew',  dest='paralRew',  default = 'True',                help='switch on/off plotting')
+parser.add_option('-w', '--writeData', dest='writeData', default = 'False',               help='save mc datasets to file')
+parser.add_option('-b', '--Bmom2DRew', dest='Bmom2DRew', default = 'False',               help='2 dimentional Bmom reweighting switch')
 (options, args) = parser.parse_args()
 
 # paths and paramteres
@@ -23,13 +25,14 @@ processes  = []
 parallelReweighting = True if 'True' in options.paralRew else False
 
 combMomOpt    = ' -cTrue'
-writeOpt      = ' -wTrue'
+writeOpt      = ' -wTrue' if 'True' in options.writeData else ' -wFalse'
 plotOpt       = ' -pTrue' if 'True' in options.makePlots else ' -pFalse'
+Bmom2DRewOpt  = True if 'True' in options.Bmom2DRew else False
 rewSpetOpt    = options.rewSteps 
 finalIterOpts = ' ' + plotOpt + writeOpt
 
-rewOpts = lambda s, n: '-n%i -s%s -d%s -o%s -fFalse'%( n, s, parameterEstimatesName(n-1), rewSpetOpt ) if n!=1 else \
-                       '-n%i -s%s -d%s -o%s -fFalse'%( 1, s, parameterEstimates, rewSpetOpt )
+rewOpts = lambda s, n: '-n%i -s%s -d%s -o%s -b%s -fFalse'%( n, s, parameterEstimatesName(n-1), rewSpetOpt, Bmom2DRewOpt ) if n!=1 else \
+                       '-n%i -s%s -d%s -o%s -b%s -fFalse'%( 1, s, parameterEstimates, rewSpetOpt, Bmom2DRewOpt )
 fitOpts = lambda n:  '-d%s -a%s -i%s -o%s'%( fitData, (correctedAngAccBaseName + str(n)), parameterEstimatesName(n-1), parameterEstimatesName(n) ) if n!=1 else \
                      '-d%s -a%s -i%s -o%s'%( fitData, (correctedAngAccBaseName + str(n)), parameterEstimates, parameterEstimatesName(n) )
 
@@ -41,7 +44,8 @@ rewOptsLegend = {'-c' : 'Combine eff. moments      ',
                  '-s' : 'Monte Carlo dataset       ',
                  '-d' : 'Input physics parameters  ',
                  '-o' : 'Reweighting steps         ',
-                 '-f' : 'Fit after reweighting     '
+                 '-f' : 'Fit after reweighting     ',
+                 '-b' : '2D B(p,p_T) reweighting   '
                  }
 fitOptsLegend = {'-d' : 'Fiting dataset          ', 
                  '-a' : 'Input angular acceptance', 
