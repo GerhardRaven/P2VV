@@ -201,7 +201,7 @@ def combineMoments( accFile1, accFile2, outName, Prefix=''):
             open(accFile1)
             open(accFile2)
             combineMoments( [ accFile1, accFile2 ], outName, prefix = Prefix, printMoms = False )
-            for angAcc in [accFile1,accFile2]: os.remove(angAcc)
+            # for angAcc in [accFile1,accFile2]: os.remove(angAcc)
             break
         except IOError:
             print 'P2VV - INFO: combineMoments: Waiting for the followig flies to combine efficiency moments:\n%s\n%s'%(accFile1,accFile2)
@@ -343,12 +343,12 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
         targetHist = TH2D('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, xMin, xMax, nbins, yMin, yMax )
 
     # create 2D histrograms and fill
-    for evnt in source: sourceHist.Fill( _valX(evnt), _valY(evnt), source.weight() )
+    for evnt in source: sourceHist.Fill( _valX(evnt), _valY(evnt) ) #, source.weight() )
     for evnt in target: targetHist.Fill( _valX(evnt), _valY(evnt), target.weight() )
        
     # rescale
-    if source.numEntries() > target.numEntries(): sourceHist.Scale( target.sumEntries() / source.sumEntries() )
-    else: targetHist.Scale( source.sumEntries() / target.sumEntries() )
+    if source.numEntries() > target.numEntries(): sourceHist.Scale( target.sumEntries() / source.numEntries() )
+    else: targetHist.Scale( source.numEntries() / target.sumEntries() )
     
     # calculate weights
     weights = []
@@ -371,22 +371,22 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
             hist.Draw('LEGO')
             canv.Print(canv.GetName() + '_%s.pdf'%iterIdx)
 
-        testS0 = TH1D('test%s_Source'%var[0],'test%s_Source'%var[0], nbins, xMin, xMax )
-        testT0 = TH1D('test%s_Target'%var[0],'test%s_Target'%var[0], nbins, xMin, xMax )
-        testS1 = TH1D('test%s_Source'%var[1],'test%s_Source'%var[1], nbins, yMin, yMax )
-        testT1 = TH1D('test%s_Target'%var[1],'test%s_Target'%var[1], nbins, yMin, yMax )
+        testS0 = TH1D('%s_Source'%var[0],'test%s_Source'%var[0], nbins, xMin, xMax )
+        testT0 = TH1D('%s_Target'%var[0],'test%s_Target'%var[0], nbins, xMin, xMax )
+        testS1 = TH1D('%s_Source'%var[1],'test%s_Source'%var[1], nbins, yMin, yMax )
+        testT1 = TH1D('%s_Target'%var[1],'test%s_Target'%var[1], nbins, yMin, yMax )
         source0, source1, = [], []
         for ev in source: 
             source0 += [ _valX(ev) ]
             source1 += [ _valY(ev) ]
         for var0, var1, weight in zip( source0, source1, weights ):
-            testS0.Fill(var0,weights)
-            testS1.Fill(var1,weights)
+            testS0.Fill(var0,weight)
+            testS1.Fill(var1,weight)
         for ev in target:
             testT0.Fill(_valX(ev),target.weight())
             testT1.Fill(_valY(ev),target.weight())
-        testS0.Scale( target.sumEntries() /  )
-        testS1.Scale( target.sumEntries() /  )
+        testS0.Scale( target.sumEntries() / source.numEntries() )
+        testS1.Scale( target.sumEntries() / source.numEntries() )
 
         can = TCanvas('test','test')
         can.Divide(2,2)
@@ -400,8 +400,15 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
         from P2VV.Utilities.Plotting import _P2VVPlotStash
         _P2VVPlotStash += [testS0,testT0,testS1,testT1]
         
+        # from ROOT import TFile
+        # f = TFile.Open('histograms.root','recreate')
+        # f.cd()
+        # for hist in [testS0,testT0,testS1,testT1,can, sourceHist, targetHist]: hist.Write() 
+        # f.Close()
+        # assert False
+        
         del source, target
-        return weights, can
+        return weights, [can, testS0,testT0,testS1,testT1]
     else: 
         del source, target
         return weights
@@ -449,12 +456,12 @@ def OneDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
         targetHist  = TH1D('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, xMin, xMax )
 
     # fill reweighting histograms
-    for evnt in source: sourceHist.Fill( _valX(evnt), source.weight() )
+    for evnt in source: sourceHist.Fill( _valX(evnt) ) #, source.weight() )
     for evnt in target: targetHist.Fill( _valX(evnt), target.weight() )
        
     # rescale
-    if source.numEntries() > target.numEntries(): sourceHist.Scale( target.sumEntries() / source.sumEntries() )
-    else: targetHist.Scale( source.sumEntries() / target.sumEntries() )
+    if source.numEntries() > target.numEntries(): sourceHist.Scale( target.sumEntries() / source.numEntries() )
+    else: targetHist.Scale( source.numEntries() / target.sumEntries() )
     
     # print sourceHist.KolmogorovTest(targetHist)
 
@@ -481,13 +488,13 @@ def OneDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
         # plot and print the histograms
         testCanv = TCanvas('test','test')
         test_t.Draw()
-        test_s.Scale(target.sumEntries() / source.sumEntries())
+        test_s.Scale(target.sumEntries() / source.numEntries())
         test_s.Draw('same err')
        
         from P2VV.Utilities.Plotting import _P2VVPlotStash
         _P2VVPlotStash += [test_s,test_t]
         del source, target
-        return weights, testCanv
+        return weights, testCanv, test_t
     else: 
         del source, target
         return weights

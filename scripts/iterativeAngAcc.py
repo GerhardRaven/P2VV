@@ -142,7 +142,7 @@ if reweightPhysics:
           
 # match KK momenta
 if reweightKKmom and RewApproach == 'vertical':
-    KKMomWeights = TwoDimentionalVerticalReweighting(source(), target, KKmomBins, ['Kplus_P','Kminus_P'] )
+    KKMomWeights, l = TwoDimentionalVerticalReweighting(source(), target, KKmomBins, ['Kplus_P','Kminus_P'], xCheckPlots=True )
     mcDataMngr.appendWeights( KmomentaWeightsName, KKMomWeights )
 elif reweightKKmom and RewApproach == 'horizontal':
     KKmomentaReweight = MatchWeightedDistributions( outTree        = target, # Target: Distribution to be matched with
@@ -157,7 +157,7 @@ elif reweightKKmom and RewApproach == 'horizontal':
     KKmomentaReweight.reweight( iterNumb, source() )
     KmomentaWeightsName = 'hor' + KmomentaWeightsName
     mcDataMngr.setDataSet( KKmomentaReweight.getDataSet(),  KmomentaWeightsName )
-      
+
 # compute angular efficiency moments from the new reweighted mc dataset.
 if reweightPhysics: # set data pars to pdf (reweighted data has the data physics now)
     PhysicsReweight.setDataFitParameters(dataParameters) 
