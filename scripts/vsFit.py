@@ -1,17 +1,18 @@
 from optparse import OptionParser
 parser = OptionParser()
-parser.add_option('-d', '--FitData',    dest='FitData',    default='',   help='' )
-parser.add_option('-a', '--AngAccFile', dest='AngAccFile', default='',   help='' )
-parser.add_option('-i', '--ParFileIn',  dest='ParFileIn',  default='',   help='' )
-parser.add_option('-o', '--ParFileOut', dest='ParFileOut', default='',   help='' )
+parser.add_option('-d', '--FitData',      dest='FitData',      default='',        help='' )
+parser.add_option('-a', '--AngAccFile',   dest='AngAccFile',   default='',        help='' )
+parser.add_option('-i', '--ParFileIn',    dest='ParFileIn',    default='',        help='' )
+parser.add_option('-o', '--ParFileOut',   dest='ParFileOut',   default='',        help='' )
+parser.add_option('-b', '--writeUnBlPar', dest='writeUnBlPar', default='True',    help='' )
+parser.add_option('-u', '--unblind',      dest='unblind',      default='False',   help='' )
 (options, args) = parser.parse_args()
 
 # data
 dataPath    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
+myPath = '/project/bfys/vsyropou/data/'
 dataSetFile = options.FitData if options.FitData else dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
 dataSetName = 'JpsiKK_sigSWeight'
-
-myPath = '/project/bfys/vsyropou/data/'
 
 # read / write fited parameters from file
 parFileIn = options.ParFileIn if options.ParFileIn \
@@ -32,9 +33,11 @@ fitOpts = dict(  NumCPU    = 8
 from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_RunIAnalysis as PdfConfig
 pdfConfig = PdfConfig( RunPeriods = '3fb' )
 
+# swich blidn on/off
+if 'True' in options.unblind: pdfConfig['blind'] = {}
 
+# acceptances
 pdfConfig['timeEffParameters'] = dict()
-
 timeEffFile2011 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
 timeEffFile2012 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
 pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file'] = timeEffFile2011
@@ -62,17 +65,6 @@ from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
 pdfBuild = PdfBuilder( **pdfConfig )
 pdf = pdfBuild.pdf()
 
-# # fix values of some parameters
-# for CEvenOdds in pdfBuild['taggingParams']['CEvenOdds'] :
-#         if not pdfConfig['SSTagging'] :
-# 		CEvenOdds.setConstant( 'avgCEven.*')
-#                 CEvenOdds.setConstant( 'avgCOdd.*', True )
-#         else :
-#             for CEvenOdd in CEvenOdds :
-# 		    CEvenOdd.setConstant('avgCEven.*')
-#                     CEvenOdd.setConstant( 'avgCOdd.*', True )
-# pdfBuild['amplitudes'].setConstant('C_SP')
-
 if parFileIn:
     # read parameters from file
     pdfConfig.readParametersFromFile( filePath = parFileIn )
@@ -90,8 +82,11 @@ resultFile.cd()
 fitResult.Write()
 resultFile.Close()
 
-if parFileOut :
+if parFileOut:
     pdfConfig.getParametersFromPdf( pdf,  fitData )
     pdfConfig.writeParametersToFile( filePath = parFileOut, Floating = True )
-
-print 120*'='
+    if 'True' in options.writeUnBlPar:
+        for parName in ['phiCP', 'dGamma']:
+            par = pdfConfig.parameters().pop('__%s__'%parName)
+            pdfConfig.parameters()[parName] = (ws[parName].getVal(), ) + par[1:]
+        pdfConfig.writeParametersToFile( filePath = parFileOut.replace('.par','_unbl.par'), Floating = True )

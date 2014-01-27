@@ -16,8 +16,10 @@ fittingScript      = 'python /project/bfys/vsyropou/Repository/p2vv/scripts/vsFi
 fitData            = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
 parameterEstimates = '/project/bfys/vsyropou/data/nominalFitResults/20112012Reco14DataFitValues_6KKMassBins.par'
 
+# file names 
 correctedAngAccBaseName = 'Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_weights_'
-parameterEstimatesName  = lambda n: '20112012Reco14DataFitValues_6KKMassBins.par'.replace('.par','_%s.par'%n)
+parameterEstimatesName  = lambda n, u: '20112012Reco14DataFitValues_6KKMassBins.par'.replace('.par','_%s_unbl.par'%n) if u else\
+                                       '20112012Reco14DataFitValues_6KKMassBins.par'.replace('.par','_%s.par'%n) 
 
 # set up subproceses options
 import subprocess, shlex, select, sys
@@ -31,10 +33,10 @@ Bmom2DRewOpt  = True if 'True' in options.Bmom2DRew else False
 rewSpetOpt    = options.rewSteps 
 finalIterOpts = ' ' + plotOpt + writeOpt
 
-rewOpts = lambda s, n: '-n%i -s%s -d%s -o%s -b%s -fFalse'%( n, s, parameterEstimatesName(n-1), rewSpetOpt, Bmom2DRewOpt ) if n!=1 else \
-                       '-n%i -s%s -d%s -o%s -b%s -fFalse'%( 1, s, parameterEstimates, rewSpetOpt, Bmom2DRewOpt )
-fitOpts = lambda n:  '-d%s -a%s -i%s -o%s'%( fitData, (correctedAngAccBaseName + str(n)), parameterEstimatesName(n-1), parameterEstimatesName(n) ) if n!=1 else \
-                     '-d%s -a%s -i%s -o%s'%( fitData, (correctedAngAccBaseName + str(n)), parameterEstimates, parameterEstimatesName(n) )
+rewOpts = lambda s, n: '-n%i -s%s -d%s -o%s -b%s -fFalse'%( n, s, parameterEstimatesName(n-1,True), rewSpetOpt, Bmom2DRewOpt ) if n!=1 else \
+                       '-n%i -s%s -d%s -o%s -b%s -fFalse'%( 1, s, parameterEstimates.replace('.par','_unbl.par'), rewSpetOpt, Bmom2DRewOpt )
+fitOpts = lambda n:  '-d%s -a%s -i%s -o%s'%( fitData, (correctedAngAccBaseName + str(n)), parameterEstimatesName(n-1,False), parameterEstimatesName(n,False) ) if n!=1 else \
+                     '-d%s -a%s -i%s -o%s'%( fitData, (correctedAngAccBaseName + str(n)), parameterEstimates, parameterEstimatesName(n,False) )
 
 # info printing function
 rewOptsLegend = {'-c' : 'Combine eff. moments      ',

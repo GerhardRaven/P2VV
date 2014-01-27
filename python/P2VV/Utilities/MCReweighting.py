@@ -204,7 +204,7 @@ def combineMoments( accFile1, accFile2, outName, Prefix=''):
             # for angAcc in [accFile1,accFile2]: os.remove(angAcc)
             break
         except IOError:
-            print 'P2VV - INFO: combineMoments: Waiting for the followig flies to combine efficiency moments:\n%s\n%s'%(accFile1,accFile2)
+            print 'P2VV - INFO: combineMoments: Waiting for the followig flies to combine efficiency moments:\n  %s\n  %s'%(accFile1,accFile2)
             sleep(60)
 
 # Reweighting tools
@@ -732,14 +732,14 @@ class BuildBs2JpsiKKFit():
 
         # print parameters
         print 120 * '='
-        print 'Bs2JpsiKKFit: fit data:'
-        self._fitData.Print()
-        #print 'Bs2JpsiKKFit: observables in PDF:'
-        #self._pdf.getObservables(self._fitData).Print('v')
-        #print 'Bs2JpsiKKFit: parameters in PDF:'
-        #self._pdf.getParameters(self._fitData).Print('v')
-        print 'Bs2JpsiKKFit: constraints in PDF:'
-        for constr in self._pdf.ExternalConstraints() : constr.Print()
+        # print 'Bs2JpsiKKFit: fit data:'
+        # self._fitData.Print()
+        # print 'Bs2JpsiKKFit: observables in PDF:'
+        # self._pdf.getObservables(self._fitData).Print('v')
+        # print 'Bs2JpsiKKFit: parameters in PDF:'
+        # self._pdf.getParameters(self._fitData).Print('v')
+        # print 'Bs2JpsiKKFit: constraints in PDF:'
+        # for constr in self._pdf.ExternalConstraints() : constr.Print()
 
         # fit data
         print 'Bs2JpsiKKFit: fitting %d events (%s)' % (  self._fitData.numEntries(), 'weighted' if  self._fitData.isWeighted() else 'not weighted' )
@@ -808,8 +808,8 @@ class MatchPhysics( ):
         pdfConfig = PdfConfig( RunPeriods = '3fb' )
         
         # blind parameters in MC pdf
-        blind = kwargs.pop('blind', True)
-        if blind: blindStr = pdfConfig['blind']
+        blind = kwargs.pop('blind', False)
+        blindStr = pdfConfig['blind'] if blind else False
 
         # transversity amplitudes
         A0Mag2Val    = 0.722**2 / (0.722**2 + 0.480**2 + 0.499**2)
@@ -975,11 +975,11 @@ class MatchPhysics( ):
         for par in self._pdf.Parameters():
             if par.GetName() == 'dummyBlindState' or par.isConstant(): continue
             key = par.GetName().replace('mc_', dataParPrefix)
-            if key == 'dummyBlindState': continue
             if pdfConfig.parameters().has_key(key):
                 par.setVal( pdfConfig.parameters()[key][0] )
-                print '%20s %.4f'%(par.GetName(), par.getVal())
-            else: print 'P2VV - ERROR:setDataFitParameters: Cannot find parameter %s in data physics parameters file %s'%(par.GetName(),dataPars)
+                if 'phiCP' in key or 'dGamma' in key: print '%20s %s'%(par.GetName(), '(blinded)' )
+                else: print '%20s %.4f'%(par.GetName(), par.getVal())
+            else: assert False, 'P2VV - ERROR:setDataFitParameters: Cannot find parameter %s in data physics parameters file %s'%(key,dataPars)
         
     def calculateWeights(self, iterNumb, dataParameters):
         print 'P2VV - INFO: Matching physics on mc sample.'
@@ -1244,8 +1244,8 @@ parValuesMcSim08_6KKmassBins = dict(
     ,AperpMag2         = 0.499**2 / (0.722**2 + 0.480**2 + 0.499**2) 
     ,AperpPhase        = 3.07
     ,Gamma             = 1. / 1.503 
-    ,__dGamma__        = 1. / 1.406 - 1. / 1.614
-    ,__phiCP__         = +0.07 
+    ,dGamma            = 1. / 1.406 - 1. / 1.614
+    ,phiCP             = +0.07 
     ,lambdaCP          = 1.    
     ,dM                = 17.8
     ,f_S_bin0          = 0.

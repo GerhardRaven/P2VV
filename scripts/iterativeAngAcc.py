@@ -5,7 +5,7 @@ from optparse import OptionParser
 parser = OptionParser()
 parser.add_option('-r', '--KKmomRew',  dest='KKmomRew',   default = 'vertical',            help='KK momentum reweighting approach (vertical/horizontal)')
 parser.add_option('-o', '--rewSteps',  dest='rewSteps',   default = 'BmommkkphysKKmom',    help='reweghting steps order')
-parser.add_option('-b', '--Bmom2DRew', dest='Bmom2DRew',  default = 'False',               help='2 dimentional Bmom reweighting switch')
+parser.add_option('-b', '--Bmom2DRew', dest='Bmom2DRew',  default = 'True',                help='2 dimentional Bmom reweighting switch')
 parser.add_option('-s', '--MCProd',    dest='MCProd',     default = '2011',                help='choose mc sample ( 2011,2012 )')
 parser.add_option('-n', '--iterNum',   dest='iterNum',    default = 1, type=int,           help='iteration number')
 parser.add_option('-a', '--nomAngAcc', dest='nomAngAcc',  default = '',                    help='nominal angular acceptance')
@@ -118,7 +118,7 @@ KKMassCat  = PhysicsReweight.getPdf().indexCat()
 
 # begin reweighting procedure
 print 'P2VV - INFO: Start reweighting mc data_%s.'%MCProd
-print 'P2VV - INFO:\nSource distribution file: %s. \nTarget distribution file: %s.'%(monteCarloData,dataPath)
+print 'P2VV - INFO:\n  Source distribution file: %s. \n  Target distribution file: %s.'%(monteCarloData,dataPath)
 source = lambda: mcDataMngr.getDataSet()
 target = TFile.Open(dataPath).Get(sDataName)
 mcDataMngr['iterationNumber'] = iterNumb
@@ -142,7 +142,7 @@ if reweightPhysics:
           
 # match KK momenta
 if reweightKKmom and RewApproach == 'vertical':
-    KKMomWeights, l = TwoDimentionalVerticalReweighting(source(), target, KKmomBins, ['Kplus_P','Kminus_P'], xCheckPlots=True )
+    KKMomWeights = TwoDimentionalVerticalReweighting(source(), target, KKmomBins, ['Kplus_P','Kminus_P'] )
     mcDataMngr.appendWeights( KmomentaWeightsName, KKMomWeights )
 elif reweightKKmom and RewApproach == 'horizontal':
     KKmomentaReweight = MatchWeightedDistributions( outTree        = target, # Target: Distribution to be matched with
@@ -184,7 +184,7 @@ normalizeMoments( 'Sim08_{0}_{1}_Phys_{2}'.format(MCProd,outputEffMomentsBaselin
                   normMoment = 'mc_Re_ang_A0_A0',
                   printMoms  = False
                   )
-os.remove('Sim08_{0}_{1}_Phys_{2}'.format(MCProd,outputEffMomentsBaselineName,iterNumb) )
+# os.remove('Sim08_{0}_{1}_Phys_{2}'.format(MCProd,outputEffMomentsBaselineName,iterNumb) )
 
 # combine 2011,2012 acceptances
 if combineEffMoments:
