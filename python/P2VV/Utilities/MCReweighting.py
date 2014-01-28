@@ -201,7 +201,7 @@ def combineMoments( accFile1, accFile2, outName, Prefix=''):
             open(accFile1)
             open(accFile2)
             combineMoments( [ accFile1, accFile2 ], outName, prefix = Prefix, printMoms = False )
-            # for angAcc in [accFile1,accFile2]: os.remove(angAcc)
+            for angAcc in [accFile1,accFile2]: os.remove(angAcc)
             break
         except IOError:
             print 'P2VV - INFO: combineMoments: Waiting for the followig flies to combine efficiency moments:\n  %s\n  %s'%(accFile1,accFile2)

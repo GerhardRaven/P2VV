@@ -67,7 +67,6 @@ outputEffMomentsBaselineName = 'hel_UB_UT_trueTime_BkgCat050_KK30'
 # source generating physics  parameters
 ## TODO:: set mc pars from a file just like setdatapars
 from P2VV.Utilities.MCReweighting import parValuesMcSim08_6KKmassBins as monteCarloParameters
-# /project/bfys/vsyropou/PhD/macros/iterativeAngAcc/output/nominalFitResults/monteCarloSim08parameterValues.par
 
 # target physics parameters
 dataParameters = options.physPars if options.physPars\
@@ -184,7 +183,7 @@ normalizeMoments( 'Sim08_{0}_{1}_Phys_{2}'.format(MCProd,outputEffMomentsBaselin
                   normMoment = 'mc_Re_ang_A0_A0',
                   printMoms  = False
                   )
-# os.remove('Sim08_{0}_{1}_Phys_{2}'.format(MCProd,outputEffMomentsBaselineName,iterNumb) )
+os.remove('Sim08_{0}_{1}_Phys_{2}'.format(MCProd,outputEffMomentsBaselineName,iterNumb) )
 
 # combine 2011,2012 acceptances
 if combineEffMoments:

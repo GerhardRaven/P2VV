@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 from optparse import OptionParser
 parser = OptionParser()
-parser.add_option('-n', '--numIters',  dest='numIters',  default=8,       type=int,       help='number of iterations'  )
+parser.add_option('-n', '--numIters',  dest='numIters',  default = 8,     type=int,       help='number of iterations')
+parser.add_option('-N', '--oneIter',   dest='oneIter',   default = 1,     type=int,       help='run a specific iteration')
 parser.add_option('-p', '--makePlots', dest='makePlots', default = 'False',               help='switch on/off plotting')
 parser.add_option('-o', '--rewSteps',  dest='rewSteps',  default = 'Bmom_mkk_phys_KKmom', help='reweghting steps order')
 parser.add_option('-r', '--paralRew',  dest='paralRew',  default = 'True',                help='switch on/off plotting')
@@ -77,8 +78,12 @@ def _info( s, n, opts, what, indent=False ):
 ###############################
 # begin iterative prcedure ####
 ###############################
-print 'P2VV - INFO: Begin Iteartive procedure, %s iteration(s)'%numberOfIterations
-for itNum in range(1, numberOfIterations + 1):
+# either run 1 to n iterations or run a certain iteration N
+whichIterations = range(1, numberOfIterations + 1) if options.numIters and not options.oneIter else \
+                  range(options.oneIter, options.oneIter+1)
+
+print 'P2VV - INFO: Begin Iteartive procedure, %s iteration(s)'%len(whichIterations)
+for itNum in whichIterations:
 
     # set script options
     rew11_Opts = rewOpts( 2011, itNum) + finalIterOpts if itNum==numberOfIterations else rewOpts( 2011, itNum)
