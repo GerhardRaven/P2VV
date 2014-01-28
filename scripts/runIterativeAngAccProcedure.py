@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 from optparse import OptionParser
 parser = OptionParser()
-parser.add_option('-n', '--numIters',  dest='numIters',  default = 8,     type=int,       help='number of iterations')
-parser.add_option('-N', '--oneIter',   dest='oneIter',   default = 1,     type=int,       help='run a specific iteration')
-parser.add_option('-p', '--makePlots', dest='makePlots', default = 'False',               help='switch on/off plotting')
-parser.add_option('-o', '--rewSteps',  dest='rewSteps',  default = 'Bmom_mkk_phys_KKmom', help='reweghting steps order')
-parser.add_option('-r', '--paralRew',  dest='paralRew',  default = 'True',                help='switch on/off plotting')
-parser.add_option('-w', '--writeData', dest='writeData', default = 'False',               help='save mc datasets to file')
-parser.add_option('-b', '--Bmom2DRew', dest='Bmom2DRew', default = 'False',               help='2 dimentional Bmom reweighting switch')
+parser.add_option('-n', '--numIters',   dest='numIters',  default = 8,     type=int,       help='number of iterations')
+parser.add_option('-N', '--oneIter',    dest='oneIter',   default = 1,     type=int,       help='run a specific iteration')
+parser.add_option('-p', '--makePlots',  dest='makePlots', default = 'False',               help='switch on/off plotting')
+parser.add_option('-o', '--rewSteps',   dest='rewSteps',  default = 'Bmom_mkk_phys_KKmom', help='reweghting steps order')
+parser.add_option('-r', '--paralRew',   dest='paralRew',  default = 'True',                help='switch on/off plotting')
+parser.add_option('-w', '--writeData',  dest='writeData', default = 'False',               help='save mc datasets to file')
+parser.add_option('-b', '--Bmom2DRew',  dest='Bmom2DRew', default = 'False',               help='2 dimentional Bmom reweighting switch')
+parser.add_option('-e', '--eqStatBins', dest='eqStatBins',  default = 'False',               help='2 dimentional Bmom reweighting switch')
 (options, args) = parser.parse_args()
 
 # paths and paramteres
@@ -31,11 +32,12 @@ combMomOpt    = ' -cTrue'
 writeOpt      = ' -wTrue' if 'True' in options.writeData else ' -wFalse'
 plotOpt       = ' -pTrue' if 'True' in options.makePlots else ' -pFalse'
 Bmom2DRewOpt  = True if 'True' in options.Bmom2DRew else False
+equalStatBins = True if 'True' in options.eqStatBins else False
 rewSpetOpt    = options.rewSteps 
 finalIterOpts = ' ' + plotOpt + writeOpt
 
-rewOpts = lambda s, n: '-n%i -s%s -d%s -o%s -b%s -fFalse'%( n, s, parameterEstimatesName(n-1,True), rewSpetOpt, Bmom2DRewOpt ) if n!=1 else \
-                       '-n%i -s%s -d%s -o%s -b%s -fFalse'%( 1, s, parameterEstimates.replace('.par','_unbl.par'), rewSpetOpt, Bmom2DRewOpt )
+rewOpts = lambda s, n: '-n%i -s%s -d%s -o%s -b%s -e%s -fFalse'%( n, s, parameterEstimatesName(n-1,True), rewSpetOpt, Bmom2DRewOpt, equalStatBins ) if n!=1 else \
+                       '-n%i -s%s -d%s -o%s -b%s -e%s -fFalse'%( 1, s, parameterEstimates.replace('.par','_unbl.par'), rewSpetOpt, Bmom2DRewOpt, equalStatBins )
 fitOpts = lambda n:  '-d%s -a%s -i%s -o%s'%( fitData, (correctedAngAccBaseName + str(n)), parameterEstimatesName(n-1,False), parameterEstimatesName(n,False) ) if n!=1 else \
                      '-d%s -a%s -i%s -o%s'%( fitData, (correctedAngAccBaseName + str(n)), parameterEstimates, parameterEstimatesName(n,False) )
 
@@ -48,7 +50,8 @@ rewOptsLegend = {'-c' : 'Combine eff. moments      ',
                  '-d' : 'Input physics parameters  ',
                  '-o' : 'Reweighting steps         ',
                  '-f' : 'Fit after reweighting     ',
-                 '-b' : '2D B(p,p_T) reweighting   '
+                 '-b' : '2D B(p,p_T) reweighting   ',
+                 '-e' : 'Equal statistics binning  '
                  }
 fitOptsLegend = {'-d' : 'Fiting dataset          ', 
                  '-a' : 'Input angular acceptance', 

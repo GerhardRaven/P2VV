@@ -297,7 +297,7 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     print 'P2VV - INFO: TwoDimentionalVerticalReweighting: Reweighting variables (%s, %s) in sample %s.'%(var[0],var[1],source.GetName())
     iterIdx        = kwargs.pop('iterationNumber',   0   )
     plot           = kwargs.pop('xCheckPlots',     False )
-    equalStatsBins = kwargs.pop('equalStatsBins',  False )
+    equalStatsBins = kwargs.pop('equalStatBins',  False  )
 
     from ROOT import TH2D, TH1D, TCanvas
   
@@ -352,15 +352,27 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     
     # calculate weights
     weights = []
-    count = 0 # count how many events have a problematic weight
+    t_zero, s_zero, both_zero, negative = 0, 0, 0, 0 # count how many events have a problematic weight
     for event in source:
         bin = sourceHist.FindFixBin( _valX(event),  _valY(event) ) # get bin with the given varible values
-        if targetHist.GetBinContent(bin)==0 or sourceHist.GetBinContent(bin)==0:# do not weight the event if not possible with current binning
-            weights += [0.] 
-            count += 1
-        else: 
+        # do not weight the event if not possible with current binning
+        if targetHist.GetBinContent(bin)!=0 and sourceHist.GetBinContent(bin)!=0:
             weights += [targetHist.GetBinContent(bin) / sourceHist.GetBinContent(bin)] # calculate weight
-    if count>0: print 'P2VV - INFO: TwoDimentionalVerticalReweighting: Could not assign weight for %s out of %s events with current binning, excluding them from the sample.'%(count,source.numEntries())
+        else:
+            if targetHist.GetBinContent(bin)==0 and sourceHist.GetBinContent(bin)==0:
+                weights   += [0.] 
+                both_zero += 1
+            if targetHist.GetBinContent(bin)==0:
+                weights += [0.] 
+                t_zero  += 1
+            elif sourceHist.GetBinContent(bin)<=0:
+                if    sourceHist.GetBinContent(bin)==0: s_zero += 1
+                else: negative += 1
+                weights += [0.] 
+
+    
+    print 'P2VV - INFO: TwoDimentionalVerticalReweighting: Problematic bins:'
+    print '  Source bins with zero entries %s\n  Target bins with zero entries %s\n  SourceZero U TargetZero      %s \n  Bins with negative weights    %s'%(s_zero,t_zero, both_zero, negative)
 
     # plot and print the 2d histograms
     if plot: 
@@ -418,7 +430,7 @@ def OneDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     print 'P2VV - INFO: OneimentionalVerticalReweighting: Reweighting variable %s in sample %s.'%(var,source.GetName())
     iterIdx        = kwargs.pop('iterationNumber',     0 )
     plot           = kwargs.pop('xCheckPlots',     False )
-    equalStatsBins = kwargs.pop('equalStatsBins',  False )
+    equalStatsBins = kwargs.pop('equalStatBins',   False )
 
     from ROOT import TH1D, TCanvas
     from array import array
@@ -430,25 +442,28 @@ def OneDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     from P2VV.RooFitWrappers import RooObject
     xMin, xMax = RooObject._rooobject(var).getMin(), RooObject._rooobject(var).getMax(var)
 
-    # create equal statistics binning
-    if equalStatsBins:
-        print 'P2VV - INFO: OneDimentionalVerticalReweighting: Reweighting with equal statistics binning.'
-        targetList = []
-        for ev in target: targetList += [ev.find(var).getVal()]
-        targetList.sort()
-        
-        range = xMax - xMin
-        binstat = target.numEntries() / nbins
-        lowbounds = [xMin - 0.0001*xMin]
-        
-        for ev in xrange(binstat,len(targetList),binstat):
-            lowbounds += [ targetList[ev] ]
-            if len(lowbounds) == nbins: break
-        lowbounds += [ xMax ]
-
     # create histrograms
     print 'P2VV - INFO: OneDimentionalVerticalReweighting: Using %s binnning with #bins = %s.'%('equal statistics' if equalStatsBins else 'uniform',nbins)
-    if equalStatsBins:
+    if equalStatsBins: # create equal statistics binning
+        print 'P2VV - INFO: OneDimentionalVerticalReweighting: Reweighting with equal statistics binning.'
+        weights = True
+        targetList = []
+        for ev in target: targetList += [ ( ev.find(var).getVal(), target.weight() )]
+        targetList.sort()
+
+        binstat = target.sumEntries() / nbins if weights else target.numEntries() / nbins
+        lowbounds = [ xMin ]
+        eventCount = 0
+        while ( len(targetList) - eventCount ) > binstat:
+            binContentCount = 0
+            while binContentCount < binstat and eventCount < target.numEntries():
+                lowbound_i = targetList[eventCount][0]
+                binContentCount +=1 if not weights else targetList[eventCount][1]
+                eventCount += 1
+            # print lowbound_i, binContentCount
+            lowbounds += [lowbound_i]
+        # print lowbounds, len(lowbounds)
+
         sourceHist  = TH1D('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, array('f',lowbounds) )
         targetHist  = TH1D('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, array('f',lowbounds) )
     else:
@@ -462,15 +477,22 @@ def OneDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     # rescale
     if source.numEntries() > target.numEntries(): sourceHist.Scale( target.sumEntries() / source.numEntries() )
     else: targetHist.Scale( source.numEntries() / target.sumEntries() )
-    
-    # print sourceHist.KolmogorovTest(targetHist)
+
+
+    for b in xrange( 1, sourceHist.GetNbinsX()+ 1 ):  print b, sourceHist.GetBinContent(b)
+    print 
+    print
+    for b in xrange( 1, targetHist.GetNbinsX()+1 ): print b, targetHist.GetBinContent(b) 
+
+#    import pdb; pdb.set_trace()
+
 
     # calculate weights
     weights = []
     count = 0 # count how many events have a problematic weight
     for event in source:
         bin = sourceHist.FindFixBin( _valX(event) ) # get the bin with given var value
-        if targetHist.GetBinContent(bin)==0 or sourceHist.GetBinContent(bin)==0:
+        if targetHist.GetBinContent(bin)<=0 or sourceHist.GetBinContent(bin)<=0:
             weights += [0.] 
             count += 1
         else: 
