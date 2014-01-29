@@ -84,18 +84,18 @@ class SplitPPT(object):
 
 class SplitSigmat(SplitUtil):
     def __init__(self, data_type, st):
-        binnings = {'MC11a' : [0.01000, 0.02066, 0.02375, 0.02616, 0.02833,
-                               0.03047, 0.03269, 0.03520, 0.03837, 0.04343, 0.07000],
-                    'MC11a_incl_Jpsi' : [0.01000, 0.02414, 0.02720, 0.02948, 0.03145,
-                                         0.03338, 0.03537, 0.03761, 0.04049, 0.04504, 0.07000],
-                    'MC2011_Sim08a' : [0.01, 0.02147, 0.02473, 0.02728, 0.0296, 0.03186,
-                                       0.03423, 0.0369, 0.04029, 0.04556, 0.07],
-                    'MC2012' : [0.01, 0.02083, 0.02385, 0.02618, 0.02822, 0.03016, 0.03209,
-                                0.03409, 0.03629, 0.03887, 0.04218, 0.04752, 0.07],
-                    'MC2012_incl_Jpsi' : [0.01, 0.0263, 0.02969, 0.03221, 0.03447, 0.03681,
-                                          0.0393, 0.0424, 0.04742, 0.07]}
-        default = [0.01000, 0.02410, 0.02727, 0.02969, 0.03186,
-                   0.03398, 0.03632, 0.03923, 0.04378, 0.07000]
+        binnings = {'MC11a' : [0.0, 0.02066, 0.02375, 0.02616, 0.02833,
+                               0.03047, 0.03269, 0.03520, 0.03837, 0.04343, 0.12],
+                    'MC11a_incl_Jpsi' : [0.0, 0.02414, 0.02720, 0.02948, 0.03145,
+                                         0.03338, 0.03537, 0.03761, 0.04049, 0.04504, 0.12],
+                    'MC2011_Sim08a' : [0.0, 0.02147, 0.02473, 0.02728, 0.0296, 0.03186,
+                                       0.03423, 0.0369, 0.04029, 0.04556, 0.12],
+                    'MC2012' : [0.0, 0.02083, 0.02385, 0.02618, 0.02822, 0.03016, 0.03209,
+                                0.03409, 0.03629, 0.03887, 0.04218, 0.04752, 0.12],
+                    'MC2012_incl_Jpsi' : [0.0, 0.0263, 0.02969, 0.03221, 0.03447, 0.03681,
+                                          0.0393, 0.0424, 0.04742, 0.12]}
+        default = [0., 0.02410, 0.02727, 0.02969, 0.03186,
+                   0.03398, 0.03632, 0.03923, 0.04378, 0.12]
         bins = array('d', binnings.get(data_type, default))
         fmt = 'sigmat_simul'
         SplitUtil.__init__(self, [st], {st : bins}, {st : 'st'}, fmt)
@@ -141,10 +141,10 @@ parNames = {'N_prompt'      : ('#prompt', '\\# prompt \jpsi'),
             'timeResSigmaSF_1' : ('sf G1', '$\\text{sf}_{1}$'),
             'timeResSFMean' : ('sf mean', '$\\overline{\\mathrm{sf}}$'),
             'timeResSFSigma' : ('sf sigma', '$\\mathrm{sf}_{\sigma}$'),
-            'sf_mean_offset' : ('sf mean offset', '$\\overline{\\sigma}$ offset'),
-            'sf_mean_slope' : ('sf mean slope', '$\\overline{\\sigma}$ slope'),
-            'sf_sigma_offset' : ('sf sigma offset', '$\\mathrm{sf}_{\\sigma}$ offset'),
-            'sf_sigma_slope' : ('sf sigma offset', '$\\mathrm{sf}_{\\sigma}$ slope')
+            'sf_mean_offset' : ('mean width offset', '$\\overline{\\sigma}$ offset'),
+            'sf_mean_slope' : ('mean width slope', '$\\overline{\\sigma}$ slope'),
+            'sf_sigma_offset' : ('sigma width offset', '$\\sigma$ offset'),
+            'sf_sigma_slope' : ('sigma width offset', '$\\sigma$ slope')
             }
 
 import os
