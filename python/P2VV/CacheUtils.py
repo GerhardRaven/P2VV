@@ -221,10 +221,13 @@ class Cache(object):
 
     def read_results(self):
         # Read results
-        rd = self.cache_dir().Get('results')
+        results = {}
+        cd = self.cache_dir()
+        if not cd:
+            return results
+        rd = cd.Get('results')
         if not rd:
             return {}
-        results = {}
         for key in rd.GetListOfKeys():
             if key.GetClassName() != 'RooFitResult':
                 continue
