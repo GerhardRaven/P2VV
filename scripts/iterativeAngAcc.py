@@ -159,7 +159,6 @@ elif reweightKKmom and RewApproach == 'horizontal':
     for k,v in mcDataMngr.iteritems(): print k,v
     mcDataMngr.setDataSet( source(), 'hor' + KmomentaWeightsName )
     for k,v in mcDataMngr.iteritems(): print k,v
-    print 
     assert False
       
 # compute angular efficiency moments from the new reweighted mc dataset.
