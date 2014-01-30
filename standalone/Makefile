@@ -12,8 +12,8 @@ CYTHON = cython
 ROOTCONFIG = root-config
 PYTHONCONFIG = python-config
 COMMONFLAGS = -Wall -O2 -pipe -ggdb -fPIC -DPIC
-CXXFLAGS := $(COMMONFLAGS) $(shell $(ROOTCONFIG) --cflags) -I$(INCDIR) -I. 
-LDFLAGS  := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit -lRooFitCore -lMathCore -lMathMore
+COMPILECXXFLAGS := $(CPPFLAGS) $(COMMONFLAGS) $(shell $(ROOTCONFIG) --cflags) -I$(INCDIR) -I. 
+LINKFLAGS  := $(LDFLAGS) $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit -lRooFitCore -lMathCore -lMathMore
 ## Reflex dictionary testing flags:
 ## LDFLAGS  := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit -lRooFitCore -lMathCore -lMathMore -lReflex -lCintex
 
@@ -31,8 +31,8 @@ endif
 
 
 
-CFLAGS := $(COMMONFLAGS)
-PROF_LDFLAGS := $(PYTHON_LDFLAGS) -lprofiler
+COMPILECFLAGS := $(CFLAGS) $(COMMONFLAGS)
+PROF_LDFLAGS := $(LDFLAGS) $(PYTHON_LDFLAGS) -lprofiler -ltcmalloc
 
 SOURCES = $(wildcard $(SRCDIR)/*.cxx)
 
@@ -56,14 +56,14 @@ profiler: $(LIBDIR)/profiler.so
 $(BUILDDIR)/P2VV_dict.o: $(BUILDDIR)/P2VV_dict.cxx
 
 $(BUILDDIR)/%.o : %.cxx %.h
-	$(CXX) $(CXXFLAGS) -MMD -c $< -o $@
+	$(CXX) $(COMPILECXXFLAGS) -MMD -c $< -o $@
 	@cp $(BUILDDIR)/$*.d $(df).P; \
 	sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 	-e '/^$$/ d' -e 's/$$/ :/' < $(BUILDDIR)/$*.d >> $(df).P; \
 	rm -f $(BUILDDIR)/$*.d
 
 $(BUILDDIR)/%.o : bindings/%.c
-	$(CC) $(CFLAGS) $(PYTHON_CFLAGS) -MMD -c $< -o $@
+	$(CC) $(COMPILECFLAGS) $(PYTHON_CFLAGS) -MMD -c $< -o $@
 	@cp $(BUILDDIR)/$*.d $(df).P; \
 	sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 	-e '/^$$/ d' -e 's/$$/ :/' < $(BUILDDIR)/$*.d >> $(df).P; \
@@ -74,7 +74,7 @@ $(BUILDDIR)/P2VV_dict.cxx: $(wildcard $(INCDIR)/P2VV/*.h) $(DICTDIR)/P2VV_dict.h
 ##	genreflex $(DICTDIR)/P2VV_dict.h -o $@ -s $(DICTDIR)/P2VV_dict.xml --gccxmlopt="-I${ROOTSYS}/include -I$(INCDIR)"
 
 $(LIBDIR)/libP2VV.so: $(OBJECTS) $(BUILDDIR)/P2VV_dict.o
-	$(LD) $(LDFLAGS) -shared -o $@ $^
+	$(LD) $(LINKFLAGS) -shared -o $@ $^
 
 $(BINDINGSDIR)/profiler.c: $(SRCDIR)/profiler.pyx
 	$(CYTHON) -o $@ $^
