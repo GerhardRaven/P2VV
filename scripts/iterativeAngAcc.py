@@ -5,8 +5,8 @@ from optparse import OptionParser
 parser = OptionParser()
 parser.add_option('-r', '--KKmomRew',   dest='KKmomRew',   default = 'vertical',            help='KK momentum reweighting approach (vertical/horizontal)')
 parser.add_option('-o', '--rewSteps',   dest='rewSteps',   default = 'BmommkkphysKKmom',    help='reweghting steps order')
-parser.add_option('-b', '--Bmom2DRew',  dest='Bmom2DRew',  default = 'True',                help='2 dimentional Bmom reweighting switch')
-parser.add_option('-e', '--eqStatBins', dest='eqStatBins',  default = 'False',               help='2 dimentional Bmom reweighting switch')
+parser.add_option('-b', '--Bmom2DRew',  dest='Bmom2DRew',  default = 'False',               help='2 dimentional Bmom reweighting switch')
+parser.add_option('-e', '--eqStatBins', dest='eqStatBins', default = 'False',               help='2 dimentional Bmom reweighting switch')
 parser.add_option('-s', '--MCProd',     dest='MCProd',     default = '2011',                help='choose mc sample ( 2011,2012 )')
 parser.add_option('-n', '--iterNum',    dest='iterNum',    default = 1, type=int,           help='iteration number')
 parser.add_option('-a', '--nomAngAcc',  dest='nomAngAcc',  default = '',                    help='nominal angular acceptance')
@@ -72,7 +72,7 @@ from P2VV.Utilities.MCReweighting import parValuesMcSim08_6KKmassBins as monteCa
 
 # target physics parameters
 dataParameters = options.physPars if options.physPars\
-    else '/project/bfys/vsyropou/data/nominalFitResults/20112012Reco14DataFitValues_6KKMassBins.par'
+    else '/project/bfys/vsyropou/data/nominalFitResults/20112012Reco14DataFitValues_6KKMassBins_unbl.par'
 
 ###########################################################################################################################
 ## Begin iterative procedure  ##
@@ -128,22 +128,23 @@ mcDataMngr['iterationNumber'] = iterNumb
 if reweightBmomentum:
     BmomentumWeights = TwoDimentionalVerticalReweighting( source(), target, BmomBins, ['B_P','B_Pt'], equalStatBins=equalStatBins ) if twoDimensionalBmomRew else \
                        OneDimentionalVerticalReweighting( source(), target, BmomBins, 'B_P', equalStatBins=equalStatBins )
-    mcDataMngr.appendWeights( BmomentumWeightsName, BmomentumWeights, permanetnWeigts=True )
+    mcDataMngr.appendWeights( BmomentumWeightsName, BmomentumWeights )
 
 # match mKK
 if reweightMkk:
-    mKKweights = OneDimentionalVerticalReweighting( source(), target, mkkBins, 'mdau2', equalStatBins=equalStatBins, xCheckPlots=True)
-    mcDataMngr.appendWeights( mKKWeightsName, mKKweights, permanetnWeigts=True )
-assert False
+    mKKweights = OneDimentionalVerticalReweighting( source(), target, mkkBins, 'mdau2', equalStatBins=equalStatBins )
+    mcDataMngr.appendWeights( mKKWeightsName, mKKweights )
+
 # match physics
 if reweightPhysics:
     PhysicsReweight.setDataSet( source() )
     physWeights = PhysicsReweight.calculateWeights( iterNumb, dataParameters )
     mcDataMngr.appendWeights( physWeightName, physWeights )
-          
+
 # match KK momenta
 if reweightKKmom and RewApproach == 'vertical':
-    KKMomWeights, l = TwoDimentionalVerticalReweighting(source(), target, KKmomBins, ['Kplus_P','Kminus_P'], equalStatBins=equalStatBins, xCheckPlots=True )
+    KKMomWeights = TwoDimentionalVerticalReweighting( source(), target, KKmomBins, ['Kplus_P','Kminus_P'], equalStatBins=equalStatBins ) #, xCheckPlots=True )
+    # assert False
     mcDataMngr.appendWeights( KmomentaWeightsName, KKMomWeights )
 elif reweightKKmom and RewApproach == 'horizontal':
     KKmomentaReweight = MatchWeightedDistributions( outTree        = target, # Target: Distribution to be matched with

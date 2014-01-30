@@ -36,8 +36,8 @@ equalStatBins = True if 'True' in options.eqStatBins else False
 rewSpetOpt    = options.rewSteps 
 finalIterOpts = ' ' + plotOpt + writeOpt
 
-rewOpts = lambda s, n: '-n%i -s%s -d%s -o%s -b%s -e%s -fFalse'%( n, s, parameterEstimatesName(n-1,True), rewSpetOpt, Bmom2DRewOpt, equalStatBins ) if n!=1 else \
-                       '-n%i -s%s -d%s -o%s -b%s -e%s -fFalse'%( 1, s, parameterEstimates.replace('.par','_unbl.par'), rewSpetOpt, Bmom2DRewOpt, equalStatBins )
+rewOpts = lambda s, n: '-n%i -s%s -d%s -o%s -b%s -e%s'%( n, s, parameterEstimatesName(n-1,True), rewSpetOpt, Bmom2DRewOpt, equalStatBins ) if n!=1 else \
+                       '-n%i -s%s -d%s -o%s -b%s -e%s'%( 1, s, parameterEstimates.replace('.par','_unbl.par'), rewSpetOpt, Bmom2DRewOpt, equalStatBins )
 fitOpts = lambda n:  '-d%s -a%s -i%s -o%s'%( fitData, (correctedAngAccBaseName + str(n)), parameterEstimatesName(n-1,False), parameterEstimatesName(n,False) ) if n!=1 else \
                      '-d%s -a%s -i%s -o%s'%( fitData, (correctedAngAccBaseName + str(n)), parameterEstimates, parameterEstimatesName(n,False) )
 
@@ -49,7 +49,7 @@ rewOptsLegend = {'-c' : 'Combine eff. moments      ',
                  '-s' : 'Monte Carlo dataset       ',
                  '-d' : 'Input physics parameters  ',
                  '-o' : 'Reweighting steps         ',
-                 '-f' : 'Fit after reweighting     ',
+                 # '-f' : 'Fit after reweighting     ',
                  '-b' : '2D B(p,p_T) reweighting   ',
                  '-e' : 'Equal statistics binning  '
                  }
@@ -112,6 +112,8 @@ for itNum in whichIterations:
     sys.stdout.flush()
     rew_12 = subprocess.call(cmd_12, stdin = None, stdout = None, stderr = subprocess.STDOUT)
 
+    assert False 
+    
     # perform 3fb fit
     cmdfit = shlex.split( fittingScript + ' ' + fitOpts(itNum) )
     _info( '', itNum, cmdfit, 'fit' )
