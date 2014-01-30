@@ -65,6 +65,7 @@ def __wrap_kw_subs( fun, creates = None, containerManager = None ) :
             try:
                 r = containerManager(fun(self, *tuple(fun_args + [l] if l.GetSize() else fun_args), **kwargs))
                 if creates:
+                    import ROOT
                     ROOT.SetOwnership(self, True)
                 return r
             except TypeError as terr1:

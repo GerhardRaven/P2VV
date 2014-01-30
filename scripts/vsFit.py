@@ -92,6 +92,6 @@ resultFile.Close()
 
 if parFileOut :
     pdfConfig.getParametersFromPdf( pdf,  fitData )
-    pdfConfig.writeParametersToFile( filePath = parFileOut )
+    pdfConfig.writeParametersToFile( filePath = parFileOut, Floating = True )
 
 print 120*'='
