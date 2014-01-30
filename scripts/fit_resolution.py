@@ -331,10 +331,15 @@ if not fit_mass and options.cache:
         if options.simultaneous:
             sWeight_mass_result = results[sub_dir + '/sWeight_mass_result']
     except KeyError:
+        sig_sdata = None
+        bkg_sdata = None
+        single_bin_sig_sdata = None
+        single_bin_bkg_sdata = None
+        sdatas = {}
         fit_mass = True
     if not fit_mass and options.simultaneous:
         split_cats = [split_util.split_cats(data = sig_sdata, mb = options.make_binning)]
-        
+
 ## Fitting opts
 fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 1, Offset = True,
                Verbose = options.verbose, Strategy = 1)
@@ -357,6 +362,8 @@ if fit_mass:
     data = readData(input_data[args[0]]['data'], tree_name, NTuple = True, observables = observables,
                     ntupleCuts = cut, ImportIntoWS = False)
     data.SetName(tree_name)
+    if data.numEntries() > 6e5:
+        data = data.reduce(EventRange = (0, int(6e5)))
 
     # In case of reweighing
     sig_mass_pdf = buildPdf(Components = (signal, background), Observables = (m,), Name = 'sig_mass_pdf')
@@ -522,9 +529,11 @@ elif fit_mass:
 if fit_mass and options.cache:
     cache.write_cut(cut)
     cache.write_data(data, sdatas)
+    cache.write_results(dict([(k, v) for k, v in results.iteritems() if 'mass' in k]))
 
 if options.reduce:
-    data = data.reduce(EventRange = (0, int(options.reduce)))
+    if options.fit_mass:
+        data = data.reduce(EventRange = (0, int(options.reduce)))
     for k, sdata in sdatas.iteritems():
         sdatas[k] = sdata.reduce(EventRange = (0, int(options.reduce)))
     sig_sdata = sig_sdata.reduce(EventRange = (0, int(options.reduce)))
@@ -631,9 +640,8 @@ if options.simultaneous:
     split_pars[0] += sig_tres.splitVars()
 
     if options.wpv and options.wpv_type == 'Gauss':
-        ## split_pars[0].extend([sig_wpv.getYield()])
+        split_pars[0].extend([sig_wpv.getYield()])
         ## split_pars[0].extend([wpv_sigma])
-        pass
     elif options.wpv and signal_MC and options.wpv_type == 'Rest':
         split_pars[0].append(rest.getYield())
         ## split_pars[0].append(rest_tres._left_rlifeSF)
@@ -914,11 +922,11 @@ if time_result:
     time_result.PrintSpecial(LaTeX = True, ParNames = ResolutionUtils.parNames)
 
 # Write the result of the fit to the cache file
-if options.cache and not options.reduce:
-    if options.fit:
-        cache.write_results(results)
+if options.cache:
+    if options.fit and not options.reduce:
+        cache.write_results(dict([(k, v) for k, v in results.iteritems() if 'time' in k]))
 
-    if options.make_plots:
+    if options.make_plots and not options.reduce:
         ## Write plots
         cache.write_plots(plots)
 
