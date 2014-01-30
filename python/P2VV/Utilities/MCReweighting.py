@@ -282,7 +282,8 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     print 'P2VV - INFO: TwoDimentionalVerticalReweighting: Reweighting variables (%s, %s) in sample %s.'%(var[0],var[1],source.GetName())
     iterIdx        = kwargs.pop('iterationNumber',   0   )
     plot           = kwargs.pop('xCheckPlots',     False )
-    equalStatsBins = kwargs.pop('equalStatBins',  False  )
+    equalStatsBins = kwargs.pop('equalStatBins',   False )
+    combineWeights = kwargs.pop('combWeights',     True  )
 
     from ROOT import TH2D, TH1D, TCanvas
   
@@ -295,7 +296,7 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     xMax, yMax = RooObject._rooobject(var[0]).getMax(), RooObject._rooobject(var[1]).getMax()
         
     # import / create binning
-    print 'P2VV - INFO: TwoDimentionalVerticalReweighting: Using %s binnning with %sx%s bins .'%('almost equal statistics' if equalStatsBins else 'uniform',nbins,nbins)
+    print 'P2VV - INFO: TwoDimentionalVerticalReweighting: Using %s binnning with %sx%s bins.'%('almost equal statistics' if equalStatsBins else 'uniform',nbins,nbins)
     if equalStatsBins: # create equal statistics binning
         from array import array
         
@@ -371,7 +372,15 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
         targetHist = TH2D('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, xMin, xMax, nbins, yMin, yMax )
 
     # create 2D histrograms and fill
-    for evnt in source: sourceHist.Fill( _valX(evnt), _valY(evnt), source.weight() )
+    # fill source 2D histogram
+    if combineWeights: # alow reweighting independant from the previous ones
+        sourcePreviousWeights = []
+        for evnt in source:
+            sourceHist.Fill( _valX(evnt), _valY(evnt), source.weight() )
+            sourcePreviousWeights += [ source.weight() ]
+    else: 
+        for evnt in source: sourceHist.Fill( _valX(evnt), _valY(evnt), 1 )
+    # fill target 2D histogram
     for evnt in target: targetHist.Fill( _valX(evnt), _valY(evnt), target.weight() )
 
     # rescale
@@ -404,6 +413,12 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     summary += '  Source events with negative weights : %s\n'%s_negative
     summary += '  Target events with negative weights : %s'%t_negative    
     if prblEvens:  print summary
+
+    # combine previous weights with the latest ones
+    if combineWeights:
+        print 'P2VV - INFO: TwoDimentionalVerticalReweighting: Combining previous source weights with the latest ones.'
+        from numpy import array
+        weights = array(weights) * array(sourcePreviousWeights)
 
     # plot and print the 2d histograms
     if plot: 
@@ -577,8 +592,9 @@ class WeightedDataSetsManager(dict):
         print 'P2VV - INFO: WeightedDataSetsManager: Initialsed for sample %s.'%self['initSource'].GetName()
 
     def appendWeights( self, weightsName, weightsList ):
-        from numpy import array
-        self['WeightsLists'][weightsName] = array( weightsList )
+        import numpy
+        if not type(weightsList)==numpy.ndarray: weightsList = numpy.array(weightsList) 
+        self['WeightsLists'][weightsName] = weightsList
 
         # scale weights to preserve number of events 
         print 'P2VV - INFO: appendWeights: Scaling sources sum of weights to the number of entries.'

@@ -49,7 +49,6 @@ rewOptsLegend = {'-c' : 'Combine eff. moments      ',
                  '-s' : 'Monte Carlo dataset       ',
                  '-d' : 'Input physics parameters  ',
                  '-o' : 'Reweighting steps         ',
-                 # '-f' : 'Fit after reweighting     ',
                  '-b' : '2D B(p,p_T) reweighting   ',
                  '-e' : 'Equal statistics binning  '
                  }
