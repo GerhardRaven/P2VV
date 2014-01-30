@@ -406,7 +406,8 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
             weights += [0.]
             prblEvens += 1
 
-    print 'P2VV - INFO: TwoDimentionalVerticalReweighting (%s): %s problematic events%s'%(var,prblEvens,' due to:' if prblEvens else '.' )
+    print 'P2VV - INFO: TwoDimentionalVerticalReweighting of variables (%s): %s problematic events%s'\
+                        %(var[0]+var[1],prblEvens,' due to:' if prblEvens else '.' )
     summary =  '  Source binning                      : %s\n'%s_zero  
     summary += '  Target binning                      : %s\n'%t_zero
     summary += '  Both                                : %s\n'%both_zero
@@ -477,6 +478,7 @@ def OneDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     iterIdx        = kwargs.pop('iterationNumber',     0 )
     plot           = kwargs.pop('xCheckPlots',     False )
     equalStatsBins = kwargs.pop('equalStatBins',   False )
+    combineWeights = kwargs.pop('combWeights',     True  )
 
     from ROOT import TH1D, TCanvas
 
@@ -518,7 +520,14 @@ def OneDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
         targetHist  = TH1D('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, xMin, xMax )
 
     # fill reweighting histograms
-    for evnt in source: sourceHist.Fill( _valX(evnt), source.weight() )
+    if combineWeights: # alow reweighting independant from the previous ones
+        sourcePreviousWeights = []
+        for evnt in source:
+            sourceHist.Fill( _valX(evnt), source.weight() )
+            sourcePreviousWeights += [ source.weight() ]
+    else: 
+        for evnt in source: sourceHist.Fill( _valX(evnt), 1 )
+    # fill target 2D histogram
     for evnt in target: targetHist.Fill( _valX(evnt), target.weight() )
        
     # rescale
@@ -544,13 +553,19 @@ def OneDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
             weights += [0.]
             prblEvens += 1
 
-    print 'P2VV - INFO: OneDimentionalVerticalReweighting (%s): %s problematic events%s'%(var,prblEvens,' due to:' if prblEvens else '.' )
+    print 'P2VV - INFO: OneDimentionalVerticalReweighting of variable %s: %s problematic events%s'%(var,prblEvens,' due to:' if prblEvens else '.' )
     summary =  '  Source binning                      : %s\n'%s_zero  
     summary += '  Target binning                      : %s\n'%t_zero
     summary += '  Both                                : %s\n'%both_zero
     summary += '  Source events with negative weights : %s\n'%s_negative
     summary += '  Target events with negative weights : %s'%t_negative    
     if prblEvens: print summary
+
+    # combine previous weights with the latest ones
+    if combineWeights:
+        print 'P2VV - INFO: OneDimentionalVerticalReweighting: Combining previous source weights with the latest ones.'
+        from numpy import array
+        weights = array(weights) * array(sourcePreviousWeights)
 
     # check the result of the reweighting 
     if plot: 
