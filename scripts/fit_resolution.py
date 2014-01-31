@@ -53,7 +53,9 @@ parser.add_option("--split-mean", dest = "split_mean", default = False, action =
                   help = 'Split the mean of the Gaussians in a simultaneous fit.')
 parser.add_option("--split-frac", dest = "split_frac", default = False, action = 'store_true',
                   help = 'Split the fraction of the Gaussians in a simultaneous fit.')
-parser.add_option("--split", dest = "split", default = 'sigmat', action = 'store', type = 'string',
+parser.add_option("--split-scalefactors", dest = "split_sfs", default = False, action = 'store_true',
+                  help = 'Split the scalefactors of the Gaussians in a simultaneous fit.')
+parser.add_option("--split-observable", dest = "split", default = 'sigmat', action = 'store', type = 'string',
                   help = 'Which categories should be used to split, [sigmat, momentum, pt, ppt, nPV, pv_zerr]')
 parser.add_option("--correct-errors", dest = "correct_errors", default = False, action = 'store_true',
                   help = 'Apply the SumW2 error correction')
@@ -113,7 +115,7 @@ from P2VV.Load import LHCbStyle
 ## Extra name for fit result and plots
 extra_name = [args[1]]
 for a, n in [('parameterise', None), ('wpv', 'wpv_type'), ('sf_param', None),
-             ('peak_only', 'peak'), ('add_background', 'cfit'),
+             ('peak_only', 'peak'), ('add_background', 'cfit'), ('split_sfs', 'split'),
              ('use_refit', 'PVRefit'), ('pee', 'pee')]:
     v = getattr(options, a)
     if v:
@@ -195,7 +197,7 @@ elif args[1] == 'double':
     tres_args = dict(time = time_obs, sigmat = st, Cache = True,
                      PerEventError = options.pee, Parameterise = options.parameterise,
                      TimeResSFParam = options.sf_param, SplitFracs = options.split_frac,
-                     timeResMu = mu, Simultaneous = options.simultaneous,
+                     timeResMu = mu, Simultaneous = options.simultaneous, SplitSFS = options.split_sfs,
                      ScaleFactors = [(2, 2.00), (1, 1.174)] if options.pee else [(2, 0.1), (1, 0.06)],
                      Fractions = [(2, 0.143)], SplitMean = options.split_mean,
                      MeanParameterisation = options.mu_param)

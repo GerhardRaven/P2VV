@@ -117,7 +117,7 @@ class SplitPT(SplitUtil):
 class SplitPVZerr(SplitUtil):
     def __init__(self, data_type, zerr):
         bins = array('d', [0, 0.0237, 0.029, 0.0376, 1])
-        self.__format = 'pv_zerr_{0}bins_simul'.format(len(bins))
+        self.__format = 'pv_zerr_simul'
         SplitUtil.__init__(self, [zerr], {zerr : bins}, {zerr : 'zerr'}, fmt)
 
 class SplitNPV(SplitUtil):
