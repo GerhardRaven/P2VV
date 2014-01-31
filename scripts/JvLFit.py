@@ -22,7 +22,7 @@ dataPath            = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
 plotsFile     = 'temp.ps'   #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.ps'
 plotsROOTFile = 'temp.root' #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.root'
 parFileIn     = '20112012Reco14DataFitValues_6KKMassBins.par' # '20112012Reco14DataFitValues_6KKMassBins.par' # '20112012Reco14DataFitValues_6KKMassBins_CPVDecay.par'
-parFileOut    = '' # ( 'fitResults/Reco14/comparisons/20140122_20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_CPVDecayRel.par', dict( Format = 'common' ) )
+parFileOut    = '' # ( 'polDep_3fb.par', dict( Format = 'common' ) )
 
 if generateData :
     dataSetName = 'JpsiphiData'
@@ -149,7 +149,9 @@ KKMassPars = pdfConfig['obsDict']['KKMass']
 pdfConfig['obsDict']['KKMass'] = ( KKMassPars[0], KKMassPars[1], KKMassPars[2]
                                   , 1020., pdfConfig['KKMassBinBounds'][0], pdfConfig['KKMassBinBounds'][-1] )
 
-pdfConfig['lambdaCPParam'] = 'lambPhi' # 'lambPhi' # 'lambPhi_CPVDecay' # 'lambPhiRel_CPVDecay' # 'lambRelPhiRel_CPVDecay' # 'lambPhi_CPVDecay_PSWaves'
+pdfConfig['lambdaCPParam'] = 'lambPhi' # 'lambPhi' # 'observables_CPVDecay' # 'lambPhi_CPVDecay' # 'lambPhiRel_CPVDecay' # 'lambPhi_CPVDecay_PSWaves'
+if pdfConfig['lambdaCPParam'] == 'observables_CPVDecay' :
+    pdfConfig['splitParams']['KKMassCat'] = [ 'av' + par if par == 'f_S' else par for par in pdfConfig['splitParams']['KKMassCat'] ]
 
 if 'Parameterization' in pdfConfig['timeEffParameters'] and pdfConfig['timeEffParameters']['Parameterization'] == 'Spline' :
     pdfConfig['splitParams']['hlt1_excl_biased_dec'] = [ 'tagCatCoef0_1' ]
@@ -474,8 +476,10 @@ if pdfConfig['lambdaCPParam'].startswith('lambPhi_CPVDecay') :
 #ws['AperpMag2'].setVal(0.238)
 #ws['f_S'].setVal(0.)
 #ws['f_S'].setConstant()
-#ws['AparPhase'].setVal(3.24)
-#ws['AperpPhase'].setVal(3.01)
+#ws['AparPhase'].setVal(pi)
+#ws['AperpPhase'].setVal(pi)
+#ws['AparPhase'].setConstant(True)
+#ws['AperpPhase'].setConstant(True)
 #ws['ASOddPhase'].setVal(0.)
 #ws['ASOddPhase'].setConstant()
 #ws['lambdaCP'].setVal(1.)

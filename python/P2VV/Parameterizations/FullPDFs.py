@@ -370,16 +370,17 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
 
         # do Run-I-analysis-specific configuration
         addStr = '2011' if runPeriods == '2011' else 'NewData' if runPeriods == '2012' else 'Combination'
-        self['blind'] = {  'phiCP'          : ( 'UnblindUniform', 'BsPhis%s' % addStr, 0.2  )
-                         , 'phiCP_A0'       : ( 'UnblindUniform', 'BsPhiszero%s' % addStr, 0.3  )
-                         , 'phiCP_Apar'     : ( 'UnblindUniform', 'BsPhispara%s' % addStr, 0.3  )
-                         , 'phiCP_Aperp'    : ( 'UnblindUniform', 'BsPhisperp%s' % addStr, 0.3  )
-                         , 'phiCP_AS'       : ( 'UnblindUniform', 'BsPhisS%s' % addStr, 0.3  )
-                         , 'phiCP_m'        : ( 'UnblindUniform', 'BsPhiszero%s' % addStr, 0.3  )
-                         , 'phiCPRel_Apar'  : ( 'UnblindUniform', 'BsPhisparaDel%s' % addStr, 0.3  )
-                         , 'phiCPRel_Aperp' : ( 'UnblindUniform', 'BsPhisperpDel%s' % addStr, 0.3  )
-                         , 'phiCPRel_AS'    : ( 'UnblindUniform', 'BsPhisSDel%s' % addStr, 0.3  )
-                         , 'dGamma'         : ( 'UnblindUniform', 'BsDGs%s'  % addStr, 0.02 )
+        self['blind'] = {  'phiCP'              : ( 'UnblindUniform', 'BsPhis%s' % addStr, 0.2  )
+                         , 'phiCP_A0'           : ( 'UnblindUniform', 'BsPhiszero%s' % addStr, 0.3  )
+                         , 'phiCP_m'            : ( 'UnblindUniform', 'BsPhiszero%s' % addStr, 0.3  )
+                         , 'phiCP_Apar'         : ( 'UnblindUniform', 'BsPhispara%s' % addStr, 0.3  )
+                         , 'phiCP_Aperp'        : ( 'UnblindUniform', 'BsPhisperp%s' % addStr, 0.3  )
+                         , 'phiCP_AS'           : ( 'UnblindUniform', 'BsPhisS%s' % addStr, 0.3  )
+                         , 'phiCPRel_Apar'      : ( 'UnblindUniform', 'BsPhisparaDel%s' % addStr, 0.3  )
+                         , 'phiCPRel_Aperp'     : ( 'UnblindUniform', 'BsPhisperpDel%s' % addStr, 0.3  )
+                         , 'phiCPRel_AperpApar' : ( 'UnblindUniform', 'BsPhisperpparaDel%s' % addStr, 0.3  )
+                         , 'phiCPRel_AS'        : ( 'UnblindUniform', 'BsPhisSDel%s' % addStr, 0.3  )
+                         , 'dGamma'             : ( 'UnblindUniform', 'BsDGs%s'  % addStr, 0.02 )
                         }
         self['numEvents']  = 220000
         self['sigFrac']    = 0.43
@@ -1192,33 +1193,54 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
         elif paramKKMass == 'parameters' :
             for it, val in enumerate(CSPValues) : commonArgs[ 'C_SP_bin%d' %it ] = val
 
-    if amplitudeParam == 'phasesSWaveFrac' or lambdaCPParam == 'lambPhiRel_CPVDecay' :
-        if lambdaCPParam == 'lambRelPhiRel_CPVDecay' :
-            if not amplitudeParam == 'phasesSWaveFrac' :
-                print 'P2VV - WARNING: buildBs2JpsiphiSignalPdf(): amplitudeParam = "%s" setting ignored because lambdaCPParam = %s'\
-                      % ( amplitudeParam, lambdaCPParam )
-            from P2VV.Parameterizations.DecayAmplitudes import A02, Aperp2
-            from P2VV.RooFitWrappers import RealVar, FormulaVar, ComplementCoef
-            self['decayAmps'] = dict( average = { }, difference = { } )
-            self['decayAmps']['average']['A0']       = RealVar( Name = namePF + 'avA02', Title = 'CP average |A_0|^2', Value = A02
-                                                               , Error = 0.03, MinMax = ( 0., 1. ) )
-            self['decayAmps']['average']['Aperp']    = RealVar( Name = namePF + 'avAperp2', Title = 'CP average |A_perp|^2', Value = Aperp2
-                                                               , Error = 0.03, MinMax = ( 0., 1. ) )
-            self['decayAmps']['average']['Apar']     = ComplementCoef( Name = namePF + 'avApar2'
-                                                                      , Coefficients = [ self['decayAmps']['average']['A0']
-                                                                                        , self['decayAmps']['average']['Aperp'] ] )
-            self['decayAmps']['difference']['A0']    = RealVar( Name = namePF + 'delA02', Title = 'CP diff. |A_0|^2', Value = 0.
-                                                               , Error = 0.05, MinMax = ( -0.5, 0.5 ) )
-            self['decayAmps']['difference']['Aperp'] = RealVar( Name = namePF + 'delAperp2', Title = 'CP diff. |A_perp|^2', Value = 0.
-                                                               , Error = 0.05, MinMax = ( -0.5, 0.5 ) )
-            self['decayAmps']['difference']['Apar']  = RealVar( Name = namePF + 'delApar2',  Title = 'CP diff. |A_par|^2',  Value = 0.
-                                                               , Error = 0.05, MinMax = ( -0.5, 0.5 ) )
-            commonArgs['A0Mag2'] = FormulaVar( Name = namePF + 'A0Mag2', Formula = '@0+0.5*@1'
-                                              , Arguments = [ self['decayAmps']['average']['A0'], self['decayAmps']['difference']['A0'] ] )
-            commonArgs['AperpMag2'] = FormulaVar( Name = namePF + 'AperpMag2', Formula = '@0+0.5*@1'
-                                        , Arguments = [ self['decayAmps']['average']['Aperp'], self['decayAmps']['difference']['Aperp'] ] )
-            commonArgs['AparMag2']  = FormulaVar( Name = namePF + 'AparMag2', Formula = '@0+0.5*@1'
-                                          , Arguments = [ self['decayAmps']['average']['Apar'], self['decayAmps']['difference']['Apar'] ] )
+    ampNames = [ 'A0', 'Apar', 'Aperp', 'AS' ]
+    if amplitudeParam == 'phasesSWaveFrac' or lambdaCPParam == 'observables_CPVDecay' :
+        if lambdaCPParam == 'observables_CPVDecay' :
+            assert amplitudeParam == 'phasesSWaveFrac'\
+                   , 'P2VV - ERROR: buildBs2JpsiphiSignalPdf(): "amplitudeParam" should be "phasesSWaveFrac" for lambdaCPParam = observables_CPVDecay'
+            from P2VV.Parameterizations.DecayAmplitudes import A02, Aperp2, f_S
+            from P2VV.RooFitWrappers import RealVar, Product, FormulaVar, ComplementCoef
+            self['decayAmps'] = dict( average = { }, ratio = { } )
+            for amp, val in zip( [ 'A0', 'Aperp', 'Apar', 'AS' ], [ A02, Aperp2, None, f_S ] ) :
+                ampName = 'av%s' % ( ( amp + '2' ) if amp != 'AS' else 'f_S' )
+                ampTitle = 'CP-average %s' % ( ( '|%s|^2' % amp ) if amp != 'AS' else 'f_S' )
+                if amp != 'Apar' :
+                    self['decayAmps']['average'][amp] = RealVar( Name = namePF + ampName, Title = ampTitle, Value = val, Error = 0.03
+                                                                , MinMax = ( 0., 1. ) )
+                else :
+                    self['decayAmps']['average'][amp] = ComplementCoef( Name = namePF + ampName
+                                                                       , Coefficients = [ self['decayAmps']['average']['A0']
+                                                                                         , self['decayAmps']['average']['Aperp'] ] )
+
+            C_A0 = RealVar( Name = namePF + 'C_A0', Title = 'CPV-in-decay asymmetry C_0', Value = 0., Error = 0.04
+                           , MinMax = ( -1., +1. ) )
+            C_Apar = RealVar( Name = namePF + 'C_Apar', Title = 'CPV-in-decay asymmetry C_para', Value = 0., Error = 0.04
+                           , MinMax = ( -1., +1. ) )
+            Cbar_Aperp = RealVar( Name = namePF + 'Cbar_Aperp', Title = 'CPV-in-decay asymmetry 1/4*C_0 + 1/4*C_para + 1/2*C_perp'
+                                 , Value = 0., Error = 0.04, MinMax = ( -1., +1. ) )
+            Cbar_AS = RealVar( Name = namePF + 'Cbar_AS', Title = 'CPV-in-decay asymmetry 1/2*C_0 + 1/2*C_S'
+                              , Value = 0., Error = 0.04, MinMax = ( -1., +1. ) )
+
+            self['decayAmps']['ratio']['A0'] = FormulaVar( Name = 'lambdaCP_A0', Formula = 'sqrt((1.-@0)/(1.+@0))'
+                                                          , Arguments = [ C_A0 ] )
+            self['decayAmps']['ratio']['Apar'] = FormulaVar( Name = 'lambdaCP_Apar', Formula = 'sqrt((1.-@0)/(1.+@0))'
+                                                            , Arguments = [ C_Apar ] )
+            self['decayAmps']['ratio']['Aperp'] = FormulaVar( Name = 'lambdaCP_Aperp'
+                                                             , Formula = 'sqrt((1.+0.5*@0+0.5*@1-2.*@2)/(1.-0.5*@0-0.5*@1+2.*@2))'
+                                                             , Arguments = [ C_A0, C_Apar, Cbar_Aperp ] )
+            self['decayAmps']['ratio']['AS'] = FormulaVar( Name = 'lambdaCP_AS', Formula = 'sqrt((1.+@0-2.*@1)/(1.-@0+2.*@1))'
+                                                          , Arguments = [ C_A0, Cbar_AS ] )
+
+            commonArgs['A0Mag2'] = FormulaVar( Name = namePF + 'A0Mag2', Formula = '(1.+@1)*@0'
+                                              , Arguments = [ self['decayAmps']['average']['A0'], C_A0 ] )
+            commonArgs['AparMag2'] = FormulaVar( Name = namePF + 'AparMag2', Formula = '(1.+@1)*@0'
+                                                , Arguments = [ self['decayAmps']['average']['Apar'], C_Apar ] )
+            commonArgs['AperpMag2'] = FormulaVar( Name = namePF + 'AperpMag2', Formula = '(1.-0.5*@1-0.5*@2+2.*@3)*@0'
+                                                 , Arguments = [ self['decayAmps']['average']['Aperp'], C_A0, C_Apar, Cbar_Aperp ] )
+            commonArgs['ASMag2'] = FormulaVar( Name = namePF + 'ASMag2', Formula = '(1.-@1+2.*@2)*@0/(1.-@0)'
+                                              , Arguments = [ self['decayAmps']['average']['AS'], C_A0, Cbar_AS ] )
+            commonArgs['f_S'] = FormulaVar( Name = namePF + 'f_S', Formula = '(1.-@1+2.*@2)/(1.-(@1-2.*@2)*@0)*@0'
+                                           , Arguments = [ self['decayAmps']['average']['AS'], C_A0, Cbar_AS ] )
 
         from P2VV.Parameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
         self['amplitudes'] = Amplitudes( ASParameterization = ASParam, AparParameterization = AparParam, **commonArgs )
@@ -1299,44 +1321,120 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
     self['timeResModelsOrig'] = dict( prototype = resModel )
 
     # CP violation parameters
-    ampNames = [ 'A0', 'Apar', 'Aperp', 'AS' ]
-    if lambdaCPParam == 'ReIm' : 
+    from ROOT import RooNumber
+    RooInf = RooNumber.infinity()
+    if lambdaCPParam.endswith('common') :
+        blindPars = { }
+        if blind and 'phiCP' in blind :
+            if blind['phiCP'] : blindPars['Blind'] = blind['phiCP']
+            else              : blindPars['Blind'] = ( 'UnblindUniform', 'BsPhis',  0.2 )
+
+        from P2VV.RooFitWrappers import RealVar
+        from P2VV.Parameterizations.CPVParams import lambVal, lambErr, phiVal, phiErr
+        lambCP = RealVar( Name = namePF + 'lambdaCP', Title = 'CPV param. |lambda|', Value = lambVal, Error = lambErr
+                         , MinMax = ( 0., 5. ) )
+        phiCP = RealVar( Name = namePF + 'phiCP', Title = 'CPV param. phi', Value = phiVal, Error = phiErr
+                        , MinMax = ( -RooInf, +RooInf ), **blindPars )
+
+    if lambdaCPParam == 'observables_CPVDecay' :
+        from P2VV.Parameterizations.CPVParams import LambdaAbsArgRel_CPVDecay_CPParam as CPParam
+        from P2VV.RooFitWrappers import RealVar, ConstVar, Addition, FormulaVar
+        from ROOT import RooNumber
+        RooInf = RooNumber.infinity()
+        from math import sqrt
+        phiCPPars = { }
+        for amp in ampNames :
+            phiCPPars[ 'rhoCP_%s' % amp ] = self['decayAmps']['ratio'][amp]
+            #if amp == 'A0' :
+            #    blindPhase = dict( Blind = blind['phiCP_A0'] ) if blind and 'phiCP_A0' in blind else { }
+            #    phiCPPars['phiCP_m'] = RealVar( namePF + 'phiCP_A0', Title = 'CPV parameter phi_m + phi_0', Value = 0.
+            #                                   , Error = 0.1, MinMax = ( -RooInf, +RooInf ), **blindPhase )
+            #elif amp == 'Aperp' :
+            #    blindPhase = dict( Blind = blind['phiCPRel_AperpApar'] ) if blind and 'phiCPRel_AperpApar' in blind else { }
+            #    phiCP_AperpApar = RealVar( namePF + 'phiCPRel_AperpApar', Title = 'CPV in decay parameter phi_perp - phi_par'
+            #                              , Value = 0., Error = 0.1, MinMax = ( -RooInf, +RooInf ), **blindPhase )
+            #    phiCPPars[ 'phiCPRel_%s' % amp ] = Addition( Name = namePF + 'phiCPRel_%s' % amp
+            #                                                , Arguments = [ phiCPPars['phiCPRel_Apar'], phiCP_AperpApar ] )
+            #else :
+            #    blindPhase = dict( Blind = blind[ 'phiCPRel_%s' % amp ] ) if blind and ( 'phiCPRel_%s' % amp ) in blind else { }
+            #    phiCPPars[ 'phiCPRel_%s' % amp ] = RealVar( namePF + 'phiCPRel_%s' % amp
+            #                                               , Title = 'CPV in decay parameter phi_%s - phi_0' % amp[ 1 : ], Value = 0.
+            #                                               , Error = 0.1, MinMax = ( -RooInf, +RooInf ), **blindPhase )
+
+        avPhiCP = RealVar( Name = 'avPhiCP', Title = 'phi_s^0 + 1/2*phi_s^para - 1/2*phi_s^perp', Value = 0., Error = 0.04
+                          , MinMax = ( -RooInf, +RooInf ) )
+        DelPhiCP_Apar = RealVar( Name = 'DelPhiCP_Apar', Title = 'phi_s^para - phi_s^0', Value = 0., Error = 0.04
+                                , MinMax = ( -RooInf, +RooInf ) )
+        DelPhiCP_Aperp = RealVar( Name = 'DelPhiCP_Aperp', Title = '2*phi_s^perp - phi_s^0 - phi_s^para', Value = 0., Error = 0.04
+                                 ,  MinMax = ( -RooInf, +RooInf ) )
+        DelPhiCP_AS = RealVar( Name = 'DelPhiCP_AS', Title = 'phi_s^S - phi_s^0', Value = 0., Error = 0.04
+                              , MinMax = ( -RooInf, +RooInf ) )
+        phiCPPars['phiCP_m'] = ConstVar( Name = 'phiCP_m', Value = 0. )
+        phiCPPars['phiCPRel_A0'] = FormulaVar( Name = 'phiCPRel_A0', Formula = '@0-0.25*@1+0.25*@2'
+                                               , Arguments = [ avPhiCP, DelPhiCP_Apar, DelPhiCP_Aperp ] )
+        phiCPPars['phiCPRel_Apar'] = FormulaVar( Name = 'phiCPRel_Apar', Formula = '@0+0.75*@1+0.25*@2'
+                                               , Arguments = [ avPhiCP, DelPhiCP_Apar, DelPhiCP_Aperp ] )
+        phiCPPars['phiCPRel_Aperp'] = FormulaVar( Name = 'phiCPRel_Aperp', Formula = '@0+0.25*@1+0.75*@2'
+                                               , Arguments = [ avPhiCP, DelPhiCP_Apar, DelPhiCP_Aperp ] )
+        phiCPPars['phiCPRel_AS'] = FormulaVar( Name = 'phiCPRel_AS', Formula = '@0-0.25*@1+0.25*@2+@3'
+                                               , Arguments = [ avPhiCP, DelPhiCP_Apar, DelPhiCP_Aperp, DelPhiCP_AS ] )
+        #phiCPPars['phiCPRel_A0'] = RealVar( 'phi^0', Value = 0., Error = 0.05, MinMax = ( -RooInf, +RooInf ) )
+        #phiCPPars['phiCPRel_Apar'] = RealVar( 'phi^para', Value = 0., Error = 0.06, MinMax = ( -RooInf, +RooInf ) )
+        #phiCPPars['phiCPRel_Aperp'] = RealVar( 'phi^perp', Value = 0., Error = 0.07, MinMax = ( -RooInf, +RooInf ) )
+        #phiCPPars['phiCPRel_AS'] = RealVar( 'phi^S', Value = 0., Error = 0.09, MinMax = ( -RooInf, +RooInf ) )
+
+        self['lambdaCP'] = CPParam( AmplitudeNames = ampNames, Amplitudes = self['amplitudes'], **phiCPPars )
+        if ambiguityPars : self['lambdaCP']['phiCP_m'].setVal( pi - self['lambdaCP']['phiCP_m'].getVal() )
+
+    elif lambdaCPParam == 'ReIm' :
         from P2VV.Parameterizations.CPVParams import LambdaCarth_CPParam as CPParam
         ReLambdaCPVar = dict( Name = 'ReLambdaCP' )
         ImLambdaCPVar = dict( Name = 'ImLambdaCP' )
         self['lambdaCP'] = CPParam( ReLambdaCP = ReLambdaCPVar, ImLambdaCP = ImLambdaCPVar )
 
-    elif lambdaCPParam == 'lambPhiRel_CPVDecay' or lambdaCPParam == 'lambRelPhiRel_CPVDecay' :
+    elif lambdaCPParam.startswith('lambPhiRel_CPVDecay') :
         from P2VV.Parameterizations.CPVParams import LambdaAbsArgRel_CPVDecay_CPParam as CPParam
-        from P2VV.RooFitWrappers import RealVar, FormulaVar
-        from math import sqrt
-        phiCPPars = dict( phiCP_m = dict( Name = 'phiCP_m' ) )
+        from P2VV.RooFitWrappers import RealVar, ConstVar
+        phiCPPars = { }
+        if lambdaCPParam.endswith('common') :
+            phiCPPars['rhoCP_m'] = lambCP
+            phiCPPars['phiCP_m'] = phiCP
+            zero = ConstVar( Name = 'zero', Value = 0. )
+            one  = ConstVar( Name = 'one',  Value = 1. )
+        else :
+            blindPars = { }
+            if blind and 'phiCP_A0' in blind :
+                if blind['phiCP_A0'] : blindPars['Blind'] = blind['phiCP_A0']
+                else                 : blindPars['Blind'] = ( 'UnblindUniform', 'BsPhis',  0.2 )
+            phiCPPars['phiCP_m'] = RealVar( namePF + 'phiCP_A0', Title = 'CPV param. phi_s^0', Value = 0., Error = 0.04
+                                           , MinMax = ( -RooInf, +RooInf ), **blindPars )
         for amp in ampNames :
-            if amp != 'AS' :
-                if lambdaCPParam == 'lambRelPhiRel_CPVDecay' :
-                    phiCPPars[ 'rhoCP_%s' %amp ] = FormulaVar( Name = namePF + 'lambdaCP_%s' % amp
-                                                              , Formula = 'sqrt((@0-0.5*@1)/(@0+0.5*@1))'
-                                                              , Arguments = [ self['decayAmps']['average'][amp]
-                                                                             , self['decayAmps']['difference'][amp] ]
-                                                             )
-                else :
-                    phiCPPars[ 'rhoCP_%s' %amp ] = RealVar( namePF + 'lambdaCP_%s' % amp, Title = 'CPV in decay |lambda_s^%s|' % amp[ 1 : ]
-                                                           , Value = 1., Error = 0.04, MinMax = ( 0., 5. ) )
+            if lambdaCPParam.endswith('common') :
+                phiCPPars[ 'rhoCP_%s' % amp ] = one
+                phiCPPars[ 'phiCPRel_%s' % amp ] = zero
             else :
-                phiCPPars['rhoCP_AS'] = RealVar( namePF + 'lambdaCP_AS', Title = 'CPV in decay |lambda_s^S|', Value = 1., Error = 0.04
-                                               , MinMax = ( 0., 5. ) )
-            if amp != 'A0' :
-                phiCPPars[ 'phiCPRel_%s' % amp ] = dict( Name = 'phiCPRel_%s' % amp )
-        for name, parDict in phiCPPars.iteritems() :
-            if blind and name in blind :
-                if blind[name] : parDict['Blind'] = blind[name]
-                else           : parDict['Blind'] = ( 'UnblindUniform', 'BsPhis',  0.2 )
+                phiCPPars[ 'rhoCP_%s' % amp ] = RealVar( namePF + 'lambdaCP_%s' % amp, Title = 'CPV param. |lambda_s^%s|' % amp[ 1 : ]
+                                                        , Value = 1., Error = 0.04, MinMax = ( 0., 5. ) )
+                if amp != 'A0' :
+                    blindPars = { }
+                    if blind and 'phiCP_%s' % amp in blind :
+                        if blind[ 'phiCP_%s' % amp ] : blindPars['Blind'] = blind[ 'phiCPRel_%s' % amp ]
+                        else                         : blindPars['Blind'] = ( 'UnblindUniform', 'BsPhis',  0.2 )
+                    phiCPPars[ 'phiCPRel_%s' % amp ] = RealVar( namePF + 'phiCPRel_%s' % amp
+                                                               , Title = 'CPV param. phi_s^%s - phi_s^0' % amp[ 1 : ]
+                                                               , Value = 0., Error = 0.04, MinMax = ( -RooInf, +RooInf ), **blindPars )
+
         self['lambdaCP'] = CPParam( AmplitudeNames = ampNames, Amplitudes = self['amplitudes'], **phiCPPars )
         if ambiguityPars : self['lambdaCP']['phiCP_m'].setVal( pi - self['lambdaCP']['phiCP_m'].getVal() )
 
     elif lambdaCPParam.startswith('lambPhi_CPVDecay') :
         from P2VV.Parameterizations.CPVParams import LambdaAbsArg_CPVDecay_CPParam as CPParam
-        if lambdaCPParam.endswith('PSWaves') :
+        if lambdaCPParam.endswith('common') :
+            self['lambdaCP'] = CPParam( AmplitudeNames = ampNames, Amplitudes = self['amplitudes']
+                                       , rhoCP_A0 = lambCP, rhoCP_Apar = lambCP, rhoCP_Aperp = lambCP, rhoCP_AS = lambCP
+                                       , phiCP_A0 = phiCP, phiCP_Apar = phiCP, phiCP_Aperp = phiCP, phiCP_AS = phiCP )
+
+        elif lambdaCPParam.endswith('PSWaves') :
             from P2VV.RooFitWrappers import RealVar
             from ROOT import RooNumber
             RooInf = RooNumber.infinity()
@@ -1344,7 +1442,7 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
             rhoCP_S = RealVar( namePF + 'rhoCP_S', Title = 'CPV in decay |rho|', Value = 1., Error = 0.04, MinMax = ( 0., 5. ) )
             phiCP_P = RealVar( namePF + 'phiCP_P', Title = 'CPV in decay phi',   Value = 0., Error = 0.1,  MinMax = (-RooInf, +RooInf) )
             phiCP_S = RealVar( namePF + 'phiCP_S', Title = 'CPV in decay phi',   Value = 0., Error = 0.1,  MinMax = (-RooInf, +RooInf) )
-            self['lambdaCP'] = CPParam(  AmplitudeNames = [ 'A0', 'Apar', 'Aperp', 'AS' ], Amplitudes = self['amplitudes']
+            self['lambdaCP'] = CPParam(  AmplitudeNames = ampNames, Amplitudes = self['amplitudes']
                                      , rhoCP_A0 = rhoCP_P, rhoCP_Apar = rhoCP_P, rhoCP_Aperp = rhoCP_P, rhoCP_AS = rhoCP_S
                                      , phiCP_A0 = phiCP_P, phiCP_Apar = phiCP_P, phiCP_Aperp = phiCP_P, phiCP_AS = phiCP_S
                                     )

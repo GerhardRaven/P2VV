@@ -10,8 +10,32 @@
 # parameter names dictionary:  'P2VV internal name' : ( 'text name', 'LaTeX name' )
 parNames = {  'phiCP'                     : ( 'phi_s',                       '$\\phi_\\text{s}$'                          )
             , '__phiCP__'                 : ( 'phi_s (b)',                   '$\\phi_\\text{s}$ (b)'                      )
+            , 'phiCP_A0'                  : ( 'phi_s^0',                     '$\\phi_\\text{s}^0$'                        )
+            , '__phiCP_A0__'              : ( 'phi_s^0 (b)',                 '$\\phi_\\text{s}^0$ (b)'                    )
+            , 'phiCP_Apar'                : ( 'phi_s^para',                  '$\\phi_\\text{s}^\\parallel$'               )
+            , '__phiCP_Apar__'            : ( 'phi_s^para (b)',              '$\\phi_\\text{s}^\\parallel$ (b)'           )
+            , 'phiCP_Aperp'               : ( 'phi_s^perp',                  '$\\phi_\\text{s}^\\perp$'                   )
+            , '__phiCP_Aperp__'           : ( 'phi_s^perp (b)',              '$\\phi_\\text{s}^\\perp$ (b)'               )
+            , 'phiCP_AS'                  : ( 'phi_s^S',                     '$\\phi_\\text{s}^\\text{S}$'                )
+            , '__phiCP_AS__'              : ( 'phi_s^S (b)',                 '$\\phi_\\text{s}^\\text{S}$ (b)'            )
+            , 'phiCP_m'                   : ( 'phi_s^0',                     '$\\phi_\\text{s}^0$'                        )
+            , '__phiCP_m__'               : ( 'phi_s^0 (b)',                 '$\\phi_\\text{s}^0$ (b)'                    )
+            , 'phiCPRel_Apar'             : ( 'Delta phi_s^para',            '$\\Delta \\phi_\\text{s}^\\parallel$'       )
+            , '__phiCPRel_Apar__'         : ( 'Delta phi_s^para (b)',        '$\\Delta \\phi_\\text{s}^\\parallel$ (b)'   )
+            , 'phiCPRel_Aperp'            : ( 'Delta phi_s^perp',            '$\\Delta \\phi_\\text{s}^\\perp$'           )
+            , '__phiCPRel_Aperp__'        : ( 'Delta phi_s^perp (b)',        '$\\Delta \\phi_\\text{s}^\\perp$ (b)'       )
+            , 'phiCPRel_AS'               : ( 'Delta phi_s^S',               '$\\Delta \\phi_\\text{s}^\\text{S}$'        )
+            , '__phiCPRel_AS__'           : ( 'Delta phi_s^S (b)',           '$\\Delta \\phi_\\text{s}^\\text{S}$ (b)'    )
             , 'lambdaCP'                  : ( '|lambda_s|',                  '$|\\lambda_\\text{s}|$'                     )
             , '__lambdaCP__'              : ( '|lambda_s| (b)',              '$|\\lambda_\\text{s}|$ (b)'                 )
+            , 'rhoCP_A0'                  : ( '|lambda_s^0|',                '$|\\lambda_\\text{s}^0|$'                   )
+            , 'rhoCP_Apar'                : ( '|lambda_s^para|',             '$|\\lambda_\\text{s}^\\parallel|$'          )
+            , 'rhoCP_Aperp'               : ( '|lambda_s^perp|',             '$|\\lambda_\\text{s}^\\perp|$'              )
+            , 'rhoCP_AS'                  : ( '|lambda_s^S|',                '$|\\lambda_\\text{s}^\\text{S}|$'           )
+            , 'lambdaCP_A0'               : ( '|lambda_s^0|',                '$|\\lambda_\\text{s}^0|$'                   )
+            , 'lambdaCP_Apar'             : ( '|lambda_s^para|',             '$|\\lambda_\\text{s}^\\parallel|$'          )
+            , 'lambdaCP_Aperp'            : ( '|lambda_s^perp|',             '$|\\lambda_\\text{s}^\\perp|$'              )
+            , 'lambdaCP_AS'               : ( '|lambda_s^S|',                '$|\\lambda_\\text{s}^\\text{S}|$'           )
             , 'Gamma'                     : ( 'Gamma_s',                     '$\\Gamma_\\text{s}$'                        )
             , 'Gamma_p2011'               : ( 'Gamma_s - beta_2011',         '$\\Gamma_\\text{s} - \\beta_\\{2011}$'      )
             , 'Gamma_p2012'               : ( 'Gamma_s - beta_2012',         '$\\Gamma_\\text{s} - \\beta_\\{2012}$'      )
@@ -20,6 +44,11 @@ parNames = {  'phiCP'                     : ( 'phi_s',                       '$\
             , 'dM'                        : ( 'Delta m_s',                   '$\\Delta m_\\text{s}$'                      )
             , 'A0Mag2'                    : ( '|A_0|^2',                     '$|A_0|^2$'                                  )
             , 'AperpMag2'                 : ( '|A_perp|^2',                  '$|A_\\perp|^2$'                             )
+            , 'avA02'                     : ( 'A_0^2',                       '$A_0^2$'                                    )
+            , 'avAperp2'                  : ( 'A_perp^2',                    '$A_\\perp^2$'                               )
+            , 'delA02'                    : ( 'Delta A_0^2',                 '$\\Delta A_0^2$'                            )
+            , 'delApar2'                  : ( 'Delta A_para^2',              '$\\Delta A_\\parallel^2$'                   )
+            , 'delAperp2'                 : ( 'Delta A_perp^2',              '$\\Delta A_\\perp^2$'                       )
             , 'f_S'                       : ( 'F_S',                         '$F_\\text{S}$'                              )
             , 'f_S_bin0'                  : ( 'F_S_0',                       '${F_\\text{S}}_0$'                          )
             , 'f_S_bin1'                  : ( 'F_S_1',                       '${F_\\text{S}}_1$'                          )
@@ -121,16 +150,25 @@ commonParNames = {  'phiCP'             : 'phis'
                   , '__phiCP_Aperp__'   : 'phisperp'
                   , 'phiCP_AS'          : 'phisS'
                   , '__phiCP_AS__'      : 'phisS'
+                  , 'phiCP_m'           : 'phiszero'
+                  , '__phiCP_m__'       : 'phiszero'
+                  , 'phiCPRel_Apar'     : 'delphispara'
+                  , '__phiCPRel_Apar__' : 'delphispara'
+                  , 'phiCPRel_Aperp'    : 'delphisperp'
+                  , '__phiCPRel_Aperp__': 'delphisperp'
+                  , 'phiCPRel_AS'       : 'delphisS'
+                  , '__phiCPRel_AS__'   : 'delphisS'
                   , 'lambdaCP'          : 'lambda'
                   , '__lambdaCP__'      : 'lambda'
                   , 'rhoCP_A0'          : 'lambdazero'
-                  , '__rhoCP_A0__'      : 'lambdazero'
                   , 'rhoCP_Apar'        : 'lambdapara'
-                  , '__rhoCP_Apar__'    : 'lambdapara'
                   , 'rhoCP_Aperp'       : 'lambdaperp'
-                  , '__rhoCP_Aperp__'   : 'lambdaperp'
                   , 'rhoCP_AS'          : 'lambdaS'
-                  , '__rhoCP_AS__'      : 'lambdaS'
+                  , 'rhoCP_m'           : 'lambdazero'
+                  , 'lambdaCP_A0'       : 'lambdazero'
+                  , 'lambdaCP_Apar'     : 'lambdapara'
+                  , 'lambdaCP_Aperp'    : 'lambdaperp'
+                  , 'lambdaCP_AS'       : 'lambdaS'
                   , 'Gamma'             : 'Gamma'
                   , 'Gamma_p2011'       : 'Gamma_2011'
                   , 'Gamma_p2012'       : 'Gamma_2012'
@@ -188,6 +226,18 @@ parValues = {  'A0Mag2'            : (  5.2101e-01, 3.44e-03, -1 )
              , 'wTagP0SS'          : (  4.5075e-01, 4.64e-03, -1 )
              , 'wTagP1OS'          : (  1.0113e+00, 3.44e-02, -1 )
              , 'wTagP1SS'          : (  9.5740e-01, 8.23e-02, -1 )
+             , '__phiCP_A0__'      : ( -2.6650e-01, 5.33e-02, -1 )
+             , '__phiCP_AS__'      : (  2.4262e-01, 8.70e-02, -1 )
+             , '__phiCP_Apar__'    : ( -2.8698e-01, 6.18e-02, -1 )
+             , '__phiCP_Aperp__'   : ( -2.4726e-01, 6.56e-02, -1 )
+             , '__phiCP_m__'       : ( -2.6671e-01, 5.33e-02, -1 )
+             , '__phiCPRel_Apar__' : ( -1.3580e-01, 4.14e-02, -1 )
+             , '__phiCPRel_Aperp__': ( -9.6241e-02, 3.26e-02, -1 )
+             , '__phiCPRel_AS__'   : ( -2.0582e-01, 6.22e-02, -1 )
+             , 'rhoCP_A0'          : (  1.0016e+00, 5.86e-02, -1 )
+             , 'rhoCP_Apar'        : (  1.0103e+00, 1.17e-01, -1 )
+             , 'rhoCP_Aperp'       : (  9.4412e-01, 1.31e-01, -1 )
+             , 'rhoCP_AS'          : (  9.0950e-01, 7.97e-02, -1 )
             }
 
 parValues20131203 = {  'A0Mag2'            : (  5.2080e-01, 3.45e-03, -1 )
