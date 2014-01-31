@@ -147,6 +147,7 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         gexps = kwargs.pop('GExp', dict([(i[0], False) for i in sigmasSFs]))
         fracs     = kwargs.pop('Fractions', [(2, 0.165)])
         split_fracs = kwargs.pop('SplitFracs', True)
+        split_sfs = kwargs.pop('SplitSFS', False)
         self.__split_mean = kwargs.pop('SplitMean', False)
         self.__simultaneous = kwargs.pop('Simultaneous', False)
         self.__mu_param = kwargs.pop('MeanParameterisation', '')
@@ -217,7 +218,8 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                     formula = '@1 + @2 * @0'
                     args = {'mean'  : [self.__sf_placeholder, self._sf_mean_offset, self._sf_mean_slope],
                             'sigma' : [self.__sf_placeholder, self._sf_sigma_offset, self._sf_sigma_slope]}
-                    self._splitVars += [self._sf_mean_slope, self._sf_sigma_slope]
+                    if split_sfs:
+                        self._splitVars += [self._sf_mean_slope, self._sf_sigma_slope]
                 else:
                     formula = '@2 + @3 * (@0 - @1)'
                     args = {'mean'  : [self._sigmat, self.__sf_placeholder, self._sf_mean_offset, self._sf_mean_slope],
@@ -238,7 +240,8 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                                        self._sf_mean_slope, self._sf_mean_quad],
                             'sigma' : [self.__sf_placeholder, self._sf_sigma_offset,
                                        self._sf_sigma_slope, self._sf_sigma_quad]}
-                    self._splitVars += [self._sf_mean_slope, self._sf_sigma_slope, self._sf_mean_quad, self._sf_sigma_quad]
+                    if split_sfs:
+                        self._splitVars += [self._sf_mean_slope, self._sf_sigma_slope, self._sf_mean_quad, self._sf_sigma_quad]
                 else:
                     formula = '@2 + @3 * (@0 - @1) + @4 * (@0 - @1) * (@0 - @1)'
                     args = {'mean'  : [self._sigmat, self.__sf_placeholder, self._sf_mean_offset, self._sf_mean_slope, self._sf_mean_quad],
