@@ -40,14 +40,18 @@ class Toy(object):
         archive = None
         try:
             archive = tarfile.open(self._options.snapshot, 'r:bz2')
-            python_dirs = []
+            python_dirs = set()
             for member in archive.getmembers():
                 if member.isfile() and os.path.exists(member.path):
                     print "File %s already exists, skipping" % member.path
                 else:
                     archive.extract(member)
                 if member.isdir() and member.path.endswith('python'):
-                    python_dirs.append(member.path)
+                    if 'standalone' in member.path:
+                        r = member.path.replace('standalone/', '')
+                        if r in python_dirs:
+                            python_dirs.remove(r)
+                    python_dirs.add(member.path)
             sys.path.extend([os.path.join(os.path.realpath('.'), d) for d in python_dirs])
         except OSError, e:
             print e
