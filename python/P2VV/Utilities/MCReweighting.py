@@ -201,7 +201,7 @@ def combineMoments( accFile1, accFile2, outName, Prefix=''):
             open(accFile1)
             open(accFile2)
             combineMoments( [ accFile1, accFile2 ], outName, prefix = Prefix, printMoms = False )
-            for angAcc in [accFile1,accFile2]: os.remove(angAcc)
+            # for angAcc in [accFile1,accFile2]: os.remove(angAcc)
             break
         except IOError:
             print 'P2VV - INFO: combineMoments: Waiting for the followig flies to combine efficiency moments:\n  %s\n  %s'%(accFile1,accFile2)
@@ -300,69 +300,48 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     if equalStatsBins: # create equal statistics binning
         from array import array
         
-        fixBinSumW = False
+        fixBinSumW = True
         if fixBinSumW: print 'P2VV - INFO: TwoDimentionalVerticalReweighting: Binning target distribution. Bins per dimentsion will have fixed number of weights!'
         
         targetListX,  targetListY = [],[]
         for ev in target: targetListX += [ (ev.find(var[0]).getVal(), target.weight()) ] if fixBinSumW else [ (ev.find(var[0]).getVal(),1) ]
         for ev in target: targetListY += [ ev.find(var[1]).getVal() ]
 
-
-        # from math import sqrt, cos, sin ,pi
-        # rhoDistr = []
-        # rho = lambda x,y: sqrt(x**2 + y**2)  
-        # theta = pi / 4
-        # x = lambda r: r * cos(theta)
-        # y = lambda r: r * sin(theta)
-    
-        # for x_, y_ in zip(targetListX,targetListY): rhoDistr += [ rho(x_[0],y_) ] 
-        # rhoDistr.sort()
-
-        # eventCount = 0
-        # binstat = target.numEntries() / nbins 
-        # lowBounds = [ rho(xMin,yMin) ]
-
-        # while True:
-        #     if eventCount + 1 >= target.numEntries(): break
-        #     binContentCount = 0
-        #     while binContentCount < binstat and eventCount < target.numEntries():
-        #         lowBound_i = rhoDistr[eventCount]
-        #         binContentCount += 1
-        #         eventCount += 1
-        #     lowBounds += [ lowBound_i ]
-
-        
-
-        # lowboundsX = map( x, lowBounds )
-        # lowboundsY = map( y, lowBounds )
-
-        
-        # lowboundsX, lowboundsY = array('f',lowboundsX), array('f',lowboundsY)
-
-        # print 'bincontent:',   target.numEntries() / nbins**2
-
-
-
-
-
-
+# BELOW THIS IS TESTING REGION, DO NOT DELETE BEFORE OR AFTER THIS BOX
         targetListX.sort()
         targetListY.sort()
 
-        binstat = target.sumEntries() / nbins if fixBinSumW else target.numEntries() / nbins # bin content per dimmention
-        lowboundsX, lowboundsY = [ xMin ], [ yMin ]
+
+        from math import sqrt, cos, sin ,pi
+        rhoDistr = []
+        rho = lambda x,y: sqrt(x**2 + y**2)  
+        theta = pi / 4
+        x = lambda r: r * cos(theta)
+        y = lambda r: r * sin(theta)
+    
+    #    for x_, y_ in zip(targetListX,targetListY): rhoDistr += [ rho(x_[0],y_) ] 
+    #    rhoDistr.sort()
+
         eventCount = 0
+        binstat = target.numEntries() / nbins if not fixBinSumW else target.sumEntries() / nbins 
+        lowBounds = [ rho(xMin,yMin) ]
         while True:
             if eventCount + 1 >= target.numEntries(): break
             binContentCount = 0
             while binContentCount < binstat and eventCount < target.numEntries():
-                lowboundX_i = targetListX[eventCount][0]      # variable value 
-                lowboundY_i = targetListY[eventCount]
-                binContentCount += targetListX[eventCount][1] # event weight
+#                lowBound_i = rhoDistr[eventCount]
+                lowBound_i = rho( targetListX[eventCount][0], targetListX[eventCount][0] )
+                binContentCount += 1 if not fixBinSumW else targetListX[eventCount][1]  
                 eventCount += 1
-            lowboundsX += [ lowboundX_i ]
-            lowboundsY += [ lowboundY_i ]
+            lowBounds += [ lowBound_i ]
+
+        lowboundsX = map( x, lowBounds )
+        lowboundsY = map( y, lowBounds )
+        
         lowboundsX, lowboundsY = array('f',lowboundsX), array('f',lowboundsY)
+
+        print 'bincontent:',   binstat
+# END OF TESTING BOX
         
         sourceHist = TH2D('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, lowboundsX, nbins, lowboundsY )
         targetHist = TH2D('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, lowboundsX, nbins, lowboundsY )
@@ -372,15 +351,16 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
         targetHist = TH2D('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, xMin, xMax, nbins, yMin, yMax )
 
     # create 2D histrograms and fill
-    # fill source 2D histogram
-    if combineWeights: # alow reweighting independant from the previous ones
+    #  fill source 2D histogram
+    if combineWeights and source.isWeighted(): # alow reweighting independant from the previous ones
         sourcePreviousWeights = []
         for evnt in source:
             sourceHist.Fill( _valX(evnt), _valY(evnt), source.weight() )
             sourcePreviousWeights += [ source.weight() ]
     else: 
-        for evnt in source: sourceHist.Fill( _valX(evnt), _valY(evnt), 1 )
-    # fill target 2D histogram
+        for evnt in source: sourceHist.Fill( _valX(evnt), _valY(evnt), source.weight() )
+
+    #  fill target 2D histogram
     for evnt in target: targetHist.Fill( _valX(evnt), _valY(evnt), target.weight() )
 
     # rescale
@@ -407,7 +387,7 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
             prblEvens += 1
 
     print 'P2VV - INFO: TwoDimentionalVerticalReweighting of variables (%s): %s problematic events%s'\
-                        %(var[0]+var[1],prblEvens,' due to:' if prblEvens else '.' )
+                        %(var[0]+' '+var[1],prblEvens,' due to:' if prblEvens else '.' )
     summary =  '  Source binning                      : %s\n'%s_zero  
     summary += '  Target binning                      : %s\n'%t_zero
     summary += '  Both                                : %s\n'%both_zero
@@ -416,7 +396,7 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     if prblEvens:  print summary
 
     # combine previous weights with the latest ones
-    if combineWeights:
+    if combineWeights and source.isWeighted():
         print 'P2VV - INFO: TwoDimentionalVerticalReweighting: Combining previous source weights with the latest ones.'
         from numpy import array
         weights = array(weights) * array(sourcePreviousWeights)
@@ -520,7 +500,7 @@ def OneDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
         targetHist  = TH1D('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, xMin, xMax )
 
     # fill reweighting histograms
-    if combineWeights: # alow reweighting independant from the previous ones
+    if combineWeights and source.isWeighted(): # alow reweighting independant from the previous ones
         sourcePreviousWeights = []
         for evnt in source:
             sourceHist.Fill( _valX(evnt), source.weight() )
@@ -562,7 +542,7 @@ def OneDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     if prblEvens: print summary
 
     # combine previous weights with the latest ones
-    if combineWeights:
+    if combineWeights and source.isWeighted():
         print 'P2VV - INFO: OneDimentionalVerticalReweighting: Combining previous source weights with the latest ones.'
         from numpy import array
         weights = array(weights) * array(sourcePreviousWeights)
@@ -703,167 +683,6 @@ class WeightedDataSetsManager(dict):
         # restore weights container and flag
         self['WeightsLists'] = dict()
         self['latestDataSetPointer'] = 'initSource'
-
-# Class for multipling a pdf with an angular acceptance and performs an sFit 
-class BuildBs2JpsiKKFit():
-    def __init__( self,**kwargs ):
-        print 'P2VV - INFO: Initialised physics reweighting class: BuildBs2JpsiKKFit().'
-        from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_RunIAnalysis as PdfConfig
-        
-        # specify running period
-        runPeriod = kwargs.pop('runPeriod', '3fb')
-        self._pdfConfig = PdfConfig( RunPeriods = '3fb')
-        
-        # blind / unblind (phi_s,dGama)
-        blind = kwargs.pop('blind', True)
-        if not blind: self._pdfConfig['blind'] = {}
-        
-        # give parameters of the pdf a prefix
-        self._pdfConfig['parNamePrefix'] = 'data' 
-        namePF = self._pdfConfig['parNamePrefix']
-
-        self._dataSetPath = kwargs.pop('dataSetPath', None)
-        self._dataSetName = kwargs.pop('dataSetName', None)
-           
-        self._doUntaggedFit = kwargs.pop('doUntaggedFit', '')        
-        self._doNullTest    = kwargs.pop('doNullTest',    '')
-     
-        # fit options
-        self._pdfConfig['fitOptions']['NumCPU'] = kwargs.pop('Ncpu', 2)
-        
-        # PDF options
-        # time acceptance
-        timeEff2011 = dict(  file      = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
-                           , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
-                           , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
-                          )
-        timeEff2012 = dict(  file      = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
-                           , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
-                           , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
-                          )
-        if runPeriod == '2011' :
-            self._pdfConfig['timeEffHistFiles'] = timeEff2011
-        elif runPeriod == '2012' :
-            self._pdfConfig['timeEffHistFiles'] = timeEff2012
-        else :
-            from P2VV.Parameterizations.FullPDFs import SimulCatSettings
-            timeEffHistFiles = SimulCatSettings('timeEffHistFiles')
-            timeEffHistFiles.addSettings( [ 'runPeriod' ], [ [ 'p2011' ] ], timeEff2011 )
-            timeEffHistFiles.addSettings( [ 'runPeriod' ], [ [ 'p2012' ] ], timeEff2012 )
-            self._pdfConfig['timeEffHistFiles'] = timeEffHistFiles
-
-        # angular acceptance
-        self._pdfConfig['angEffMomsFiles'] = ''
-        self._pdfConfig['anglesEffType']   = ''
-
-        # split hlt1 biased
-        self._pdfConfig['splitParams']['hlt1_excl_biased_dec'] = [ 'tagCatCoef0_1' ]
-        
-        # read data set from file
-        from P2VV.Utilities.DataHandling import readData
-        self._dataSet = readData( filePath = self._dataSetPath, dataSetName = self._dataSetName,  NTuple = False )
-        self._pdfConfig['signalData'] = self._dataSet
-        self._pdfConfig['readFromWS'] = True
-               
-        # build PDF
-        from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
-        self._pdfBuild = PdfBuilder( **self._pdfConfig )
-        self._pdf = self._pdfBuild.pdf()
-
-        # fix values of some parameters
-        for CEvenOdds in self._pdfBuild['taggingParams']['CEvenOdds'] :
-            if not self._pdfConfig['SSTagging'] :
-                if namePF:
-                    CEvenOdds.setConstant( self._pdfConfig['parNamePrefix'] + '_' + 'avgCEven.*')
-                    CEvenOdds.setConstant( self._pdfConfig['parNamePrefix'] + '_' + 'avgCOdd.*', True )
-                else: 
-                    CEvenOdds.setConstant( 'avgCEven.*')
-                    CEvenOdds.setConstant( 'avgCOdd.*', True )
-            else :
-                for CEvenOdd in CEvenOdds :
-                    if namePF:
-                        CEvenOdd.setConstant( self._pdfConfig['parNamePrefix'] + '_' + 'avgCEven.*')
-                        CEvenOdd.setConstant( self._pdfConfig['parNamePrefix'] + '_' + 'avgCOdd.*', True )
-                    else: 
-                        CEvenOdd.setConstant('avgCEven.*')
-                        CEvenOdd.setConstant( 'avgCOdd.*', True )
-        self._pdfBuild['amplitudes'].setConstant('C_SP')
-
-        self._FitResults  = {} # collect all the fit results
-        self._Moments     = {} # collect all moments
-       
-    def doFit( self, itNum=0, angAccFile=None, parFileOut='parameterEstimates.par' ):
-        pref = self._pdfConfig['parNamePrefix'] + '_'
-        
-        # multiply by angular acceptance
-        if angAccFile: self._pdf = self._multiplyPdfWithAcc( angAccFile, iterNumb = itNum )
-        
-        # data set with weights corrected for background dilution: for phi_s fit only!
-        from P2VV.Utilities.DataHandling import correctWeights
-        corrSFitErrCats = [ 'runPeriod', 'KKMassCat' ]
-        self._fitData = correctWeights( self._dataSet, corrSFitErrCats )
-
-        # print parameters
-        print 120 * '='
-        # print 'Bs2JpsiKKFit: fit data:'
-        # self._fitData.Print()
-        # print 'Bs2JpsiKKFit: observables in PDF:'
-        # self._pdf.getObservables(self._fitData).Print('v')
-        # print 'Bs2JpsiKKFit: parameters in PDF:'
-        # self._pdf.getParameters(self._fitData).Print('v')
-        # print 'Bs2JpsiKKFit: constraints in PDF:'
-        # for constr in self._pdf.ExternalConstraints() : constr.Print()
-
-        # fit data
-        print 'Bs2JpsiKKFit: fitting %d events (%s)' % (  self._fitData.numEntries(), 'weighted' if  self._fitData.isWeighted() else 'not weighted' )
-        fitResult = self._pdf.fitTo( self._fitData, SumW2Error = False, Save = True, Hesse = False, Offset = True, ** self._pdfConfig['fitOptions'] )
-        
-        # print parameter values
-        from P2VV.Imports import parNames, parValues
-        print 'Bs2JpsiKK2011Fit: parameters:'
-        fitResult.SetName('sFit_%s_Iteration'%itNum)
-        fitResult.PrintSpecial( text = False, LaTeX = False, normal = True, ParNames = parNames, ParValues = parValues )
-        #fitResult.covarianceMatrix().Print()
-        #fitResult.correlationMatrix().Print()
-        from ROOT import TFile
-        resultFile = TFile.Open('fitResult_iterativeProcedure_%s.root'%itNum, 'recreate')
-        resultFile.cd()
-        fitResult.Write()
-        resultFile.Close()
-        self._FitResults['iter_%s'%itNum] = fitResult
-
-        # wite parameters to file
-        if parFileOut :
-            self._pdfConfig.getParametersFromPdf( self._pdf, self._fitData )
-            self._pdfConfig.writeParametersToFile(  filePath = parFileOut )
-
-        print 120 * '=' + '\n'
-        
-    def _multiplyPdfWithAcc( self, effFile, iterNumb=None ):
-        # read moments file and multiply pure pdf with angular acceptance
-        print 'P2VV - INFO:multiplyPdfWithAcc(): multiplying PDF "%s" with angular efficiency moments from file "%s"'\
-          % ( self._pdf.GetName(), effFile )
-        from P2VV.Utilities.DataMoments import angularMomentIndices, RealMomentsBuilder
-        moments = RealMomentsBuilder()
-        moments.appendPYList( self._pdfBuild['angleFuncs'].angles, angularMomentIndices( 'weights', self._pdfBuild['angleFuncs'] ) )
-        moments.read( effFile )    
-        self._Moments['%s_iteration'%iterNumb] = moments # collect all moments  
-        if iterNumb: return moments.multiplyPDFWithEff( self._pdf, CoefName = self._pdfConfig['parNamePrefix'] + '_' + 'effC%d' % iterNumb )
-        else:        return moments.multiplyPDFWithEff( self._pdf, CoefName = self._pdfConfig['parNamePrefix'] + '_' + 'effnom'            )
-        
-         
-    def getDataSet(self):           return self._pdfConfig['signalData']
-    def getPdf(self):               return self._pdf
-    def getPdfBuilderObject(self) : return self._pdfBuild
-    def getFitResults(self):        return self._FitResults
-    def getMomentsDict(self):       return self._Moments['%s_iteration'%itNum]
-    def getBlindString(self):       return self._pdfConfig['blind']
-    def getObservables(self,which=None):
-        if   which=='angles': return [o for o in self._pdfBuild['obsSetP2VV'] if o.GetName().startswith('hel') ]
-        elif which=='time':   return [o for o in self._pdfBuild['obsSetP2VV'] if o.GetName()==('time')         ]
-        else:                 return             self._Build['obsSetP2VV']
-
-          
 # Vertical reweighting class to match physics of weighted distribution using a pdf
 class MatchPhysics( ):
     def __init__( self, nTupleFile, nTupleName, **kwargs ):      
@@ -937,6 +756,7 @@ class MatchPhysics( ):
         KKMass    = RooObject._rooobject('KKMass') if ws['KKMass'] else _createGetObservable('KKMass')
         KKMassCat = RooObject._rooobject('KKMassCat') if ws['KKMassCat'] else _createGetObservable('KKMassCat')
         self._obsSet = [ trueTime, time, KKMass ] + angles + [ KKMassCat ]
+        self._normSet = angles
 
         # set momenta range and put them in obsSet
         print 'P2VV - INFO: Setting track and B momenta ranges.'
@@ -1059,7 +879,7 @@ class MatchPhysics( ):
         self._iterNumb = iterNumb
 
         from ROOT import RooArgSet
-        normVars =  RooArgSet( self._obsSet )
+        normVars =  RooArgSet( self._normSet )
         
         # Reweights MC verticaly to match the Physics of data.
         nominators, denominators = [], []
@@ -1069,8 +889,8 @@ class MatchPhysics( ):
             count = 0
             for idx in xrange(len(nom)): # if pdf.getVal() returns 0 for a given event make it unweighted
                 if nom[idx] == 0 or den[idx] == 0: 
-                    nom[idx], den[idx] = 1., 1.
-                    count += 1 # count how many evetns have a problematic weight assignment 
+                    nom[idx], den[idx] = 0., 0.
+                    count += 1 # count how many evetns have a problematic weight
                 self._physWeights += [ nom[idx]/den[idx] ]
             if count>0:print 'P2VV - WARNING: calculateWeights: For %s events out of %s pdf value is zero.'%(count,len(nom))
             
@@ -1088,8 +908,7 @@ class MatchPhysics( ):
             self._data.get(nev)
             nominators.append( self._pdf.getVal(normVars) )
         print 'P2VV - INFO: Calculating phyisics matching weights'
-        calculatePhysicsWeights(nom=nominators, den=denominators)
-        
+        calculatePhysicsWeights(nom=nominators, den=denominators)       
         return self._physWeights
     
     def getDataSet(self):           return self._data
