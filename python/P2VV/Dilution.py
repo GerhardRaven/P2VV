@@ -50,6 +50,35 @@ Corresponding Gaussian resolution: %(cgd)f""" % r
 
     return D, error
 
+def sigmaFT(data, dMs, dMsErr, quiet = False):
+    from math import cos, sqrt, log, sin
+    s = 0
+    scos = 0
+    sx2 = 0
+    for t, w in data_list:
+        s += w
+        scos += w * cos( - dMs * t )
+        sx2 += w * t * t
+
+    try:
+        rms = sqrt(sx2/s)
+    except ValueError:
+        rms = None
+
+    D = scos / s
+    sigma = sqrt( -2*log(D) ) / dMs
+
+    if not quiet:
+        print "%f %f %f" % (s, scos, sx2)
+        r = dict(rms = rms, gd = exp(-0.5*rms*rms*dMs*dMs), ftd = D, cgd = sigma)
+        print """
+RMS of input histogram: %(rms)f
+If distribution were Gaussian, dilution is: %(gd)f
+Dilution from FT: %(ftd)f
+Corresponding Gaussian resolution: %(cgd)f""" % r
+
+    return D, 0
+
 def __make_ft_histo(data_histo, ft_bounds):
     from ROOT import TH1D
     ft_histo = TH1D('ft_histo', 'ft_histo', len(ft_bounds) - 1, ft_bounds)
