@@ -9,6 +9,8 @@ except ImportError:
 toy = Toy()
 (options, args) = toy.configure()
 
+from ROOT import gROOT
+gROOT.SetBatch(True)
 from P2VV.RooFitWrappers import *
 obj = RooObject( workspace = 'w')
 
@@ -24,17 +26,20 @@ ln = dln.pdf()
 # Resolution models
 from P2VV.Parameterizations.TimeResolution import Gaussian_TimeResolution as TimeResolution
 from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as Multi_TimeResolution
-tres_args = dict(time = t, sigmat = st, PerEventError = True, Cache = True)
+tres_args = dict(time = t, sigmat = st, Cache = True)
 tres_1 = Multi_TimeResolution(Name = 'tres', ParNamePrefix = 'one',
-                              ScaleFactors = [(2, 2.00), (1, 1.174)],
+                              TimeResSFParam = 'linear',
+                              sf_one_offset = dict(Value = 0, Constant = True),
+                              sf_one_slope = dict(Value = 1.174),
+                              sf_two_offset = dict(Value = 0, Constant = True),
+                              sf_two_slope = dict(Value = 2),
                               Fractions = [(2, 0.143)], **tres_args)
-tres_2 = TimeResolution(Name = 'tres', ParNamePrefix = 'two',
+tres_2 = TimeResolution(Name = 'tres', ParNamePrefix = 'two', PerEventError = True,
                         timeResSigmaSF = dict(Value = 4.), **tres_args)
 
 # Gaussians for Time
 from P2VV.Parameterizations.TimePDFs import Prompt_Peak
 g1 = Prompt_Peak(t, tres_1.model(), Name = 'g1')
-
 g2 = Prompt_Peak(t, tres_2.model(), Name = 'g2')
 
 # Mass shapes
@@ -69,6 +74,7 @@ toy.set_fit_opts(**fitOpts)
 from P2VV.ToyMCUtils import SWeightTransform
 toy.set_transform(SWeightTransform(mass_pdf, 'one', fitOpts))
 
-toy.run(Observables = [mpsi, t, st], Time = t, Sigmat = st, SigmatCat = sigmat_cat, Pdf = pdf)
+toy.run(Observables = [mpsi, t, st], Time = t, Sigmat = st, SigmatCat = sigmat_cat, Pdf = pdf,
+        SigmaGen = (1.174, 0.143, 2))
 
 toy.write_output()

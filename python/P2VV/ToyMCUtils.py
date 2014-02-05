@@ -248,7 +248,8 @@ class DilutionToy(Toy):
         __check_req_kw__('Sigmat', kwargs)
         __check_req_kw__('Time', kwargs)
         __check_req_kw__('SigmatCat', kwargs)
-
+        __check_req_kw__('SigmaGen', kwargs)
+        sigma_gen = kwargs.pop('SigmaGen')
         observables = kwargs.pop('Observables')
         obs_set = RooArgSet(*observables)
         
@@ -312,7 +313,7 @@ class DilutionToy(Toy):
             st_cat = data.addColumn(sigmat_cat._target_())
             from P2VV import Dilution
             d_ft = Dilution.dilution_bins(data, time, sigmat, st_cat, t_range = 2)
-            d_a = Dilution.signal_dilution_dg(data, sigmat, 1.2, 0.2, 2)
+            d_a = Dilution.signal_dilution_dg(data, sigmat, *sigma_gen)
             da.setVal(d_a[0])
             da.setError(d_a[1] if d_a[1] != None else 0.)
             dft.setVal(d_ft[0])
