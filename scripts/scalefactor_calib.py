@@ -5,12 +5,12 @@ import sys
 import os
 from math import sqrt
 
-parser = optparse.OptionParser(usage = '%prog data_type')
+parser = optparse.OptionParser(usage = '%prog data_type top_dir sub_dir')
 (options, args) = parser.parse_args()
 
 from P2VV.Utilities.Resolution import input_data, prefix
 
-if len(args) not in [1, 2]:
+if len(args) not in [1, 3]:
     print parser.print_usage()
     sys.exit(-2)
 elif args[0] not in input_data.keys():
@@ -65,13 +65,15 @@ for key, d in dirs.iteritems():
     if not cut:
         continue
     interesting[key] = d
-
+    
 if len(args) == 1:
     print 'possible top level directories are:'
     for k in interesting.iterkeys():
-        print k
+        sub_dirs = filter(lambda x: len(x.split('/')) == 3 and x.startswith(k) and x.endswith('bins'), dirs.keys())
+        print k + ':', ' '.join([s.split('/')[-1] for s in sub_dirs])
     sys.exit(0)
-    
+
+
 titles = {}
 for k, d in interesting.items():
     cut = d.Get('cut')
@@ -91,11 +93,20 @@ for k, d in interesting.items():
     print k, dc
 
 top_dir = args[1]
+sub_dir = args[2]
+if args[0] in ['MC2011_Sim08a', 'MC2012']:
+    single_dir = '1bin_19000.00fs_simple'
+else:
+    single_dir = '1bin_15500.00fs_simple' 
+
+interesting.update(dict([(k, dirs[k]) for k in set([k.replace(top_dir, single_dir)
+                                                    for k in interesting.iterkeys()]) if k in dirs]))
+
 if args[0] == '2011':
     ## good = {'1243785060103642893' : 4, 'm2334064025374600976' : 3,
     ##         '1626518906014697943' : 2, 'm3832912631969227654' : 1,
     ##         '4086600821164745518' : 6, 'm6573713017788044320' : 5}
-    good = {'m934737057402830078' : 1}
+    good = {'2027465761870101697' : 1}
     sig_name = 'psi_ll'
 elif args[0] == '2012':
     good = {'2027465761870101697' : 1}
@@ -122,21 +133,32 @@ elif args[0] == 'MC2012_incl_Jpsi':
     good = {'2027465761870101697' : 1}
     sig_name = 'psi_ll'
 
+from itertools import chain
 PDFs = defaultdict(dict)
-for k, cache_dir in filter(lambda k: k[0].split('/')[0] in [top_dir], interesting.iteritems()):
+for k, cache_dir in filter(lambda k: k[0].split('/')[0] in [top_dir, single_dir], interesting.iteritems()):
     hd = k.split('/')[-1]
     try:
         index = good[hd]
     except KeyError:
         continue
-    sdata_dir = cache_dir.Get('sdata')
-    for e in sdata_dir.GetListOfKeys():
-        if e.GetClassName() == 'RooDataSet':
-            sdatas[index][e.GetName()] = e.ReadObj()
-    rd = cache_dir.Get('results')
-    for e in rd.GetListOfKeys():
-        if e.GetClassName() == 'RooFitResult':
-            results[k][e.GetName()] = e.ReadObj()
+
+    def add_sdata(d, name):
+        for e in d.GetListOfKeys():
+            if e.GetClassName() == 'RooDataSet':
+                sdatas[index]['/'.join((name, e.GetName())) if name else e.GetName()] = e.ReadObj()
+
+    def add_results(d):
+        for e in d.GetListOfKeys():
+            if e.GetClassName() == 'RooFitResult':
+                results[k][e.GetName()] = e.ReadObj()
+
+    add_sdata(cache_dir.Get('sdata'), '')
+    add_results(cache_dir.Get('results'))
+    sub_cache_dir = cache_dir.Get(sub_dir)
+    if sub_cache_dir:
+        add_sdata(sub_cache_dir.Get('sdata'), sub_dir)
+        add_results(sub_cache_dir.Get('results'))
+
     ## pdf_dir = cache_dir.Get('PDFs')
     ## for e in pdf_dir.GetListOfKeys():
     ##     PDFs[index][e.GetName()] = e.ReadObj()
@@ -154,7 +176,7 @@ __fit_funcs = []
 fit_type = 'double_RMS_Gauss'
 if args[0] in ['MC2012', 'MC2011_Sim08a']:
     fit_type = 'double_RMS_Rest'
-    
+
 __fit_results = defaultdict(list)
 from array import array
 
@@ -214,15 +236,18 @@ else:
     
 ffs = defaultdict(dict)
 for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split('/')[-1]]):
+    if top_dir not in key:
+        continue
     index = good[key.split('/')[-1]]
-    full_sdata = sdatas[index]['sig_sdata']
+    full_sdata = sdatas[index][sub_dir + '/sig_sdata']
     observable = full_sdata.get().find(obs_name)
     split_cat = full_sdata.get().find(split_cat_name)
     binning = observable.getBinning(binning_name)
     split_bounds = array('d', [binning.binLow(0)] + [binning.binHigh(k) for k in range(binning.numBins())])
     
     name = 'canvas_%s' % index
-    canvas = TCanvas(name, titles[key], 1000, 500)
+    canvas = TCanvas(name, titles[key], 1200, 400)
+    
     canvas.Divide(2, 1)
     __canvases.append(canvas)
     name = 'hist_events_%s' % index
@@ -230,7 +255,12 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
     __histos.append(hist_events)
     mass_result = mass_fpf = fit_results['sWeight_mass_result']
     mass_fpf = mass_result.floatParsFinal()
-    time_result = fit_results['time_result_%s' % fit_type]
+    for suffix in (fit_type, fit_type + '_pee'):
+        if 'time_result_' + suffix in fit_results:
+            time_result = fit_results['time_result_' + suffix]
+            break
+    else:
+        continue
     time_fpf = time_result.floatParsFinal()
 
     split_mean = time_fpf.find('timeResMu_st_bin_0')
@@ -257,8 +287,8 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
             sfo, sfo_e = tmp.getVal(), tmp.getError()
         elif fit_type.startswith('double_RMS'):
             sf_av = time_fpf.find('timeResSFMean_%s' % ct.GetName())
-            sf, sf_e = sf_av.getVal(), sf_av.getError()
             sf_sigma = time_fpf.find('timeResSFSigma_%s' % ct.GetName())
+            sf, sf_e = sf_av.getVal(), sf_av.getError()
             sfo, sfo_e = sf_sigma.getVal(), sf_sigma.getError()
         elif fit_type == 'double':
             from P2VV.PropagateErrors import propagateScaleFactor
@@ -297,7 +327,7 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
                  'pol1' : ('pol1', 'S0+'),
                  'pol2' : ('pol2', 'S0+'),
                  'pol1_mean_param' : ('[1] + [2] * (x - [0])', 'S0+'),
-                 'pol2_no_offset' : ('x ++ x * x', 'S0+'),
+                 'pol2_mean_param_no_offset' : ('([1] + [2] * (x - [0])) * x', 'S0+'),
                  'pol2_mean_param' : ('[1] + [2] * (x - [0]) + [3] * (x - [0])^2', 'S0+')}
     print titles[key]
     mean = full_sdata.mean(observable)
@@ -309,7 +339,7 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
         frs = []
         for i, (name, (func, opts)) in enumerate(fit_funcs.iteritems()):
             fit_func = TF1(name, func, split_bounds[0], split_bounds[-1])
-            if name.endswith('mean_param'):
+            if 'mean_param' in name:
                 fit_func.FixParameter(0, mean)
             print name
             fit_result = g.Fit(fit_func, opts, "L")
@@ -322,21 +352,27 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
     
     print ''
 
-    def draw_calib_graph(prefix):
-        calib_result = fit_results.get(time_result.GetName() + '_linear', None)
-        if not calib_result:
+    def draw_calib_graph(prefix, calib_type, formula, pars, color):
+        if key.replace(top_dir, single_dir) not in results:
+            return
+        ## Try extra _pee suffix for backwards compatibility
+        for rn in [(calib_type,), (calib_type, 'pee')]:
+            time_name = time_result.GetName().replace('_pee', '')
+            calib_result = results[key.replace(top_dir, single_dir)].get('_'.join((time_name,) + rn), None)
+            if calib_result:
+                break
+        else:
             return
         calib_fpf = dict([(p.GetName(), [p.getVal(), p.getError()]) for p in calib_result.floatParsFinal()])
-        offset = calib_fpf['_'.join((prefix, 'offset'))]
-        slope = calib_fpf['_'.join((prefix, 'slope'))]
-        calib_func = TF1(prefix + '_simul', '[0] + [1] * (x - [2])',
+        calib_func = TF1(prefix + '_simul', formula,
                          (split_bounds[0] + split_bounds[1]) / 2.,
                          (split_bounds[-2] + split_bounds[-1]) / 2.)
-        for i, (v, e) in [(0, offset), (1, slope), (2, (mean, 0))]:
-            calib_func.SetParameter(i, v)
-            calib_func.SetParError(i, e)
-        from ROOT import kBlue
-        calib_func.SetLineColor(kBlue)
+        for i, par_name in enumerate(pars):
+            par = calib_fpf[prefix + '_' + par_name]
+            calib_func.SetParameter(i + 1, par[0])
+            calib_func.SetParError(i, par[1])
+        calib_func.SetParameter(0, mean)
+        calib_func.SetLineColor(color)
         calib_func.Draw('same')
         __histos.append(calib_func)
     
@@ -344,18 +380,25 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
     sf1_hist = draw_res_graph(res_graph, hist_events)
     sf1_hist.GetYaxis().SetTitle('#bar{sf}')
     sf1_hist.GetYaxis().SetTitleOffset(1.05)
-    draw_calib_graph('sf_mean')
     
     canvas.cd(2)
     sfo_hist = draw_res_graph(sfo_graph, hist_events)
     sfo_hist.GetYaxis().SetTitle('sf_{#sigma}')
     sfo_hist.GetYaxis().SetTitleOffset(1.05)
-    draw_calib_graph('sf_sigma')
+
+    from itertools import product
+    par_defs = [('linear', '[1] + [2] * (x - [0])', ('offset', 'slope'), kBlue),
+                ('quadratic', '[1] + [2] * (x - [0]) + [3] * (x - [0])^2', ('offset', 'slope', 'quad'), kGreen),
+                ('quadratic_no_offset', '([1] + [2] * (x - [0])) * x', ('slope', 'quad'), kOrange)]
+    for (pad, prefix), args in product(((1, 'sf_mean'), (2, 'sf_sigma')), par_defs):
+        canvas.cd(pad)
+        draw_calib_graph(*tuple((prefix, ) + args))
 
     if split_mean:
         name = 'mean_canvas_%s' % index
         mean_canvas = TCanvas(name, titles[key], 600, 400)
         mean_canvas.SetLeftMargin(0.15)
+        __canvases.append(mean_canvas)
         mean_graph.Draw("AP")
         mean_graph.GetXaxis().SetTitle("estimated decay time error [ps]")
         mean_graph.GetYaxis().SetTitle("#mu [ps]  ")
@@ -366,7 +409,7 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
             g.SetRange((split_bounds[0] + split_bounds[1]) / 2.,
                        (split_bounds[-2] + split_bounds[-1]) / 2.)
             g.Draw('same')
-        for n, c in [('pol1_mean_param', kGreen), ('pol2_mean_param', kBlue)]:
+        for n, c in [('pol1_mean_param', kBlue), ('pol2_mean_param', kGreen), ('pol0', 7)]:
             __dg(n, c)
         mean_canvas.Update()
     
