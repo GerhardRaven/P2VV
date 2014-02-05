@@ -303,12 +303,12 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                     formula = '@2 + @3 * (@0 - @1)'
                     args = {'one' : [self._sigmat, self.__sf_placeholder, self._sf_one_offset, self._sf_one_slope],
                             'two' : [self._sigmat, self.__sf_placeholder, self._sf_two_offset, self._sf_two_slope]}
-                self._sf_one = self._parseArg('timeResSFMean_linear', kwargs,
-                                                Formula = formula, ObjectType = 'FormulaVar',
-                                                Arguments = args['two'])
-                self._sf_two = self._parseArg('timeResSFSigma_linear', kwargs,
+                self._sf_one = self._parseArg('sf_one_linear', kwargs,
                                                 Formula = formula, ObjectType = 'FormulaVar',
                                                 Arguments = args['one'])
+                self._sf_two = self._parseArg('sf_two_linear', kwargs,
+                                                Formula = formula, ObjectType = 'FormulaVar',
+                                                Arguments = args['two'])
                 self._timeResSigmasSFs[-1] = self._sf_one
                 self._timeResSigmasSFs[-2] = self._sf_two
             elif sf_param == 'quadratic':
