@@ -11,8 +11,6 @@ def mb_callback(option, opt_str, value, parser):
     mb = tuple(int(i) for i in value.split(','))
     setattr(parser.values, option.dest, mb)
 
-parser.add_option("--no-pee", dest = "pee", default = True,
-                  action = 'store_false', help = 'Do not use per-event proper-time error')
 parser.add_option("-w", "--wpv", dest = "wpv", default = False,
                   action = 'store_true', help = 'Add WPV component')
 parser.add_option("--wpv-type", dest = "wpv_type", default = 'Gauss', type = 'string',
@@ -116,7 +114,7 @@ from P2VV.Load import LHCbStyle
 extra_name = [args[1]]
 for a, n in [('parameterise', None), ('wpv', 'wpv_type'), ('sf_param', None),
              ('peak_only', 'peak'), ('add_background', 'cfit'), ('split_sfs', 'split'),
-             ('use_refit', 'PVRefit'), ('pee', 'pee')]:
+             ('use_refit', 'PVRefit')]:
     v = getattr(options, a)
     if v:
         if n and n != a and n != v and hasattr(options, n):
@@ -194,11 +192,11 @@ elif args[1] == 'double':
     mu['Value'] = mu_values.get(args[0], 0)
     mu['Constant'] = options.simultaneous and not (options.split_mean or options.mu_param)
     from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
-    tres_args = dict(time = time_obs, sigmat = st, Cache = True,
-                     PerEventError = options.pee, Parameterise = options.parameterise,
+    sf_pee = options.simultaneous and options.sf_param
+    tres_args = dict(time = time_obs, sigmat = st, Cache = True, Parameterise = options.parameterise,
                      TimeResSFParam = options.sf_param, SplitFracs = options.split_frac,
                      timeResMu = mu, Simultaneous = options.simultaneous, SplitSFS = options.split_sfs,
-                     ScaleFactors = [(2, 2.00), (1, 1.174)] if options.pee else [(2, 0.1), (1, 0.06)],
+                     ScaleFactors = [(2, 2.00), (1, 1.174)] if sf_pee else [(2, 0.1), (1, 0.06)],
                      Fractions = [(2, 0.143)], SplitMean = options.split_mean,
                      MeanParameterisation = options.mu_param)
     if args[0] == 'MC2012':
@@ -261,7 +259,7 @@ prompt_pdf = Prompt_Peak(time_obs, sig_tres.model(), Name = 'prompt_pdf')
 prompt = Component('prompt', (prompt_pdf.pdf(), psi_m), Yield = (160160, 100, 500000))
 
 # Read data
-fit_mass = options.fit_mass or not options.cache
+fit_mass = (options.fit_mass or not options.cache) or options.reduce
 
 ## from profiler import heap_profiler_start, heap_profiler_stop
 ## heap_profiler_start("profile.log")
@@ -300,7 +298,7 @@ if options.simultaneous:
 else:
     directory = '1bin_%4.2ffs_simple/%s' % (1000 * (t.getMax() - t.getMin()), hd)
 
-if options.cache:
+if options.cache and not options.reduce:
     if options.simultaneous:
         from P2VV.CacheUtils import SimCache as Cache
         cache = Cache(input_data[args[0]]['cache'].rsplit('/', 1), directory, sub_dir)
@@ -366,6 +364,8 @@ if fit_mass:
     data.SetName(tree_name)
     if data.numEntries() > 6e5:
         data = data.reduce(EventRange = (0, int(6e5)))
+    if options.reduce:
+        data = data.reduce(EventRange = (0, int(options.reduce)))
 
     # In case of reweighing
     sig_mass_pdf = buildPdf(Components = (signal, background), Observables = (m,), Name = 'sig_mass_pdf')
@@ -528,21 +528,13 @@ elif fit_mass:
         bkg_sdata = single_bin_bkg_sdata
 
 # Write the result of the mass fit already at this point
-if fit_mass and options.cache:
+if fit_mass and options.cache and not options.reduce:
     cache.write_cut(cut)
     cache.write_data(data, sdatas)
     cache.write_results(dict([(k, v) for k, v in results.iteritems() if 'mass' in k]))
 
-if options.reduce:
-    if options.fit_mass:
-        data = data.reduce(EventRange = (0, int(options.reduce)))
-    for k, sdata in sdatas.iteritems():
-        sdatas[k] = sdata.reduce(EventRange = (0, int(options.reduce)))
-    sig_sdata = sig_sdata.reduce(EventRange = (0, int(options.reduce)))
-    bkg_sdata = bkg_sdata.reduce(EventRange = (0, int(options.reduce)))
-        
 gc.collect()
-    
+
 # Define default components
 if signal_MC and options.wpv_type == "Rest":
     from P2VV.Parameterizations.TimeResolution import Rest_TimeResolution
@@ -617,6 +609,8 @@ else:
 
 time_pdf = buildPdf(Components = components, Observables = pdf_obs, Name='time_pdf')
 
+## Define this one here so it doesn't get deleted by python. It owns a lot of
+## stuff.
 splitLeaves = RooArgSet()
 
 # Which data to fit to
@@ -649,20 +643,29 @@ if options.simultaneous:
         ## split_pars[0].append(rest_tres._left_rlifeSF)
         ## split_pars[0].append(rest_tres._frac_left)
     
+    ## Calculate the mean in each bin for the splitting observable
+    split_obs = split_util.observables()[0]
+    split_obs_mean = sig_sdata.mean(split_obs._target_())
+    split_cat = split_cats[0][0]
+    if hasattr(split_cat, '_target_'):
+        split_cat = split_cat._target_()
+    means = [sig_sdata.mean(split_obs._target_(), '{0} == {0}::{1}'.format(split_cat.GetName(), s.GetName())) for s in split_cat]
+
     if options.sf_param or (options.mu_param and 'sigmat' not in options.mu_param):
         assert(len(split_cats[0]) == 1)
-        split_cat = split_cats[0][0]
-        if hasattr(split_cat, '_target_'):
-            split_cat = split_cat._target_()
 
         ## The idea is to create a simultaneous PDF, split using the
         ## placeholder which was put in place when the resolution
         ## model was constructed and then in each bin set the created
-        ## split parameter to:
-        ## (mean_in_bin - overall_mean) / (first_bin_mean - last_bin_mean).
-        ## This should make the parameters comparable for different
-        ## splitting observables.
+        ## split parameter to: (mean_in_bin - overall_mean.
+
+        ## Set the value to the mean sigmat already here, even if it is changed
+        ## later.
         placeholder = sig_tres.sfPlaceHolder()
+        placeholder.setVal(split_obs_mean)
+
+        ## Customize the PDF to be split using the placeholder and any other
+        ## pars which need to be split.
         from ROOT import RooCustomizer
         customizer = RooCustomizer(time_pdf._target_(), split_cat, splitLeaves)
         to_split = RooArgSet(*(split_pars[0] + [placeholder._target_()]))
@@ -671,12 +674,7 @@ if options.simultaneous:
         time_pdf = SimultaneousPdf(time_pdf.GetName() + '_simul',
                                    SplitCategory = split_cat, ExternalConstraints = time_pdf.ExternalConstraints(),
                                    States = states, ConditionalObservables = time_pdf.ConditionalObservables())
-
-        ## Calculate the mean in each bin for the splitting observable
-        split_obs = split_util.observables()[0]
-        means = [sig_sdata.mean(split_obs._target_(), '{0} == {0}::{1}'.format(split_cat.GetName(), s.GetName())) for s in split_cat]
-        split_obs_mean = sig_sdata.mean(split_obs._target_())
-
+        
         ## Set the split parameters to their calculated value and make
         ## them constant.
         pars = time_pdf.getParameters(RooArgSet())
@@ -691,6 +689,14 @@ if options.simultaneous:
                                    , MasterPdf       = time_pdf
                                    , SplitCategories = split_cats
                                    , SplitParameters = split_pars)
+        st_mean = lambda st: 0.04921 + st * 1.220
+        st_sigma = lambda st: 0.012 + st * 0.165
+
+        pars = time_pdf.getParameters(RooArgSet())
+        for m, s in zip(means, split_cat):
+            for n, f in (('timeResSFMean', st_mean), ('timeResSFSigma', st_sigma)):
+               p = pars.find(n + '_' + s.GetName())
+               p.setVal(f(m - split_obs_mean))
 
 if (not options.simultaneous and options.mu_param) or 'sigmat' in options.mu_param:
     placeholder = sig_tres.muPlaceHolder()
@@ -707,7 +713,10 @@ if options.reuse_result and options.cache:
     else:
         result_name = '_'.join(['time_result'] + extra_name)
     time_result = results.get(result_name, None)
-
+    ## Try extra _pee suffix for backwards compatibility
+    if not time_result:
+        time_result = results.get(result_name + '_pee', None)
+    
     if time_result:
         pdf_vars = time_pdf.getVariables()
         for p in time_result.floatParsFinal():
@@ -972,3 +981,4 @@ def write_constraints(constraints):
 
 if options.fit and options.write_constraints:
     write_constraints(options.write_constraints)
+
