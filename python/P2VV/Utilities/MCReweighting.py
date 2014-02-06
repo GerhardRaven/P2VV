@@ -192,7 +192,7 @@ def _createGetObservable(name):
     return obs 
 
 # combine moments function with waiting feature.
-def combineMoments( accFile1, accFile2, outName, Prefix=''):
+def combineMoments( accFile1, accFile2, outName, Prefix='', delete=True):
     from time import sleep
     import os
     from P2VV.Utilities.DataMoments import combineMoments
@@ -201,7 +201,8 @@ def combineMoments( accFile1, accFile2, outName, Prefix=''):
             open(accFile1)
             open(accFile2)
             combineMoments( [ accFile1, accFile2 ], outName, prefix = Prefix, printMoms = False )
-            # for angAcc in [accFile1,accFile2]: os.remove(angAcc)
+            if delete: 
+                for angAcc in [accFile1,accFile2]: os.remove(angAcc)
             break
         except IOError:
             print 'P2VV - INFO: combineMoments: Waiting for the followig flies to combine efficiency moments:\n  %s\n  %s'%(accFile1,accFile2)
@@ -452,6 +453,7 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
         del source, target
         return weights
 
+
 # function that reweighits a single source distribution to match a given target using a histogram
 def OneDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     print 'P2VV - INFO: OneimentionalVerticalReweighting: Reweighting variable %s in sample %s.'%(var,source.GetName())
@@ -586,17 +588,25 @@ class WeightedDataSetsManager(dict):
 
         print 'P2VV - INFO: WeightedDataSetsManager: Initialsed for sample %s.'%self['initSource'].GetName()
 
-    def appendWeights( self, weightsName, weightsList ):
+    def appendWeights( self, weightsName, weightsList, combWithPrevious = False, scale = False ):
+        # check if the weights is of numpy type array
         import numpy
-        if not type(weightsList)==numpy.ndarray: weightsList = numpy.array(weightsList) 
+        if not type(weightsList)==numpy.ndarray: weightsList = numpy.array(weightsList)
+
+        # optionally cmbine with the previous weights list
+        if combWithPrevious and len(self['WeightsLists'].keys()) != 0: 
+            print 'P2VV - INFO: appendWeights: Combining weights "%s" with "%s" (dot product).'%(weightsName,self._wName)
+            prev = self['WeightsLists'][ self['latestDataSetPointer'] ]
+            weightsList = prev * weightsList
         self['WeightsLists'][weightsName] = weightsList
 
         # scale weights to preserve number of events 
-        print 'P2VV - INFO: appendWeights: Scaling sources sum of weights to the number of entries.'
-        n_events = self['initSource'].numEntries()
-        sumW = sum( self['WeightsLists'][weightsName] )
-        self['WeightsLists'][weightsName] =  ( n_events / sumW ) * self['WeightsLists'][weightsName] 
-        
+        if scale:
+            print 'P2VV - INFO: appendWeights: Scaling sources sum of weights to the number of entries.'
+            n_events = self['initSource'].numEntries()
+            sumW = sum( self['WeightsLists'][weightsName] )
+            self['WeightsLists'][weightsName] =  ( n_events / sumW ) * self['WeightsLists'][weightsName] 
+
         # bookkeeping
         self._wName = ''
         for name in self['WeightsLists'].keys(): self._wName += name + '_'
@@ -683,6 +693,8 @@ class WeightedDataSetsManager(dict):
         # restore weights container and flag
         self['WeightsLists'] = dict()
         self['latestDataSetPointer'] = 'initSource'
+
+
 # Vertical reweighting class to match physics of weighted distribution using a pdf
 class MatchPhysics( ):
     def __init__( self, nTupleFile, nTupleName, **kwargs ):      
@@ -908,7 +920,7 @@ class MatchPhysics( ):
             self._data.get(nev)
             nominators.append( self._pdf.getVal(normVars) )
         print 'P2VV - INFO: Calculating phyisics matching weights'
-        calculatePhysicsWeights(nom=nominators, den=denominators)       
+        calculatePhysicsWeights(nom=nominators, den=denominators)
         return self._physWeights
     
     def getDataSet(self):           return self._data
@@ -1121,6 +1133,8 @@ class MatchWeightedDistributions():
     def getDataSet( self ): return self._recalculatedData
 
 
+## micelanous impots / helping stuff
+
 # MC generating conditions  
 parValuesMcSim08_6KKmassBins = dict(
      name              = 'Sim08_Conditions'
@@ -1148,6 +1162,7 @@ parValuesMcSim08_6KKmassBins = dict(
     ,f_S_bin5          = 0.
     )
 
+# trackand B momenta ranges 
 trackMomentaRanges = dict(
     Kminus_PX  = [ -5e5 , 5e5 ],
     Kminus_PY  = [ -5e5 , 5e5 ],
@@ -1169,7 +1184,7 @@ trackMomentaRanges = dict(
     B_Pt       = [    0 , 2e5 ]    
     )
 
-
+# bokkeeping dictionaries for plotting
 plotingScenarios = dict( BmommkkphysKKmom = [ ('mcData','BmomRewData'), ('BmomRewData','mkkRewData'), ('mkkRewData','mcDataPhysRew'), ('mcDataPhysRew','MomRewData') ],
                          BmomphysKKmom    = [ ('mcData','BmomRewData'), ('BmomRewData','mcDataPhysRew'), ('mcDataPhysRew','MomRewData') ],
                          mkkphysKKmom     = [ ('mcData','mkkRewData'), ('mkkRewData','mcDataPhysRew'), ('mcDataPhysRew','MomRewData') ],

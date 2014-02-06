@@ -4,9 +4,10 @@
 from optparse import OptionParser
 parser = OptionParser()
 parser.add_option('-r', '--KKmomRew',   dest='KKmomRew',   default = 'vertical',            help='KK momentum reweighting approach (vertical/horizontal)')
-parser.add_option('-o', '--rewSteps',   dest='rewSteps',   default = 'BmommkkphysKKmom',    help='reweghting steps order')
+parser.add_option('-o', '--rewSteps',   dest='rewSteps',   default = 'Bmom_mkk_phys_KKmom', help='reweghting steps order')
 parser.add_option('-b', '--Bmom2DRew',  dest='Bmom2DRew',  default = 'False',               help='2 dimentional Bmom reweighting switch')
 parser.add_option('-e', '--eqStatBins', dest='eqStatBins', default = 'False',               help='2 dimentional Bmom reweighting switch')
+parser.add_option('-m', '--sevdaImpmnt',dest='sevdaImpmnt',default = 'True',                help='use only w_pkk weights to calcllate eff. oments')
 parser.add_option('-s', '--MCProd',     dest='MCProd',     default = '2011',                help='choose mc sample ( 2011,2012 )')
 parser.add_option('-n', '--iterNum',    dest='iterNum',    default = 1, type=int,           help='iteration number')
 parser.add_option('-a', '--nomAngAcc',  dest='nomAngAcc',  default = '',                    help='nominal angular acceptance')
@@ -28,6 +29,7 @@ reweightMkk           = True if 'mkk'   in options.rewSteps else False
 reweightPhysics       = True if 'phys'  in options.rewSteps else False
 reweightKKmom         = True if 'KKmom' in options.rewSteps else False
 twoDimensionalBmomRew = True if 'True'  in options.Bmom2DRew else False
+KKmomWeightsOnly      = True if 'True'  in options.sevdaImpmnt else False
 mkkBins               = 100
 BmomBins              = 200
 KKmomBins             = 100 # per dimention
@@ -37,6 +39,8 @@ KmomentaWeightsName   = 'KKmom'
 BmomentumWeightsName  = 'Bmom'
 writeWeightedData     = True if 'True' in options.writeData else False
 combineEffMoments     = True if 'True' in options.combMoms else False
+delIntermediateMoms   = False
+scaleWeightsToNumEntr = False
 reduced               = True if 'True' in options.reduced else False
 
 # fit configuration
@@ -117,46 +121,41 @@ target = TFile.Open(dataPath).Get(sDataName)
 mcDataMngr['iterationNumber'] = iterNumb
 
 # match B momentum and / or mkk, (with different order)
-if reweightBmomentum and reweightMkk: 
-    assert len(options.rewSteps.split()) >= 2, 'P2VV - ERROR: Cannot process reweighitng steps option (-o). Provide string with spaces'
+if reweightBmomentum and reweightMkk:
+    assert len(options.rewSteps.replace('_',' ').split()) >= 2, 'P2VV - ERROR: Cannot process reweighitng steps option (-o). Provide string with spaces'
     if 'Bmom' in options.rewSteps.split()[0]:
         BmomentumWeights = TwoDimentionalVerticalReweighting( source(), target, BmomBins, ['B_P','B_Pt'], equalStatBins=equalStatBins ) if twoDimensionalBmomRew else \
                            OneDimentionalVerticalReweighting( source(), target, BmomBins, 'B_P', equalStatBins=equalStatBins )
-        mcDataMngr.appendWeights( BmomentumWeightsName, BmomentumWeights )
+        mcDataMngr.appendWeights( BmomentumWeightsName, BmomentumWeights, scale = scaleWeightsToNumEntr )
         
         mKKweights = OneDimentionalVerticalReweighting( source(), target, mkkBins, 'mdau2', equalStatBins=equalStatBins )
-        mcDataMngr.appendWeights( mKKWeightsName, mKKweights )
-        print 'B mkk'
+        mcDataMngr.appendWeights( mKKWeightsName, mKKweights, scale = scaleWeightsToNumEntr )
     else: 
-        print 'mkk B' 
         mKKweights = OneDimentionalVerticalReweighting( source(), target, mkkBins, 'mdau2', equalStatBins=equalStatBins )
-        mcDataMngr.appendWeights( mKKWeightsName, mKKweights )
+        mcDataMngr.appendWeights( mKKWeightsName, mKKweights, scale = scaleWeightsToNumEntr )
 
         BmomentumWeights = TwoDimentionalVerticalReweighting( source(), target, BmomBins, ['B_P','B_Pt'], equalStatBins=equalStatBins ) if twoDimensionalBmomRew else \
                            OneDimentionalVerticalReweighting( source(), target, BmomBins, 'B_P', equalStatBins=equalStatBins )
-        mcDataMngr.appendWeights( BmomentumWeightsName, BmomentumWeights )
+        mcDataMngr.appendWeights( BmomentumWeightsName, BmomentumWeights, scale = scaleWeightsToNumEntr )
 else:
     if reweightBmomentum:
-        print 'only B'
         BmomentumWeights = TwoDimentionalVerticalReweighting( source(), target, BmomBins, ['B_P','B_Pt'], equalStatBins=equalStatBins ) if twoDimensionalBmomRew else \
             OneDimentionalVerticalReweighting( source(), target, BmomBins, 'B_P', equalStatBins=equalStatBins )
-        mcDataMngr.appendWeights( BmomentumWeightsName, BmomentumWeights )
+        mcDataMngr.appendWeights( BmomentumWeightsName, BmomentumWeights, scale = scaleWeightsToNumEntr )
     if reweightMkk:
-        print 'only mkk'
         mKKweights = OneDimentionalVerticalReweighting( source(), target, mkkBins, 'mdau2', equalStatBins=equalStatBins )
-        mcDataMngr.appendWeights( mKKWeightsName, mKKweights )
+        mcDataMngr.appendWeights( mKKWeightsName, mKKweights, scale = scaleWeightsToNumEntr )
 
 # match physics
 if reweightPhysics:
     PhysicsReweight.setDataSet( source() )
     physWeights = PhysicsReweight.calculateWeights( iterNumb, dataParameters )
-    mcDataMngr.appendWeights( physWeightName, physWeights )
+    mcDataMngr.appendWeights( physWeightName, physWeights, combWithPrevious = True, scale = scaleWeightsToNumEntr )
 
 # match KK momenta
 if reweightKKmom and RewApproach == 'vertical':
-    KKMomWeights = TwoDimentionalVerticalReweighting( source(), target, KKmomBins, ['Kplus_P','Kminus_P'], equalStatBins=equalStatBins )  # combWeights=True ) # ,xCheckPlots=True )
-    # assert False
-    mcDataMngr.appendWeights( KmomentaWeightsName, KKMomWeights )
+    KKMomWeights = TwoDimentionalVerticalReweighting( source(), target, KKmomBins, ['Kplus_P','Kminus_P'], equalStatBins=equalStatBins, combWeights=False if KKmomWeightsOnly else True ) # ,xCheckPlots=True )
+    mcDataMngr.appendWeights( KmomentaWeightsName, KKMomWeights, scale = scaleWeightsToNumEntr )
 elif reweightKKmom and RewApproach == 'horizontal':
     KKmomentaReweight = MatchWeightedDistributions( outTree        = target, # Target: Distribution to be matched with
                                                     reweightVars   = ['Kminus_P'],  # Variables that enter the transformation
@@ -172,9 +171,11 @@ elif reweightKKmom and RewApproach == 'horizontal':
     mcDataMngr.setDataSet( KKmomentaReweight.getDataSet(),  KmomentaWeightsName )
 
 # compute angular efficiency moments from the new reweighted mc dataset.
- # set data pars to pdf (reweighted data has the data physics now) 
-if reweightPhysics: PhysicsReweight.setDataFitParameters(dataParameters) 
-else:               PhysicsReweight.setMonteCarloParameters()
+ # set data pars to pdf (reweighted data has the data physics now)
+if KKmomWeightsOnly: PhysicsReweight.setMonteCarloParameters()
+else:
+    if reweightPhysics: PhysicsReweight.setDataFitParameters(dataParameters) 
+    else:               PhysicsReweight.setMonteCarloParameters()
 
 physMoments = RealMomentsBuilder( Moments = ( RealEffMoment( Name = func.GetName(), 
                                                              BasisFunc = func,
@@ -195,16 +196,16 @@ physMoments.write( 'Sim08_{0}_{1}_Phys_{2}'.format(MCProd,outputEffMomentsBaseli
 normalizeMoments( 'Sim08_{0}_{1}_Phys_{2}'.format(MCProd,outputEffMomentsBaselineName,iterNumb),
                   'Sim08_{0}_{1}_Phys_norm_{2}'.format(MCProd,outputEffMomentsBaselineName,iterNumb),
                   normMoment = PhysicsReweight.getParNamePrefix() + '_Re_ang_A0_A0',
-                  printMoms  = False
+                  printMoms  = delIntermediateMoms
                   )
-# os.remove('Sim08_{0}_{1}_Phys_{2}'.format(MCProd,outputEffMomentsBaselineName,iterNumb) )
+if delIntermediateMoms: os.remove('Sim08_{0}_{1}_Phys_{2}'.format(MCProd,outputEffMomentsBaselineName,iterNumb) )
 
-# combine 2011,2012 acceptances
+# combine 2011, 2012 acceptances
 if combineEffMoments:
     angAcc2011  = 'Sim08_2011_%s_Phys_norm_%s'%(outputEffMomentsBaselineName,iterNumb) 
     angAcc2012  = 'Sim08_2012_%s_Phys_norm_%s'%(outputEffMomentsBaselineName,iterNumb) 
     combAccName = 'Sim08_20112012_{0}_Phys_norm_{1}'.format(outputEffMomentsBaselineName,iterNumb)
-    combineMoments( angAcc2011, angAcc2012, combAccName, Prefix = 'mc' )
+    combineMoments( angAcc2011, angAcc2012, combAccName, Prefix = 'mc', delete=False )
     
 # convert effyciency weights to efficiency moments
     moments, correlations = {}, {}
