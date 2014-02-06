@@ -2,13 +2,15 @@
 from optparse import OptionParser
 parser = OptionParser()
 parser.add_option('-n', '--numIters',   dest='numIters',  default = 8,     type=int,       help='number of iterations')
-parser.add_option('-N', '--oneIter',    dest='oneIter',   default = 1,     type=int,       help='run a specific iteration')
+parser.add_option('-N', '--oneIter',    dest='oneIter',   default = 0,     type=int,       help='run a specific iteration')
 parser.add_option('-p', '--makePlots',  dest='makePlots', default = 'False',               help='switch on/off plotting')
+parser.add_option('-s', '--sample',     dest='sample',    default = '20112012',            help='reweight 11/12 or 11+12')
+parser.add_option('-f', '--fit',        dest='fit',       default = 'True',                help='switch on/off fitting')
 parser.add_option('-o', '--rewSteps',   dest='rewSteps',  default = 'Bmom_mkk_phys_KKmom', help='reweghting steps order')
 parser.add_option('-r', '--paralRew',   dest='paralRew',  default = 'True',                help='switch on/off plotting')
 parser.add_option('-w', '--writeData',  dest='writeData', default = 'False',               help='save mc datasets to file')
 parser.add_option('-b', '--Bmom2DRew',  dest='Bmom2DRew', default = 'False',               help='2 dimentional Bmom reweighting switch')
-parser.add_option('-e', '--eqStatBins', dest='eqStatBins',  default = 'False',               help='2 dimentional Bmom reweighting switch')
+parser.add_option('-e', '--eqStatBins', dest='eqStatBins',default = 'False',               help='2 dimentional Bmom reweighting switch')
 (options, args) = parser.parse_args()
 
 # paths and paramteres
@@ -27,6 +29,7 @@ parameterEstimatesName  = lambda n, u: '20112012Reco14DataFitValues_6KKMassBins.
 import subprocess, shlex, select, sys
 processes  = []
 parallelReweighting = True if 'True' in options.paralRew else False
+if '2012' in options.sample and not '2011' in options.sample: parallelReweighting = False
 
 combMomOpt    = ' -cTrue'
 writeOpt      = ' -wTrue' if 'True' in options.writeData else ' -wFalse'
@@ -41,7 +44,7 @@ rewOpts = lambda s, n: '-n%i -s%s -d%s -o%s -b%s -e%s'%( n, s, parameterEstimate
 fitOpts = lambda n:  '-d%s -a%s -i%s -o%s'%( fitData, (correctedAngAccBaseName + str(n)), parameterEstimatesName(n-1,False), parameterEstimatesName(n,False) ) if n!=1 else \
                      '-d%s -a%s -i%s -o%s'%( fitData, (correctedAngAccBaseName + str(n)), parameterEstimates, parameterEstimatesName(n,False) )
 
-# info printing function
+# info printing dictionaries
 rewOptsLegend = {'-c' : 'Combine eff. moments      ',
                  '-w' : 'Write weightied mc to file',
                  '-p' : 'Plot after reweighting    ',
@@ -58,6 +61,7 @@ fitOptsLegend = {'-d' : 'Fiting dataset          ',
                  '-o' : 'Fitted parameters values', 
                  }
 
+# info prining function
 def _info( s, n, opts, what, indent=False ):
     if 'rew' in what:
         indnt = '    ' if indent else ''
@@ -92,32 +96,33 @@ for itNum in whichIterations:
     rew12_Opts = rewOpts( 2012, itNum) + finalIterOpts if itNum==numberOfIterations else rewOpts( 2012, itNum)
 
     # reweight 2011 mc
-    cmd_11 = shlex.split( oneIterationScript + ' ' + rew11_Opts )
-    if parallelReweighting:
-        print '\nP2VV - INFO: Reweighting of mc2011 and mc2012 samples will run in parallel.'
-        _info( '2011', itNum, cmd_11, 'rew', indent=parallelReweighting )
-        sys.stdout.flush()
-        rew_11 = subprocess.Popen(cmd_11, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
-        processes += [ [rew_11, True] ] # append parallel processes to save the output
-    else: 
-        rew_11 = subprocess.call(cmd_11, stdin = None, stdout = None, stderr = subprocess.STDOUT)
-        print
-        _info( '2011', itNum, cmd_11, 'rew' )
-        sys.stdout.flush()
+    if '2011' in options.sample:
+        cmd_11 = shlex.split( oneIterationScript + ' ' + rew11_Opts )
+        if parallelReweighting:
+            print '\nP2VV - INFO: Reweighting of mc2011 and mc2012 samples will run in parallel.'
+            _info( '2011', itNum, cmd_11, 'rew', indent=parallelReweighting )
+            sys.stdout.flush()
+            rew_11 = subprocess.Popen(cmd_11, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
+            processes += [ [rew_11, True] ] # append parallel processes to save the output
+        else: 
+            rew_11 = subprocess.call(cmd_11, stdin = None, stdout = None, stderr = subprocess.STDOUT)
+            print
+            _info( '2011', itNum, cmd_11, 'rew' )
+            sys.stdout.flush()
 
-    # reweight 2012 mc
-    cmd_12 = shlex.split( oneIterationScript + ' ' + rew12_Opts + combMomOpt )
-    _info( '2012', itNum, cmd_12, 'rew', indent=parallelReweighting )
-    sys.stdout.flush()
-    rew_12 = subprocess.call(cmd_12, stdin = None, stdout = None, stderr = subprocess.STDOUT)
-
-    assert False 
+    if '2012' in options.sample:
+        # reweight 2012 mc
+        cmd_12 = shlex.split( oneIterationScript + ' ' + rew12_Opts + combMomOpt )
+        _info( '2012', itNum, cmd_12, 'rew', indent=parallelReweighting )
+        sys.stdout.flush()
+        subprocess.call(cmd_12, stdin = None, stdout = None, stderr = subprocess.STDOUT)
     
     # perform 3fb fit
-    cmdfit = shlex.split( fittingScript + ' ' + fitOpts(itNum) )
-    _info( '', itNum, cmdfit, 'fit' )
-    sys.stdout.flush()
-    fit3fb = subprocess.call(cmdfit, stdin = None, stdout = None, stderr = subprocess.STDOUT)
+    if 'True' in options.fit:
+        cmdfit = shlex.split( fittingScript + ' ' + fitOpts(itNum) )
+        _info( '', itNum, cmdfit, 'fit' )
+        sys.stdout.flush()
+        subprocess.call(cmdfit, stdin = None, stdout = None, stderr = subprocess.STDOUT)
 
 # print the terminal output into a file
 logs = [open('logRew2011_%d' % i, 'w') for i in range(len(processes))]
