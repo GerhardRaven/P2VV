@@ -16,6 +16,7 @@ obj = RooObject( workspace = 'w')
 
 mpsi = RealVar('mpsi', Title = 'J/psi mass', Unit = 'MeV', Observable = True, MinMax = (3025, 3165))
 st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.01, 0.07))
+st.setBins(200, 'cache')
 t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax = (-1, 1))
 
 from P2VV.Parameterizations.SigmatPDFs import DoubleLogNormal
@@ -53,12 +54,11 @@ sig_m = PsiMassPdf(mpsi, Name = 'psi_m', mpsi_alpha_1 = dict(Value = 2, Constant
 one = Component('one', [g1.pdf(), sig_m.pdf(), ln], Yield = (25000, 100, 100000))
 two = Component('two', [g2.pdf(), bkg_m.pdf(), ln], Yield = (25000, 100, 100000))
 
+sig_pdf = buildPdf(Name = 'sig_pdf', Components = [one], Observables = [mpsi, t, st])
+bkg_pdf = buildPdf(Name = 'bkg_pdf', Components = [two], Observables = [mpsi, t, st])
+
 pdf = buildPdf(Name = 'pdf', Components = [one, two], Observables = [mpsi, t, st])
 mass_pdf = buildPdf(Name = 'mass_pdf', Components = [one, two], Observables = [mpsi])
-
-from P2VV.Utilities.Resolution import SplitSigmat
-split = SplitSigmat('', st)
-sigmat_cat = split.split_cats()[0]
 
 ## Fit options
 fitOpts = dict(  Optimize  = 2
@@ -74,7 +74,6 @@ toy.set_fit_opts(**fitOpts)
 from P2VV.ToyMCUtils import SWeightTransform
 toy.set_transform(SWeightTransform(mass_pdf, 'one', fitOpts))
 
-toy.run(Observables = [mpsi, t, st], Time = t, Sigmat = st, SigmatCat = sigmat_cat, Pdf = pdf,
-        SigmaGen = (1.174, 0.143, 2))
+toy.run(Observables = [mpsi, t, st], Time = t, Sigmat = st, Pdf = pdf, SigmaGen = (1.174, 0.143, 2))
 
 toy.write_output()

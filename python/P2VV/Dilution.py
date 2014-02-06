@@ -246,8 +246,9 @@ def dilution_bins(data, t_var, sigmat, sigmat_cat, result = None, signal = [], s
     return total
 
 # Calculate dilution
-def dilution_ft(t_var, data, t_range = None, parameters = None, signal = [], subtract = [],
-                raw = False, simultaneous = False, n_bins = 512, st = None, mean_param = None):
+def dilution_ft(data, t_var, t_range = None, parameters = None, signal = [], subtract = [],
+                raw = False, simultaneous = False, n_bins = 512, st = None, mean_param = None,
+                quiet = False):
     if mean_param: assert(st)
 
     from ROOT import RooBinning
@@ -318,7 +319,7 @@ def dilution_ft(t_var, data, t_range = None, parameters = None, signal = [], sub
 
         # Calculate the dilution using Wouter's macro
         from P2VV.Load import P2VVLibrary
-        return sigmaFromFT(ft_histo, 17.768, 0.024)
+        return sigmaFromFT(ft_histo, 17.768, 0.024, quiet)
     else:
         from ROOT import TCanvas
         ft_canvas = TCanvas('ft_canvas', 'ft_canvas', 1200, 400)
@@ -396,7 +397,7 @@ def dilution_ft(t_var, data, t_range = None, parameters = None, signal = [], sub
 
     # Calculate the dilution using Wouter's macro
     from P2VV.Load import P2VVLibrary
-    return sigmaFromFT(ft_histo, 17.768, 0.024)
+    return sigmaFromFT(ft_histo, 17.768, 0.024, quiet)
 
 def dilution(data, sfs, calib = None, error_fun = None):
     """

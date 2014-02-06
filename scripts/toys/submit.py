@@ -67,7 +67,7 @@ j.postprocessors = [CustomMerger(
 
 # Add the splitter
 args = ['dilution_weights.py', '--ncpu=1', '-n',
-        '2', '--nevents=100000', '-s', 'snapshot.tar.bz2']
+        '100', '--nevents=100000', '-s', 'snapshot.tar.bz2']
 j.splitter = GenericSplitter(
     attribute = 'application.args',
     values = [args for i in range(10)]
