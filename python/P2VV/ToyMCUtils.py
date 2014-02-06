@@ -309,7 +309,7 @@ class DilutionToy(Toy):
                     continue
 
             from P2VV import Dilution
-            d_ft = Dilution.dilution_ft(data, time, t_range = 2, True)
+            d_ft = Dilution.dilution_ft(data, time, t_range = 2, quiet = True)
             d_a = Dilution.signal_dilution_dg(data, sigmat, *sigma_gen)
             da.setVal(d_a[0])
             da.setError(d_a[1] if d_a[1] != None else 0.)
