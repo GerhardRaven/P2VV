@@ -30,18 +30,21 @@ def fitAverageExpToHist(hist,knots, tau) :
     return coefficients
 
 class BinCounter(object):
-    def __init__(self, data, time, binning):
+    def __init__(self, data, time, binning, weightSquared = False):
         self.__data = data
         self.__time = data.get().find(time.GetName())
         self.__binning = binning
+        self.__wSq = weightSquared
 
         from collections import defaultdict
         self.__levels = defaultdict(dict)
+        self.__levelsSq = defaultdict(dict)
         self.__categories = defaultdict(set)
         
     def add_bins(self, level, cat_def):
         d = sorted(['{0} == {0}::{1}'.format(c, s) for c, s in cat_def.iteritems()])
         self.__levels[level][tuple(d)] = self.__binning.numBins() * [0.]
+        self.__levelsSq[level][tuple(d)] = self.__binning.numBins() * [0.]
         self.__categories[level] |= set(cat_def.iterkeys())
         
     def run(self):
@@ -56,13 +59,22 @@ class BinCounter(object):
                 if k not in self.__levels[level]:
                     continue
                 self.__levels[level][k][b] += self.__data.weight()
+                if self.__wSq :
+                    self.__levelsSq[level][k][b] += self.__data.weight()**2
 
     def get_bins(self, level, cat_def):
         k = tuple(sorted(['{0} == {0}::{1}'.format(c, s) for c, s in cat_def.iteritems()]))
         return self.__levels[level][k]
 
+    def get_binsSq(self, level, cat_def):
+        k = tuple(sorted(['{0} == {0}::{1}'.format(c, s) for c, s in cat_def.iteritems()]))
+        return self.__levelsSq[level][k]
+
     def levels(self):
         return self.__levels
+
+    def levelsSq(self):
+        return self.__levelsSq
 
     def categories(self):
         return self.__categories
@@ -380,6 +392,7 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
             constraint_name = '_'.join([e for e in (prefix, level, 'multinomial') if e])
             constraints.add(EffConstraint(Name = constraint_name, **args))
         return constraints
+
     def shapes(self):
         return [self._shape]
 
