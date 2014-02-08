@@ -123,8 +123,8 @@ mcDataMngr['iterationNumber'] = iterNumb
 # match B momentum and / or mkk, (with different order)
 if reweightBmomentum and reweightMkk:
     assert len(options.rewSteps.replace('_',' ').split()) >= 2, 'P2VV - ERROR: Cannot process reweighitng steps option (-o). Provide string with spaces'
-    if 'Bmom' in options.rewSteps.split()[0]:
-        BmomentumWeights = TwoDimentionalVerticalReweighting( source(), target, BmomBins, ['B_P','B_Pt'], equalStatBins=equalStatBins ) if twoDimensionalBmomRew else \
+    if 'Bmom' in options.rewSteps.replace('_',' ').split()[0]:
+        BmomentumWeights = TwoDimentionalVerticalReweighting( source(), target, [BmomBins,80], ['B_P','B_Pt'], equalStatBins=equalStatBins ) if twoDimensionalBmomRew else \
                            OneDimentionalVerticalReweighting( source(), target, BmomBins, 'B_P', equalStatBins=equalStatBins )
         mcDataMngr.appendWeights( BmomentumWeightsName, BmomentumWeights, scale = scaleWeightsToNumEntr )
         
@@ -134,13 +134,13 @@ if reweightBmomentum and reweightMkk:
         mKKweights = OneDimentionalVerticalReweighting( source(), target, mkkBins, 'mdau2', equalStatBins=equalStatBins )
         mcDataMngr.appendWeights( mKKWeightsName, mKKweights, scale = scaleWeightsToNumEntr )
 
-        BmomentumWeights = TwoDimentionalVerticalReweighting( source(), target, BmomBins, ['B_P','B_Pt'], equalStatBins=equalStatBins ) if twoDimensionalBmomRew else \
+        BmomentumWeights = TwoDimentionalVerticalReweighting( source(), target, [BmomBins,80], ['B_P','B_Pt'], equalStatBins=equalStatBins ) if twoDimensionalBmomRew else \
                            OneDimentionalVerticalReweighting( source(), target, BmomBins, 'B_P', equalStatBins=equalStatBins )
         mcDataMngr.appendWeights( BmomentumWeightsName, BmomentumWeights, scale = scaleWeightsToNumEntr )
 else:
     if reweightBmomentum:
-        BmomentumWeights = TwoDimentionalVerticalReweighting( source(), target, BmomBins, ['B_P','B_Pt'], equalStatBins=equalStatBins ) if twoDimensionalBmomRew else \
-            OneDimentionalVerticalReweighting( source(), target, BmomBins, 'B_P', equalStatBins=equalStatBins )
+        BmomentumWeights = TwoDimentionalVerticalReweighting( source(), target, [BmomBins,80], ['B_P','B_Pt'], equalStatBins=equalStatBins ) if twoDimensionalBmomRew else \
+                           OneDimentionalVerticalReweighting( source(), target, BmomBins, 'B_P', equalStatBins=equalStatBins )
         mcDataMngr.appendWeights( BmomentumWeightsName, BmomentumWeights, scale = scaleWeightsToNumEntr )
     if reweightMkk:
         mKKweights = OneDimentionalVerticalReweighting( source(), target, mkkBins, 'mdau2', equalStatBins=equalStatBins )
@@ -154,7 +154,7 @@ if reweightPhysics:
 
 # match KK momenta
 if reweightKKmom and RewApproach == 'vertical':
-    KKMomWeights = TwoDimentionalVerticalReweighting( source(), target, KKmomBins, ['Kplus_P','Kminus_P'], equalStatBins=equalStatBins, combWeights=False if KKmomWeightsOnly else True ) # ,xCheckPlots=True )
+    KKMomWeights = TwoDimentionalVerticalReweighting( source(), target, 2*[KKmomBins], ['Kplus_P','Kminus_P'], equalStatBins=equalStatBins, combWeights=False if KKmomWeightsOnly else True ) # ,xCheckPlots=True )
     mcDataMngr.appendWeights( KmomentaWeightsName, KKMomWeights, scale = scaleWeightsToNumEntr )
 elif reweightKKmom and RewApproach == 'horizontal':
     KKmomentaReweight = MatchWeightedDistributions( outTree        = target, # Target: Distribution to be matched with
@@ -219,10 +219,10 @@ if combineEffMoments:
 if makePlots: 
     from P2VV.Utilities.MCReweighting import plotingScenarios, weightNamesDataKeysMap
     plot = True
-    try: plotingScenarios[options.rewSteps]
+    try: plotingScenarios[options.rewSteps.replace('_','')]
     except KeyError: plot = False         
     if plot:
-        for keys in plotingScenarios[options.rewSteps]:
+        for keys in plotingScenarios[options.rewSteps.replace('_','')]:
             dataSets = { keys[0]: mcDataMngr.getDataSet(weightNamesDataKeysMap[ keys[0] ]),
                          keys[1]: mcDataMngr.getDataSet(weightNamesDataKeysMap[ keys[1] ])
                          }

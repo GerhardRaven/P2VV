@@ -284,7 +284,7 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     iterIdx        = kwargs.pop('iterationNumber',   0   )
     plot           = kwargs.pop('xCheckPlots',     False )
     equalStatsBins = kwargs.pop('equalStatBins',   False )
-    combineWeights = kwargs.pop('combWeights',     True  )
+    combineWeights = kwargs.pop('combWeights',     False )
 
     from ROOT import TH2D, TH1D, TCanvas
   
@@ -297,7 +297,7 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     xMax, yMax = RooObject._rooobject(var[0]).getMax(), RooObject._rooobject(var[1]).getMax()
         
     # import / create binning
-    print 'P2VV - INFO: TwoDimentionalVerticalReweighting: Using %s binnning with %sx%s bins.'%('almost equal statistics' if equalStatsBins else 'uniform',nbins,nbins)
+    print 'P2VV - INFO: TwoDimentionalVerticalReweighting: Using %s binnning with %sx%s bins.'%('almost equal statistics' if equalStatsBins else 'uniform',nbins[0],nbins[1])
     if equalStatsBins: # create equal statistics binning
         from array import array
         
@@ -344,12 +344,12 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
         print 'bincontent:',   binstat
 # END OF TESTING BOX
         
-        sourceHist = TH2D('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, lowboundsX, nbins, lowboundsY )
-        targetHist = TH2D('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, lowboundsX, nbins, lowboundsY )
+        sourceHist = TH2D('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins[0], lowboundsX, nbins[1], lowboundsY )
+        targetHist = TH2D('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins[0], lowboundsX, nbins[1], lowboundsY )
 
     else: # import binning
-        sourceHist = TH2D('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, xMin, xMax, nbins, yMin, yMax )
-        targetHist = TH2D('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, xMin, xMax, nbins, yMin, yMax )
+        sourceHist = TH2D('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins[0], xMin, xMax, nbins[1], yMin, yMax )
+        targetHist = TH2D('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins[0], xMin, xMax, nbins[1], yMin, yMax )
 
     # create 2D histrograms and fill
     #  fill source 2D histogram
@@ -411,10 +411,10 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
             hist.Draw('LEGO')
             canv.Print(canv.GetName() + '_%s.pdf'%iterIdx)
 
-        testS0 = TH1D('%s_Source'%var[0],'test%s_Source'%var[0], nbins, xMin, xMax )
-        testT0 = TH1D('%s_Target'%var[0],'test%s_Target'%var[0], nbins, xMin, xMax )
-        testS1 = TH1D('%s_Source'%var[1],'test%s_Source'%var[1], nbins, yMin, yMax )
-        testT1 = TH1D('%s_Target'%var[1],'test%s_Target'%var[1], nbins, yMin, yMax )
+        testS0 = TH1D('%s_Source'%var[0],'test%s_Source'%var[0], nbins[0], xMin, xMax )
+        testT0 = TH1D('%s_Target'%var[0],'test%s_Target'%var[0], nbins[0], xMin, xMax )
+        testS1 = TH1D('%s_Source'%var[1],'test%s_Source'%var[1], nbins[1], yMin, yMax )
+        testT1 = TH1D('%s_Target'%var[1],'test%s_Target'%var[1], nbins[1], yMin, yMax )
         source0, source1, = [], []
         for ev in source: 
             source0 += [ _valX(ev) ]
@@ -460,7 +460,7 @@ def OneDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     iterIdx        = kwargs.pop('iterationNumber',     0 )
     plot           = kwargs.pop('xCheckPlots',     False )
     equalStatsBins = kwargs.pop('equalStatBins',   False )
-    combineWeights = kwargs.pop('combWeights',     True  )
+    combineWeights = kwargs.pop('combWeights',     False )
 
     from ROOT import TH1D, TCanvas
 
@@ -508,7 +508,7 @@ def OneDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
             sourceHist.Fill( _valX(evnt), source.weight() )
             sourcePreviousWeights += [ source.weight() ]
     else: 
-        for evnt in source: sourceHist.Fill( _valX(evnt), 1 )
+        for evnt in source: sourceHist.Fill( _valX(evnt), source.weight() )
     # fill target 2D histogram
     for evnt in target: targetHist.Fill( _valX(evnt), target.weight() )
        
@@ -588,7 +588,7 @@ class WeightedDataSetsManager(dict):
 
         print 'P2VV - INFO: WeightedDataSetsManager: Initialsed for sample %s.'%self['initSource'].GetName()
 
-    def appendWeights( self, weightsName, weightsList, combWithPrevious = False, scale = False ):
+    def appendWeights( self, weightsName, weightsList, combWithPrevious = False, scale = True ):
         # check if the weights is of numpy type array
         import numpy
         if not type(weightsList)==numpy.ndarray: weightsList = numpy.array(weightsList)
