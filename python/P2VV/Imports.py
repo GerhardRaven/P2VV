@@ -10,8 +10,41 @@
 # parameter names dictionary:  'P2VV internal name' : ( 'text name', 'LaTeX name' )
 parNames = {  'phiCP'                     : ( 'phi_s',                       '$\\phi_\\text{s}$'                          )
             , '__phiCP__'                 : ( 'phi_s (b)',                   '$\\phi_\\text{s}$ (b)'                      )
+            , 'phiCPAv'                   : ( 'phi_s^av',                    '$\\phi_\\text{s}^\\text{av}$'               )
+            , '__phiCPAv__'               : ( 'phi_s^av (b)',                '$\\phi_\\text{s}^\\text{av}$ (b)'           )
+            , 'phiCP_A0'                  : ( 'phi_s^0',                     '$\\phi_\\text{s}^0$'                        )
+            , '__phiCP_A0__'              : ( 'phi_s^0 (b)',                 '$\\phi_\\text{s}^0$ (b)'                    )
+            , 'phiCP_Apar'                : ( 'phi_s^para',                  '$\\phi_\\text{s}^\\parallel$'               )
+            , '__phiCP_Apar__'            : ( 'phi_s^para (b)',              '$\\phi_\\text{s}^\\parallel$ (b)'           )
+            , 'phiCP_Aperp'               : ( 'phi_s^perp',                  '$\\phi_\\text{s}^\\perp$'                   )
+            , '__phiCP_Aperp__'           : ( 'phi_s^perp (b)',              '$\\phi_\\text{s}^\\perp$ (b)'               )
+            , 'phiCP_AS'                  : ( 'phi_s^S',                     '$\\phi_\\text{s}^\\text{S}$'                )
+            , '__phiCP_AS__'              : ( 'phi_s^S (b)',                 '$\\phi_\\text{s}^\\text{S}$ (b)'            )
+            , 'phiCP_m'                   : ( 'phi_s^0',                     '$\\phi_\\text{s}^0$'                        )
+            , '__phiCP_m__'               : ( 'phi_s^0 (b)',                 '$\\phi_\\text{s}^0$ (b)'                    )
+            , 'phiCPRel_Apar'             : ( 'Delta phi_s^para',            '$\\Delta \\phi_\\text{s}^\\parallel$'       )
+            , '__phiCPRel_Apar__'         : ( 'Delta phi_s^para (b)',        '$\\Delta \\phi_\\text{s}^\\parallel$ (b)'   )
+            , 'phiCPRel_Aperp'            : ( 'Delta phi_s^perp',            '$\\Delta \\phi_\\text{s}^\\perp$'           )
+            , '__phiCPRel_Aperp__'        : ( 'Delta phi_s^perp (b)',        '$\\Delta \\phi_\\text{s}^\\perp$ (b)'       )
+            , 'phiCPRel_AperpApar'        : ( 'Delta phi_s^perp\'',          '$\\Delta \\phi_\\text{s}^\\perp\'$'         )
+            , '__phiCPRel_AperpApar__'    : ( 'Delta phi_s^perp\' (b)',      '$\\Delta \\phi_\\text{s}^\\perp\'$ (b)'     )
+            , 'phiCPRel_AS'               : ( 'Delta phi_s^S',               '$\\Delta \\phi_\\text{s}^\\text{S}$'        )
+            , '__phiCPRel_AS__'           : ( 'Delta phi_s^S (b)',           '$\\Delta \\phi_\\text{s}^\\text{S}$ (b)'    )
             , 'lambdaCP'                  : ( '|lambda_s|',                  '$|\\lambda_\\text{s}|$'                     )
             , '__lambdaCP__'              : ( '|lambda_s| (b)',              '$|\\lambda_\\text{s}|$ (b)'                 )
+            , 'rhoCP_A0'                  : ( '|lambda_s^0|',                '$|\\lambda_\\text{s}^0|$'                   )
+            , 'rhoCP_Apar'                : ( '|lambda_s^para|',             '$|\\lambda_\\text{s}^\\parallel|$'          )
+            , 'rhoCP_Aperp'               : ( '|lambda_s^perp|',             '$|\\lambda_\\text{s}^\\perp|$'              )
+            , 'rhoCP_AS'                  : ( '|lambda_s^S|',                '$|\\lambda_\\text{s}^\\text{S}|$'           )
+            , 'lambdaCP_A0'               : ( '|lambda_s^0|',                '$|\\lambda_\\text{s}^0|$'                   )
+            , 'lambdaCP_Apar'             : ( '|lambda_s^para|',             '$|\\lambda_\\text{s}^\\parallel|$'          )
+            , 'lambdaCP_Aperp'            : ( '|lambda_s^perp|',             '$|\\lambda_\\text{s}^\\perp|$'              )
+            , 'lambdaCP_AS'               : ( '|lambda_s^S|',                '$|\\lambda_\\text{s}^\\text{S}|$'           )
+            , 'CCP'                       : ( 'C_s',                         '$C_\\text{s}$'                              )
+            , 'CCPAv'                     : ( 'C_s^av',                      '$C_\\text{s}^\\text{av}$'                   )
+            , 'CCPAv_AS'                  : ( 'C_s^avS',                     '$C_\\text{s}^\\text{avS}$'                  )
+            , 'CCPRel_Apar'               : ( 'Delta C_s^para',              '$\\Delta C_\\text{s}^\\parallel$'           )
+            , 'CCPRel_Aperp'              : ( 'Delta C_s^perp',              '$\\Delta C_\\text{s}^\\perp$'               )
             , 'Gamma'                     : ( 'Gamma_s',                     '$\\Gamma_\\text{s}$'                        )
             , 'Gamma_p2011'               : ( 'Gamma_s - beta_2011',         '$\\Gamma_\\text{s} - \\beta_\\{2011}$'      )
             , 'Gamma_p2012'               : ( 'Gamma_s - beta_2012',         '$\\Gamma_\\text{s} - \\beta_\\{2012}$'      )
@@ -20,6 +53,11 @@ parNames = {  'phiCP'                     : ( 'phi_s',                       '$\
             , 'dM'                        : ( 'Delta m_s',                   '$\\Delta m_\\text{s}$'                      )
             , 'A0Mag2'                    : ( '|A_0|^2',                     '$|A_0|^2$'                                  )
             , 'AperpMag2'                 : ( '|A_perp|^2',                  '$|A_\\perp|^2$'                             )
+            , 'avA02'                     : ( 'A^av_0^2',                    '${A^\\text{av}_0}^2$'                       )
+            , 'avAperp2'                  : ( 'A^av_perp^2',                 '${A^\\text{av}_\\perp}^2$'                  )
+            , 'delA02'                    : ( 'Delta A_0^2',                 '$\\Delta A_0^2$'                            )
+            , 'delApar2'                  : ( 'Delta A_para^2',              '$\\Delta A_\\parallel^2$'                   )
+            , 'delAperp2'                 : ( 'Delta A_perp^2',              '$\\Delta A_\\perp^2$'                       )
             , 'f_S'                       : ( 'F_S',                         '$F_\\text{S}$'                              )
             , 'f_S_bin0'                  : ( 'F_S_0',                       '${F_\\text{S}}_0$'                          )
             , 'f_S_bin1'                  : ( 'F_S_1',                       '${F_\\text{S}}_1$'                          )
@@ -27,6 +65,13 @@ parNames = {  'phiCP'                     : ( 'phi_s',                       '$\
             , 'f_S_bin3'                  : ( 'F_S_3',                       '${F_\\text{S}}_3$'                          )
             , 'f_S_bin4'                  : ( 'F_S_4',                       '${F_\\text{S}}_4$'                          )
             , 'f_S_bin5'                  : ( 'F_S_5',                       '${F_\\text{S}}_5$'                          )
+            , 'avf_S'                     : ( 'F_S^av',                      '$F_\\text{S}$'                              )
+            , 'avf_S_bin0'                : ( 'F_S^av_0',                    '${F_\\text{S}}_0$'                          )
+            , 'avf_S_bin1'                : ( 'F_S^av_1',                    '${F_\\text{S}}_1$'                          )
+            , 'avf_S_bin2'                : ( 'F_S^av_2',                    '${F_\\text{S}}_2$'                          )
+            , 'avf_S_bin3'                : ( 'F_S^av_3',                    '${F_\\text{S}}_3$'                          )
+            , 'avf_S_bin4'                : ( 'F_S^av_4',                    '${F_\\text{S}}_4$'                          )
+            , 'avf_S_bin5'                : ( 'F_S^av_5',                    '${F_\\text{S}}_5$'                          )
             , 'AparPhase'                 : ( 'delta_para - delta_0',        '$\\delta_\\parallel-\\delta_0$'             )
             , 'AperpPhase'                : ( 'delta_perp - delta_0',        '$\\delta_\\perp-\\delta_0$'                 )
             , 'ASOddPhase'                : ( 'delta_S - delta_perp',        '$\\delta_\\text{S}-\\delta_\\perp$'         )
@@ -111,53 +156,79 @@ parNames = {  'phiCP'                     : ( 'phi_s',                       '$\
            }
 
 # common parameter names dictionary:  'P2VV internal name' : 'common name'
-commonParNames = {  'phiCP'             : 'phis'
-                  , '__phiCP__'         : 'phis'
-                  , 'phiCP_A0'          : 'phiszero'
-                  , '__phiCP_A0__'      : 'phiszero'
-                  , 'phiCP_Apar'        : 'phispara'
-                  , '__phiCP_Apar__'    : 'phispara'
-                  , 'phiCP_Aperp'       : 'phisperp'
-                  , '__phiCP_Aperp__'   : 'phisperp'
-                  , 'phiCP_AS'          : 'phisS'
-                  , '__phiCP_AS__'      : 'phisS'
-                  , 'lambdaCP'          : 'lambda'
-                  , '__lambdaCP__'      : 'lambda'
-                  , 'rhoCP_A0'          : 'lambdazero'
-                  , '__rhoCP_A0__'      : 'lambdazero'
-                  , 'rhoCP_Apar'        : 'lambdapara'
-                  , '__rhoCP_Apar__'    : 'lambdapara'
-                  , 'rhoCP_Aperp'       : 'lambdaperp'
-                  , '__rhoCP_Aperp__'   : 'lambdaperp'
-                  , 'rhoCP_AS'          : 'lambdaS'
-                  , '__rhoCP_AS__'      : 'lambdaS'
-                  , 'Gamma'             : 'Gamma'
-                  , 'Gamma_p2011'       : 'Gamma_2011'
-                  , 'Gamma_p2012'       : 'Gamma_2012'
-                  , 'dGamma'            : 'DelGam'
-                  , '__dGamma__'        : 'DelGam'
-                  , 'dM'                : 'Delm'
-                  , 'A0Mag2'            : 'AzeroSq'
-                  , 'AperpMag2'         : 'AperpSq'
-                  , 'f_S'               : 'FS'
-                  , 'f_S_bin0'          : 'FS1'
-                  , 'f_S_bin1'          : 'FS2'
-                  , 'f_S_bin2'          : 'FS3'
-                  , 'f_S_bin3'          : 'FS4'
-                  , 'f_S_bin4'          : 'FS5'
-                  , 'f_S_bin5'          : 'FS6'
-                  , 'AparPhase'         : 'delpara'
-                  , 'AperpPhase'        : 'delperp'
-                  , 'ASOddPhase'        : 'delS'
-                  , 'ASOddPhase_bin0'   : 'delS1'
-                  , 'ASOddPhase_bin1'   : 'delS2'
-                  , 'ASOddPhase_bin2'   : 'delS3'
-                  , 'ASOddPhase_bin3'   : 'delS4'
-                  , 'ASOddPhase_bin4'   : 'delS5'
-                  , 'ASOddPhase_bin5'   : 'delS6'
-                  , 'betaTimeEff'       : 'beta'
-                  , 'betaTimeEff_p2011' : 'beta_2011'
-                  , 'betaTimeEff_p2012' : 'beta_2012'
+commonParNames = {  'phiCP'                  : 'phis'
+                  , '__phiCP__'              : 'phis'
+                  , 'phiCPAv'                : 'avphis'
+                  , '__phiCPAv__'            : 'avphis'
+                  , 'phiCP_A0'               : 'phiszero'
+                  , '__phiCP_A0__'           : 'phiszero'
+                  , 'phiCP_Apar'             : 'phispara'
+                  , '__phiCP_Apar__'         : 'phispara'
+                  , 'phiCP_Aperp'            : 'phisperp'
+                  , '__phiCP_Aperp__'        : 'phisperp'
+                  , 'phiCP_AS'               : 'phisS'
+                  , '__phiCP_AS__'           : 'phisS'
+                  , 'phiCP_m'                : 'phiszero'
+                  , '__phiCP_m__'            : 'phiszero'
+                  , 'phiCPRel_Apar'          : 'delphispara'
+                  , '__phiCPRel_Apar__'      : 'delphispara'
+                  , 'phiCPRel_Aperp'         : 'delphisperp'
+                  , '__phiCPRel_Aperp__'     : 'delphisperp'
+                  , 'phiCPRel_AperpApar'     : 'delphisperpprime'
+                  , '__phiCPRel_AperpApar__' : 'delphisperpprime'
+                  , 'phiCPRel_AS'            : 'delphisS'
+                  , '__phiCPRel_AS__'        : 'delphisS'
+                  , 'lambdaCP'               : 'lambda'
+                  , '__lambdaCP__'           : 'lambda'
+                  , 'rhoCP_A0'               : 'lambdazero'
+                  , 'rhoCP_Apar'             : 'lambdapara'
+                  , 'rhoCP_Aperp'            : 'lambdaperp'
+                  , 'rhoCP_AS'               : 'lambdaS'
+                  , 'rhoCP_m'                : 'lambdazero'
+                  , 'lambdaCP_A0'            : 'lambdazero'
+                  , 'lambdaCP_Apar'          : 'lambdapara'
+                  , 'lambdaCP_Aperp'         : 'lambdaperp'
+                  , 'lambdaCP_AS'            : 'lambdaS'
+                  , 'CCPAv'                  : 'avC'
+                  , 'CCPAv_AS'               : 'avCS'
+                  , 'CCPRel_Apar'            : 'delCpara'
+                  , 'CCPRel_Aperp'           : 'delCperp'
+                  , 'Gamma'                  : 'Gamma'
+                  , 'Gamma_p2011'            : 'Gamma_2011'
+                  , 'Gamma_p2012'            : 'Gamma_2012'
+                  , 'dGamma'                 : 'DelGam'
+                  , '__dGamma__'             : 'DelGam'
+                  , 'dM'                     : 'Delm'
+                  , 'A0Mag2'                 : 'AzeroSq'
+                  , 'AperpMag2'              : 'AperpSq'
+                  , 'avA02'                  : 'avAzeroSq'
+                  , 'avAperp2'               : 'avAperpSq'
+                  , 'f_S'                    : 'FS'
+                  , 'f_S_bin0'               : 'FS1'
+                  , 'f_S_bin1'               : 'FS2'
+                  , 'f_S_bin2'               : 'FS3'
+                  , 'f_S_bin3'               : 'FS4'
+                  , 'f_S_bin4'               : 'FS5'
+                  , 'f_S_bin5'               : 'FS6'
+                  , 'avf_S'                  : 'avFS'
+                  , 'avf_S_bin0'             : 'avFS1'
+                  , 'avf_S_bin1'             : 'avFS2'
+                  , 'avf_S_bin2'             : 'avFS3'
+                  , 'avf_S_bin3'             : 'avFS4'
+                  , 'avf_S_bin4'             : 'avFS5'
+                  , 'avf_S_bin5'             : 'avFS6'
+                  , 'AparPhase'              : 'delpara'
+                  , 'AperpPhase'             : 'delperp'
+                  , 'ASOddPhase'             : 'delS'
+                  , 'ASOddPhase_bin0'        : 'delS1'
+                  , 'ASOddPhase_bin1'        : 'delS2'
+                  , 'ASOddPhase_bin2'        : 'delS3'
+                  , 'ASOddPhase_bin3'        : 'delS4'
+                  , 'ASOddPhase_bin4'        : 'delS5'
+                  , 'ASOddPhase_bin5'        : 'delS6'
+                  , 'betaTimeEff'            : 'beta'
+                  , 'betaTimeEff_p2011'      : 'beta_2011'
+                  , 'betaTimeEff_p2012'      : 'beta_2012'
                  }
 
 # nominal values of physics parameters
@@ -189,6 +260,41 @@ parValues = {  'A0Mag2'            : (  5.2101e-01, 3.44e-03, -1 )
              , 'wTagP1OS'          : (  1.0113e+00, 3.44e-02, -1 )
              , 'wTagP1SS'          : (  9.5740e-01, 8.23e-02, -1 )
             }
+
+parValuesCPVDecay = {  'ASOddPhase_bin0'        : (  8.6911e-01, 2.01e-01, -1 )
+                     , 'ASOddPhase_bin1'        : (  2.15913e+00, 2.90e-01, -1 )
+                     , 'ASOddPhase_bin2'        : (  4.9734e-01, 2.14e-01, -1 )
+                     , 'ASOddPhase_bin3'        : ( -3.5862e-01, 1.95e-01, -1 )
+                     , 'ASOddPhase_bin4'        : ( -6.0399e-01, 1.64e-01, -1 )
+                     , 'ASOddPhase_bin5'        : ( -8.8556e-01, 1.47e-01, -1 )
+                     , 'AparPhase'              : (  3.26381e+00, 1.15e-01, -1 )
+                     , 'AperpPhase'             : (  3.16213e+00, 1.17e-01, -1 )
+                     , 'CCPAv'                  : (  1.13358e-02, 3.81e-02, -1 )
+                     , 'CCPAv_AS'               : (  4.66513e-02, 2.90e-02, -1 )
+                     , 'CCPRel_Apar'            : ( -8.7215e-03, 1.20e-01, -1 )
+                     , 'CCPRel_Aperp'           : (  6.0304e-02, 1.63e-01, -1 )
+                     , 'Gamma'                  : (  6.61237e-01, 5.99e-03, -1 )
+                     , '__dGamma__'             : (  8.7100e-02, 9.18e-03, -1 )
+                     , '__phiCPAv__'            : (  1.34655e-01, 5.03e-02, -1 )
+                     , '__phiCPRel_AS__'        : ( -2.05711e-01, 6.22e-02, -1 )
+                     , '__phiCPRel_Apar__'      : ( -1.35727e-01, 4.14e-02, -1 )
+                     , '__phiCPRel_AperpApar__' : (  9.9645e-02, 2.48e-02, -1 )
+                     , 'avA02'                  : (  5.2095e-01, 3.45e-03, -1 )
+                     , 'avAperp2'               : (  2.53186e-01, 4.98e-03, -1 )
+                     , 'avf_S_bin0'             : (  4.41733e-01, 5.48e-02, -1 )
+                     , 'avf_S_bin1'             : (  5.8722e-02, 1.78e-02, -1 )
+                     , 'avf_S_bin2'             : (  1.03081e-02, 7.03e-03, -1 )
+                     , 'avf_S_bin3'             : (  8.7243e-03, 5.68e-03, -1 )
+                     , 'avf_S_bin4'             : (  4.8540e-02, 1.57e-02, -1 )
+                     , 'avf_S_bin5'             : (  1.89062e-01, 2.57e-02, -1 )
+                     , 'betaTimeEff_p2011'      : ( -8.2595e-03, 4.00e-03, -1 )
+                     , 'betaTimeEff_p2012'      : ( -1.34396e-02, 6.53e-03, -1 )
+                     , 'dM'                     : (  1.77589e+01, 2.23e-02, -1 )
+                     , 'wTagP0OS'               : (  3.87495e-01, 4.25e-03, -1 )
+                     , 'wTagP0SS'               : (  4.50871e-01, 4.65e-03, -1 )
+                     , 'wTagP1OS'               : (  1.01095e+00, 3.44e-02, -1 )
+                     , 'wTagP1SS'               : (  9.61067e-01, 8.26e-02, -1 )
+                    }
 
 parValues20131203 = {  'A0Mag2'            : (  5.2080e-01, 3.45e-03, -1 )
                      , 'ASOddPhase_bin0'   : (  8.2353e-01, 1.85e-01, -1 )

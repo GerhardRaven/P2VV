@@ -21,8 +21,8 @@ dataPath            = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
 
 plotsFile     = 'temp.ps'   #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.ps'
 plotsROOTFile = 'temp.root' #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.root'
-parFileIn     = '20112012Reco14DataFitValues_6KKMassBins.par' # '20112012Reco14DataFitValues_4KKMassBins.par'
-parFileOut    = ( 'parameterEstimates.par', dict( Format = 'common' ) )
+parFileIn     = '20112012Reco14DataFitValues_6KKMassBins.par' # '20112012Reco14DataFitValues_6KKMassBins.par' # '20112012Reco14DataFitValues_6KKMassBins_CPVDecay.par'
+parFileOut    = '' # ( 'polDep_3fb.par', dict( Format = 'common' ) )
 
 if generateData :
     dataSetName = 'JpsiphiData'
@@ -149,7 +149,9 @@ KKMassPars = pdfConfig['obsDict']['KKMass']
 pdfConfig['obsDict']['KKMass'] = ( KKMassPars[0], KKMassPars[1], KKMassPars[2]
                                   , 1020., pdfConfig['KKMassBinBounds'][0], pdfConfig['KKMassBinBounds'][-1] )
 
-pdfConfig['lambdaCPParam'] = 'lambPhi' # 'lambPhi_CPVDecay_PSWaves'  # 'lambPhi'
+pdfConfig['lambdaCPParam'] = 'lambPhi' # 'lambPhi' # 'observables_CPVDecay' # 'lambPhi_CPVDecay' # 'lambPhiRel_CPVDecay' # 'lambPhi_CPVDecay_PSWaves'
+if pdfConfig['lambdaCPParam'] == 'observables_CPVDecay' :
+    pdfConfig['splitParams']['KKMassCat'] = [ 'av' + par if par == 'f_S' else par for par in pdfConfig['splitParams']['KKMassCat'] ]
 
 if 'Parameterization' in pdfConfig['timeEffParameters'] and pdfConfig['timeEffParameters']['Parameterization'] == 'Spline' :
     pdfConfig['splitParams']['hlt1_excl_biased_dec'] = [ 'tagCatCoef0_1' ]
@@ -441,12 +443,10 @@ if pdfConfig['lambdaCPParam'].startswith('lambPhi_CPVDecay') :
 #ws['f_S'].setConstant()
 #ws['ASOddPhase'].setConstant()
 
-#ws['f_S_bin0'].setConstant()
-#ws['f_S_bin1'].setConstant()
-#ws['f_S_bin2'].setConstant()
-#ws['f_S_bin3'].setConstant()
-#ws['f_S_bin4'].setConstant()
-#ws['f_S_bin5'].setConstant()
+#for it in range(6) :
+#    ws[ 'avf_S_bin%d' % it ].setVal(0.)
+#    ws[ 'avf_S_bin%d' % it ].setConstant(True)
+#    ws[ 'ASOddPhase_bin%d' % it ].setConstant(True)
 
 #ws['f_S_bin2'].setVal(0.)
 #ws['f_S_bin2'].setConstant()
@@ -468,14 +468,17 @@ if pdfConfig['lambdaCPParam'].startswith('lambPhi_CPVDecay') :
 #ws['ASOddPhase_bin3'].setMax(6.)
 
 #ws['Gamma'].setVal(0.683)
-#ws['dGamma'].setVal(0.068)
+#ws['dGamma'].setVal(0.)
+#ws['dGamma'].setConstant(True)
 #ws['dM'].setVal(17.500)   #  17.600  17.667  17.700  17.768  17.800
 #ws['A0Mag2'].setVal(0.534)
 #ws['AperpMag2'].setVal(0.238)
 #ws['f_S'].setVal(0.)
 #ws['f_S'].setConstant()
-#ws['AparPhase'].setVal(3.24)
-#ws['AperpPhase'].setVal(3.01)
+#ws['AparPhase'].setVal(pi)
+#ws['AperpPhase'].setVal(pi)
+#ws['AparPhase'].setConstant(True)
+#ws['AperpPhase'].setConstant(True)
 #ws['ASOddPhase'].setVal(0.)
 #ws['ASOddPhase'].setConstant()
 #ws['lambdaCP'].setVal(1.)
@@ -678,7 +681,10 @@ if doFit :
         ampsFitResult.Print()
         ampsFitResult.covarianceMatrix().Print()
 
-    from P2VV.Imports import parNames, parValues
+    if 'CPVDecay' in pdfConfig['lambdaCPParam'] :
+        from P2VV.Imports import parNames, parValuesCPVDecay as parValues
+    else :
+        from P2VV.Imports import parNames, parValues
     print 'JvLFit: parameters:'
     fitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames, ParValues = parValues )
     fitResult.covarianceMatrix().Print()
