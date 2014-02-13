@@ -3,20 +3,21 @@
 ################################
 from optparse import OptionParser
 parser = OptionParser()
-parser.add_option('-r', '--KKmomRew',   dest='KKmomRew',   default = 'vertical',            help='KK momentum reweighting approach (vertical/horizontal)')
-parser.add_option('-o', '--rewSteps',   dest='rewSteps',   default = 'Bmom_mkk_phys_KKmom', help='reweghting steps order')
-parser.add_option('-b', '--Bmom2DRew',  dest='Bmom2DRew',  default = 'False',               help='2 dimentional Bmom reweighting switch')
-parser.add_option('-e', '--eqStatBins', dest='eqStatBins', default = 'False',               help='2 dimentional Bmom reweighting switch')
-parser.add_option('-m', '--sevdaImpmnt',dest='sevdaImpmnt',default = 'True',                help='use only w_pkk weights to calcllate eff. oments')
-parser.add_option('-s', '--MCProd',     dest='MCProd',     default = '2011',                help='choose mc sample ( 2011,2012 )')
-parser.add_option('-n', '--iterNum',    dest='iterNum',    default = 1, type=int,           help='iteration number')
-parser.add_option('-a', '--nomAngAcc',  dest='nomAngAcc',  default = '',                    help='nominal angular acceptance')
-parser.add_option('-d', '--physPars',   dest='physPars',   default = '',                    help='physics aprameters')
-parser.add_option('-f', '--fit',        dest='fit',        default = 'False',               help='switch on/off fitting')
-parser.add_option('-w', '--writeData',  dest='writeData',  default = 'False',               help='save mc datasets to file')
-parser.add_option('-p', '--makePlots',  dest='makePlots',  default = 'False',               help='switch on/off plotting')
-parser.add_option('-c', '--combMoms',   dest='combMoms',   default = 'False',               help='combine 2011,2012 moments')
-parser.add_option('-R', '--reduced',    dest='reduced',    default = 'False',               help='apply a mass cut for a reduced sample')
+parser.add_option('-r', '--KKmomRew',     dest='KKmomRew',     default = 'vertical',            help='KK momentum reweighting approach (vertical/horizontal)')
+parser.add_option('-o', '--rewSteps',     dest='rewSteps',     default = 'Bmom_mkk_phys_KKmom', help='reweghting steps order')
+parser.add_option('-b', '--Bmom2DRew',    dest='Bmom2DRew',    default = 'False',               help='2 dimentional Bmom reweighting switch')
+parser.add_option('-D', '--mkkBmom2DRew', dest='mkkBmom2DRew', default = 'True',                help='2 dimentional mkkBmom reweighting switch')
+parser.add_option('-e', '--eqStatBins',   dest='eqStatBins',   default = 'False',               help='2 dimentional Bmom reweighting switch')
+parser.add_option('-m', '--sevdaImpmnt',  dest='sevdaImpmnt',  default = 'True',                help='use only w_pkk weights to calcllate eff. oments')
+parser.add_option('-s', '--MCProd',       dest='MCProd',       default = '2011',                help='choose mc sample ( 2011,2012 )')
+parser.add_option('-n', '--iterNum',      dest='iterNum',      default = 1, type=int,           help='iteration number')
+parser.add_option('-a', '--nomAngAcc',    dest='nomAngAcc',    default = '',                    help='nominal angular acceptance')
+parser.add_option('-d', '--physPars',     dest='physPars',     default = '',                    help='physics aprameters')
+parser.add_option('-f', '--fit',          dest='fit',          default = 'False',               help='switch on/off fitting')
+parser.add_option('-w', '--writeData',    dest='writeData',    default = 'False',               help='save mc datasets to file')
+parser.add_option('-p', '--makePlots',    dest='makePlots',    default = 'False',               help='switch on/off plotting')
+parser.add_option('-c', '--combMoms',     dest='combMoms',     default = 'False',               help='combine 2011,2012 moments')
+parser.add_option('-R', '--reduced',      dest='reduced',      default = 'False',               help='apply a mass cut for a reduced sample')
 (options, args) = parser.parse_args()
 
 # reweightng flow control
@@ -29,6 +30,7 @@ reweightMkk           = True if 'mkk'   in options.rewSteps else False
 reweightPhysics       = True if 'phys'  in options.rewSteps else False
 reweightKKmom         = True if 'KKmom' in options.rewSteps else False
 twoDimensionalBmomRew = True if 'True'  in options.Bmom2DRew else False
+mkkBmom2DRew          = True if 'True'  in options.mkkBmom2DRew else False
 KKmomWeightsOnly      = True if 'True'  in options.sevdaImpmnt else False
 mkkBins               = 100
 BmomBins              = 200
@@ -123,7 +125,10 @@ mcDataMngr['iterationNumber'] = iterNumb
 # match B momentum and / or mkk, (with different order)
 if reweightBmomentum and reweightMkk:
     assert len(options.rewSteps.replace('_',' ').split()) >= 2, 'P2VV - ERROR: Cannot process reweighitng steps option (-o). Provide string with spaces'
-    if 'Bmom' in options.rewSteps.replace('_',' ').split()[0]:
+    if mkkBmom2DRew: 
+        mkkBmomWeights = TwoDimentionalVerticalReweighting( source(), target, [BmomBins,mkkBins], ['B_P','mdau2'], equalStatBins=equalStatBins )
+        mcDataMngr.appendWeights( BmomentumWeightsName +'_'+mKKWeightsName, mkkBmomWeights, scale = scaleWeightsToNumEntr )
+    elif 'Bmom' in options.rewSteps.replace('_',' ').split()[0]:
         BmomentumWeights = TwoDimentionalVerticalReweighting( source(), target, [BmomBins,80], ['B_P','B_Pt'], equalStatBins=equalStatBins ) if twoDimensionalBmomRew else \
                            OneDimentionalVerticalReweighting( source(), target, BmomBins, 'B_P', equalStatBins=equalStatBins )
         mcDataMngr.appendWeights( BmomentumWeightsName, BmomentumWeights, scale = scaleWeightsToNumEntr )
@@ -219,20 +224,19 @@ if combineEffMoments:
 if makePlots: 
     from P2VV.Utilities.MCReweighting import plotingScenarios, weightNamesDataKeysMap
     plot = True
-    try: plotingScenarios[options.rewSteps.replace('_','')]
+    plotScenarioKey = options.rewSteps.replace('_','') if not mkkBmom2DRew else 'TwoD' + options.rewSteps.replace('_','') 
+    try: case = plotingScenarios[plotScenarioKey]
     except KeyError: plot = False         
     if plot:
-        for keys in plotingScenarios[options.rewSteps.replace('_','')]:
-            dataSets = { keys[0]: mcDataMngr.getDataSet(weightNamesDataKeysMap[ keys[0] ]),
-                         keys[1]: mcDataMngr.getDataSet(weightNamesDataKeysMap[ keys[1] ])
-                         }
+        for dataSetKeys in case:
+            dataSets = {}
+            for data in dataSetKeys: dataSets[data] = mcDataMngr.getDataSet( weightNamesDataKeysMap[data] )
             compPlots = compareDistributions( sData    = target,
                                               obsSet   = angles + time + muMomenta + Kmomenta + Bmomenta + KKMass,
                                               itNumb   = iterNumb,
                                               prodData = MCProd,
                                               **dataSets
                                               )
-
         # plot weights
         plotWeightsList = []
         if (reweightKKmom,RewApproach)==(True,'vertical'):  plotWeightsList += [ KmomentaWeightsName ]    

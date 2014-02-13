@@ -17,11 +17,12 @@ def compareDistributions( **kwargs ):
     obsSet          = kwargs.pop('obsSet',          None)
     itNumb          = kwargs.pop('itNumb',          None)
     nullTest        = kwargs.pop('nullTest',        None)
+    Legend          = kwargs.pop('legend',         False)
     
     # get datasets
     from ROOT import RooFit, RooDataSet
     data = dict( Sdata = kwargs.pop('sData') )
-    for key in [ 'mcData', 'mkkRewData','BmomRewData', 'mcDataPhysRew', 'MomRewData' ]:
+    for key in [ 'mcData', 'mkkRewData','BmomRewData', 'mcDataPhysRew', 'MomRewData', 'BmomMkkRewData' ]:
         if kwargs.has_key(key):
             if kwargs[key]: data[key] = kwargs.pop(key)
     names = ''
@@ -51,22 +52,23 @@ def compareDistributions( **kwargs ):
     referenceHistName = 'h_' + data['Sdata'].GetName() 
 
     # start drawing
-    from ROOT import TCanvas, RooAbsData, TPaveText, kGreen, kMagenta
+    from ROOT import TCanvas, RooAbsData, TPaveText, kGreen, kMagenta, kOrange
     from P2VV.Utilities.Plotting import compareDataSets, makeAssymetryPlot
     from P2VV.Load import LHCbStyle
     from math import pi
 
     # make canvases
-    canvnamesMap = dict(mcData='Init', mcDataPhysRew='Phys', MomRewData='KKmom', Sdata='tar', mkkRewData='mkk', BmomRewData='B' )
-    namePF          = '_' + data.keys()[0] + data.keys()[1] + '_' + kwargs.pop('prodData')
-    obsCanv         = TCanvas('anglesTime_%s'%itNumb + namePF       ,'anglesTime_%s'%itNumb)
-    assymObsCanv    = TCanvas('assymAnglesTime_%s'%itNumb + namePF  ,'assymAnglesTime_%s'%itNumb)
-    KaonCanv        = TCanvas('KaonMomenta_%s'%itNumb + namePF      ,'KaonMomenta_%s'%itNumb)
-    muonCanv        = TCanvas('muonMomenta_%s'%itNumb + namePF      ,'muonMomenta_%s'%itNumb)    
-    assymKaonCanv   = TCanvas('assymKaonMomenta_%s'%itNumb + namePF ,'assymKaonMomenta_%s'%itNumb)
-    assymMuonCanv   = TCanvas('assymmuonMomenta_%s'%itNumb + namePF ,'assymmuonMomenta_%s'%itNumb)
-    KKMassCanv      = TCanvas('KKMass_%s'%itNumb + namePF           ,'KKMass_%s'%itNumb)
-    BmomCanv        = TCanvas('B_P_%s'%itNumb + namePF              ,'B_P_%s'%itNumb)
+    namePF          = '' 
+    for name in data.keys(): namePF += name + '_' 
+    namePF += kwargs.pop('prodData')
+    obsCanv         = TCanvas('anglesTime_%s_'%itNumb + namePF       ,'anglesTime_%s'%itNumb)
+    assymObsCanv    = TCanvas('assymAnglesTime_%s_'%itNumb + namePF  ,'assymAnglesTime_%s'%itNumb)
+    KaonCanv        = TCanvas('KaonMomenta_%s_'%itNumb + namePF      ,'KaonMomenta_%s'%itNumb)
+    muonCanv        = TCanvas('muonMomenta_%s_'%itNumb + namePF      ,'muonMomenta_%s'%itNumb)    
+    assymKaonCanv   = TCanvas('assymKaonMomenta_%s_'%itNumb + namePF ,'assymKaonMomenta_%s'%itNumb)
+    assymMuonCanv   = TCanvas('assymmuonMomenta_%s_'%itNumb + namePF ,'assymmuonMomenta_%s'%itNumb)
+    KKMassCanv      = TCanvas('KKMass_%s_'%itNumb + namePF           ,'KKMass_%s'%itNumb)
+    BmomCanv        = TCanvas('B_P_%s_'%itNumb + namePF              ,'B_P_%s'%itNumb)
     obsCanv.Divide(2,2)
     assymObsCanv.Divide(2,2)
     muonCanv.Divide(4,2)
@@ -77,7 +79,8 @@ def compareDistributions( **kwargs ):
     KKMassCanv.Divide(2,2)
 
     # set some data drawing options
-    colors      = dict(mcData=2, mcDataPhysRew=kGreen+3, MomRewData=4, Sdata=kMagenta+2, mkkRewData=1, BmomRewData=5 )
+    colors      = dict(mcData=2, mcDataPhysRew=kGreen+3, MomRewData=4, Sdata=kMagenta+2, 
+                       mkkRewData=1, BmomRewData=5, BmomMkkRewData = kOrange+8  )
     stdDrawOpts = dict( DataError = RooAbsData.SumW2, MarkerSize = .6, XErrorSize = 0. )
     dataOpts    = dict()    
     for key in colors.keys():
@@ -91,7 +94,7 @@ def compareDistributions( **kwargs ):
         3 * [False] + [True],
         3 * [(-.1,.1),] + [(-3,3)]
         ):
-        print 'P2VV - INFO: compareDistributions: Plotting %s'%obs.GetName()
+        print 'P2VV - INFO: compareDistributions: Plotting %s.'%obs.GetName()
         anglesFrames= compareDataSets( canv, obs, data = data, dataOpts = dataOpts, logy = logY,
                                        frameOpts = dict( Bins = 30 ), 
                                        )
@@ -107,7 +110,7 @@ def compareDistributions( **kwargs ):
         Kmomenta + muMomenta,
         16 * [(-.4,.4),] 
         ):
-        print 'P2VV - INFO: compareDistributions: Plotting %s'%obs.GetName()
+        print 'P2VV - INFO: compareDistributions: Plotting %s.'%obs.GetName()
         momFrame = compareDataSets( canv, obs, data = data, dataOpts = dataOpts,
                                     frameOpts = dict( Bins = 30, Range=trackMomRangeX[obs.GetName()] )
                                     )
@@ -116,44 +119,42 @@ def compareDistributions( **kwargs ):
         makeAssymetryPlot( assymCanv, momFrame, referenceHistName, len(data.keys()), yRange=assymYrange ) 
 
     # plot KKMass
-    if data.has_key('mkkRewData'):
-        print 'P2VV - INFO: compareDistributions: Plotting KKmass.'
-        KKMassFrame = compareDataSets( KKMassCanv.cd(1), KKMass, data = data, dataOpts = dataOpts, frameOpts = dict( Bins = 40 ))
-        # print 'P2VV - INFO: compareDistributions: Creating assymentry plot for KKmass'
-        makeAssymetryPlot( KKMassCanv.cd(2), KKMassFrame, referenceHistName, len(data.keys()) )
+    print 'P2VV - INFO: compareDistributions: Plotting KKmass.'
+    KKMassFrame = compareDataSets( KKMassCanv.cd(1), KKMass, data = data, dataOpts = dataOpts, frameOpts = dict( Bins = 40 ))
+    # print 'P2VV - INFO: compareDistributions: Creating assymentry plot for KKmass'
+    makeAssymetryPlot( KKMassCanv.cd(2), KKMassFrame, referenceHistName, len(data.keys()) )
 
     # plot B_P and B_Pt
-    if data.has_key('BmomRewData'):
-        for pad, obs, rangeY in zip( [1,2], [ B_P,B_Pt], [(0.,5e5),(0.,3e4)] ):
-            # for key in dataOpts.keys(): dataOpts[key]['Binning'] = B_P.getBinning()
-            print 'P2VV - INFO: compareDistributions: Plotting %s'%obs.GetName()
-            BmomFrame = compareDataSets( BmomCanv.cd(pad), obs, data = data, dataOpts = dataOpts, frameOpts = dict( Bins=70, Range=rangeY ))
-            # print 'P2VV - INFO: compareDistributions: Creating assymentry plot for %s'%obs.GetName()
-            makeAssymetryPlot( BmomCanv.cd(pad+2), BmomFrame, referenceHistName, len(data.keys()) )
+    for pad, obs, rangeY in zip( [1,2], [ B_P,B_Pt], [(0.,5e5),(0.,3e4)] ):
+        print 'P2VV - INFO: compareDistributions: Plotting %s.'%obs.GetName()
+        BmomFrame = compareDataSets( BmomCanv.cd(pad), obs, data = data, dataOpts = dataOpts, frameOpts = dict( Bins=70, Range=rangeY ))
+        # print 'P2VV - INFO: compareDistributions: Creating assymentry plot for %s'%obs.GetName()
+        makeAssymetryPlot( BmomCanv.cd(pad+2), BmomFrame, referenceHistName, len(data.keys()) )
 
     # make a legend and draw it
-    legend, assym_legend = TPaveText(.587, .66, .893, .902, 'NDC' ), TPaveText( .269, .247, .569, .489, 'NDC' )
-    for l in [legend,assym_legend]: l.SetFillColor(0)
-    entriesNames = dict(mcData='mcNominal', mcDataPhysRew='mcPhysRew', mkkRewData = 'mcMkkRew', \
-                            MomRewData='mKKMomRew', Sdata='data', BmomRewData = 'mcBmomRew' )
-    for key in ['mcData', 'BmomRewData', 'mcDataPhysRew', 'mkkRewData', 'MomRewData', 'Sdata']:
-        if data.has_key(key):
-            legend.AddText('#color[%s]{%s}'%(colors[key],entriesNames[key]))
-        if data.has_key(key) and key!='Sdata': 
-            assym_legend.AddText('#color[%s]{%s}'%(colors[key],entriesNames[key]))
-    for canv, pad in zip([obsCanv, KaonCanv, muonCanv], [4,8,8]):
-        canv.cd(pad)
+    if Legend:
+        legend, assym_legend = TPaveText(.587, .66, .893, .902, 'NDC' ), TPaveText( .269, .247, .569, .489, 'NDC' )
+        for l in [legend,assym_legend]: l.SetFillColor(0)
+        entriesNames = dict(mcData='mcNominal', mcDataPhysRew='mcPhysRew', mkkRewData = 'mcMkkRew', \
+                                MomRewData='mKKMomRew', Sdata='data', BmomRewData = 'mcBmomRew' )
+        for key in ['mcData', 'BmomRewData', 'mcDataPhysRew', 'mkkRewData', 'MomRewData', 'Sdata']:
+            if data.has_key(key):
+                legend.AddText('#color[%s]{%s}'%(colors[key],entriesNames[key]))
+            if data.has_key(key) and key!='Sdata': 
+                assym_legend.AddText('#color[%s]{%s}'%(colors[key],entriesNames[key]))
+        for canv, pad in zip([obsCanv, KaonCanv, muonCanv], [4,8,8]):
+            canv.cd(pad)
+            legend.Draw()
+        for canv, pad in zip([assymKaonCanv, assymMuonCanv], [8,8]):
+            canv.cd(pad)
+            assym_legend.Draw()
+        KKMassCanv.cd(1)
         legend.Draw()
-    for canv, pad in zip([assymKaonCanv, assymMuonCanv], [8,8]):
-        canv.cd(pad)
-        assym_legend.Draw()
-    KKMassCanv.cd(1)
-    legend.Draw()
-    BmomCanv.cd(1)
-    legend.Draw()
-    _P2VVPlotStash.append(legend)
-    _P2VVPlotStash.append(assym_legend)
-    
+        BmomCanv.cd(1)
+        legend.Draw()
+        _P2VVPlotStash.append(legend)
+        _P2VVPlotStash.append(assym_legend)
+        
     # print canvases in file
     for canv in [obsCanv,KaonCanv,muonCanv,assymObsCanv,assymMuonCanv,assymKaonCanv,KKMassCanv,BmomCanv]: canv.Print(canv.GetName() +  '.pdf')
     return [obsCanv,KaonCanv,muonCanv,assymObsCanv,assymMuonCanv,assymKaonCanv,KKMassCanv,BmomCanv]
@@ -663,7 +664,7 @@ class WeightedDataSetsManager(dict):
         self['latestDataSetPointer'] = weightsName
 
     def plotWeights( self, which = '', Range=() ):
-        from ROOT import TCanvas, TH1F
+        from ROOT import TCanvas, TH1F, gStyle
         from P2VV.Utilities.Plotting import _P2VVPlotStash
 
         which = which if which else self['latestDataSetPointer']
@@ -671,12 +672,13 @@ class WeightedDataSetsManager(dict):
     
         # plot range
         weightsList = self['WeightsLists'][which]        
-        plotRange = ( min(WeightsList), max(WeightsList) ) if not Range else Range    
+        plotRange = ( -3, 3 ) if not Range else Range    
                     
         # create histogram fill and draw
         weghtsHist = TH1F('weights_'+which, 'weights_'+which, 200, plotRange[0], plotRange[1])
         for weight in weightsList: weghtsHist.Fill(weight)
         c.cd()
+        gStyle.SetOptStat("nmruo")
         weghtsHist.SetMarkerSize(.5)
         weghtsHist.Draw('err')
         c.Print( 'weights_%s_.pdf'%which )
@@ -1185,15 +1187,43 @@ trackMomentaRanges = dict(
     )
 
 # bokkeeping dictionaries for plotting
-plotingScenarios = dict( BmommkkphysKKmom = [ ('mcData','BmomRewData'), ('BmomRewData','mkkRewData'), ('mkkRewData','mcDataPhysRew'), ('mcDataPhysRew','MomRewData') ],
-                         BmomphysKKmom    = [ ('mcData','BmomRewData'), ('BmomRewData','mcDataPhysRew'), ('mcDataPhysRew','MomRewData') ],
-                         mkkphysKKmom     = [ ('mcData','mkkRewData'), ('mkkRewData','mcDataPhysRew'), ('mcDataPhysRew','MomRewData') ],
-                         physKKmom        = [ ('mcData','mcDataPhysRew' ), ('mcDataPhysRew','MomRewData') ]
+# plotingScenarios = dict( BmommkkphysKKmom = [ ('mcData','BmomRewData'), ('BmomRewData','mkkRewData'), ('mkkRewData','mcDataPhysRew'), ('mcDataPhysRew','MomRewData') ],
+#                          BmomphysKKmom    = [ ('mcData','BmomRewData'), ('BmomRewData','mcDataPhysRew'), ('mcDataPhysRew','MomRewData') ],
+#                          mkkphysKKmom     = [ ('mcData','mkkRewData'), ('mkkRewData','mcDataPhysRew'), ('mcDataPhysRew','MomRewData') ],
+#                          physKKmom        = [ ('mcData','mcDataPhysRew' ), ('mcDataPhysRew','MomRewData') ]
+#                          )
+
+plotingScenarios = dict( BmommkkphysKKmom     = [ ('mcData','BmomRewData'), 
+                                                ('mcData','BmomRewData','mkkRewData'), 
+                                                ('mcData','BmomRewData','mkkRewData','mcDataPhysRew'), 
+                                                ('mcData','BmomRewData','mkkRewData','mcDataPhysRew','MomRewData')
+                                                  ],
+                         TwoDBmommkkphysKKmom = [ ('mcData','BmomMkkRewData'), 
+                                                  ('mcData','BmomMkkRewData','mcDataPhysRew'), 
+                                                  ('mcData','BmomMkkRewData','mcDataPhysRew','MomRewData')
+                                                  ],
+                         mkkBmomphysKKmom     = [ ('mcData','mkkRewData'), 
+                                                ('mcData','mkkRewData','BmomRewData'),                
+                                                ('mcData','mkkRewData','BmomRewData','mcDataPhysRew') , 
+                                                ('mcData','mkkRewData','BmomRewData','mcDataPhysRew','MomRewData') 
+                                                  ],
+                         BmomphysKKmom        = [ ('mcData','BmomRewData'), 
+                                                ('mcData','BmomRewData','mcDataPhysRew'), 
+                                                ('mcData','BmomRewData','mcDataPhysRew','MomRewData') 
+                                                  ],
+                         mkkphysKKmom         = [ ('mcData','mkkRewData'), 
+                                                ('mcData','mkkRewData','mcDataPhysRew'), 
+                                                ('mcData','mkkRewData','mcDataPhysRew','MomRewData')
+                                                  ],
+                         physKKmom            = [ ('mcData','mcDataPhysRew'), 
+                                                ('mcData','mcDataPhysRew','MomRewData') 
+                                                  ]
                          )
 
-weightNamesDataKeysMap = dict( mcData        = 'initSource', 
-                               mcDataPhysRew = 'phys',
-                               mkkRewData    = 'mKK',
-                               MomRewData    = 'KKmom',
-                               BmomRewData   = 'Bmom'
+weightNamesDataKeysMap = dict( mcData         = 'initSource', 
+                               mcDataPhysRew  = 'phys',
+                               mkkRewData     = 'mKK',
+                               MomRewData     = 'KKmom',
+                               BmomRewData    = 'Bmom',
+                               BmomMkkRewData = 'Bmom_mKK'
                                )
