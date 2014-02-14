@@ -49,6 +49,9 @@ public:
                                                 ,const std::complex<double>& z) const;
 
   const RooArgList& coefficients() const { return _coefList; }
+  const RooArgList& yields() const { return _yieldList; }
+
+  void setYields(const RooArgList& yields) { _yieldList.add(yields); }
 
   // std::list<Double_t>* plotSamplingHint(RooAbsRealLValue& obs, Double_t xlo, Double_t xhi) const;
 
@@ -56,6 +59,7 @@ private:
 
   RooRealProxy _x;
   RooListProxy _coefList ;
+  RooListProxy _yieldList;
   std::vector<double> _u;
 
   Double_t evaluate() const;

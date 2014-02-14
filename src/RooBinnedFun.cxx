@@ -48,7 +48,8 @@ RooBinnedFun::RooBinnedFun(const char* name, const char* title,
                            bool constCoeffs) :
   RooAbsGaussModelEfficiency(name, title),
   _x("x", "Dependent", this, x),
-  _coefList("coefficients","List of coefficients",this)
+  _coefList("coefficients","List of coefficients",this),
+  _yieldList("yields","List of yields",this)
 {
     int nBins = hist->GetNbinsX();
     _u.reserve(nBins+1);
@@ -73,7 +74,8 @@ RooBinnedFun::RooBinnedFun(const char* name, const char* title,
                            const RooArgList& coefList):
   RooAbsGaussModelEfficiency(name, title),
   _x("x", "Dependent", this, x),
-  _coefList("coefficients","List of coefficients",this)
+  _coefList("coefficients","List of coefficients",this),
+  _yieldList("yields","List of yields",this)
 {
   const RooAbsBinning* binning = x.getBinningPtr(binningName);
   assert( binning!=0);
@@ -91,6 +93,7 @@ RooBinnedFun::RooBinnedFun(const RooBinnedFun& other, const char* name) :
   RooAbsGaussModelEfficiency(other, name),
   _x("x", this, other._x),
   _coefList("coefList", this, other._coefList),
+  _yieldList("yields",this, other._yieldList),
   _u(other._u)
 {
 }
