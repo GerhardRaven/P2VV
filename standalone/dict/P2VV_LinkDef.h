@@ -40,6 +40,7 @@
 #pragma link C++ class RooConvertPolAmp+;
 #pragma link C++ class RooIpatia2+;
 #pragma link C++ class RooEffConstraint+;
+#pragma link C++ class RooCombEffConstraint+;
 
 #pragma link off all functions;
 #pragma link C++ function computeRooRealMoments;
