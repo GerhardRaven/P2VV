@@ -364,12 +364,16 @@ parValues2011 = {  'phiCP'           : (  6.9616e-02, 9.09e-02, -1. )
 
 
 # trigger selection strings
-triggerSelStrings = dict(  noSelection    = ''
-                         , HLT1Unbiased   = 'hlt1_unbiased_dec==1 && hlt2_biased==1'
-                         , HLT1ExclBiased = 'hlt1_excl_biased_dec==1 && hlt2_biased==1'
-                         , paper2012      = '(hlt1_excl_biased_dec==1 || hlt1_unbiased_dec==1) && hlt2_biased==1'
-                         , timeEffFit     = '(hlt1_excl_biased_dec==1 || hlt1_unbiased_dec==1) && (hlt2_biased==1 || hlt2_unbiased==1)'
-                         , unbiased       = 'hlt1_unbiased==1 && hlt2_unbiased==1'
+triggerSelStrings = dict(  noSelection        = ''
+                         , HLT1Unbiased       = 'hlt1_unbiased_dec==1 && hlt2_biased==1'
+                         , HLT1Unbiased_tos   = 'hlt1_unbiased==1 && hlt2_biased==1'
+                         , HLT1ExclBiased     = 'hlt1_excl_biased_dec==1 && hlt2_biased==1'
+                         , HLT1ExclBiased_tos = 'hlt1_excl_biased==1 && hlt2_biased==1'
+                         , paper2012          = '(hlt1_excl_biased_dec==1 || hlt1_unbiased_dec==1) && hlt2_biased==1'
+                         , paper2012_tos      = '(hlt1_excl_biased==1 || hlt1_unbiased==1) && hlt2_biased==1'
+                         , timeEffFit         = '(hlt1_excl_biased_dec==1 || hlt1_unbiased_dec==1) && (hlt2_biased==1 || hlt2_unbiased==1)'
+                         , timeEffFit_tos     = '(hlt1_excl_biased==1 || hlt1_unbiased==1) && (hlt2_biased==1 || hlt2_unbiased==1)'
+                         , unbiased           = 'hlt1_unbiased==1 && hlt2_unbiased==1'
                         )
 
 # cut selection strings

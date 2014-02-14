@@ -2,7 +2,7 @@
 ## script settings ##
 #####################
 
-#nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs2JpsiPhi_2011_2012_s20_dv33r6p1_20131217_tupleB_selTrig.root'
+#nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs2JpsiPhi_2011_2012_s20_dv33r6p1_20140213_tupleB_selTrig_TOS.root'
 nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_2014_weighted_add.root'
 #nTupleFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_MC2011_Sim08a_ntupleB_20130909_add.root'
 #nTupleFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_MC2012_ntupleB_20130904_add.root'
@@ -17,7 +17,7 @@ parFileOut       = ''
 simulation       = False
 weightName       = 'pbkgWeight' # 'wMC' # 'pbkgWeight'
 runPeriods       = [ 2011, 2012 ]
-triggerSel       = 'timeEffFit' # 'paper2012' # 'HLT1Unbiased' # 'paper2012'
+triggerSel       = 'timeEffFit_tos' # 'paper2012_tos'
 dataCuts         = 'nominal2011'
 addCuts          = '' # 'hlt2_biased == 1' # 'runPeriod == 2011 && hlt1_excl_biased_dec == 1' # 'wMC > 0.'
 dataSample       = '(bkgcat==0 || bkgcat==50)' if simulation else ''
@@ -77,7 +77,7 @@ KKMMin  = KKMassBinBounds[0]
 KKMMax  = KKMassBinBounds[-1]
 
 obsKeys = [  'sWeights_ipatia', 'wMC', 'runPeriod'
-             #'wMC', 'runPeriod'
+           #  'wMC', 'runPeriod', 'runNumber'
            , 'mass', 'KKMass'#, 'mumuMass'
            , 'time', 'timeRes'
            #, 'truetime'
@@ -86,7 +86,7 @@ obsKeys = [  'sWeights_ipatia', 'wMC', 'runPeriod'
            #, 'wTag', 'tagDec'
            , 'wTagOS'#, 'tagDecOS'
            , 'wTagSS'#, 'tagDecSS'
-           #, 'sel', 'selClTail', 'selA', 'selB'
+           #, 'sel', 'selClTail'#, 'selA', 'selB'
            , 'hlt1ExclB', 'hlt2B', 'hlt2UB'#, 'hlt1B', 'hlt1UB'
            #, 'trigDecUnb', 'trigDecExclB'
            #, 'B_P', 'B_Pt', 'B_eta', 'B_phi'
@@ -101,6 +101,7 @@ if addTrackMomenta :
     obsKeys += [ '%s_P%s' % ( part, comp ) for part in [ 'Kplus', 'Kminus', 'muplus', 'muminus' ] for comp in ( 'X', 'Y', 'Z' ) ]
 
 obsDict = dict(  runPeriod = ( 'runPeriod',            'run period', dict( [ ( 'p%d' % period, period ) for period in runPeriods ] ) )
+               , runNumber = ( 'runNumber',            'run number',              '',          0.,     -RooInf, +RooInf     )
                , wMC       = ( 'wMC',                  'pbkgWeight',              '',          0.,     -RooInf, +RooInf     )
                , mass      = ( 'mass',                 'm(J/#psi K^{+}K^{-})',    'MeV/c^{2}', 5368.,  5200.,   5550.       )
                , mumuMass  = ( 'mdau1',                'm(#mu^{+}#mu^{-})',       'MeV/c^{2}', 3096.,  3030.,   3150.       )
@@ -135,9 +136,11 @@ obsDict = dict(  runPeriod = ( 'runPeriod',            'run period', dict( [ ( '
                , selClTail = ( 'sel_cleantail',        'clean tail sel.', { 'sel'   : 1, 'notSel'   : 0 }                   )
                , selA      = ( 'selA',                 'selection A',     { 'sel'   : 1, 'notSel'   : 0 }                   )
                , selB      = ( 'selB',                 'selection B',     { 'sel'   : 1, 'notSel'   : 0 }                   )
-               , hlt1ExclB = ( 'hlt1_excl_biased_dec', 'HLT1 excl. B.',    { 'exclB' : 1, 'notExclB' : 0 }                  )
+               , hlt1ExclB = ( 'hlt1_excl_biased',     'HLT1 excl. B.',   { 'exclB' : 1, 'notExclB' : 0 }                   )
+               #, hlt1ExclB = ( 'hlt1_excl_biased_dec', 'HLT1 excl. B.',    { 'exclB' : 1, 'notExclB' : 0 }                  )
                , hlt1B     = ( 'hlt1_biased',          'HLT1 B.',          { 'B'     : 1, 'notB'     : 0 }                  )
-               , hlt1UB    = ( 'hlt1_unbiased_dec',    'HLT1 UB.',         { 'UB'    : 1, 'notUB'    : 0 }                  )
+               , hlt1UB    = ( 'hlt1_unbiased',        'HLT1 UB.',         { 'UB'    : 1, 'notUB'    : 0 }                  )
+               #, hlt1UB    = ( 'hlt1_unbiased_dec',    'HLT1 UB.',         { 'UB'    : 1, 'notUB'    : 0 }                  )
                , hlt2B     = ( 'hlt2_biased',          'HLT2 B.',          { 'B'     : 1, 'notB'     : 0 }                  )
                , hlt2UB    = ( 'hlt2_unbiased',        'HLT2 UB.',         { 'UB'    : 1, 'notUB'    : 0 }                  )
                , trigDecUnb                 = ( 'triggerDecisionUnbiased',   'trigDecUnb',   { 'UB'    : 1, 'notUB'    : 0 } )
@@ -293,10 +296,12 @@ print 'P2VV - INFO: createB2CCDataSet: data set from n-tuple:\n' + ' ' * 13,
 dataSets['pre'][0].Print()
 print
 
-#selDataFile = TFile.Open( '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs2JpsiPhi_2011_2012_s20_dv33r6p1_20131217_tupleB_selTrig.root', 'RECREATE' )
+#selDataFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs2JpsiPhi_2011_2012_s20_dv33r6p1_20140213_tupleB_selTrig_TOS.root'
+#selDataFile = TFile.Open( selDataFilePath, 'RECREATE' )
 #selDataTree = dataTree.CopyTree(ntupleCuts)
 #print 'P2VV - INFO: selected number of entries in tree = %d' % selDataTree.GetEntries()
-#selDataFile.Write()
+#from ROOT import TObject
+#selDataFile.Write( selDataFilePath, TObject.kOverwrite )
 #selDataFile.Close()
 #assert False
 
