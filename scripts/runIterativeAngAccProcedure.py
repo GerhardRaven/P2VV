@@ -8,8 +8,10 @@ parser.add_option('-s', '--sample',     dest='sample',    default = '20112012', 
 parser.add_option('-f', '--fit',        dest='fit',       default = 'True',                help='switch on/off fitting')
 parser.add_option('-o', '--rewSteps',   dest='rewSteps',  default = 'Bmom_mkk_phys_KKmom', help='reweghting steps order')
 parser.add_option('-r', '--paralRew',   dest='paralRew',  default = 'True',                help='switch on/off plotting')
+parser.add_option('-m', '--sevdaImpmnt',dest='sevdaImpmnt',default = 'True',                help='use only w_pkk weights to calcllate eff. oments')
 parser.add_option('-w', '--writeData',  dest='writeData', default = 'False',               help='save mc datasets to file')
 parser.add_option('-b', '--Bmom2DRew',  dest='Bmom2DRew', default = 'False',               help='2 dimentional Bmom reweighting switch')
+parser.add_option('-D', '--BmomMkk2D',  dest='BmomMkk2D', default = 'False',               help='2 dimentional (Bmom,mkk) reweighting switch')
 parser.add_option('-e', '--eqStatBins', dest='eqStatBins',default = 'False',               help='2 dimentional Bmom reweighting switch')
 (options, args) = parser.parse_args()
 
@@ -31,16 +33,18 @@ processes  = []
 parallelReweighting = True if 'True' in options.paralRew else False
 if '2012' in options.sample and not '2011' in options.sample: parallelReweighting = False
 
-combMomOpt    = ' -cTrue'
-writeOpt      = ' -wTrue' if 'True' in options.writeData else ' -wFalse'
-plotOpt       = ' -pTrue' if 'True' in options.makePlots else ' -pFalse'
-Bmom2DRewOpt  = True if 'True' in options.Bmom2DRew else False
-equalStatBins = True if 'True' in options.eqStatBins else False
-rewSpetOpt    = options.rewSteps 
-finalIterOpts = ' ' + plotOpt + writeOpt
+combMomOpt     = ' -cTrue'
+writeOpt       = ' -wTrue' if 'True' in options.writeData else ' -wFalse'
+plotOpt        = ' -pTrue' if 'True' in options.makePlots else ' -pFalse'
+Bmom2DRewOpt   = True if 'True' in options.Bmom2DRew else False
+BmomMkk2DRew   = True if 'True' in options.BmomMkk2D else False
+equalStatBins  = True if 'True' in options.eqStatBins else False
+KKmomWghtsOnly = True if 'True' in options.sevdaImpmnt else False
+rewSpetOpt     = options.rewSteps 
+finalIterOpts  = ' ' + plotOpt + writeOpt
 
-rewOpts = lambda s, n: '-n%i -s%s -d%s -o%s -b%s -e%s'%( n, s, parameterEstimatesName(n-1,True), rewSpetOpt, Bmom2DRewOpt, equalStatBins ) if n!=1 else \
-                       '-n%i -s%s -d%s -o%s -b%s -e%s'%( 1, s, parameterEstimates.replace('.par','_unbl.par'), rewSpetOpt, Bmom2DRewOpt, equalStatBins )
+rewOpts = lambda s, n: '-n%i -s%s -d%s -o%s -b%s -e%s -m%s -D%s'%( n, s, parameterEstimatesName(n-1,True), rewSpetOpt, Bmom2DRewOpt, equalStatBins, KKmomWghtsOnly, BmomMkk2DRew ) if n!=1 else \
+                       '-n%i -s%s -d%s -o%s -b%s -e%s -m%s -D%s'%( 1, s, parameterEstimates.replace('.par','_unbl.par'), rewSpetOpt, Bmom2DRewOpt, equalStatBins, KKmomWghtsOnly, BmomMkk2DRew )
 fitOpts = lambda n:  '-d%s -a%s -i%s -o%s'%( fitData, (correctedAngAccBaseName + str(n)), parameterEstimatesName(n-1,False), parameterEstimatesName(n,False) ) if n!=1 else \
                      '-d%s -a%s -i%s -o%s'%( fitData, (correctedAngAccBaseName + str(n)), parameterEstimates, parameterEstimatesName(n,False) )
 
@@ -53,7 +57,9 @@ rewOptsLegend = {'-c' : 'Combine eff. moments      ',
                  '-d' : 'Input physics parameters  ',
                  '-o' : 'Reweighting steps         ',
                  '-b' : '2D B(p,p_T) reweighting   ',
-                 '-e' : 'Equal statistics binning  '
+                 '-e' : 'Equal statistics binning  ',
+                 '-m' : 'Reweight with w_pkk only  ',
+                 '-D' : 'Reweight (B_p,mkk) in 2D  '
                  }
 fitOptsLegend = {'-d' : 'Fiting dataset          ', 
                  '-a' : 'Input angular acceptance', 

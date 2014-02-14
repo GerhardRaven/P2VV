@@ -326,7 +326,7 @@ def getCondObsPlotsInKKbins(pdf, data, canv):
     return canv
 
 
-def compareDataSets( canv, obs, data={}, dataOpts={}, frameOpts={}, logy=False, RangeY=[], titleY='' ):
+def compareDataSets( canv, obs, data={}, dataOpts={}, frameOpts={}, logy=False, RangeY=[], titleY='', statOn=True ):
     """ Superimpose RooDataSets
     example usage:  compareDistributions(     data = dict( dataSet1   = mcBefore
                                                            dataSet2   = mcAfter                                  ),
@@ -386,18 +386,6 @@ def makeAssymetryPlot( canv, frame, refHist, numOfFrames, yRange=[] ):
     if not hRef: assert False, 'P2VV - ERROR: makeAssymetryPlot(): Cannot find reference histogram.'
     HistList.remove(hRef)
     
-    # get bin content and errors of reference histogram
-    ylistRef = hRef.GetY()
-    yErrHRef = hRef.GetEYhigh()
-    yErrLRef = hRef.GetEYlow()
-
-    # functions for error caclulation 
-    from array import array
-    from math import sqrt
-    _l2a      = lambda List: array('d', List) # python list to array
-    _assym    = lambda x0,x1: (x0-x1) / (x0+x1) # assymetry value
-    _assymErr = lambda x0,e0,x1,e1: 2*sqrt((x1*e1)**2 + (x0*e0)**2) / (x1+x0)**2 # assymentry error
-        
     # get bin content and errors of reference histogram
     ylistRef = hRef.GetY()
     yErrHRef = hRef.GetEYhigh()
