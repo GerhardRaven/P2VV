@@ -157,7 +157,6 @@ def valid_combinations(states):
     all_states = list(set(all_states))
     labels = [[(state, label.GetName()) for label in state] for state in all_states]
     all_combinations = list(product(*labels))
-    valid = []
     def good(combination):
         s = set(combination)
         for level in states:
@@ -175,7 +174,6 @@ def exclusive_combinations(states):
     all_states = [e[0] for e in states]
     labels = [[(state, label.GetName()) for label in state] for state in all_states]
     all_combinations = list(product(*labels))
-    valid = []
     def good(combination):
         s = set(combination)
         r = set(states)

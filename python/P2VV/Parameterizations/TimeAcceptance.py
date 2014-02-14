@@ -393,6 +393,130 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
             constraints.add(EffConstraint(Name = constraint_name, **args))
         return constraints
 
+    def build_poisson_constraints(self, data, observables):
+        # get acceptance parameters and observables
+        from collections import defaultdict
+        binning = self._shape.base_binning()
+        numBins = binning.numBins()
+        coefficients = self._shape.coefficients()
+        constraints = set()
+        effs = defaultdict(dict)
+        obs = dict([(o.GetName(), o) for o in observables.itervalues()])
+
+        # get acceptance-shape parameters
+        from P2VV.RooFitWrappers import RooObject
+        for (pref, cat, state), pars in coefficients.iteritems():
+            level = cat[ : 4]
+            if '%s_poisson' % pref in RooObject._ws._rooobjects: continue
+            effs[(pref, level)][(cat, state)] = pars
+        if not effs: return constraints
+
+        # get trigger categories
+        assert len(effs) == 2 and effs.keys()[0][0] == effs.keys()[1][0] and effs.keys()[0][1] != effs.keys()[1][1]
+        prefix = effs.keys()[0][0]
+        levels = [k[1] for k in effs.keys()]
+        trigCats = [[cat for cat in sorted(effs[(prefix, lev)].keys())] for lev in levels]
+        if len(trigCats[0]) == 2 and len(trigCats[1]) == 2 and trigCats[1][0][0] == trigCats[1][1][0]:
+            levels = [levels[1], levels[0]]
+            trigCats = [trigCats[1], trigCats[0]]
+        else:
+            assert len(trigCats[0]) == 2 and len(trigCats[1]) == 2 and trigCats[0][0][0] == trigCats[0][1][0]
+        assert all(cat[0] in obs for cats in trigCats for cat in cats)
+        if len(effs[(prefix, levels[0])][trigCats[0][0]]) == numBins and len(effs[(prefix, levels[0])][trigCats[0][1]]) == 1:
+            trigCats[0] = [trigCats[0][1], trigCats[0][0]]
+
+        # get valid combinations of trigger categories and sums of (squared) weights for each combination
+        from P2VV.Parameterizations.GeneralUtils import valid_combinations
+        self.__bc = BinCounter(data, obs['time'], binning, True)
+        validStates = valid_combinations([[(obs[c], s) for c, s in effs[(prefix, levels[0])].iterkeys()],
+                                         [(obs[c], s) for c, s in effs[(prefix, levels[1])].iterkeys()]])
+        assert len(validStates) == 6
+        catStates = {}
+        combCats = ['1A2A', '1A2B', '1A2AB', '1B2A', '1B2B', '1B2AB']
+        for states in validStates:
+            stDict = {}
+            if prefix and '_' in prefix and prefix.split('_')[0] in observables:
+                stDict.update(dict([prefix.split('_')]))
+            for cat, state in states:
+                stDict[cat.GetName()] = state
+            name = combCats[3 * int(stDict[trigCats[0][1][0]] == trigCats[0][1][1])\
+                   + 1 * int(stDict[trigCats[1][0][0]] == trigCats[1][0][1]) + 2 * int(stDict[trigCats[1][1][0]] == trigCats[1][1][1]) - 1]
+            catStates[name] = stDict
+            self.__bc.add_bins('all', stDict)
+        assert all(st for st in catStates.itervalues())
+        self.__bc.run()
+
+        # create a dictionary of constraint arguments
+        constrArgs = dict(Name = '%s_poisson' % prefix, NumBins = numBins, Parameters = {},
+                          SumW = dict([(n, self.__bc.get_bins('all', catStates[n])) for n in combCats]),
+                          SumWSq = dict([(n, self.__bc.get_binsSq('all', catStates[n])) for n in combCats]))
+
+        from P2VV.RooFitWrappers import RealVar
+        constrArgs['Parameters']['nu'] = [RealVar(Name = '%s_yield_bin_%03d' % (prefix, bin+1), Value = 0., MinMax = (0., 1.))\
+                                          for bin in range(numBins)]
+        self._shape.setYields(constrArgs['Parameters']['nu'])
+        constrArgs['Parameters']['eps1A'] = effs[(prefix, levels[0])][trigCats[0][0]]
+        constrArgs['Parameters']['eps1B'] = effs[(prefix, levels[0])][trigCats[0][1]]
+        constrArgs['Parameters']['eps2A'] = effs[(prefix, levels[1])][trigCats[1][0]]
+        constrArgs['Parameters']['eps2B'] = effs[(prefix, levels[1])][trigCats[1][1]]
+        assert all(len(pars) in [1, numBins] for pars in constrArgs['Parameters'].itervalues())
+        for par in constrArgs['Parameters']['eps1A']:
+            if hasattr(par, 'setConstant') : par.setConstant(True)
+
+        # set estimates for the values of the acceptance parameters
+        from math import sqrt
+        eps1ACommon = constrArgs['Parameters']['eps1A'][0].getVal() if len(constrArgs['Parameters']['eps1A']) == 1 else -1.
+        if any(len(constrArgs['Parameters'][k]) == 1 for k in ['eps1B', 'eps2A', 'eps2B']):
+            # set values common to all bins
+            N_1A2A  = sum(constrArgs['SumW']['1A2A'])
+            N_1A2B  = sum(constrArgs['SumW']['1A2B'])
+            N_1A2AB = sum(constrArgs['SumW']['1A2AB'])
+            N_1B2A  = sum(constrArgs['SumW']['1B2A'])
+            N_1B2B  = sum(constrArgs['SumW']['1B2B'])
+            N_1B2AB = sum(constrArgs['SumW']['1B2AB'])
+            if eps1ACommon > 0.:
+                eps1A = eps1ACommon
+            else:
+                sumWTot = 0.
+                eps1A = 0.
+                for bIt in range(numBins):
+                    sumW = sum(constrArgs['SumW'][cat][bIt] for cat in ['1A2A', '1A2B', '1A2AB', '1B2A', '1B2B', '1B2AB'])
+                    sumWTot += sumW
+                    eps1A += sumW * constrArgs['Parameters']['eps1A'][bIt].getVal()
+                eps1A /= sumWTot
+
+            eps1B = (N_1B2A + N_1B2AB) / (N_1A2A + N_1A2AB) * eps1A
+            eps2A = (N_1A2AB + N_1B2AB) / (N_1A2B + N_1B2B + N_1A2AB + N_1B2AB)
+            eps2B = (N_1A2AB + N_1B2AB) / (N_1A2A + N_1B2A + N_1A2AB + N_1B2AB)
+            if len(constrArgs['Parameters']['eps1B']) == 1: constrArgs['Parameters']['eps1B'][0].setVal(eps1B)
+            if len(constrArgs['Parameters']['eps2A']) == 1: constrArgs['Parameters']['eps2A'][0].setVal(eps2A)
+            if len(constrArgs['Parameters']['eps2B']) == 1: constrArgs['Parameters']['eps2B'][0].setVal(eps2B)
+
+        for bIt in range(numBins):
+            # set values for one bin
+            N_1A2A  = constrArgs['SumW']['1A2A'][bIt]
+            N_1A2B  = constrArgs['SumW']['1A2B'][bIt]
+            N_1A2AB = constrArgs['SumW']['1A2AB'][bIt]
+            N_1B2A  = constrArgs['SumW']['1B2A'][bIt]
+            N_1B2B  = constrArgs['SumW']['1B2B'][bIt]
+            N_1B2AB = constrArgs['SumW']['1B2AB'][bIt]
+            eps1A = eps1ACommon if eps1ACommon > 0. else constrArgs['Parameters']['eps1A'][bIt].getVal()
+            nu    = (N_1A2A + N_1A2AB) * (N_1A2B + N_1A2AB) / N_1A2AB / eps1A
+            eps1B = (N_1B2A + N_1B2AB) / (N_1A2A + N_1A2AB) * eps1A
+            eps2A = (N_1A2AB + N_1B2AB) / (N_1A2B + N_1B2B + N_1A2AB + N_1B2AB)
+            eps2B = (N_1A2AB + N_1B2AB) / (N_1A2A + N_1B2A + N_1A2AB + N_1B2AB)
+
+            constrArgs['Parameters']['nu'][bIt].setRange((max(0., nu - 10. * sqrt(nu)), nu + 10. * sqrt(nu)))
+            constrArgs['Parameters']['nu'][bIt].setVal(nu)
+            if len(constrArgs['Parameters']['eps1B']) == numBins: constrArgs['Parameters']['eps1B'][bIt].setVal(eps1B)
+            if len(constrArgs['Parameters']['eps2A']) == numBins: constrArgs['Parameters']['eps2A'][bIt].setVal(eps2A)
+            if len(constrArgs['Parameters']['eps2B']) == numBins: constrArgs['Parameters']['eps2B'][bIt].setVal(eps2B)
+
+        # create Poisson constraint
+        from P2VV.RooFitWrappers import CombEffConstraint
+        constraints.add(CombEffConstraint(**constrArgs))
+        return constraints
+
     def shapes(self):
         return [self._shape]
 

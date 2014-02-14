@@ -244,10 +244,11 @@ class Bs2Jpsiphi_PdfConfiguration( PdfConfiguration ) :
         self['timeResType']        = ''               # '' / 'event' / 'eventNoMean' / 'eventConstMean' / '3Gauss' / 'event3fb'
         self['constrainTResScale'] = ''               # '' / 'constrain' / 'fixed'
         self['timeEffType']        = 'paper2012'      # 'HLT1Unbiased' / 'HLT1ExclBiased' / 'paper2012' / 'fit'
-        self['timeEffConstraintType'] = 'multinomial' # 'multinomial' / 'average'
+        self['timeEffConstraintType'] = 'poisson'     # 'poisson' / 'multinomial' / 'average'
         self['constrainDeltaM']    = ''               # '' / 'constrain' / 'fixed'
 
         self['timeEffHistFiles']  = { }
+        self['timeEffData']       = dict( file = 'timeEffData.root', name = 'JpsiKK_sigSWeight' )
         self['timeEffParameters'] = { }
 
         self['transAngles']     = False        # use transversity angles?
@@ -596,8 +597,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         # get some build parameters
         for par in [ 'sFit', 'KKMassBinBounds', 'obsDict', 'CSPValues', 'condTagging', 'contEstWTag', 'SSTagging', 'transAngles'
                     , 'numEvents', 'sigFrac', 'paramKKMass', 'amplitudeParam', 'ASParam', 'signalData', 'fitOptions', 'parNamePrefix'
-                    , 'tagPdfType', 'timeEffType', 'timeEffHistFiles', 'timeEffParameters', 'anglesEffType', 'angEffMomsFiles'
-                    , 'readFromWS', 'splitParams', 'externalConstr', 'runPeriods', 'timeEffConstraintType' ] :
+                    , 'tagPdfType', 'timeEffType', 'timeEffHistFiles', 'timeEffData', 'timeEffParameters', 'anglesEffType'
+                    , 'angEffMomsFiles', 'readFromWS', 'splitParams', 'externalConstr', 'runPeriods', 'timeEffConstraintType' ] :
             self[par] = getKWArg( self, { }, par )
 
         from P2VV.Parameterizations.GeneralUtils import setParNamePrefix, getParNamePrefix
@@ -974,8 +975,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         splitParsDict         = getKWArg( self, kwargs, 'splitParsDict' )
         pdf                   = getKWArg( self, kwargs, 'pdf' )
         simulPdf              = getKWArg( self, kwargs, 'simulPdf' )
+        timeEffData           = getKWArg( self, kwargs, 'timeEffData' )
         timeEffConstraintType = getKWArg( self, kwargs, 'timeEffConstraintType' )
-        data                  = getKWArg( self, kwargs, 'signalData' )
         observables           = getKWArg( self, kwargs, 'observables' )
 
         from P2VV.Parameterizations.GeneralUtils import getParNamePrefix
@@ -1005,10 +1006,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                     ]
                                     )
                                )
-        if timeEffConstraintType == 'multinomial':
-            constraints |= self.__multinomial_eff_constraints(externalConstr, simulPdf,
-                                                              data, observables)
-        elif timeEffConstraintType == 'average':
+        if 'acceptance' in externalConstr and timeEffConstraintType in [ 'poisson', 'multinomial' ] :
+            from P2VV.Utilities.DataHandling import readData
+            data = readData( filePath = timeEffData['file'], dataSetName = timeEffData['name'],  NTuple = False, ImportIntoWS = False )
+            constraints |= self.__eff_constraints(externalConstr, simulPdf, data, observables, timeEffConstraintType)
+            del data
+        elif 'acceptance' in externalConstr and timeEffConstraintType == 'average':
             constraints |= self.__av_eff_constraints(externalConstr)
 
         ws = pdf.ws()
@@ -1052,19 +1055,20 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                     
         pdf['ExternalConstraints'] = pdf['ExternalConstraints'] | constraints
 
-    def __multinomial_eff_constraints(self, externalConstr, simulPdf, data, observables):
+    def __eff_constraints(self, externalConstr, simulPdf, data, observables, type):
         # Time res model constraints include those form the acceptance
         constraints = set()
         acc_settings = externalConstr.pop('acceptance', None)
+        buildFunc = 'build_poisson_constraints' if type == 'poisson' else 'build_multinomial_constraints'
         if acc_settings and simulPdf:
             for (key, model) in self['timeResModels'].iteritems():
-                if key == 'prototype' or not hasattr(model, 'build_multinomial_constraints'):
+                if key == 'prototype' or not hasattr(model, buildFunc):
                     continue
-                constraints |= model.build_multinomial_constraints(data, observables)
+                constraints |= getattr(model, buildFunc)(data, observables)
         elif acc_settings:
             acceptance = timeResModels['prototype']
-            if hasattr(acceptance, 'build_multinomial_constraints'):
-                constraints |= acceptance.build_multinomial_constraints(data, observables)
+            if hasattr(acceptance, buildFunc):
+                constraints |= getattr(acceptance, buildFunc)(data, observables)
         return constraints
     
     def __av_eff_constraints(self, externalConstr, simulPdf):
@@ -2030,7 +2034,7 @@ def multiplyByTimeAcceptance( pdf, self, **kwargs ) :
             indexCatNames = [ ]
 
         # build new decay-time resolution model that includes the decay-time acceptance function
-        if timeEffType == 'fit' :
+        if timeEffType.startswith('fit') :
             assert all( cat.GetName() not in indexCatNames for cat in [ hlt1ExclB, hlt2B, hlt2UB ] )\
                    , 'P2VV - ERROR: multiplyByTimeAcceptance(): acceptance function depends on the index category of the simultaneous mother PDF'
 
@@ -2038,7 +2042,8 @@ def multiplyByTimeAcceptance( pdf, self, **kwargs ) :
                                     , 'notExclB' : { 'bins'      : time.getRange(), 'heights' : [0.7] }
                                    }
                      , hlt2B     : { 'B'  : { 'histogram' : histUBName } }
-                     , hlt2UB    : { 'UB' : { 'histogram' : histUBName } }
+                     , hlt2UB    : { 'UB' : { 'bins' : time.getRange(), 'heights' : [0.5] } } if timeEffType.endswith('uniformUB')\
+                                   else { 'UB' : { 'histogram' : histUBName } }
                     }
 
             from P2VV.Parameterizations.TimeAcceptance import Paper2012_csg_TimeAcceptance as TimeAcceptance
