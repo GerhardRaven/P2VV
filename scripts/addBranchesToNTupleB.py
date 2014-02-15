@@ -1,12 +1,12 @@
 #nTupleFilePathIn  = '/data/bfys/jleerdam/Bs2Jpsiphi/Bs2JpsiPhi_2012_s20r0p1_dv33r6p1_20131217_tupleB.root'
-nTupleFilePathIn  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_2014_weighted.root'
+nTupleFilePathIn  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_hope_the_last_one.root'
 nTupleFilePathOut = 'temp.root'
 
 nTupleName = 'DecayTree'
 runPeriod = None # 2012
 firstData = 94386
-KKMassBounds = [ ] # [ 1008., 1016., 1020., 1024., 1032. ]
-KKMassInds = [ ] # range( len(KKMassBounds) + 1 )
+KKMassBounds = [ 1008., 1016., 1020., 1024., 1032. ]
+KKMassInds = range( len(KKMassBounds) + 1 )
 pbkgWeight = 'wMC'
 
 from ROOT import TFile
