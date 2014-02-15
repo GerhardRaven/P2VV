@@ -8,24 +8,21 @@ from ROOT import RooArgList
 from ROOT import RooArgSet
 
 t_diff_st = RooRealVar('time_diff_sigmat', 'time_diff_sigmat', -30, 40)
-st = RooRealVar("sigmat", "sigmat", 0.01, 0.07)
+st = RooRealVar("sigmat", "sigmat", 0.0001, 0.12)
 
 from ROOT import TFile
 f = TFile("tdiff_sigmat_MC2012.root")
 sdata = f.Get("sdata")
-assert(False)
 
 sdata_cut = sdata.reduce("sigmat > 0.01 && sigmat < 0.024 && time_diff_sigmat > -6 && time_diff_sigmat < 6")
-
-mean = RooRealVar("mean", "mean", -0.0529544, -10, 10)
 
 mean_offset = RooRealVar('mean_offset', 'mean_offset', -0.001723, -0.1, 0.1)
 mean_slope = RooRealVar('mean_slope', 'mean_slope', -0.00431, -0.1, 0.1)
 mean_quad = RooRealVar('mean_quad', 'mean_quad', -0.00380, -0.1, 0.1)
 st_mean = RooConstVar('st_mean', 'st_mean', 0.03276)
-formula = '@2 + @3 * (@0 - @1) / 0.06 + @4 * (@0 - @1) * (@0 - @1) / 0.0036'
+formula = '@2 + @3 * (@0 - @1) + @4 * (@0 - @1) * (@0 - @1)'
 args = [st, st_mean, mean_offset, mean_slope, mean_quad]
-## mean = RooFormulaVar("mean_quad", "mean_quad", formula, RooArgList(*args))
+mean = RooFormulaVar("mean_quad", "mean_quad", formula, RooArgList(*args))
 
 
 # Parameterisation
@@ -45,13 +42,14 @@ gaussians = RooAddPdf("gaussians", "gaussians", RooArgList(g2, g1), RooArgList(f
 
 # 1st GExp
 one = RooConstVar("one", "one", 1)
+mean_gexp = RooRealVar("mean_gexp", "mean_gexp", -0.0529544, -10, 10)
 sigma_gexp = RooRealVar("sigma_gexp", "sigma_gexp", 10, 1, 50)
 rlife1 = RooRealVar("rlife1", "rlife1", 3.2416, 0.1, 10)
-gexp1 = RooGExpModel("gexp1", "gexp1", t_diff_st, mean, sigma_gexp, rlife1, one, one, one)
+gexp1 = RooGExpModel("gexp1", "gexp1", t_diff_st, mean_gexp, sigma_gexp, rlife1, one, one, one)
 
 # 2nd GExp
 rlife2 = RooRealVar("rlife2", "rlife2", 6.07734, 0.1, 10)
-gexp2 = RooGExpModel("gexp2", "gexp2", t_diff_st, mean, sigma_gexp, rlife2, one, one, one, False, RooGExpModel.Flipped)
+gexp2 = RooGExpModel("gexp2", "gexp2", t_diff_st, mean_gexp, sigma_gexp, rlife2, one, one, one, False, RooGExpModel.Flipped)
 
 frac_gexp2 = RooRealVar("frac_gexp2", "frac_gexp2", 0.184357, 0.01, 0.99)
 gexps = RooAddPdf("gexps", "gexps", RooArgList(gexp2, gexp1), RooArgList(frac_gexp2))
@@ -68,6 +66,11 @@ result = model.fitTo(sdata, SumW2Error = False, **fitOpts)
 from ROOT import TCanvas
 from ROOT import kGreen, kDashed
 from P2VV.Utilities.Plotting import plot
-canvas = TCanvas("canvas", "canvas", 600, 530)
-plot(canvas, t_diff_st, pdf = model, data = sdata, plotResidHist = 'BX',
+from P2VV.Load import LHCbStyle
+canvas = TCanvas("canvas", "canvas", 600, 400)
+plot(canvas, t_diff_st, pdf = model, data = sdata, logy = True,
+     frameOpts = dict(Range = (-20, 20)),     
+     yTitle = 'Candidates / (0.5)', dataOpts = dict(Binning = 80),
+     xTitle = '(t_{rec} - t_{true}) / #sigma_{t}',
+     pdfOpts = dict(ProjWData = (RooArgSet(st), sdata, True)),
      components = {'gexps' : dict(LineColor = kGreen, LineStyle = kDashed)})
