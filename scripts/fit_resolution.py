@@ -274,7 +274,7 @@ else:
     hlt1_cut = 'hlt1_unbiased == 1'
 cut = 'sel == 1 && ' + hlt1_cut + ' && hlt2_unbiased == 1 && '
 cut += ' && '.join(['%s < 4' % e for e in ['muplus_track_chi2ndof', 'muminus_track_chi2ndof', 'Kplus_track_chi2ndof', 'Kminus_track_chi2ndof']])
-if not options.wpv or (options.wpv and options.wpv_type == "Gauss"):
+if not options.wpv or (options.wpv and (options.wpv_type in ["Gauss", 'Rest'])):
     cut += ' && sel_cleantail == 1'
 if signal_MC:
     cut += ' && abs(trueid) == 531'
@@ -368,7 +368,9 @@ if fit_mass:
     data = readData(input_data[args[0]]['data'], tree_name, NTuple = True, observables = observables,
                     ntupleCuts = cut, ImportIntoWS = False)
     data.SetName(tree_name)
-    if data.numEntries() > 6e5:
+    if signal_MC and data.numEntries() > 3e5:
+        data = data.reduce(EventRange = (0, int(3e5)))
+    elif data.numEntries() > 6e5:
         data = data.reduce(EventRange = (0, int(6e5)))
     if options.reduce:
         data = data.reduce(EventRange = (0, int(options.reduce)))
@@ -548,7 +550,7 @@ if signal_MC and options.wpv_type == "Rest":
 
     rest_t = Prompt_Peak(time_obs, resolutionModel = rest_tres.model(), Name = 'rest_t')
 
-    rest = Component('rest', (rest_t.pdf(),), Yield = (100, 1, 1e6))
+    rest = Component('rest', (rest_t.pdf(),), Yield = (5000, 1, 1e6))
 
     components = [signal, rest]
 elif signal_MC:
