@@ -433,23 +433,23 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
         splitConstr['timeResMu']['2012']        = ( -0.00333, 0. )
         splitConstr['timeResFrac2']['2011']     = (  0.242,   0. )
         splitConstr['timeResFrac2']['2012']     = (  0.239,   0. )
-        splitConstr['sf_mean_offset']['2011']   = (  1.4273,  0. )
-        splitConstr['sf_mean_offset']['2012']   = (  1.4887,  0. )
-        splitConstr['sf_mean_slope']['2011']    = ( -1.93,    0. )
-        splitConstr['sf_mean_slope']['2012']    = ( -3.88,    0. )
-        splitConstr['sf_sigma_offset']['2011']  = (  0.3857,  0. )
-        splitConstr['sf_sigma_offset']['2012']  = (  0.4143,  0. )
-        splitConstr['sf_sigma_slope']['2011']   = ( -0.63,    0. )
-        splitConstr['sf_sigma_slope']['2012']   = ( -2.80,    0. )
+        splitConstr['sf_mean_slope']['2011']   = (  1.4273,  0. )
+        splitConstr['sf_mean_slope']['2012']   = (  1.4887,  0. )
+        splitConstr['sf_mean_quad']['2011']    = ( -1.93,    0. )
+        splitConstr['sf_mean_quad']['2012']    = ( -3.88,    0. )
+        splitConstr['sf_sigma_slope']['2011']  = (  0.3857,  0. )
+        splitConstr['sf_sigma_slope']['2012']  = (  0.4143,  0. )
+        splitConstr['sf_sigma_quad']['2011']   = ( -0.63,    0. )
+        splitConstr['sf_sigma_quad']['2012']   = ( -2.80,    0. )
         if runPeriods in [ '2011', '2012' ] :
             self['externalConstr']['betaTimeEff']     = splitConstr['betaTimeEff']     [runPeriods]
             self['externalConstr']['sf_placeholder']  = splitConstr['sf_placeholder'][runPeriods]
             self['externalConstr']['timeResMu']       = splitConstr['timeResMu']       [runPeriods]
             self['externalConstr']['timeResFrac2']    = splitConstr['timeResFrac2']    [runPeriods]
-            self['externalConstr']['sf_mean_offset']  = splitConstr['sf_mean_offset']  [runPeriods]
-            self['externalConstr']['sf_mean_slope']   = splitConstr['sf_mean_slope']   [runPeriods]
-            self['externalConstr']['sf_sigma_offset'] = splitConstr['sf_sigma_offset'] [runPeriods]
-            self['externalConstr']['sf_sigma_slope']  = splitConstr['sf_sigma_slope']  [runPeriods]
+            self['externalConstr']['sf_mean_slope']  = splitConstr['sf_mean_slope']  [runPeriods]
+            self['externalConstr']['sf_mean_quad']   = splitConstr['sf_mean_quad']   [runPeriods]
+            self['externalConstr']['sf_sigma_slope'] = splitConstr['sf_sigma_slope'] [runPeriods]
+            self['externalConstr']['sf_sigma_quad']  = splitConstr['sf_sigma_quad']  [runPeriods]
         else :
             self['splitParams']['runPeriod'] = [ ]
             for par, vals in splitConstr.iteritems() :
@@ -1237,10 +1237,10 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
                                , timeResMu        = dict( Value = 0., Constant = True ) #dict( Value = -0.00298, Constant = True )
                                , Fractions        = [ ( 2, 0.168 ) ]
                                , timeResFrac2     = dict( Value =  0.4,  Constant = True ) #dict( Value =  0.24295,   Constant = True )
-                               , sf_mean_offset   = dict( Value =  1.45, Constant = True ) #dict( Value =  1.42479,   Constant = True )
-                               , sf_mean_slope    = dict( Value =  0.,   Constant = True ) #dict( Value = -0.0526273, Constant = True )
-                               , sf_sigma_offset  = dict( Value =  0.,   Constant = True ) #dict( Value =  0.381861,  Constant = True )
-                               , sf_sigma_slope   = dict( Value =  0.,   Constant = True ) #dict( Value = -0.0147151, Constant = True )
+                               , sf_mean_slope    = dict( Value =  1.45, Constant = True ) #dict( Value =  1.42479,   Constant = True )
+                               , sf_mean_quad     = dict( Value =  0.,   Constant = True ) #dict( Value = -0.0526273, Constant = True )
+                               , sf_sigma_slope   = dict( Value =  0.,   Constant = True ) #dict( Value =  0.381861,  Constant = True )
+                               , sf_sigma_quad    = dict( Value =  0.,   Constant = True ) #dict( Value = -0.0147151, Constant = True )
                                , sf_placeholder   = dict( Value =  0.,   Constant = True ) #dict( Value =  0.032,     Constant = True )
                               )
         else :
