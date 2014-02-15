@@ -184,8 +184,8 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         elif 'quadratic' in self.__mu_param:
             self._mu = self._timeResMu
             self._mu_offset = self._parseArg( 'timeResMu_offset', kwargs, Value = -0.001723, MinMax = (-2, 2))
-            self._mu_slope = self._parseArg( 'timeResMu_slope', kwargs, Value = -0.00431, MinMax = (-2, 2))
-            self._mu_quad = self._parseArg( 'timeResMu_quad', kwargs, Value = -0.00380, MinMax = (-50, 50))
+            self._mu_slope = self._parseArg( 'timeResMu_slope', kwargs, Value = -0.2, MinMax = (-2, 2))
+            self._mu_quad = self._parseArg( 'timeResMu_quad', kwargs, Value = -7, MinMax = (-50, 50))
             if not self.__simultaneous or 'sigmat' in self.__mu_param:
                 formula = '@2 + @3 * (@0 - @1) + @4 * (@0 - @1) * (@0 - @1)'
                 args = [self._sigmat, self.__mu_placeholder, self._mu_offset, self._mu_slope, self._mu_quad]
@@ -200,17 +200,17 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         assert(param in [False, 'RMS', 'Comb'])
         self._timeResSigmasSFs = [ self._parseArg( 'timeResSigmaSF_%s' % num, kwargs, Value = val, MinMax = (0.001, 20) )\
                                   for num, val in sigmasSFs ]
-        self._timeResFracs     = [ self._parseArg( 'timeResFrac%s' % num, kwargs, Value = val, MinMax = (0.001, 0.999))\
+        self._timeResFracs     = [ self._parseArg( 'timeResFrac%s' % num, kwargs, Value = val, MinMax = (0.1, 0.999))\
                                   for num, val in fracs ]
 
         from ROOT import RooNumber
         RooInf = RooNumber.infinity()
         if param == 'RMS':
             if sf_param:
-                self._parseArg('sf_mean_offset', kwargs, Value = 0.05, MinMax = (-0.1, 2.) )
-                self._parseArg('sf_mean_slope', kwargs, Value = 1.35, MinMax = (0., 10) )
-                self._parseArg('sf_sigma_offset', kwargs, Value = 0.013, MinMax = (-0.1, 2.) )
-                self._parseArg('sf_sigma_slope', kwargs, Value = 0.38, MinMax = (0., 10) )
+                self._parseArg('sf_mean_offset', kwargs, Value = 0.043, MinMax = (-0.1, 2.) )
+                self._parseArg('sf_mean_slope', kwargs, Value = 1.29, MinMax = (0., 10) )
+                self._parseArg('sf_sigma_offset', kwargs, Value = 0.0084, MinMax = (-0.1, 2.) )
+                self._parseArg('sf_sigma_slope', kwargs, Value = 0.277, MinMax = (0., 10) )
             if sf_param.startswith('quadratic'):
                 self._parseArg('sf_mean_quad', kwargs, Value = -4, MinMax = (-20, 20))
                 self._parseArg('sf_sigma_quad', kwargs, Value = 8, MinMax = (-20, 20))
@@ -293,7 +293,7 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                 self._sf_sigma = self._parseArg('timeResSFSigma', kwargs, Value = sqrt((1 - fracs[-1][1]) * sigmasSFs[-1][1] * sigmasSFs[-1][1]
                                                                                         + fracs[-1][1] * sigmasSFs[-2][1] * sigmasSFs[-2][1]
                                                                                         - self._sf_mean.getVal() ** 2),
-                                                 MinMax = (0.001, 0.03 if self.__simultaneous else 5))
+                                                 MinMax = (0.001, 0.05 if self.__simultaneous else 5))
                 if self.__simultaneous:
                     self._splitVars += [self._sf_mean, self._sf_sigma]
             self._timeResSigmasSFs[-1] = self._parseArg(Name + '_SF1', kwargs, Formula = '- sqrt(@0 / (1 - @0)) * @1 + @2',
