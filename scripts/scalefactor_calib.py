@@ -5,7 +5,11 @@ import sys
 import os
 from math import sqrt
 
-parser = optparse.OptionParser(usage = '%prog data_type top_dir sub_dir')
+parser = optparse.OptionParser(usage = '%prog data_type top_dirs sub_dir')
+
+parser.add_option("--refit", dest = "refit", default = False, action = 'store_true',
+                  help = 'Use new PV refitting.')
+
 (options, args) = parser.parse_args()
 
 from P2VV.Utilities.Resolution import input_data, prefix
@@ -68,9 +72,10 @@ for key, d in dirs.iteritems():
     
 if len(args) == 1:
     print 'possible top level directories are:'
-    for k in interesting.iterkeys():
+    for k, d in interesting.iteritems():
+        cut = d.Get('cut')
         sub_dirs = filter(lambda x: len(x.split('/')) == 3 and x.startswith(k) and x.endswith('bins'), dirs.keys())
-        print k + ':', ' '.join([s.split('/')[-1] for s in sub_dirs])
+        print k + ':', ' '.join([s.split('/')[-1] for s in sub_dirs]), str(cut)
     sys.exit(0)
 
 
@@ -92,7 +97,13 @@ for k, d in interesting.items():
     titles[k] = dc
     print k, dc
 
-top_dir = args[1]
+good = defaultdict(set)
+for e in args[1].split(','):
+    td, cd = e.split('/')
+    good[td].add(cd)
+assert(len(good.keys()) == 1)
+
+top_dir = good.keys()[0]
 sub_dir = args[2]
 if args[0] in ['MC2011_Sim08a', 'MC2012']:
     single_dir = '1bin_19000.00fs_simple'
@@ -102,36 +113,43 @@ else:
 interesting.update(dict([(k, dirs[k]) for k in set([k.replace(top_dir, single_dir)
                                                     for k in interesting.iterkeys()]) if k in dirs]))
 
-if args[0] == '2011':
-    ## good = {'1243785060103642893' : 4, 'm2334064025374600976' : 3,
-    ##         '1626518906014697943' : 2, 'm3832912631969227654' : 1,
-    ##         '4086600821164745518' : 6, 'm6573713017788044320' : 5}
-    good = {'2027465761870101697' : 1}
-    sig_name = 'psi_ll'
-elif args[0] == '2012':
-    good = {'2027465761870101697' : 1}
-    ## 'm934737057402830078'
-    sig_name = 'psi_ll'
-elif args[0] == '2011_Reco14':
-    good = {'2027465761870101697' : 1}
-    sig_name = 'psi_ll'
-elif args[0] == 'MC11a':
-    good = {'389085267962218368' : 4, 'm3019457528953402347' : 3,
-            'm7780668933605436626' : 2, 'm8376372569899625413' : 1,
-            'm1545059518337894505' : 6, 'm8342219958663192955' : 5}
+good = dict([(cd, i) for i, cd in enumerate(sorted(list(good[top_dir])))])
+
+if args[0].startswith('MC') and not args[0].endswith('Jpsi'):
     sig_name = 'signal'
-elif args[0] == 'MC2012':
-    good = {'m8673867318518908571' : 1}
-    sig_name = 'signal'
-elif args[0] == 'MC2011_Sim08a':
-    good = {'m8673867318518908571' : 1}
-    sig_name = 'signal'
-elif args[0] == 'MC2011_Sim08a_incl_Jpsi':
-    good = {'2027465761870101697' : 1}
+else:
     sig_name = 'psi_ll'
-elif args[0] == 'MC2012_incl_Jpsi':
-    good = {'2027465761870101697' : 1}
-    sig_name = 'psi_ll'
+
+## if args[0] == '2011':
+##     ## good = {'1243785060103642893' : 4, 'm2334064025374600976' : 3,
+##     ##         '1626518906014697943' : 2, 'm3832912631969227654' : 1,
+##     ##         '4086600821164745518' : 6, 'm6573713017788044320' : 5}
+##     good = {'2027465761870101697' : 1}
+##     sig_name = 'psi_ll'
+## elif args[0] == '2012':
+##     good = {'2027465761870101697' : 1}
+##     ## 'm934737057402830078'
+##     sig_name = 'psi_ll'
+## elif args[0] == '2011_Reco14':
+##     good = {'2027465761870101697' : 1}
+##     sig_name = 'psi_ll'
+## elif args[0] == 'MC11a':
+##     good = {'389085267962218368' : 4, 'm3019457528953402347' : 3,
+##             'm7780668933605436626' : 2, 'm8376372569899625413' : 1,
+##             'm1545059518337894505' : 6, 'm8342219958663192955' : 5}
+##     sig_name = 'signal'
+## elif args[0] == 'MC2012':
+##     good = {'m8673867318518908571' : 1}
+##     sig_name = 'signal'
+## elif args[0] == 'MC2011_Sim08a':
+##     good = {'m8673867318518908571' : 1}
+##     sig_name = 'signal'
+## elif args[0] == 'MC2011_Sim08a_incl_Jpsi':
+##     good = {'2027465761870101697' : 1}
+##     sig_name = 'psi_ll'
+## elif args[0] == 'MC2012_incl_Jpsi':
+##     good = {'2027465761870101697' : 1}
+##     sig_name = 'psi_ll'
 
 from itertools import chain
 PDFs = defaultdict(dict)
@@ -174,8 +192,10 @@ __histos = []
 __fit_funcs = []
 
 fit_type = 'double_RMS_Gauss'
-if args[0] in ['MC2012', 'MC2011_Sim08a']:
+if args[0] in ['MC2012', 'MC2011_Sim08a'] and not options.refit:
     fit_type = 'double_RMS_Rest'
+if options.refit:
+    fit_type += '_PVRefit'
 
 __fit_results = defaultdict(list)
 from array import array
@@ -230,9 +250,9 @@ if top_dir.split('_')[0].startswith('momentum'):
     binning_name = 'momentum_binning'
     obs_name = 'B_P'
 else:
-    split_cat_name = 'sigmat_cat'
+    split_cat_name = 'sigmat_cat' if not options.refit else 'sigmat_refit_cat'
     binning_name = 'st_binning'
-    obs_name = 'sigmat'
+    obs_name = 'sigmat' if not options.refit else 'sigmat_refit'
     
 ffs = defaultdict(dict)
 for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split('/')[-1]]):
@@ -388,7 +408,7 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
 
     from itertools import product
     par_defs = [('linear', '[1] + [2] * (x - [0])', ('offset', 'slope'), kBlue),
-                ('quadratic', '[1] + [2] * (x - [0]) + [3] * (x - [0])^2', ('offset', 'slope', 'quad'), kGreen),
+                ## ('quadratic', '[1] + [2] * (x - [0]) + [3] * (x - [0])^2', ('offset', 'slope', 'quad'), kGreen),
                 ('quadratic_no_offset', '([1] + [2] * (x - [0])) * x', ('slope', 'quad'), kOrange)]
     for (pad, prefix), args in product(((1, 'sf_mean'), (2, 'sf_sigma')), par_defs):
         canvas.cd(pad)
@@ -415,6 +435,16 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
     
     canvas.Update()
 
+def write_constraints(constraints, sample_key, mu_key, sf_key):
+    import shelve
+    dbase = shelve.open('constraints.db')
+    pars = dbase[sample_key]
+    par_key = str({'mu' : mu_key, 'sf' : sf_key})
+    pars[par_key] = constraints
+    dbase[sample_key] = pars
+    dbase.close()
+
+    
 ## def chunks(l, n):
 ##     """ Yield successive n-sized chunks from l.
 ##     """
