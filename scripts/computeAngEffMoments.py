@@ -15,8 +15,8 @@ tResModel   = '' # '3fb'
 trigger     = ''
 timeInt     = False
 addInvPdf   = False
-weightVar   = '' # 'sWeights_ipatia'
-doSelection = True
+weightVar   = 'wKin' # 'sWeights_ipatia'
+doSelection = False
 blind       = { } # { 'phiCP' : ( 'UnblindUniform', 'BsPhisCombination', 0.2 ), 'dGamma' : ( 'UnblindUniform', 'BsDGsCombination', 0.02 ) }
 parFileIn   = '' # '../it6/fitPars.par'
 
@@ -28,7 +28,8 @@ nTupleName = 'DecayTree'
 if MCProd == 'real' :
     nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_w0_add.root'
 elif MCProd == 'Sim08' :
-    nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_20112012_Sim08_ntupleB_201309_add.root'
+    #nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_20112012_Sim08_ntupleB_201309_add.root'
+    nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/reweighted/Bs2JpsiPhi_Sim08a_reWeighted.root'
 elif MCProd == 'Sim08_2011' :
     nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_MC2011_Sim08a_ntupleB_20130909_angEff.root'
 elif MCProd == 'Sim08_2012' :
