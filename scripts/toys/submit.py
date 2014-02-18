@@ -52,9 +52,8 @@ j.application.env = env
 
 # Add the inputsandbox
 j.inputsandbox = ['/project/bfys/raaij/p2vv/code/python/P2VV/ToyMCUtils.py',
-                  '/project/bfys/raaij/p2vv/code/scripts/toys/resolution_cfit_toy.py',
+                  '/project/bfys/raaij/p2vv/code/scripts/toys/dilution_weights.py',
                   '/project/bfys/raaij/p2vv/code/standalone/lib/libP2VV.so',
-                  '/project/bfys/raaij/p2vv/code/scripts/toys/gen_params.root',
                   '/project/bfys/raaij/p2vv/code/snapshot.tar.bz2']
 
 # Add the outputsandbox
@@ -67,13 +66,13 @@ j.postprocessors = [CustomMerger(
     )]
 
 # Add the splitter
-args = ['resolution_cfit_toy.py', '--ncpu=1', '-n',
-        '2', '--nevents=100000', '-s', 'snapshot.tar.bz2']
+args = ['dilution_weights.py', '--ncpu=1', '-n',
+        '100', '--nevents=100000', '-s', 'snapshot.tar.bz2']
 j.splitter = GenericSplitter(
     attribute = 'application.args',
     values = [args for i in range(10)]
     )
-j.name = 'resolution_toys'
+j.name = 'dilution_toys'
 
 # backend
 j.backend = PBS(queue = 'stbcq')

@@ -21,7 +21,7 @@ if prescaled:
     input_file = '/glusterfs/bfys/users/raaij/NTuples/2011/Bs2JpsiPhiPrescaled_ntupleAB_20130531.root'
     cut = 'sel == 1 && triggerDecisionUnbiasedPrescaled == 1 && '
 else:
-    input_file = '/glusterfs/bfys/users/raaij/NTuples/2011/Bs2JpsiPhi_ntupleAB_20130531.root'
+    input_file = '/glusterfs/bfys/users/raaij/NTuples/2012/Bs2JpsiPhi_2012_ntupleAB_20130604.root'
     cut = '%s==1 && (%s==1 || %s==1) && %s==1 && ' % ('sel', 'hlt1_biased', 'hlt1_unbiased',
                                                       'hlt2_biased')
 cut += ' && '.join(['%s < 4' % e for e in ['muplus_TRACK_CHI2NDOF', 'muminus_TRACK_CHI2NDOF', 'Kplus_TRACK_CHI2NDOF', 'Kminus_TRACK_CHI2NDOF']])
@@ -97,7 +97,7 @@ if not prescaled:
 else:
     sweight_pdf = mass_pdf
 
-from P2VV.GeneralUtils import SData
+from P2VV.Utilities.SWeights import SData
 sdata = SData( Pdf = sweight_pdf, Data = data, Name = 'mass_sdata')
 sig_sdata = sdata.data('signal')
 bkg_sdata = sdata.data('background')
@@ -116,26 +116,13 @@ addVertexErrors(tree, dss, cut)
 from P2VV.Load import LHCbStyle
 
 from ROOT import TCanvas
-canvases = [TCanvas(n, n, 600, 400) for n in ['sv_canvas', 'st_canvas', 'psi_canvas']]
-canvases[0].cd()
-sv_err = sig_sdata.get().find('sv_err')
-frame = sv_err.frame()
-frame.GetXaxis().SetTitle('#sigma_{t,SV} [ps]')
-frame.GetYaxis().SetTitle('Candidates / fs')
-sig_sdata.plotOn(frame)
-frame.Draw()
-
-canvases[1].cd()
-frame = st.frame()
-frame.GetXaxis().SetTitle('#sigma_{t} [ps]')
-frame.GetYaxis().SetTitle('Candidates / fs')
-sig_sdata.plotOn(frame)
-frame.Draw()
-
-canvases[2].cd()
-psi_err = sig_sdata.get().find('jpsi_vx_err')
-frame = psi_err.frame()
-frame.GetXaxis().SetTitle('#sigma_{t,J/#psi} [ps]')
-frame.GetYaxis().SetTitle('Candidates / fs')
-sig_sdata.plotOn(frame)
-frame.Draw()
+canvases = [TCanvas(n, n, 600, 400) for n in ['pv_canvas', 'sv_canvas', 'st_canvas', 'psi_canvas']]
+for canvas, (vn, xt) in zip(canvases, [('pv_err', '#sigma_{t,PV} [ps]'), ('sv_err', '#sigma_{t,SV} [ps]'),
+                                        (st.GetName(), '#sigma_{t} [ps]'), ('jpsi_vx_err', '#sigma_{t,J/#psi} [ps]')]):
+    canvas.cd()
+    var = sig_sdata.get().find(vn)
+    frame = var.frame()
+    frame.GetXaxis().SetTitle(xt)
+    frame.GetYaxis().SetTitle('Candidates / fs')
+    sig_sdata.plotOn(frame)
+    frame.Draw()

@@ -11,8 +11,6 @@ def mb_callback(option, opt_str, value, parser):
     mb = tuple(int(i) for i in value.split(','))
     setattr(parser.values, option.dest, mb)
 
-parser.add_option("--no-pee", dest = "pee", default = True,
-                  action = 'store_false', help = 'Do not use per-event proper-time error')
 parser.add_option("-w", "--wpv", dest = "wpv", default = False,
                   action = 'store_true', help = 'Add WPV component')
 parser.add_option("--wpv-type", dest = "wpv_type", default = 'Gauss', type = 'string',
@@ -74,6 +72,8 @@ parser.add_option("--mass-parameterisation", dest = "mass_param", default = '',
 parser.add_option("--make-binning", action="callback", callback=mb_callback, type = 'string',
                   dest = "make_binning", default = (0,), help = 'Make binning with n_bins for each ' +
                   'observable; comma separated list')
+parser.add_option("--excl-biased", action="store_true", dest = "excl_biased", default = False,
+                  help = 'Use excl biased events, only for signal MC')
 
 (options, args) = parser.parse_args()
 
@@ -116,7 +116,7 @@ from P2VV.Load import LHCbStyle
 extra_name = [args[1]]
 for a, n in [('parameterise', None), ('wpv', 'wpv_type'), ('sf_param', None),
              ('peak_only', 'peak'), ('add_background', 'cfit'), ('split_sfs', 'split'),
-             ('use_refit', 'PVRefit'), ('pee', 'pee')]:
+             ('use_refit', 'PVRefit')]:
     v = getattr(options, a)
     if v:
         if n and n != a and n != v and hasattr(options, n):
@@ -145,10 +145,10 @@ else:
 t  = RealVar('time' if not options.use_refit else 'time_refit', Title = 'decay time', Unit='ps', Observable = True, MinMax = t_minmax)
 m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5200, 5550))
 mpsi = RealVar('mdau1', Title = 'J/psi mass', Unit = 'MeV', Observable = True, MinMax = (3025, 3165))
-st = RealVar('sigmat' if not options.use_refit else 'sigmat_refit',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0., 0.12))
+st = RealVar('sigmat' if not options.use_refit else 'sigmat_refit',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.0001, 0.12))
 
 # add 20 bins for caching the normalization integral
-st.setBins(500, 'cache')
+st.setBins(50, 'cache')
 
 # Categories needed for selecting events
 hlt1_unbiased = Category('hlt1_unbiased', States = {'unbiased' : 1, 'not_unbiased' : 0}, Observable = True)
@@ -194,15 +194,15 @@ elif args[1] == 'double':
     mu['Value'] = mu_values.get(args[0], 0)
     mu['Constant'] = options.simultaneous and not (options.split_mean or options.mu_param)
     from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
-    tres_args = dict(time = time_obs, sigmat = st, Cache = True,
-                     PerEventError = options.pee, Parameterise = options.parameterise,
+    sf_pee = options.simultaneous and options.sf_param
+    tres_args = dict(time = time_obs, sigmat = st, Cache = True, Parameterise = options.parameterise,
                      TimeResSFParam = options.sf_param, SplitFracs = options.split_frac,
                      timeResMu = mu, Simultaneous = options.simultaneous, SplitSFS = options.split_sfs,
-                     ScaleFactors = [(2, 2.00), (1, 1.174)] if options.pee else [(2, 0.1), (1, 0.06)],
+                     ScaleFactors = [(2, 2.00), (1, 1.174)] if sf_pee else [(2, 0.1), (1, 0.06)],
                      Fractions = [(2, 0.143)], SplitMean = options.split_mean,
                      MeanParameterisation = options.mu_param)
     if args[0] == 'MC2012':
-        tres_args['timeResFrac2'] = dict(Value = 0.015)
+        tres_args['timeResFrac2'] = dict(Value = 0.15)
     sig_tres = TimeResolution(Name = 'sig_tres', **tres_args)
     if options.add_background:
         bkg_tres = TimeResolution(Name = 'bkg_tres', ParNamePrefix = 'bkg', **tres_args)
@@ -261,16 +261,20 @@ prompt_pdf = Prompt_Peak(time_obs, sig_tres.model(), Name = 'prompt_pdf')
 prompt = Component('prompt', (prompt_pdf.pdf(), psi_m), Yield = (160160, 100, 500000))
 
 # Read data
-fit_mass = options.fit_mass or not options.cache
+fit_mass = (options.fit_mass or not options.cache) or options.reduce
 
 ## from profiler import heap_profiler_start, heap_profiler_stop
 ## heap_profiler_start("profile.log")
 
 # Tree and cut
 tree_name = 'DecayTree'
-cut = 'sel == 1 && hlt1_unbiased == 1 && hlt2_unbiased == 1 && '
+if signal_MC and options.excl_biased:
+    hlt1_cut = 'hlt1_excl_biased == 1'
+else:
+    hlt1_cut = 'hlt1_unbiased == 1'
+cut = 'sel == 1 && ' + hlt1_cut + ' && hlt2_unbiased == 1 && '
 cut += ' && '.join(['%s < 4' % e for e in ['muplus_track_chi2ndof', 'muminus_track_chi2ndof', 'Kplus_track_chi2ndof', 'Kminus_track_chi2ndof']])
-if not options.wpv or (options.wpv and options.wpv_type == "Gauss"):
+if not options.wpv or (options.wpv and (options.wpv_type in ["Gauss", 'Rest'])):
     cut += ' && sel_cleantail == 1'
 if signal_MC:
     cut += ' && abs(trueid) == 531'
@@ -300,7 +304,7 @@ if options.simultaneous:
 else:
     directory = '1bin_%4.2ffs_simple/%s' % (1000 * (t.getMax() - t.getMin()), hd)
 
-if options.cache:
+if options.cache and not options.reduce:
     if options.simultaneous:
         from P2VV.CacheUtils import SimCache as Cache
         cache = Cache(input_data[args[0]]['cache'].rsplit('/', 1), directory, sub_dir)
@@ -343,7 +347,7 @@ if not fit_mass and options.cache:
         split_cats = [split_util.split_cats(data = sig_sdata, mb = options.make_binning)]
 
 ## Fitting opts
-fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 1, Offset = True,
+fitOpts = dict(NumCPU = 8, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 1, Offset = True,
                Verbose = options.verbose, Strategy = 1)
 
 # PV bins
@@ -364,8 +368,12 @@ if fit_mass:
     data = readData(input_data[args[0]]['data'], tree_name, NTuple = True, observables = observables,
                     ntupleCuts = cut, ImportIntoWS = False)
     data.SetName(tree_name)
-    if data.numEntries() > 6e5:
+    if signal_MC and data.numEntries() > 3e5:
+        data = data.reduce(EventRange = (0, int(3e5)))
+    elif data.numEntries() > 6e5:
         data = data.reduce(EventRange = (0, int(6e5)))
+    if options.reduce:
+        data = data.reduce(EventRange = (0, int(options.reduce)))
 
     # In case of reweighing
     sig_mass_pdf = buildPdf(Components = (signal, background), Observables = (m,), Name = 'sig_mass_pdf')
@@ -382,9 +390,9 @@ if fit_mass:
     ## Fit mass pdf
     for i in range(3):
         mass_result = mass_pdf.fitTo(data, **fitOpts)
-        if mass_result.status() == 0:
+        if mass_result.status() == 0 and abs(mass_result.minNll()) < 5e5:
             break
-
+        
     assert(mass_result.status() == 0)
     mass_result.SetName('mass_result')
     results['mass_result'] = mass_result
@@ -456,7 +464,7 @@ if fit_mass and options.simultaneous:
 
     for i in range(5):
         sWeight_mass_result = sWeight_mass_pdf.fitTo(data, **fitOpts)
-        if sWeight_mass_result.status() == 0:
+        if sWeight_mass_result.status() == 0 and abs(sWeight_mass_result.minNll()) < 5e5:
             break
 
     assert(sWeight_mass_result.status() == 0)
@@ -528,21 +536,13 @@ elif fit_mass:
         bkg_sdata = single_bin_bkg_sdata
 
 # Write the result of the mass fit already at this point
-if fit_mass and options.cache:
+if fit_mass and options.cache and not options.reduce:
     cache.write_cut(cut)
     cache.write_data(data, sdatas)
     cache.write_results(dict([(k, v) for k, v in results.iteritems() if 'mass' in k]))
 
-if options.reduce:
-    if options.fit_mass:
-        data = data.reduce(EventRange = (0, int(options.reduce)))
-    for k, sdata in sdatas.iteritems():
-        sdatas[k] = sdata.reduce(EventRange = (0, int(options.reduce)))
-    sig_sdata = sig_sdata.reduce(EventRange = (0, int(options.reduce)))
-    bkg_sdata = bkg_sdata.reduce(EventRange = (0, int(options.reduce)))
-        
 gc.collect()
-    
+
 # Define default components
 if signal_MC and options.wpv_type == "Rest":
     from P2VV.Parameterizations.TimeResolution import Rest_TimeResolution
@@ -550,7 +550,7 @@ if signal_MC and options.wpv_type == "Rest":
 
     rest_t = Prompt_Peak(time_obs, resolutionModel = rest_tres.model(), Name = 'rest_t')
 
-    rest = Component('rest', (rest_t.pdf(),), Yield = (100, 1, 1e5))
+    rest = Component('rest', (rest_t.pdf(),), Yield = (5000, 1, 1e6))
 
     components = [signal, rest]
 elif signal_MC:
@@ -617,6 +617,8 @@ else:
 
 time_pdf = buildPdf(Components = components, Observables = pdf_obs, Name='time_pdf')
 
+## Define this one here so it doesn't get deleted by python. It owns a lot of
+## stuff.
 splitLeaves = RooArgSet()
 
 # Which data to fit to
@@ -628,6 +630,14 @@ else:
     if options.simultaneous:
         fit_data_full = sig_sdata
 
+if options.make_plots:
+    cats = RooArgSet(st)
+    if options.simultaneous:
+        cats.add(time_pdf.indexCat())
+        st_data = fit_data_full.reduce(cats)
+    else:
+        st_data = fit_data.reduce(cats)
+        
 if options.simultaneous:
     split_pars = [[]]
     if options.wpv:
@@ -649,41 +659,54 @@ if options.simultaneous:
         ## split_pars[0].append(rest_tres._left_rlifeSF)
         ## split_pars[0].append(rest_tres._frac_left)
     
+    ## Calculate the mean in each bin for the splitting observable
+    split_obs = split_util.observables()[0]
+    split_obs_mean = sig_sdata.mean(split_obs._target_())
+    split_cat = split_cats[0][0]
+    if hasattr(split_cat, '_target_'):
+        split_cat = split_cat._target_()
+    means = [sig_sdata.mean(split_obs._target_(), '{0} == {0}::{1}'.format(split_cat.GetName(), s.GetName())) for s in split_cat]
+
     if options.sf_param or (options.mu_param and 'sigmat' not in options.mu_param):
         assert(len(split_cats[0]) == 1)
-        split_cat = split_cats[0][0]
-        if hasattr(split_cat, '_target_'):
-            split_cat = split_cat._target_()
 
         ## The idea is to create a simultaneous PDF, split using the
         ## placeholder which was put in place when the resolution
         ## model was constructed and then in each bin set the created
-        ## split parameter to:
-        ## (mean_in_bin - overall_mean) / (first_bin_mean - last_bin_mean).
-        ## This should make the parameters comparable for different
-        ## splitting observables.
+        ## split parameter to: (mean_in_bin - overall_mean.
+
+        ## Set the value to the mean sigmat already here, even if it is changed
+        ## later.
         placeholder = sig_tres.sfPlaceHolder()
+        placeholder.setVal(split_obs_mean)
+
+        ## Customize the PDF to be split using the placeholder and any other
+        ## pars which need to be split.
         from ROOT import RooCustomizer
         customizer = RooCustomizer(time_pdf._target_(), split_cat, splitLeaves)
-        to_split = RooArgSet(*(split_pars[0] + [placeholder._target_()]))
+        to_split = RooArgSet(*(split_pars[0]))
+        ## CAREFULL: when do we need this?
+        ## to_split.add(placeholder._target_())
         customizer.splitArgs(to_split, split_cat)
         states = dict([(s.GetName(), customizer.build(s.GetName())) for s in split_cat])
         time_pdf = SimultaneousPdf(time_pdf.GetName() + '_simul',
                                    SplitCategory = split_cat, ExternalConstraints = time_pdf.ExternalConstraints(),
                                    States = states, ConditionalObservables = time_pdf.ConditionalObservables())
-
-        ## Calculate the mean in each bin for the splitting observable
-        split_obs = split_util.observables()[0]
-        means = [sig_sdata.mean(split_obs._target_(), '{0} == {0}::{1}'.format(split_cat.GetName(), s.GetName())) for s in split_cat]
-        split_obs_mean = sig_sdata.mean(split_obs._target_())
-
+        
         ## Set the split parameters to their calculated value and make
         ## them constant.
+        st_mean = lambda st: 0.04921 + st * 1.220
+        st_sigma = lambda st: 0.012 + st * 0.165
+
         pars = time_pdf.getParameters(RooArgSet())
+
         for m, s in zip(means, split_cat):
+            for n, f in (('timeResSFMean', st_mean), ('timeResSFSigma', st_sigma)):
+               p = pars.find(n + '_' + s.GetName())
+               if not p: continue
+               p.setVal(f(m - split_obs_mean))
             p = pars.find(placeholder.GetName() + '_' + s.GetName())
-            if not p:
-                continue
+            if not p: continue
             p.setConstant(True)
             p.setVal(m - split_obs_mean)
     else:
@@ -691,6 +714,14 @@ if options.simultaneous:
                                    , MasterPdf       = time_pdf
                                    , SplitCategories = split_cats
                                    , SplitParameters = split_pars)
+        st_mean = lambda st: 0.04921 + st * 1.220
+        st_sigma = lambda st: 0.012 + st * 0.165
+
+        pars = time_pdf.getParameters(RooArgSet())
+        for m, s in zip(means, split_cat):
+            for n, f in (('timeResSFMean', st_mean), ('timeResSFSigma', st_sigma)):
+               p = pars.find(n + '_' + s.GetName())
+               p.setVal(f(m - split_obs_mean))
 
 if (not options.simultaneous and options.mu_param) or 'sigmat' in options.mu_param:
     placeholder = sig_tres.muPlaceHolder()
@@ -707,7 +738,10 @@ if options.reuse_result and options.cache:
     else:
         result_name = '_'.join(['time_result'] + extra_name)
     time_result = results.get(result_name, None)
-
+    ## Try extra _pee suffix for backwards compatibility
+    if not time_result:
+        time_result = results.get(result_name + '_pee', None)
+    
     if time_result:
         pdf_vars = time_pdf.getVariables()
         for p in time_result.floatParsFinal():
@@ -720,7 +754,7 @@ if options.reuse_result and options.cache:
 constraint_pars = set(['sf_mean_offset', 'sf_mean_slope', 'sf_sigma_offset', 'sf_sigma_slope',
                        'timeResFrac2', 'timeResMu_offset', 'timeResMu_quad', 'timeResMu_slope',
                        'timeResSFMean', 'timeResSFSigma', 'timeResRestFracLeft', 'timeResRestLTSF',
-                       'timeResRestRSSF', 'timeResRestRTSF'])
+                       'timeResRestRSSF', 'timeResRestRTSF', 'timeResRestLSSF'])
 
 import shelve
 constraints = set()
@@ -729,6 +763,8 @@ if options.constrain:
     cp = args
     if options.use_refit:
         cp += ['refit']
+    if signal_MC and options.excl_biased:
+        cp += ['excl_biased']
     dbase = shelve.open('constraints.db')
     cid = ' '.join(args)
     assert(cid in dbase)
@@ -782,10 +818,12 @@ parameters = dict([(p.GetName(), p) for p in time_pdf.getParameters(obs_arg)])
 ## sf1 = (comb.getVal() - frac2.getVal() * sf2.getVal()) / (1 - frac2.getVal())
 ## Dilution.signal_dilution_dg(sig_sdata, st, sf1, frac2.getVal(), sf2.getVal())
 
+RooMsgService.instance().getStream(0).removeTopic(RooFit.Eval)
+
 if options.fit:
-    for i in range(3):
+    for i in range(4):
         time_result = time_pdf.fitTo(fit_data, SumW2Error = options.correct_errors, ExternalConstraints = constraints, **fitOpts)
-        if time_result.status() == 0:
+        if time_result.status() == 0 and abs(time_result.minNll()) < 5e5:
             break
     time_result.SetName('_'.join(['time_result'] + extra_name))
 
@@ -861,15 +899,15 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
         continue
     if options.simultaneous:
         split_cat = time_pdf.indexCat()
-        r = (bins.binLow(0), bins.binHigh(bins.numBins() - 1))
+        r = (bins.lowBound(), bins.highBound())
         for ct in split_cat:
-            name = 'time_canvas_%s_%d' % (ct.GetName(), i)
+            name = 'time_canvas_%s_%s_%d' % (args[0], ct.GetName(), i)
             canvas = TCanvas(name, name, 600, 400)
             __canvases.append(canvas)
             p = canvas.cd(1)
             
             projSet = RooArgSet(st, time_pdf.indexCat())
-            pdfOpts  = dict(Slice = (split_cat, ct.GetName()), ProjWData = (projSet, fit_data_full, True))
+            pdfOpts  = dict(Slice = (split_cat, ct.GetName()), ProjWData = (st_data, True))
             if split_cat.isFundamental():
                 cut = '{0} == {0}::{1}'.format(split_cat.GetName(), ct.GetName())
             else:
@@ -881,7 +919,7 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
                       , pdfOpts  = dict(LineWidth = 4, **pdfOpts)
                       , xTitle = 'decay time [ps]'
                       , yTitle = 'Candidates / (XX ps)'
-                      , yTitleOffset = 1
+                      , yTitleOffset = 0.95
                       , logy = pl
                       , plotResidHist = 'BX'
                       ## , components = { 'wpv_*'     : dict( LineColor = kRed,   LineStyle = kDashed )
@@ -895,21 +933,19 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
             
             plots[sub_dir].append(ps)
     else:
-        canvas = TCanvas('time_canvas_%d' % i, 'time_canvas_%d' % i, 600, 533)
+        cname = 'time_canvas_%s_%d' % (args[0], i)
+        canvas = TCanvas(cname, cname, 600, 533)
         __canvases.append(canvas)
         p = canvas.cd(1)
         r = (bins.binLow(0), bins.binHigh(bins.numBins() - 1))
-        projSet = RooArgSet(fit_data.get().find(st.GetName()))
-        pdfOpts  = dict(ProjWData = (projSet, fit_data, True))
+        pdfOpts  = dict(ProjWData = (st_data, True))
         ps = plot(p, time_obs, pdf = time_pdf, data = fit_data
                   , frameOpts = dict(Range = r, Title = "")
                   , dataOpts = dict(MarkerSize = 0.8, Binning = bins, MarkerColor = kBlack)
                   , pdfOpts  = dict(LineWidth = 4, **pdfOpts)
                   , xTitle = 'decay time [ps]'
                   , yTitle = 'Candidates / (XX ps)'
-                  , yTitleOffset = 1
-                  , components = {'*Gauss_1' : dict(LineColor = kGreen, LineStyle = kDashed),
-                                  '*Gauss_2' : dict(LineColor = kOrange, LineStyle = kDashed)}
+                  , yTitleOffset = 0.95
                   , logy = pl
                   , plotResidHist = 'BX')
         
@@ -932,7 +968,8 @@ if options.cache:
         ## Write plots
         cache.write_plots(plots)
 
-def write_constraints(constraints):
+def write_constraints(constraints, mu_key = options.mu_param.replace('sigmat', ''),
+                      sf_key = options.sf_param):
     ca = RooArgList()
     for p in sorted(list(constraint_pars)):
         rp = time_result.floatParsFinal().find(p)
@@ -943,9 +980,11 @@ def write_constraints(constraints):
     key_pars = args
     if options.use_refit:
         key_pars += ['refit']
+    if signal_MC and options.excl_biased:
+        key_pars += ['excl_biased']
     
     base_key = ' '.join(key_pars)
-    param_key = {'mu' : options.mu_param.split('_')[0], 'sf' : options.sf_param}
+    param_key = {'mu' : mu_key, 'sf' : sf_key}
     
     cpars = set()
     for exp in constraints:
@@ -972,3 +1011,40 @@ def write_constraints(constraints):
 
 if options.fit and options.write_constraints:
     write_constraints(options.write_constraints)
+
+if False:
+    from array import array
+    tt_bins = array('d', [0.0, 0.09928, 0.2059, 0.3207, 0.447, 0.5844, 0.7365, 0.9077, 1.101, 1.325, 1.592, 1.916, 2.332, 2.916, 3.92, 14.0])
+    
+    from ROOT import RooBinning
+    tt_binning = RooBinning(len(tt_bins) - 1, tt_bins)
+    tt_binning.SetName('tt_binning')
+    t_true.setBinning(tt_binning, 'tt_binning')
+    
+    from P2VV.RooFitWrappers import BinningCategory
+    tt_cat = BinningCategory(t_true.GetName() + '_cat', Observable = t_true, Binning = tt_binning,
+                             CatTypeName = 'tt_bin_', Data = sig_sdata, Fundamental = True)
+    
+    bounds = array('d', [-0.2 + i * 0.005 for i in range(81)])
+    binning = RooBinning(len(bounds) - 1, bounds)
+    binning.SetName('binning')
+    
+    plot_datas = sorted(sig_sdata.split(tt_cat._target_()), key = lambda x: int(x.GetName().split('_')[-1]))
+    
+    for ct, ds in zip(tt_cat, plot_datas):
+        time_pdf.recursiveRedirectServers(ds.get())
+        name = 'time_canvas_%s' % ct.GetName()
+        canvas = TCanvas(name, name, 600, 533)
+        __canvases.append(canvas)
+        p = canvas.cd(1)
+        projSet = RooArgSet(ds.get().find(st.GetName()))
+        pdfOpts  = dict(ProjWData = (projSet, ds, True))
+        ps = plot(p, time_obs, pdf = time_pdf, data = ds
+                  , frameOpts = dict(Range = (bounds[0], bounds[-1]), Title = "")
+                  , dataOpts = dict(MarkerSize = 0.8, Binning = binning, MarkerColor = kBlack)
+                  , pdfOpts  = dict(LineWidth = 4, **pdfOpts)
+                  , xTitle = 'decay time [ps]'
+                  , yTitle = 'Candidates / (XX ps)'
+                  , yTitleOffset = 1
+                  , logy = False
+                  , plotResidHist = 'BX')

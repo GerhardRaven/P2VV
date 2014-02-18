@@ -69,7 +69,7 @@ class SplitUtil(object):
         if make_binning != None and all(i for i in make_binning):
             n_bins = make_binning
         else:
-            n_bins = [len(self.binning(o)) for o in self.observables()]
+            n_bins = [len(self.binning(o)) - 1 for o in self.observables()]
         return '_'.join([str(i) for i in n_bins] + ['bins'])
     
 class SplitPPT(object):
@@ -88,12 +88,21 @@ class SplitSigmat(SplitUtil):
                                0.03047, 0.03269, 0.03520, 0.03837, 0.04343, 0.12],
                     'MC11a_incl_Jpsi' : [0.0, 0.02414, 0.02720, 0.02948, 0.03145,
                                          0.03338, 0.03537, 0.03761, 0.04049, 0.04504, 0.12],
-                    'MC2011_Sim08a' : [0.0, 0.02147, 0.02473, 0.02728, 0.0296, 0.03186,
-                                       0.03423, 0.0369, 0.04029, 0.04556, 0.12],
-                    'MC2012' : [0.0, 0.02083, 0.02385, 0.02618, 0.02822, 0.03016, 0.03209,
-                                0.03409, 0.03629, 0.03887, 0.04218, 0.04752, 0.12],
+                    'MC2011_Sim08a' : [0.0, 0.01997, 0.02272, 0.02477, 0.02653, 0.02812,
+                                       0.02967, 0.03118, 0.03273, 0.03436, 0.03612, 0.03812,
+                                       0.04056, 0.04384, 0.04945, 0.12],
+                    'MC2012' : [0.0001, 0.01978, 0.02242, 0.02432, 0.02593, 0.02736, 0.0287,
+                                0.02996, 0.0312, 0.03244, 0.03369, 0.03495, 0.03629, 0.0377,
+                                0.03924, 0.04095, 0.04297, 0.04548, 0.04894, 0.05502, 0.12],
                     'MC2012_incl_Jpsi' : [0.0, 0.0263, 0.02969, 0.03221, 0.03447, 0.03681,
-                                          0.0393, 0.0424, 0.04742, 0.12]}
+                                          0.0393, 0.0424, 0.04742, 0.12],
+                    '2011' : [0.0, 0.02231, 0.02537, 0.02769, 0.02972, 0.03169, 0.03371,
+                              0.03599, 0.03888, 0.04343, 0.12],
+                    '2011_Reco14' : [0.0001, 0.02209, 0.0247, 0.0266, 0.02821, 0.02964, 0.03099,
+                                     0.03229, 0.03361, 0.03496, 0.0364, 0.03803, 0.03997, 0.04252,
+                                     0.04664, 0.12],
+                    '2012' : [0.0, 0.02344, 0.02644, 0.02874, 0.03076, 0.03271, 0.03472,
+                              0.03697, 0.03976, 0.04413, 0.12]}
         default = [0., 0.02410, 0.02727, 0.02969, 0.03186,
                    0.03398, 0.03632, 0.03923, 0.04378, 0.12]
         bins = array('d', binnings.get(data_type, default))
@@ -151,16 +160,12 @@ parNames = {'N_prompt'         : ('#prompt', '\\# prompt \jpsi'),
 
 import os
 prefix = '/stuff/PhD' if os.path.exists('/stuff') else '/bfys/raaij'
-input_data = {'2011' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2011_ntupleB_20130722.root'),
-                        'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_Mixing_2011_DataSet.root'),
-                        'workspace' : 'Bs2JpsiPhiPrescaled_2011_workspace',
-                        'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Prescaled.root')},
-              '2011_Reco14' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2011_Reco14_Stripv20r1_ntupleB_20131002.root'),
+input_data = {'2011_Reco14' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2011_Reco14_Stripv20r1_ntupleB_20131002.root'),
                                'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_Mixing_2011_Reco14_DataSet.root'),
                                'workspace' : 'Bs2JpsiPhi_WPV_2011_Reco14_workspace',
                                'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Reco14_Prescaled.root')},
               '2012' : {'data' :os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2012_ntupleB_20130905.root'),
-                        'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_Mixing_2012_DataSet.root'),
+                        'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_WPV_2012_DataSet.root'),
                         'workspace' : 'Bs2JpsiPhiPrescaled_WPV_2012_workspace',
                         'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2012_Prescaled.root')},
               'MC11a' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20130613.root'),
@@ -172,7 +177,7 @@ input_data = {'2011' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPresc
                                    'workspace' : 'Bs2JpsiPhiPrescaled_MC11a_workspace',
                                    'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC11a_incl_Jpsi_Prescaled.root')},
               'MC2012' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC2012_PVRefit_ntupleB_20131211.root'),
-                          'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_Mixing_MC2012_DataSet.root'),
+                          'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_WPV_MC2012_DataSet.root'),
                           'workspace' : 'Bs2JpsiPhiPrescaled_WPV_MC2012_workspace',
                           'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC2012_Prescaled.root')},
               'MC2012_incl_Jpsi' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC2012_incl_Jpsi_ntupleB_20130916.root'),
@@ -185,7 +190,12 @@ input_data = {'2011' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPresc
                                  'workspace' : 'Bs2JpsiPhiPrescaled_WPV_MC2011_Sim08a_workspace',
                                  'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC2011_Sim08a_Prescaled.root')},
               'MC2011_Sim08a_incl_Jpsi' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC2011_Sim08a_incl_Jpsi_ntupleB_20130909.root'),
-                                           'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_MC2011_Sim08a.root'),
-                                           'workspace' : 'Bs2JpsiPhiPrescaled_MC2011_Sim08a_workspace',
+                                           'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_WPV_MC2011_Sim08a_DataSet.root'),
+                                           'workspace' : 'Bs2JpsiPhiPrescaled_WPV_MC2011_Sim08a_workspace',
                                            'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC2011_Sim08a_incl_Jpsi_Prescaled.root')}
               }
+
+## {'2011' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2011_ntupleB_20130722.root'),
+##                         'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_Mixing_2011_DataSet.root'),
+##                         'workspace' : 'Bs2JpsiPhiPrescaled_2011_workspace',
+##                         'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Prescaled.root')}}
