@@ -196,7 +196,7 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                                              ObjectType = 'FormulaVar', Arguments = args)
         self._cache = kwargs.pop('Cache', True)
         param = kwargs.pop('Parameterise', False)
-        pee = not (self.__simultaneous and (sf_param or self.__mu_param))
+        pee = not (self.__simultaneous and ((sf_param and not split_sfs) or self.__mu_param))
         assert(param in [False, 'RMS', 'Comb'])
         self._timeResSigmasSFs = [ self._parseArg( 'timeResSigmaSF_%s' % num, kwargs, Value = val, MinMax = (0.001, 20) )\
                                   for num, val in sigmasSFs ]
@@ -207,18 +207,18 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         RooInf = RooNumber.infinity()
         if param == 'RMS':
             if sf_param:
-                self._parseArg('sf_mean_offset', kwargs, Value = 0.043, MinMax = (-0.1, 2.) )
+                self._parseArg('sf_mean_offset', kwargs, Value = 0.05, MinMax = (-0.1, 2.) )
                 self._parseArg('sf_mean_slope', kwargs, Value = 1.29, MinMax = (0., 10) )
-                self._parseArg('sf_sigma_offset', kwargs, Value = 0.0084, MinMax = (-0.1, 2.) )
+                self._parseArg('sf_sigma_offset', kwargs, Value = 0.01, MinMax = (-0.1, 2.) )
                 self._parseArg('sf_sigma_slope', kwargs, Value = 0.277, MinMax = (0., 10) )
             if sf_param.startswith('quadratic'):
                 self._parseArg('sf_mean_quad', kwargs, Value = -4, MinMax = (-20, 20))
                 self._parseArg('sf_sigma_quad', kwargs, Value = 8, MinMax = (-20, 20))
             if sf_param == 'linear':
                 if self.__simultaneous:
-                    formula = '@2 + @3 * @0'
-                    args = {'mean'  : [self.__sf_placeholder, self._sf_mean_offset, self._sf_mean_slope],
-                            'sigma' : [self.__sf_placeholder, self._sf_sigma_offset, self._sf_sigma_slope]}
+                    formula = '@2 + @3 * (@0 - @1)'
+                    args = {'mean'  : [self._sigmat, self.__sf_placeholder, self._sf_mean_offset, self._sf_mean_slope],
+                            'sigma' : [self._sigmat, self.__sf_placeholder, self._sf_sigma_offset, self._sf_sigma_slope]}
                     if split_sfs:
                         self._splitVars += [self._sf_mean_slope, self._sf_sigma_slope]
                 else:
