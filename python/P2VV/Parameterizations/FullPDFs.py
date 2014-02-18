@@ -427,8 +427,8 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
             splitConstr['betaTimeEff']['2012'] = ( -0.0083, None )
         else:
             splitConstr['betaTimeEff']['2012'] = ( 0., 0. )
-        splitConstr['sf_placeholder']['2011']   = (  0.0349,  0. )
-        splitConstr['sf_placeholder']['2012']   = (  0.0347,  0. )
+        splitConstr['sf_placeholder']['2011']   = (  0.0350,  0. )
+        splitConstr['sf_placeholder']['2012']   = (  0.0349,  0. )
         splitConstr['timeResMu']['2011']        = ( -0.00259, 0. )
         splitConstr['timeResMu']['2012']        = ( -0.00333, 0. )
         splitConstr['timeResFrac2']['2011']     = (  0.242,   0. )
