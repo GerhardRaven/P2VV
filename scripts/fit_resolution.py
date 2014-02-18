@@ -202,7 +202,7 @@ elif args[1] == 'double':
                      Fractions = [(2, 0.143)], SplitMean = options.split_mean,
                      MeanParameterisation = options.mu_param)
     if args[0] == 'MC2012':
-        tres_args['timeResFrac2'] = dict(Value = 0.015)
+        tres_args['timeResFrac2'] = dict(Value = 0.15)
     sig_tres = TimeResolution(Name = 'sig_tres', **tres_args)
     if options.add_background:
         bkg_tres = TimeResolution(Name = 'bkg_tres', ParNamePrefix = 'bkg', **tres_args)
@@ -684,7 +684,9 @@ if options.simultaneous:
         ## pars which need to be split.
         from ROOT import RooCustomizer
         customizer = RooCustomizer(time_pdf._target_(), split_cat, splitLeaves)
-        to_split = RooArgSet(*(split_pars[0] + [placeholder._target_()]))
+        to_split = RooArgSet(*(split_pars[0]))
+        ## CAREFULL: when do we need this?
+        ## to_split.add(placeholder._target_())
         customizer.splitArgs(to_split, split_cat)
         states = dict([(s.GetName(), customizer.build(s.GetName())) for s in split_cat])
         time_pdf = SimultaneousPdf(time_pdf.GetName() + '_simul',
