@@ -73,15 +73,16 @@ if latex:
     print '\n\n\n\n\n\n'
     print '  \\begin{tabular}{|c|c|c|c|}'
     print '    \\hline'
-
+    idx = 0
     for name in funcNames :
         val1 = moments1[name][0]
         val2 = moments2[name][0]
         diffVal = val2 - val1
         diffErr = sqrt( moments1[name][1]**2 + moments2[name][1]**2 )
         diffSig = ( diffVal / diffErr ) if diffErr != 0. else 0. if abs(diffVal) < 1.e-10 else float('inf')
-        print '  {0:20s} & {1:+7.4f} $\pm$ {2:7.4f}  &  {3:+7.4f} $\pm$ {4:7.4f}  &  {5:+7.4f} $\pm$ {6:7.4f} ({7:+.1f} sigma) \\\\'\
-            .format( effWeightsNamesLatexMap[name], val1, moments1[name][1], val2, moments2[name][1], diffVal, diffErr, diffSig )
+        idx += 1
+        print '  {0}  {1:20s} & {2:+7.4f} $\pm$ {3:7.4f}  &  {4:+7.4f} $\pm$ {5:7.4f}  &  {6:+7.4f} $\pm$ {7:7.4f} ({8:+.1f} sigma) \\\\'\
+            .format( idx, effWeightsNamesLatexMap[name], val1, moments1[name][1], val2, moments2[name][1], diffVal, diffErr, diffSig )
     print '\\hline'
     print '\\end{tabular}'
 print '\\small differences \\chi^2 / \# dof = %.1f / %d = %.1f (%.2g%%)'\

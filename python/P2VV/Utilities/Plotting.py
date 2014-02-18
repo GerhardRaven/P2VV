@@ -325,8 +325,7 @@ def getCondObsPlotsInKKbins(pdf, data, canv):
 
     return canv
 
-
-def compareDataSets( canv, obs, data={}, dataOpts={}, frameOpts={}, logy=False, RangeY=[], titleY='' ):
+def compareDataSets( canv, obs, data={}, dataOpts={}, frameOpts={}, **kwargs):  
     """ Superimpose RooDataSets
     example usage:  compareDistributions(     data = dict( dataSet1   = mcBefore
                                                            dataSet2   = mcAfter                                  ),
@@ -334,25 +333,41 @@ def compareDataSets( canv, obs, data={}, dataOpts={}, frameOpts={}, logy=False, 
                                                            dataSet2   = dict( MarkerColor = 4, MarkerSize = 1 )  )
                                          frameOpts = dict( Bins = 100, Range=( lo, high ) )             
                                                            """
+    logy         = kwargs.pop( 'logy',        False ) 
+    RangeY       = kwargs.pop( 'RangeY',         [] )
+    titleY       = kwargs.pop( 'titleY',         '' )
+    statOn       = kwargs.pop( 'statOn',       False)
+    Xtitle       = kwargs.pop('xTitle',         ''  )
+
     # get dataset scales (scale down the largest samples)
     entries = [ data[k].sumEntries() for k in data.keys() ]
     for k in data.keys(): dataOpts[k]['Rescale'] = min(entries) / data[k].sumEntries()
         
     # create frame
     obsFrame = obs.frame(**frameOpts)
-    obsFrame.SetName( obs.GetName() )
-    
+
     # plot data on frame
-    if data:
-        for key in data.keys():
-            if key not in dataOpts.keys(): assert  False, 'P2VV - EROR: compareDataSets: data and dataOpts dictionaries must have the same keys.'
-        YaxisMaxima, YaxisMinima = [], []
-        for d in data.keys():
-            if obs.hasBinning(obs.getBinning().GetName()): frame = data[d].plotOn( obsFrame, Binning = obs.getBinning(), **dataOpts[d] )
-            else: frame = data[d].plotOn( obsFrame, **dataOpts[d] )
-            YaxisMaxima += [frame.GetMaximum()]
-            YaxisMinima += [frame.GetMinimum()]
-            del frame
+    for key in data.keys():                                                                                                                  
+        if key not in dataOpts.keys():                                                                                                           
+            assert  False, 'P2VV - EROR: compareDataSets: data and dataOpts dictionaries must have the same keys.'                              
+
+    if statOn: # make legend with mean and rms                                                                                                                     
+        from ROOT import TPaveText                                                                                                               
+        legend = TPaveText(.442, .625, .945, .951, 'NDC' )                                                                                       
+        legend.SetFillColor(0)                                                                                                                   
+        legend.SetShadowColor(0)                                                                                                                 
+                               
+    YaxisMaxima, YaxisMinima = [], []                                                                                                                     
+    for d in data.keys():                                                                                                                        
+        frame = data[d].plotOn( obsFrame, **dataOpts[d] )                                                                                        
+        if statOn:                                                                                                                               
+            mean = data[d].meanVar(obs).getVal()                                                                                                 
+            rms  = data[d].rmsVar(obs).getVal()                                                                                                  
+            legend.AddText( '#color[%s]{#bullet} mean=%.3e, rms=%.3e'%(dataOpts[d]['MarkerColor'],mean,rms) )                                    
+        YaxisMaxima += [frame.GetMaximum()]                                                                                                      
+        YaxisMinima += [frame.GetMinimum()]                                                                                                      
+        del frame
+
     # title and axis ranges
     if RangeY: obsFrame.SetAxisRange( RangeY[0], RangeY[1], 'Y' )
     else:
@@ -361,6 +376,9 @@ def compareDataSets( canv, obs, data={}, dataOpts={}, frameOpts={}, logy=False, 
         obsFrame.SetAxisRange( min(YaxisMinima),  1.15 * min(scales) * max(YaxisMaxima) , 'Y' )
     obsFrame.SetYTitle(titleY)
     obsFrame.SetTitle('')
+    xtitle = Xtitle if Xtitle else obsFrame.GetXaxis().GetTitle().replace('(M','[M').replace('c^2)','c^{2]}') 
+    obsFrame.SetXTitle(xtitle)
+    obsFrame.SetName( obs.GetName() )
 
     # set logy
     if logy:
@@ -371,33 +389,29 @@ def compareDataSets( canv, obs, data={}, dataOpts={}, frameOpts={}, logy=False, 
     # draw
     canv.cd()
     obsFrame.Draw()
-    return obsFrame
+    if statOn: # save intemediate canvas.
+        legend.Draw()
+        from ROOT import TCanvas
+        c = TCanvas( obs.GetName() +'_'+ canv.GetName(), obs.GetName() +'_'+ canv.GetName())
+        obsFrame.Draw()
+        legend.Draw()
+        c.Print(obs.GetName() +'_'+ canv.GetName() + '.pdf')
+        return obsFrame, legend
+    return obsFrame, None
 
-
-def makeAssymetryPlot( canv, frame, refHist, numOfFrames, yRange=[] ):
+def makeAssymetryPlot( canv, frame, refHist, numOfFrames, yRange=[], save=False ):
     # get list of RooHist objects from frame
+    from ROOT import RooHist
     HistList = []
-    
-    for idx in range(numOfFrames): HistList.append( frame.getObject(idx) )
-
+    for idx in range( int(frame.numItems()) ): 
+        if type(frame.getObject(idx))==RooHist: HistList.append( frame.getObject(idx) )
+  
     # grab reference histogram
     for h in HistList: 
         if h.GetName()==refHist: hRef = h
     if not hRef: assert False, 'P2VV - ERROR: makeAssymetryPlot(): Cannot find reference histogram.'
     HistList.remove(hRef)
     
-    # get bin content and errors of reference histogram
-    ylistRef = hRef.GetY()
-    yErrHRef = hRef.GetEYhigh()
-    yErrLRef = hRef.GetEYlow()
-
-    # functions for error caclulation 
-    from array import array
-    from math import sqrt
-    _l2a      = lambda List: array('d', List) # python list to array
-    _assym    = lambda x0,x1: (x0-x1) / (x0+x1) # assymetry value
-    _assymErr = lambda x0,e0,x1,e1: 2*sqrt((x1*e1)**2 + (x0*e0)**2) / (x1+x0)**2 # assymentry error
-        
     # get bin content and errors of reference histogram
     ylistRef = hRef.GetY()
     yErrHRef = hRef.GetEYhigh()
@@ -444,20 +458,37 @@ def makeAssymetryPlot( canv, frame, refHist, numOfFrames, yRange=[] ):
             graph.SetMaximum(yRange[1])
         graph.SetName(hist.GetName() + frame.getPlotVar().GetName())
         graph.SetTitle(frame.getPlotVar().GetName())
-        graph.GetXaxis().SetTitle(frame.getPlotVar().GetName())
+        graph.GetXaxis().SetTitle( frame.GetXaxis().GetTitle() )
         graph.GetYaxis().SetTitle('Normalised Assymetry')
         graph.SetMarkerColor(hist.GetMarkerColor())
         graph.SetMarkerStyle(20)
-        graph.SetMarkerSize(.5)
+        markerSize = 1.5 if save else .5
+        graph.SetMarkerSize(markerSize)
         assymPlotsList.append(graph)
         _P2VVPlotStash.append(graph)
 
     canv.cd()
-    assymPlotsList.pop().Draw('APZ')
-    for g in assymPlotsList: g.Draw('ZPsame')
+    onePlot = assymPlotsList.pop()
+    onePlot.Draw('APZ')
+
+    if save:
+        from ROOT import TCanvas
+        cw = TCanvas(canv.GetName() + '.pdf')    
+        cw.cd()
+        onePlot.Draw('APZ')
+        histNames = ''
+        for h in HistList: histNames += h.GetName().replace('h_','') 
+
+    for g in assymPlotsList: 
+        canv.cd()
+        g.Draw('ZPsame')
+        if save: 
+            cw.cd()
+            g.Draw('ZPsame')
+            cw.Print('assym_' + frame.getPlotVar().GetName() +'_'+ histNames + '.pdf')
+    saveInRootFile(cw,'assym_' + frame.getPlotVar().GetName() +'_'+ histNames)   
     del assymPlotsList
     
-
 
 # class for plotting a PDF in KK mass bins
 class CPcomponentsPlotingToolkit():
@@ -926,3 +957,15 @@ class Sorter(object):
     def __call__(self, o):
         if o in self.__d:  return self.__d[o]
         else:              return len(self.__d) + 1
+
+# Save a plot/Canvas in a root file
+def saveInRootFile(plot, fileName=''):
+    from ROOT import TFile
+    if '.C' in fileName: name = fileName
+    elif fileName: name = fileName + '.C'
+    else:          name = plot.GetName() + '.C'
+    
+    f = TFile.Open(name,'recreate')
+    plot.Write()
+    f.Close()
+    print 'P2VV -INFO:saveInRootFile: Wrote %s to file: %s.'%(plot.GetName(),name)

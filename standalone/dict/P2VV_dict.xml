@@ -51,6 +51,8 @@
         <class name = "RooCategoryVar" />
         <class name = "RooConvertPolAmp" />
         <class name = "RooIpatia2" />
+        <class name = "RooEffConstraint" />
+        <class name = "RooCombEffConstraint" />
         <function name = "HelicityAngles" />
         <function name = "getRooRealMaxVal" />
 

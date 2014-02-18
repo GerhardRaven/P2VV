@@ -13,18 +13,22 @@
 from P2VV.Utilities.Plotting import _P2VVPlotStash
 
 def compareDistributions( **kwargs ):
-    physWeightsName = kwargs.pop('physWeightsName', None)
-    obsSet          = kwargs.pop('obsSet',          None)
-    itNumb          = kwargs.pop('itNumb',          None)
-    nullTest        = kwargs.pop('nullTest',        None)
-    
+    physWeightsName = kwargs.pop('physWeightsName', None )
+    obsSet          = kwargs.pop('obsSet',          None )
+    itNumb          = kwargs.pop('itNumb',          None )
+    nullTest        = kwargs.pop('nullTest',        None )
+    Legend          = kwargs.pop('legend',          False)
+    stats           = False if Legend==True else True
+
     # get datasets
-    # TODO: Make kwargs kwargs keys the same as data keys and compact object grabing
     from ROOT import RooFit, RooDataSet
-    data = dict( mcBefore = kwargs.pop('mcData'), Sdata = kwargs.pop('sData') )
-    for key in [ 'mkkRewData','BmomRewData', 'mcDataPhysRew', 'MomRewData' ]:
-        if kwargs[key]: data[key] = kwargs.pop(key) 
-          
+    data = dict( Sdata = kwargs.pop('sData') )
+    for key in [ 'mcData', 'mkkRewData','BmomRewData', 'mcDataPhysRew', 'MomRewData', 'BmomMkkRewData' ]:
+        if kwargs.has_key(key):
+            if kwargs[key]: data[key] = kwargs.pop(key)
+    names = '\n'
+    for d in data.itervalues(): names +=  d.GetName() + '\n'
+    
     # get observables and x ranges
     observables, Kmomenta, muMomenta, trackMomRangeX = [], [], [], {}
     for obs in obsSet:
@@ -48,20 +52,23 @@ def compareDistributions( **kwargs ):
     referenceHistName = 'h_' + data['Sdata'].GetName() 
 
     # start drawing
-    from ROOT import TCanvas, RooAbsData, TPaveText, kGreen, kMagenta
+    from ROOT import TCanvas, RooAbsData, TPaveText, kGreen, kMagenta, kOrange
     from P2VV.Utilities.Plotting import compareDataSets, makeAssymetryPlot
     from P2VV.Load import LHCbStyle
     from math import pi
 
     # make canvases
-    obsCanv         = TCanvas('anglesTime_%s'%itNumb,'anglesTime_%s'%itNumb)
-    assymObsCanv    = TCanvas('assymAnglesTime_%s'%itNumb,'assymAnglesTime_%s'%itNumb)
-    KaonCanv        = TCanvas('KaonMomenta_%s'%itNumb,'KaonMomenta_%s'%itNumb)
-    muonCanv        = TCanvas('muonMomenta_%s'%itNumb,'muonMomenta_%s'%itNumb)    
-    assymKaonCanv   = TCanvas('assymKaonMomenta_%s'%itNumb,'assymKaonMomenta_%s'%itNumb)
-    assymMuonCanv   = TCanvas('assymmuonMomenta_%s'%itNumb,'assymmuonMomenta_%s'%itNumb)
-    KKMassCanv      = TCanvas('KKMass_%s'%itNumb,'KKMass_%s'%itNumb)
-    BmomCanv        = TCanvas('B_P_%s'%itNumb,'B_P_%s'%itNumb)
+    namePF          = '' 
+    for name in data.keys(): namePF += name + '_' 
+    namePF += kwargs.pop('prodData')
+    obsCanv         = TCanvas('anglesTime_%s_'%itNumb + namePF       ,'anglesTime_%s'%itNumb)
+    assymObsCanv    = TCanvas('assymAnglesTime_%s_'%itNumb + namePF  ,'assymAnglesTime_%s'%itNumb)
+    KaonCanv        = TCanvas('KaonMomenta_%s_'%itNumb + namePF      ,'KaonMomenta_%s'%itNumb)
+    muonCanv        = TCanvas('muonMomenta_%s_'%itNumb + namePF      ,'muonMomenta_%s'%itNumb)    
+    assymKaonCanv   = TCanvas('assymKaonMomenta_%s_'%itNumb + namePF ,'assymKaonMomenta_%s'%itNumb)
+    assymMuonCanv   = TCanvas('assymmuonMomenta_%s_'%itNumb + namePF ,'assymmuonMomenta_%s'%itNumb)
+    KKMassCanv      = TCanvas('KKMass_%s_'%itNumb + namePF           ,'KKMass_%s'%itNumb)
+    BmomCanv        = TCanvas('B_P_%s_'%itNumb + namePF              ,'B_P_%s'%itNumb)
     obsCanv.Divide(2,2)
     assymObsCanv.Divide(2,2)
     muonCanv.Divide(4,2)
@@ -72,84 +79,110 @@ def compareDistributions( **kwargs ):
     KKMassCanv.Divide(2,2)
 
     # set some data drawing options
-    colors      = dict(mcBefore=2, mcDataPhysRew=kGreen+3, MomRewData=4, Sdata=kMagenta+2, mkkRewData=1, BmomRewData=5 )
+    colors      = dict(mcData=2, mcDataPhysRew=kGreen+3, MomRewData=4, Sdata=0,
+                       mkkRewData=1, BmomRewData=5, BmomMkkRewData = kMagenta+2)
     stdDrawOpts = dict( DataError = RooAbsData.SumW2, MarkerSize = .6, XErrorSize = 0. )
     dataOpts    = dict()    
     for key in colors.keys():
         if data.has_key(key): dataOpts[key] = dict( MarkerColor = colors[key], **stdDrawOpts  )
-        
+
+    print 'P2VV - INFO: compareDistributions: Making comparition plots for datasets:', names
     # plot angles and decay time
     for canv, assymCanv, obs, logY, assymYrange in zip( 
         [obsCanv.cd(i+1) for i in xrange(len(observables))], 
         [assymObsCanv.cd(i+1) for i in xrange(len(observables))], 
         observables,
         3 * [False] + [True],
-        [ [],[],[], [-3,3] ]
+        3 * [(-.1,.1),] + [(-3,3)]
         ):
-        print 'P2VV - INFO: compareDistributions: Plotting %s'%obs.GetName()
-        anglesFrames= compareDataSets( canv, obs, data = data, dataOpts = dataOpts, logy = logY,
+        print 'P2VV - INFO: compareDistributions: Plotting %s.'%obs.GetName()
+        anglesFrames, leg = compareDataSets( canv, obs, data = data, dataOpts = dataOpts, logy = logY,
                                        frameOpts = dict( Bins = 30 ), 
                                        )
-        # make assymetry plots
-        print 'P2VV - INFO: compareDistributions: Creating assymentry plot for %s'%obs.GetName()
-        makeAssymetryPlot(assymCanv, anglesFrames, referenceHistName, len(data.keys()), yRange=assymYrange ) 
-
+        # make assymetry plots 
+        makeAssymetryPlot(assymCanv, anglesFrames, referenceHistName, len(data.keys()), 
+                               yRange=assymYrange, save = True if stats and not Legend else False 
+                          )
+    
     # plot Kaon and muon momenta
     print 'P2VV - INFO: compareDistributions: Plotting track momenta.'
-    for canv, assymCanv, obs in zip( 
+    for canv, assymCanv, obs, assymYrange in zip( 
         [ KaonCanv.cd(k+1) for k in xrange(len(Kmomenta)) ]      + [ muonCanv.cd(m+1) for m in xrange(len(muMomenta)) ],
         [ assymKaonCanv.cd(k+1) for k in xrange(len(Kmomenta)) ] + [ assymMuonCanv.cd(m+1) for m in xrange(len(muMomenta)) ],
         Kmomenta + muMomenta,
+        16 * [(-.4,.4),] 
         ):
-        print 'P2VV - INFO: compareDistributions: Plotting %s'%obs.GetName()
-        momFrame = compareDataSets( canv, obs, data = data, dataOpts = dataOpts,
-                                    frameOpts = dict( Bins = 30, Range=trackMomRangeX[obs.GetName()] )
-                                    )
-        # make assymetry plots
-        print 'P2VV - INFO: compareDistributions: Creating assymentry plot for %s'%obs.GetName()
-        makeAssymetryPlot( assymCanv, momFrame, referenceHistName, len(data.keys()) ) 
+        print 'P2VV - INFO: compareDistributions: Plotting %s.'%obs.GetName()
+        
+        # make stats box only for *_P, and increase marker size.
+        printStats = False if any( ['PX' in obs.GetName(), 'PY' in obs.GetName(), 'PZ' in obs.GetName()] ) else True
+        for d in data.keys():        
+            dataOpts[d]['MarkerSize'] = 1.5 if printStats and stats and not Legend else stdDrawOpts['MarkerSize']
+                
+        # plot
+        momFrame, leg = compareDataSets( canv, obs, data = data, dataOpts = dataOpts,
+                                         frameOpts    = dict( Bins = 30, Range=trackMomRangeX[obs.GetName()] ),
+                                         statOn       = printStats,
+                                         )
+        makeAssymetryPlot( assymCanv, momFrame, referenceHistName, len(data.keys()), 
+                           yRange=assymYrange, save = printStats
+                           ) 
+    
+
+        if 'Kplus_PX' in obs.GetName():break
+
 
     # plot KKMass
-    if data.has_key('mkkRewData'):
-        print 'P2VV - INFO: compareDistributions: Plotting KKmass.'
-        KKMassFrame = compareDataSets( KKMassCanv.cd(1), KKMass, data = data, dataOpts = dataOpts, frameOpts = dict( Bins = 40 ))
-        print 'P2VV - INFO: compareDistributions: Creating assymentry plot for KKmass'
-        makeAssymetryPlot( KKMassCanv.cd(2), KKMassFrame, referenceHistName, len(data.keys()) )
+    print 'P2VV - INFO: compareDistributions: Plotting KKmass.'
+    for d in data.keys():        
+        dataOpts[d]['MarkerSize'] = 1.5 if printStats and stats and not Legend else stdDrawOpts['MarkerSize']
+    KKMassFrame, leg = compareDataSets( KKMassCanv.cd(1), KKMass, data = data, 
+                                        dataOpts = dataOpts, 
+                                        xTitle = 'm(KK) [MeV/c^{2}]',
+                                        frameOpts = dict( Bins = 40 ),
+                                        statOn    = True if stats and not Legend else False
+                                        )
+    makeAssymetryPlot( KKMassCanv.cd(2), KKMassFrame, referenceHistName, len(data.keys()),
+                       save = True if stats and not Legend else False 
+                       )
 
     # plot B_P and B_Pt
-    if data.has_key('BmomRewData'):
-        for pad, obs, rangeY in zip( [1,2], [ B_P,B_Pt], [(0.,5e5),(0.,3e4)] ):
-            # for key in dataOpts.keys(): dataOpts[key]['Binning'] = B_P.getBinning()
-            print 'P2VV - INFO: compareDistributions: Plotting %s'%obs.GetName()
-            BmomFrame = compareDataSets( BmomCanv.cd(pad), obs, data = data, dataOpts = dataOpts, frameOpts = dict( Bins=70, Range=rangeY ))
-            print 'P2VV - INFO: compareDistributions: Creating assymentry plot for %s'%obs.GetName()
-            makeAssymetryPlot( BmomCanv.cd(pad+2), BmomFrame, referenceHistName, len(data.keys()) )
+    for pad, obs, rangeY in zip( [1,2], [ B_P,B_Pt], [(0.,5e5),(0.,3e4)] ):
+        print 'P2VV - INFO: compareDistributions: Plotting %s.'%obs.GetName()
+        BmomFrame, leg = compareDataSets( BmomCanv.cd(pad), obs, data = data, dataOpts = dataOpts, 
+                                     frameOpts = dict( Bins=70, Range=rangeY ),
+                                     statOn    = True if stats and not Legend else False
+                                     )
+        makeAssymetryPlot( BmomCanv.cd(pad+2), BmomFrame, referenceHistName, len(data.keys()),
+                           save = True if stats and not Legend else False 
+                           )
 
     # make a legend and draw it
-    legend, assym_legend = TPaveText(.587, .66, .893, .902, 'NDC' ), TPaveText( .269, .247, .569, .489, 'NDC' )
-    for l in [legend,assym_legend]: l.SetFillColor(0)
-    entriesNames = dict(mcBefore='mcNominal', mcDataPhysRew='mcPhysRew', mkkRewData = 'mcMkkRew', \
-                            MomRewData='mKKMomRew', Sdata='data', BmomRewData = 'mcBmomRew' )
-    for key in ['mcBefore', 'BmomRewData', 'mcDataPhysRew', 'mkkRewData', 'MomRewData', 'Sdata']:
-        if data.has_key(key):
-            legend.AddText('#color[%s]{%s}'%(colors[key],entriesNames[key]))
-        if data.has_key(key) and key!='Sdata': 
-            assym_legend.AddText('#color[%s]{%s}'%(colors[key],entriesNames[key]))
-    for canv, pad in zip([obsCanv, KaonCanv, muonCanv], [4,8,8]):
-        canv.cd(pad)
+    if Legend:
+        legend, assym_legend = TPaveText(.587, .66, .893, .902, 'NDC' ), TPaveText( .269, .247, .569, .489, 'NDC' )
+        for l in [legend,assym_legend]: l.SetFillColor(0)
+        entriesNames = dict(mcData='mcNominal', mcDataPhysRew='mcPhysRew', mkkRewData = 'mcMkkRew', \
+                                MomRewData='mKKMomRew', Sdata='data', BmomRewData = 'mcBmomRew' )
+        for key in ['mcData', 'BmomRewData', 'mcDataPhysRew', 'mkkRewData', 'MomRewData', 'Sdata']:
+            if data.has_key(key):
+                legend.AddText('#color[%s]{%s}'%(colors[key],entriesNames[key]))
+            if data.has_key(key) and key!='Sdata': 
+                assym_legend.AddText('#color[%s]{%s}'%(colors[key],entriesNames[key]))
+        for canv, pad in zip([obsCanv, KaonCanv, muonCanv], [4,8,8]):
+            canv.cd(pad)
+            legend.Draw()
+        for canv, pad in zip([assymKaonCanv, assymMuonCanv], [8,8]):
+            canv.cd(pad)
+            assym_legend.Draw()
+        KKMassCanv.cd(1)
         legend.Draw()
-    for canv, pad in zip([assymKaonCanv, assymMuonCanv], [8,8]):
-        canv.cd(pad)
-        assym_legend.Draw()
-    KKMassCanv.cd(1)
-    legend.Draw()
-    BmomCanv.cd(1)
-    legend.Draw()
-    _P2VVPlotStash.append(legend)
-    _P2VVPlotStash.append(assym_legend)
-    
+        BmomCanv.cd(1)
+        legend.Draw()
+        _P2VVPlotStash.append(legend)
+        _P2VVPlotStash.append(assym_legend)
+        
     # print canvases in file
-    for canv in [obsCanv,KaonCanv,muonCanv,assymObsCanv,assymMuonCanv,assymKaonCanv,KKMassCanv,BmomCanv]: canv.Print(canv.GetName()+'.pdf')
+    for canv in [obsCanv,KaonCanv,muonCanv,assymObsCanv,assymMuonCanv,assymKaonCanv,KKMassCanv,BmomCanv]: canv.Print(canv.GetName() +  '.pdf')
     return [obsCanv,KaonCanv,muonCanv,assymObsCanv,assymMuonCanv,assymKaonCanv,KKMassCanv,BmomCanv]
 
 # clean P2VVPlotStash to save memory
@@ -186,7 +219,7 @@ def _createGetObservable(name):
     return obs 
 
 # combine moments function with waiting feature.
-def combineMoments( accFile1, accFile2, outName, Prefix=''):
+def combineMoments( accFile1, accFile2, outName, Prefix='', delete=True):
     from time import sleep
     import os
     from P2VV.Utilities.DataMoments import combineMoments
@@ -195,10 +228,11 @@ def combineMoments( accFile1, accFile2, outName, Prefix=''):
             open(accFile1)
             open(accFile2)
             combineMoments( [ accFile1, accFile2 ], outName, prefix = Prefix, printMoms = False )
-            for angAcc in [accFile1,accFile2]: os.remove(angAcc)
+            if delete: 
+                for angAcc in [accFile1,accFile2]: os.remove(angAcc)
             break
         except IOError:
-            print 'P2VV - INFO: combineMoments: Waiting for the followig flies to combine efficiency moments:\n%s\n%s'%(accFile1,accFile2)
+            print 'P2VV - INFO: combineMoments: Waiting for the followig flies to combine efficiency moments:\n  %s\n  %s'%(accFile1,accFile2)
             sleep(60)
 
 # Reweighting tools
@@ -271,29 +305,15 @@ class UniFunc(object):
 	"""
 	return self.value(y,self.yaxis,self.xaxis)
 
-def createMomentaBinning(nbins, startingPoint=0, turningPoint=5e4, endpoint=35e4,typeSpec='f'):
-    lowBinBounds = [] # 98% of bins are below the turning point
-    nbins_1, nbins_2 = int(round(nbins * .98)), int(round(nbins * (1-.98)))
-    binWidth_1   = ( turningPoint - startingPoint ) / nbins_1
-    binWidth_2   = ( endpoint - turningPoint  )     / nbins_2
-    assert nbins_1 + nbins_2 == nbins
-    # create low edges for histograms bins
-    for lowbin in xrange(nbins_1 + 1): lowBinBounds += [lowbin * binWidth_1] 
-    for lowbin in xrange(nbins_2):     lowBinBounds += [turningPoint + (lowbin+1) * binWidth_2]
-    lowBinBounds.pop(len(lowBinBounds)-1) 
-    lowBinBounds.append(endpoint+1)
-    assert len(lowBinBounds) == nbins + 1
-    from array import array
-    return array(typeSpec,lowBinBounds)
-
 # function that reweighits the KK distributions with a 2D histrogram
 def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     print 'P2VV - INFO: TwoDimentionalVerticalReweighting: Reweighting variables (%s, %s) in sample %s.'%(var[0],var[1],source.GetName())
     iterIdx        = kwargs.pop('iterationNumber',   0   )
     plot           = kwargs.pop('xCheckPlots',     False )
-    equalStatsBins = kwargs.pop('equalStatsBins',  False )
+    equalStatsBins = kwargs.pop('equalStatBins',   False )
+    combineWeights = kwargs.pop('combWeights',     False )
 
-    from ROOT import TH2F, TH1F, TCanvas
+    from ROOT import TH2D, TH1D, TCanvas
   
     _valX = lambda ev: ev.find(var[0]).getVal() # value getter of the first variable
     _valY = lambda ev: ev.find(var[1]).getVal() # value getter of the first variable
@@ -304,87 +324,136 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     xMax, yMax = RooObject._rooobject(var[0]).getMax(), RooObject._rooobject(var[1]).getMax()
         
     # import / create binning
-    print 'P2VV - INFO: TwoDimentionalVerticalReweighting: Using %s binnning with %sx%s bins .'%('equal statistics' if equalStatsBins else 'uniform',nbins,nbins)
-    if equalStatsBins: 
-        # create equal statistics binning
+    print 'P2VV - INFO: TwoDimentionalVerticalReweighting: Using %s binnning with %sx%s bins.'%('almost equal statistics' if equalStatsBins else 'uniform',nbins[0],nbins[1])
+    if equalStatsBins: # create equal statistics binning
         from array import array
+        
+        fixBinSumW = True
+        if fixBinSumW: print 'P2VV - INFO: TwoDimentionalVerticalReweighting: Binning target distribution. Bins per dimentsion will have fixed number of weights!'
+        
         targetListX,  targetListY = [],[]
-        for ev in target: targetListX += [ev.find(var[0]).getVal()]
-        for ev in target: targetListY += [ev.find(var[1]).getVal()]
+        for ev in target: targetListX += [ (ev.find(var[0]).getVal(), target.weight()) ] if fixBinSumW else [ (ev.find(var[0]).getVal(),1) ]
+        for ev in target: targetListY += [ ev.find(var[1]).getVal() ]
+
+# BELOW THIS IS TESTING REGION, DO NOT DELETE BEFORE OR AFTER THIS BOX
         targetListX.sort()
         targetListY.sort()
 
-        rangeX, rangeY = xMax - xMin, yMax - yMin
-        binstat = target.numEntries() / nbins
-        lowboundsX, lowboundsY = [xMin - 0.0001*xMin], [yMin - 0.0001*yMin]
 
-        for ev in xrange(binstat,len(targetListX),binstat):
-            lowboundsX += [ targetListX[ev] ]
-            lowboundsY += [ targetListY[ev] ]
-            if len(lowboundsX) == nbins: break
-        lowboundsX += [ xMax ]
-        lowboundsY += [ yMax ]
-        lowboundsX, lowboundsY = array('f',lowboundsX), array('f',lowboundsY)
-    else: # import binning
-        from P2VV.Utilities.MCReweighting import createMomentaBinning
-        lowboundsX = createMomentaBinning( nbins, endpoint=xMax,typeSpec='f' )
-        lowboundsY = createMomentaBinning( nbins, endpoint=yMax,typeSpec='f' )
+        from math import sqrt, cos, sin ,pi
+        rhoDistr = []
+        rho = lambda x,y: sqrt(x**2 + y**2)  
+        theta = pi / 4
+        x = lambda r: r * cos(theta)
+        y = lambda r: r * sin(theta)
     
+    #    for x_, y_ in zip(targetListX,targetListY): rhoDistr += [ rho(x_[0],y_) ] 
+    #    rhoDistr.sort()
+
+        eventCount = 0
+        binstat = target.numEntries() / nbins if not fixBinSumW else target.sumEntries() / nbins 
+        lowBounds = [ rho(xMin,yMin) ]
+        while True:
+            if eventCount + 1 >= target.numEntries(): break
+            binContentCount = 0
+            while binContentCount < binstat and eventCount < target.numEntries():
+#                lowBound_i = rhoDistr[eventCount]
+                lowBound_i = rho( targetListX[eventCount][0], targetListX[eventCount][0] )
+                binContentCount += 1 if not fixBinSumW else targetListX[eventCount][1]  
+                eventCount += 1
+            lowBounds += [ lowBound_i ]
+
+        lowboundsX = map( x, lowBounds )
+        lowboundsY = map( y, lowBounds )
+        
+        lowboundsX, lowboundsY = array('f',lowboundsX), array('f',lowboundsY)
+
+        print 'bincontent:',   binstat
+# END OF TESTING BOX
+        
+        sourceHist = TH2D('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins[0], lowboundsX, nbins[1], lowboundsY )
+        targetHist = TH2D('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins[0], lowboundsX, nbins[1], lowboundsY )
+
+    else: # import binning
+        sourceHist = TH2D('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins[0], xMin, xMax, nbins[1], yMin, yMax )
+        targetHist = TH2D('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins[0], xMin, xMax, nbins[1], yMin, yMax )
+
     # create 2D histrograms and fill
-    sourceHist = TH2F('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, lowboundsX, nbins, lowboundsY )
-    targetHist = TH2F('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, lowboundsX, nbins, lowboundsY )
-    for evnt in source: sourceHist.Fill( _valX(evnt), _valY(evnt), source.weight() )
+    #  fill source 2D histogram
+    if combineWeights and source.isWeighted(): # alow reweighting independant from the previous ones
+        sourcePreviousWeights = []
+        for evnt in source:
+            sourceHist.Fill( _valX(evnt), _valY(evnt), source.weight() )
+            sourcePreviousWeights += [ source.weight() ]
+    else: 
+        for evnt in source: sourceHist.Fill( _valX(evnt), _valY(evnt), source.weight() )
+
+    #  fill target 2D histogram
     for evnt in target: targetHist.Fill( _valX(evnt), _valY(evnt), target.weight() )
-       
+
     # rescale
     if source.numEntries() > target.numEntries(): sourceHist.Scale( target.sumEntries() / source.sumEntries() )
     else: targetHist.Scale( source.sumEntries() / target.sumEntries() )
-    
+
     # calculate weights
     weights = []
-    count = 0 # count how many events have a problematic weight
+    prblEvens, t_zero, s_zero, both_zero, t_negative, s_negative = 0, 0, 0, 0, 0, 0 # count how many events have a problematic weight
     for event in source:
         bin = sourceHist.FindFixBin( _valX(event),  _valY(event) ) # get bin with the given varible values
-        if targetHist.GetBinContent(bin)==0 or sourceHist.GetBinContent(bin)==0:# do not weight the event if not possible with current binning
-            weights += [0.] 
-            count += 1
-        else: 
-            weights += [targetHist.GetBinContent(bin) / sourceHist.GetBinContent(bin)] # calculate weight
-    if count>0: print 'P2VV - INFO: TwoDimentionalVerticalReweighting: Could not assign weight for %s out of %s events with current binning, excluding them from the sample.'%(count,source.numEntries())
+        # make sure the event is not problematic
+        if not targetHist.GetBinContent(bin) <= 0 and not sourceHist.GetBinContent(bin) <= 0 :
+            weights += [targetHist.GetBinContent(bin) / sourceHist.GetBinContent(bin)]
+        else:
+            if targetHist.GetBinContent(bin)==0 and sourceHist.GetBinContent(bin)==0: both_zero += 1
+            if targetHist.GetBinContent(bin)<=0:
+                if    targetHist.GetBinContent(bin)==0: t_zero += 1
+                else: t_negative += 1
+            elif sourceHist.GetBinContent(bin)<=0:
+                if    sourceHist.GetBinContent(bin)==0: s_zero += 1
+                else: s_negative += 1
+            weights += [0.]
+            prblEvens += 1
 
-    # fill weights to histogram for xcheck
-    if plot: 
-        weightsHist = TH1F('Weights', 'Weights',  2*nbins, .9*min(weights), 1.1*min(weights))
-        for w in weights: weightsHist.Fill(w)
-      
+    print 'P2VV - INFO: TwoDimentionalVerticalReweighting of variables (%s): %s problematic events%s'\
+                        %(var[0]+','+var[1],prblEvens,' due to:' if prblEvens else '.' )
+    summary =  '  Source binning                      : %s\n'%s_zero  
+    summary += '  Target binning                      : %s\n'%t_zero
+    summary += '  Both                                : %s\n'%both_zero
+    summary += '  Source events with negative weights : %s\n'%s_negative
+    summary += '  Target events with negative weights : %s'%t_negative    
+    if prblEvens:  print summary
+
+    # combine previous weights with the latest ones
+    if combineWeights and source.isWeighted():
+        print 'P2VV - INFO: TwoDimentionalVerticalReweighting: Combining previous source weights with the latest ones.'
+        from numpy import array
+        weights = array(weights) * array(sourcePreviousWeights)
+
     # plot and print the 2d histograms
     if plot: 
-        canvSourc, canvTarg, canvWeights = [ TCanvas(n,n) for n in ['source','target','momWeights'] ]
+        canvSourc, canvTarg = [ TCanvas(n,n) for n in ['source','target'] ]
         for hist, canv in zip([sourceHist,targetHist], [canvSourc,canvTarg]): 
             hist.SetStats(False)
             canv.cd()
             hist.Draw('LEGO')
             canv.Print(canv.GetName() + '_%s.pdf'%iterIdx)
-        canvWeights.cd()
-        weightsHist.Draw()
-        canvWeights.Print(canvWeights.GetName() + '_%s.pdf'%iterIdx )
 
-        testS0 = TH1F('testBP0S','testBP0S',3*nbins, xMin, xMax )
-        testT0 = TH1F('testBP0T','testBP0T',3*nbins, xMin, xMax )
-        testS1 = TH1F('testBpt1S','testBpt1S',3*nbins, yMin, yMax )
-        testT1 = TH1F('testBpt1T','testBpt1T',3*nbins, yMin, yMax )
-        sourceBp, sourceBPt = [], []
+        testS0 = TH1D('%s_Source'%var[0],'test%s_Source'%var[0], nbins[0], xMin, xMax )
+        testT0 = TH1D('%s_Target'%var[0],'test%s_Target'%var[0], nbins[0], xMin, xMax )
+        testS1 = TH1D('%s_Source'%var[1],'test%s_Source'%var[1], nbins[1], yMin, yMax )
+        testT1 = TH1D('%s_Target'%var[1],'test%s_Target'%var[1], nbins[1], yMin, yMax )
+        source0, source1, = [], []
         for ev in source: 
-            sourceBp += [ev.find(var[0]).getVal()]
-            sourceBPt+= [ev.find(var[1]).getVal()]
-        for Bp,Bpt,weight in zip(sourceBp,sourceBPt,weights):
-            testS0.Fill(Bp,weight)
-            testS1.Fill(Bpt,weight)
+            source0 += [ _valX(ev) ]
+            source1 += [ _valY(ev) ]
+        for var0, var1, weight in zip( source0, source1, weights ):
+            testS0.Fill(var0,weight)
+            testS1.Fill(var1,weight)
         for ev in target:
-            testT0.Fill(ev.find(var[0]).getVal(),target.weight())
-            testT1.Fill(ev.find(var[1]).getVal(),target.weight())
-        testS0.Scale( target.sumEntries() / source.sumEntries() )
-        testS1.Scale( target.sumEntries() / source.sumEntries() )
+            testT0.Fill(_valX(ev),target.weight())
+            testT1.Fill(_valY(ev),target.weight())
+        testS0.Scale( target.sumEntries() / source.numEntries() )
+        testS1.Scale( target.sumEntries() / source.numEntries() )
 
         can = TCanvas('test','test')
         can.Divide(2,2)
@@ -399,20 +468,21 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
         _P2VVPlotStash += [testS0,testT0,testS1,testT1]
         
         del source, target
-        return weights, can
+        return weights, [can, testS0,testT0,testS1,testT1,sourceHist,targetHist]
     else: 
         del source, target
         return weights
+
 
 # function that reweighits a single source distribution to match a given target using a histogram
 def OneDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     print 'P2VV - INFO: OneimentionalVerticalReweighting: Reweighting variable %s in sample %s.'%(var,source.GetName())
     iterIdx        = kwargs.pop('iterationNumber',     0 )
     plot           = kwargs.pop('xCheckPlots',     False )
-    equalStatsBins = kwargs.pop('equalStatsBins',  False )
+    equalStatsBins = kwargs.pop('equalStatBins',   False )
+    combineWeights = kwargs.pop('combWeights',     False )
 
-    from ROOT import TH1F, TCanvas
-    from array import array
+    from ROOT import TH1D, TCanvas
 
     # dataset value getter 
     _valX = lambda ev: ev.find(var).getVal() 
@@ -421,59 +491,88 @@ def OneDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
     from P2VV.RooFitWrappers import RooObject
     xMin, xMax = RooObject._rooobject(var).getMin(), RooObject._rooobject(var).getMax(var)
 
-    # create equal statistics binning
-    if equalStatsBins:
-        print 'P2VV - INFO: OneDimentionalVerticalReweighting: Reweighting with equal statistics binning.'
-        targetList = []
-        for ev in target: targetList += [ev.find(var).getVal()]
-        targetList.sort()
-        
-        range = xMax - xMin
-        binstat = target.numEntries() / nbins
-        lowbounds = [xMin - 0.0001*xMin]
-        
-        for ev in xrange(binstat,len(targetList),binstat):
-            lowbounds += [ targetList[ev] ]
-            if len(lowbounds) == nbins: break
-        lowbounds += [ xMax ]
-
     # create histrograms
     print 'P2VV - INFO: OneDimentionalVerticalReweighting: Using %s binnning with #bins = %s.'%('equal statistics' if equalStatsBins else 'uniform',nbins)
-    if equalStatsBins:
-        sourceHist  = TH1F('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, array('f',lowbounds) )
-        targetHist  = TH1F('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, array('f',lowbounds) )
+    if equalStatsBins: # create equal statistics binning
+        from array import array
+        
+        fixBinSumW = False
+        if fixBinSumW: print 'P2VV - INFO: OneDimentionalVerticalReweighting: Binning target distribution. Bins will have fixed number of weights!'
+        
+        targetList = []
+        for ev in target: targetList += [ ( ev.find(var).getVal(), target.weight() )]if fixBinSumW else [ (ev.find(var).getVal(),1) ]
+        targetList.sort()
+
+        binstat = target.sumEntries() / nbins if fixBinSumW else target.numEntries() / nbins
+        lowbounds = [ xMin ]
+        eventCount = 0
+        while True:
+            if eventCount + 1 >= target.numEntries(): break
+            binContentCount = 0
+            while binContentCount < binstat and eventCount < target.numEntries():
+                lowbound_i = targetList[eventCount][0]        # variable value
+                binContentCount += targetList[eventCount][1]  # event weight
+                eventCount += 1
+            lowbounds += [lowbound_i]
+
+        sourceHist  = TH1D('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, array('f',lowbounds) )
+        targetHist  = TH1D('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, array('f',lowbounds) )
     else:
-        sourceHist  = TH1F('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, xMin, xMax )
-        targetHist  = TH1F('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, xMin, xMax )
+        sourceHist  = TH1D('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins, xMin, xMax )
+        targetHist  = TH1D('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins, xMin, xMax )
 
     # fill reweighting histograms
-    for evnt in source: sourceHist.Fill( _valX(evnt), source.weight() )
+    if combineWeights and source.isWeighted(): # alow reweighting independant from the previous ones
+        sourcePreviousWeights = []
+        for evnt in source:
+            sourceHist.Fill( _valX(evnt), source.weight() )
+            sourcePreviousWeights += [ source.weight() ]
+    else: 
+        for evnt in source: sourceHist.Fill( _valX(evnt), source.weight() )
+    # fill target 2D histogram
     for evnt in target: targetHist.Fill( _valX(evnt), target.weight() )
        
     # rescale
     if source.numEntries() > target.numEntries(): sourceHist.Scale( target.sumEntries() / source.sumEntries() )
     else: targetHist.Scale( source.sumEntries() / target.sumEntries() )
-    
-    # print sourceHist.KolmogorovTest(targetHist)
 
     # calculate weights
     weights = []
-    count = 0 # count how many events have a problematic weight
+    prblEvens, t_zero, s_zero, both_zero, s_negative, t_negative = 0, 0, 0, 0, 0, 0 # count how many events have a problematic weight
     for event in source:
         bin = sourceHist.FindFixBin( _valX(event) ) # get the bin with given var value
-        if targetHist.GetBinContent(bin)==0 or sourceHist.GetBinContent(bin)==0:
-            weights += [0.] 
-            count += 1
-        else: 
+        # make sure the event is not problematic
+        if not targetHist.GetBinContent(bin) <= 0 and not sourceHist.GetBinContent(bin) <= 0 :
             weights += [targetHist.GetBinContent(bin) / sourceHist.GetBinContent(bin)] # calculate weight
-    if count>0: print 'P2VV - INFO: OneDimentionalVerticalReweighting: Could not assign weight for %s out of %s events, excluding them from sample.'%(count,source.numEntries())
+        else:
+            if targetHist.GetBinContent(bin)==0 and sourceHist.GetBinContent(bin)==0: both_zero += 1
+            if targetHist.GetBinContent(bin)<=0:
+                if    targetHist.GetBinContent(bin)==0: t_zero += 1
+                else: t_negative += 1
+            elif sourceHist.GetBinContent(bin)<=0:
+                if    sourceHist.GetBinContent(bin)==0: s_zero += 1
+                else: s_negative += 1
+            weights += [0.]
+            prblEvens += 1
 
-    if plot: # check the result of the reweighting 
-        weightsHist = TH1F('Weights', 'Weights',  3*nbins, .9*min(weights), 1.1*min(weights))
-        for w in weights: weightsHist.Fill(w)
+    print 'P2VV - INFO: OneDimentionalVerticalReweighting of variable %s: %s problematic events%s'%(var,prblEvens,' due to:' if prblEvens else '.' )
+    summary =  '  Source binning                      : %s\n'%s_zero  
+    summary += '  Target binning                      : %s\n'%t_zero
+    summary += '  Both                                : %s\n'%both_zero
+    summary += '  Source events with negative weights : %s\n'%s_negative
+    summary += '  Target events with negative weights : %s'%t_negative    
+    if prblEvens: print summary
 
-        test_s = TH1F('test_s','test_s', 3*nbins, xMin,xMax)
-        test_t = TH1F('test_t','test_t', 3*nbins, xMin,xMax)
+    # combine previous weights with the latest ones
+    if combineWeights and source.isWeighted():
+        print 'P2VV - INFO: OneDimentionalVerticalReweighting: Combining previous source weights with the latest ones.'
+        from numpy import array
+        weights = array(weights) * array(sourcePreviousWeights)
+
+    # check the result of the reweighting 
+    if plot: 
+        test_s = TH1D('test_s','test_s', nbins, xMin,xMax)
+        test_t = TH1D('test_t','test_t', nbins, xMin,xMax)
         sourceEvtList, targetEvtList = [],[]
         for ev in source: sourceEvtList+=[ _valX(ev) ]
         for ev in target: targetEvtList+=[ _valX(ev) ]
@@ -482,15 +581,13 @@ def OneDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
         # plot and print the histograms
         testCanv = TCanvas('test','test')
         test_t.Draw()
-        test_s.Scale(target.sumEntries() / source.sumEntries())
+        test_s.Scale(target.sumEntries() / source.numEntries())
         test_s.Draw('same err')
        
         from P2VV.Utilities.Plotting import _P2VVPlotStash
         _P2VVPlotStash += [test_s,test_t]
-        testCanv.Print( testCanv.GetName() + '_%s.pdf'%iterIdx )
-        
         del source, target
-        return weights, testCanv
+        return weights, testCanv, test_t
     else: 
         del source, target
         return weights
@@ -511,65 +608,59 @@ class WeightedDataSetsManager(dict):
 
         print 'P2VV - INFO: WeightedDataSetsManager: Initialsed for sample %s.'%self['initSource'].GetName()
 
-    def appendWeights( self, weightsName, weightsList, permanetnWeigts=False, permanentDataSet=False ):
-        from numpy import array
-        if permanetnWeigts: 
-            print 'P2VV - INFO: appendWeights: Putting weights list %s in permanetnWeigtsLists.'%weightsName
-            self['permanetnWeigtsLists'][weightsName] = array( weightsList )
-        else: self['WeightsLists'][weightsName] = array( weightsList )
+    def appendWeights( self, weightsName, weightsList, combWithPrevious = False, scale = True ):
+        # check if the weights is of numpy type array
+        import numpy
+        if not type(weightsList)==numpy.ndarray: weightsList = numpy.array(weightsList)
 
-        # combine weights
-        if not len( self['WeightsLists'] ) <= 1:
-            print 'P2VV - INFO: appendWeights: Combining weights, named %s, with existing ones.'%weightsName
-            self['combinedWeights'] = 1
-            for wList in self['WeightsLists'].itervalues(): self['combinedWeights'] *= wList
-            if self['permanetnWeigtsLists'].keys():
-                for perWList in self['permanetnWeigtsLists'].itervalues(): self['combinedWeights'] *= perWList
-        else:
-            self['combinedWeights'] = self['permanetnWeigtsLists'][weightsName] if self['permanetnWeigtsLists'].has_key(weightsName)\
-                                                                              else self['WeightsLists'][weightsName]
+        # optionally cmbine with the previous weights list
+        if combWithPrevious and len(self['WeightsLists'].keys()) != 0: 
+            print 'P2VV - INFO: appendWeights: Combining weights "%s" with "%s" (dot product).'%(weightsName,self._wName)
+            prev = self['WeightsLists'][ self['latestDataSetPointer'] ]
+            weightsList = prev * weightsList
+        self['WeightsLists'][weightsName] = weightsList
 
         # scale weights to preserve number of events 
-        print 'P2VV - INFO: appendWeights: Scaling sources sum of weights to the number of entries.'
-        n_events = self['initSource'].numEntries()
-        sumW = sum( self['combinedWeights'] )
-        self['combinedWeights'] =  ( n_events / sumW ) * self['combinedWeights'] 
-        
-        # write weights
+        if scale:
+            print 'P2VV - INFO: appendWeights: Scaling sources sum of weights to the number of entries.'
+            n_events = self['initSource'].numEntries()
+            sumW = sum( self['WeightsLists'][weightsName] )
+            self['WeightsLists'][weightsName] =  ( n_events / sumW ) * self['WeightsLists'][weightsName] 
+
+        # bookkeeping
         self._wName = ''
-        for name in self['WeightsLists'].keys() + self['permanetnWeigtsLists'].keys(): self._wName += name + '_'
+        for name in self['WeightsLists'].keys(): self._wName += name + '_'
         self._wName += str(self['iterationNumber'])
-        self['dataSets'][weightsName] = self.writeWeights(self['dataSets'][self['latestDataSetPointer']], \
-                                        'weight_' + self._wName, self['initSource'].GetName() + '_' + self._wName )
-
-        if permanentDataSet:
-            print 'P2VV - INFO: appendWeights: Dataset %s will be put in permanentDataSets, and will not be deleted.'%self._wName
-            self['permanentDataSets'][weightsName] = self['dataSets'][weightsName]
-            
-        # delete intermediate dataset, except if it is the initial source and/or you want to keep them for plotting 
-        if not self['saveIntermediateDatasets'] and not self['latestDataSetPointer'] == 'initSource':
-            if not self['latestDataSetPointer'] in self['permanentDataSets'].keys():
-                print 'P2VV - INFO: appendWeights: Deleting dataset named ' + self['dataSets'][self['latestDataSetPointer']].GetName()
-            del self['dataSets'][self['latestDataSetPointer']]
-
-        # bookkeeping flag 
         self['latestDataSetPointer'] = weightsName
         self['combinedWeightsName']  = 'weight_' + self._wName 
+        
+        # write weights
+        self['dataSets'][weightsName] = self.writeWeights(self['dataSets']['initSource'], \
+                                        'weight_' + self._wName, self['initSource'].GetName() + '_' + self._wName )
+
+        # delete unused datasets
+        if not self['saveIntermediateDatasets']:
+            removeKeys = self['dataSets'].keys()
+            for k in ['initSource', self['latestDataSetPointer']]: removeKeys.remove(k)
+            for key in removeKeys: 
+                print 'P2VV - INFO: appendWeights: Deleting dataset named ' + self['dataSets'][key].GetName()
+                del self['dataSets'][key]
         
     def writeWeights( self, dataset, weightsName, writeDatasetName ):
         print 'P2VV - INFO: writeWeights: Creating dataset with name %s and weight name %s:'%(writeDatasetName,weightsName)
         from ROOT import RooArgSet, RooRealVar, RooDataSet
-        weightsVar = RooRealVar( weightsName, weightsName, 1, .9*min(self['combinedWeights']), 1.1*max(self['combinedWeights']) )
+        Weights = self['WeightsLists'][self['latestDataSetPointer']]
+        weightsVar = RooRealVar( weightsName, weightsName, 1, .9*min(Weights), 1.1*max(Weights) )
         weightsArgSet  = RooArgSet( weightsVar )
         weightsDataSet = RooDataSet( 'weightsSet', 'weightsSet', weightsArgSet )
-        for weight in self['combinedWeights']:
+        for weight in Weights:
             weightsVar.setVal( weight )
             weightsDataSet.add( weightsArgSet )
         _dataset  = RooDataSet( writeDatasetName, writeDatasetName, dataset.get(), Import = dataset )
         _dataset.merge( weightsDataSet )
         _Wdataset = RooDataSet( writeDatasetName, writeDatasetName, _dataset.get(), Import = _dataset, WeightVar = (weightsName,True) )
 
-        del weightsDataSet, dataset, _dataset
+        del weightsDataSet, dataset, _dataset, Weights
         return _Wdataset
 
     def getDataSet( self, which='' ): 
@@ -582,32 +673,31 @@ class WeightedDataSetsManager(dict):
         self['combinedWeightsName'] = data.GetName()[:-1] + weightsName + data.GetName()[-2:]
         
         # delete previous data and point to the new one
-        for key in self['dataSets'].keys():
-            if key == self['latestDataSetPointer']: del self['dataSets'][key]
-        self['dataSets'][weightsName] = data
-
+        if self['saveIntermediateDatasets']: self['dataSets'][weightsName] = data
+        else:
+            for key in self['dataSets'].keys(): 
+                if key == self['latestDataSetPointer']: del self['dataSets'][key]
+            self['dataSets'][weightsName] = data
+        
         #set dataset pointer
         self['latestDataSetPointer'] = weightsName
 
     def plotWeights( self, which = '', Range=() ):
-        from ROOT import TCanvas, TH1F
+        from ROOT import TCanvas, TH1F, gStyle
         from P2VV.Utilities.Plotting import _P2VVPlotStash
 
         which = which if which else self['latestDataSetPointer']
         c = TCanvas( 'weights_' + which + str(self['iterationNumber']), 'weights_' + which + str( self['iterationNumber']) )        
     
         # plot range
-        if which in self['permanetnWeigtsLists'].keys():
-            plotRange = min(self['permanetnWeigtsLists'][which]), max(self['permanetnWeigtsLists'][which]) if not Range else Range    
-            weightsList = self['permanetnWeigtsLists'][which]
-        else:
-            plotRange = min(self['WeightsLists'][which]), max(self['WeightsLists'][which]) if not Range else Range    
-            weightsList = self['WeightsLists'][which]
-            
+        weightsList = self['WeightsLists'][which]        
+        plotRange = ( -3, 3 ) if not Range else Range    
+                    
         # create histogram fill and draw
         weghtsHist = TH1F('weights_'+which, 'weights_'+which, 200, plotRange[0], plotRange[1])
         for weight in weightsList: weghtsHist.Fill(weight)
         c.cd()
+        gStyle.SetOptStat("nmruo")
         weghtsHist.SetMarkerSize(.5)
         weghtsHist.Draw('err')
         c.Print( 'weights_%s_.pdf'%which )
@@ -625,183 +715,7 @@ class WeightedDataSetsManager(dict):
         self['WeightsLists'] = dict()
         self['latestDataSetPointer'] = 'initSource'
 
-# Class for multipling a pdf with an angular acceptance and performs an sFit 
-class BuildBs2JpsiKKFit():
-    def __init__( self,**kwargs ):
-        print 'P2VV - INFO: Initialised physics reweighting class: BuildBs2JpsiKKFit().'
-        from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_RunIAnalysis as PdfConfig
-        
-        # specify running period
-        runPeriod = kwargs.pop('runPeriod', '3fb')
-        self._pdfConfig = PdfConfig( RunPeriods = '3fb')
-        
-        # blind / unblind (phi_s,dGama)
-        blind = kwargs.pop('blind', True)
-        if not blind: self._pdfConfig['blind'] = {}
-        
-        # give parameters of the pdf a prefix
-        self._pdfConfig['parNamePrefix'] = 'data' 
-        namePF = self._pdfConfig['parNamePrefix']
 
-        self._dataSetPath = kwargs.pop('dataSetPath', None)
-        self._dataSetName = kwargs.pop('dataSetName', None)
-           
-        self._doUntaggedFit = kwargs.pop('doUntaggedFit', '')        
-        self._doNullTest    = kwargs.pop('doNullTest',    '')
-     
-        # fit options
-        self._pdfConfig['fitOptions']['NumCPU'] = kwargs.pop('Ncpu', 2)
-        
-        # PDF options
-        # time acceptance
-        timeEff2011 = dict(  file      = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
-                           , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
-                           , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
-                          )
-        timeEff2012 = dict(  file      = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
-                           , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
-                           , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
-                          )
-        if runPeriod == '2011' :
-            self._pdfConfig['timeEffHistFiles'] = timeEff2011
-        elif runPeriod == '2012' :
-            self._pdfConfig['timeEffHistFiles'] = timeEff2012
-        else :
-            from P2VV.Parameterizations.FullPDFs import SimulCatSettings
-            timeEffHistFiles = SimulCatSettings('timeEffHistFiles')
-            timeEffHistFiles.addSettings( [ 'runPeriod' ], [ [ 'p2011' ] ], timeEff2011 )
-            timeEffHistFiles.addSettings( [ 'runPeriod' ], [ [ 'p2012' ] ], timeEff2012 )
-            self._pdfConfig['timeEffHistFiles'] = timeEffHistFiles
-
-        # angular acceptance
-        self._pdfConfig['angEffMomsFiles'] = ''
-        self._pdfConfig['anglesEffType']   = ''
-
-        # split hlt1 biased
-        self._pdfConfig['splitParams']['hlt1_excl_biased_dec'] = [ 'tagCatCoef0_1' ]
-        
-        # read data set from file
-        from P2VV.Utilities.DataHandling import readData
-        self._dataSet = readData( filePath = self._dataSetPath, dataSetName = self._dataSetName,  NTuple = False )
-        self._pdfConfig['signalData'] = self._dataSet
-        self._pdfConfig['readFromWS'] = True
-               
-        # build PDF
-        from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_PdfBuilder as PdfBuilder
-        self._pdfBuild = PdfBuilder( **self._pdfConfig )
-        self._pdf = self._pdfBuild.pdf()
-
-        # fix values of some parameters
-        for CEvenOdds in self._pdfBuild['taggingParams']['CEvenOdds'] :
-            if not self._pdfConfig['SSTagging'] :
-                if namePF:
-                    CEvenOdds.setConstant( self._pdfConfig['parNamePrefix'] + '_' + 'avgCEven.*')
-                    CEvenOdds.setConstant( self._pdfConfig['parNamePrefix'] + '_' + 'avgCOdd.*', True )
-                else: 
-                    CEvenOdds.setConstant( 'avgCEven.*')
-                    CEvenOdds.setConstant( 'avgCOdd.*', True )
-            else :
-                for CEvenOdd in CEvenOdds :
-                    if namePF:
-                        CEvenOdd.setConstant( self._pdfConfig['parNamePrefix'] + '_' + 'avgCEven.*')
-                        CEvenOdd.setConstant( self._pdfConfig['parNamePrefix'] + '_' + 'avgCOdd.*', True )
-                    else: 
-                        CEvenOdd.setConstant('avgCEven.*')
-                        CEvenOdd.setConstant( 'avgCOdd.*', True )
-        self._pdfBuild['amplitudes'].setConstant('C_SP')
-
-        self._FitResults  = {} # collect all the fit results
-        self._Moments     = {} # collect all moments
-       
-    def doFit( self, itNum=0, angAccFile=None, parFileOut='parameterEstimates.par' ):
-        pref = self._pdfConfig['parNamePrefix'] + '_'
-        
-        # multiply by angular acceptance
-        if angAccFile: self._pdf = self._multiplyPdfWithAcc( angAccFile, iterNumb = itNum )
-        
-        # data set with weights corrected for background dilution: for phi_s fit only!
-        from P2VV.Utilities.DataHandling import correctWeights
-        corrSFitErrCats = [ 'runPeriod', 'KKMassCat' ]
-        self._fitData = correctWeights( self._dataSet, corrSFitErrCats )
-
-        # print parameters
-        print 120 * '='
-        print 'Bs2JpsiKKFit: fit data:'
-        self._fitData.Print()
-        #print 'Bs2JpsiKKFit: observables in PDF:'
-        #self._pdf.getObservables(self._fitData).Print('v')
-        #print 'Bs2JpsiKKFit: parameters in PDF:'
-        #self._pdf.getParameters(self._fitData).Print('v')
-        print 'Bs2JpsiKKFit: constraints in PDF:'
-        for constr in self._pdf.ExternalConstraints() : constr.Print()
-
-        # fit data
-        print 'Bs2JpsiKKFit: fitting %d events (%s)' % (  self._fitData.numEntries(), 'weighted' if  self._fitData.isWeighted() else 'not weighted' )
-        fitResult = self._pdf.fitTo( self._fitData, SumW2Error = False, Save = True, Hesse = False, Offset = True, ** self._pdfConfig['fitOptions'] )
-        
-        # print parameter values
-        from P2VV.Imports import parNames, parValues
-        print 'Bs2JpsiKK2011Fit: parameters:'
-        fitResult.SetName('sFit_%s_Iteration'%itNum)
-        fitResult.PrintSpecial( text = False, LaTeX = False, normal = True, ParNames = parNames, ParValues = parValues )
-        #fitResult.covarianceMatrix().Print()
-        #fitResult.correlationMatrix().Print()
-        from ROOT import TFile
-        resultFile = TFile.Open('fitResult_iterativeProcedure_%s.root'%itNum, 'recreate')
-        resultFile.cd()
-        fitResult.Write()
-        resultFile.Close()
-        self._FitResults['iter_%s'%itNum] = fitResult
-
-        # wite parameters to file
-        if parFileOut :
-            self._pdfConfig.getParametersFromPdf( self._pdf, self._fitData )
-            self._pdfConfig.writeParametersToFile(  filePath = parFileOut )
-
-        print 120 * '=' + '\n'
-
-    # def updateDataParameters(self, oldPars, itNum=0):
-    #     fitResult = self._FitResults['iter_%s'%itNum]
-    #     cloneOldPars = oldPars.copy()
-    #     parkeys = oldPars.keys()
-    #     parkeys.remove('A0Phase')
-    #     for par in parkeys:
-    #         if par.startswith('__'):
-    #             fitResultParKey = '__%s_'%self._pdfConfig['parNamePrefix'] + par.partition('__')[2]
-    #         else:
-    #             fitResultParKey =  self._pdfConfig['parNamePrefix'] + '_' + par
-    #         try: oldPars[par] = fitResult.floatParsFinal().find(fitResultParKey).getVal()
-    #         except AttributeError: 
-    #             print 'P2VV - WARNING: updateDataParameters: Parameter %s not found in fit result %s, parameter value will not change.'\
-    #                 %( fitResultParKey, fitResult.GetName() )
-    #     print 'P2VV - INFO: updateDataParameters: Updating physics parameters from sFit.'
-    #     for k in parkeys: print '%20s  %.4f --> %.4f'%(k,cloneOldPars[k],oldPars[k])
-        
-    def _multiplyPdfWithAcc( self, effFile, iterNumb=None ):
-        # read moments file and multiply pure pdf with angular acceptance
-        print 'P2VV - INFO:multiplyPdfWithAcc(): multiplying PDF "%s" with angular efficiency moments from file "%s"'\
-          % ( self._pdf.GetName(), effFile )
-        from P2VV.Utilities.DataMoments import angularMomentIndices, RealMomentsBuilder
-        moments = RealMomentsBuilder()
-        moments.appendPYList( self._pdfBuild['angleFuncs'].angles, angularMomentIndices( 'weights', self._pdfBuild['angleFuncs'] ) )
-        moments.read( effFile )    
-        self._Moments['%s_iteration'%iterNumb] = moments # collect all moments  
-        if iterNumb: return moments.multiplyPDFWithEff( self._pdf, CoefName = self._pdfConfig['parNamePrefix'] + '_' + 'effC%d' % iterNumb )
-        else:        return moments.multiplyPDFWithEff( self._pdf, CoefName = self._pdfConfig['parNamePrefix'] + '_' + 'effnom'            )
-        
-         
-    def getDataSet(self):           return self._pdfConfig['signalData']
-    def getPdf(self):               return self._pdf
-    def getPdfBuilderObject(self) : return self._pdfBuild
-    def getFitResults(self):        return self._FitResults
-    def getMomentsDict(self):       return self._Moments['%s_iteration'%itNum]
-    def getBlindString(self):       return self._pdfConfig['blind']
-    def getObservables(self,which=None):
-        if   which=='angles': return [o for o in self._pdfBuild['obsSetP2VV'] if o.GetName().startswith('hel') ]
-        elif which=='time':   return [o for o in self._pdfBuild['obsSetP2VV'] if o.GetName()==('time')         ]
-        else:                 return             self._Build['obsSetP2VV']
-
-          
 # Vertical reweighting class to match physics of weighted distribution using a pdf
 class MatchPhysics( ):
     def __init__( self, nTupleFile, nTupleName, **kwargs ):      
@@ -819,8 +733,8 @@ class MatchPhysics( ):
         pdfConfig = PdfConfig( RunPeriods = '3fb' )
         
         # blind parameters in MC pdf
-        blind = kwargs.pop('blind', True)
-        if blind: blindStr = pdfConfig['blind']
+        blind = kwargs.pop('blind', False)
+        blindStr = pdfConfig['blind'] if blind else False
 
         # transversity amplitudes
         A0Mag2Val    = 0.722**2 / (0.722**2 + 0.480**2 + 0.499**2)
@@ -875,6 +789,7 @@ class MatchPhysics( ):
         KKMass    = RooObject._rooobject('KKMass') if ws['KKMass'] else _createGetObservable('KKMass')
         KKMassCat = RooObject._rooobject('KKMassCat') if ws['KKMassCat'] else _createGetObservable('KKMassCat')
         self._obsSet = [ trueTime, time, KKMass ] + angles + [ KKMassCat ]
+        self._normSet = angles
 
         # set momenta range and put them in obsSet
         print 'P2VV - INFO: Setting track and B momenta ranges.'
@@ -887,7 +802,7 @@ class MatchPhysics( ):
         
         # read ntuple
         from P2VV.Utilities.DataHandling import readData
-        readOpts = { }  # {} # { 'ntupleCuts' : 'mass>5350 && mass<5355' }
+        readOpts = { 'ntupleCuts' : 'mass>5350 && mass<5355' } if kwargs.pop('Reduced', False) else  { }
         self._data = readData( nTupleFile, dataSetName=nTupleName, NTuple=True, observables=self._obsSet, **readOpts)
         self._data.SetName( 'mcData_' + MCProd )
            
@@ -986,18 +901,18 @@ class MatchPhysics( ):
         for par in self._pdf.Parameters():
             if par.GetName() == 'dummyBlindState' or par.isConstant(): continue
             key = par.GetName().replace('mc_', dataParPrefix)
-            if key == 'dummyBlindState': continue
             if pdfConfig.parameters().has_key(key):
                 par.setVal( pdfConfig.parameters()[key][0] )
-                print '%20s %.4f'%(par.GetName(), par.getVal())
-            else: print 'P2VV - ERROR:setDataFitParameters: Cannot find parameter %s in data physics parameters file %s'%(par.GetName(),dataPars)
+                if 'phiCP' in key or 'dGamma' in key: print '%20s %s'%(par.GetName(), '(blinded)' )
+                else: print '%20s %.4f'%(par.GetName(), par.getVal())
+            else: assert False, 'P2VV - ERROR:setDataFitParameters: Cannot find parameter %s in data physics parameters file %s'%(key,dataPars)
         
     def calculateWeights(self, iterNumb, dataParameters):
         print 'P2VV - INFO: Matching physics on mc sample.'
         self._iterNumb = iterNumb
 
         from ROOT import RooArgSet
-        normVars =  RooArgSet( self._obsSet )
+        normVars =  RooArgSet( self._normSet )
         
         # Reweights MC verticaly to match the Physics of data.
         nominators, denominators = [], []
@@ -1007,8 +922,8 @@ class MatchPhysics( ):
             count = 0
             for idx in xrange(len(nom)): # if pdf.getVal() returns 0 for a given event make it unweighted
                 if nom[idx] == 0 or den[idx] == 0: 
-                    nom[idx], den[idx] = 1., 1.
-                    count += 1 # count how many evetns have a problematic weight assignment 
+                    nom[idx], den[idx] = 0., 0.
+                    count += 1 # count how many evetns have a problematic weight
                 self._physWeights += [ nom[idx]/den[idx] ]
             if count>0:print 'P2VV - WARNING: calculateWeights: For %s events out of %s pdf value is zero.'%(count,len(nom))
             
@@ -1027,7 +942,6 @@ class MatchPhysics( ):
             nominators.append( self._pdf.getVal(normVars) )
         print 'P2VV - INFO: Calculating phyisics matching weights'
         calculatePhysicsWeights(nom=nominators, den=denominators)
-        
         return self._physWeights
     
     def getDataSet(self):           return self._data
@@ -1172,7 +1086,7 @@ class MatchWeightedDistributions():
         # construct datasets 
         recalculatedVars = RooArgSet( [helcosthetaK,helcosthetaL,helphi] + self._KaonSet + self._BmomSet ) 
         copiedVars       = RooArgSet( self._KKMass + self._muonSet + [truetime,time,self._physWeightsVar] )
-        name = self._inTree.GetName()[:-1] + 'hor_KKmom' + self._inTree.GetName()[-2:]
+        name = self._inTree.GetName()[:-1] + 'horKKmom' + self._inTree.GetName()[-2:]
         self._recalculatedData = RooDataSet( name, name, recalculatedVars  )        
         copiedData             = RooDataSet('copiedData', 'copiedData', self._inTree, copiedVars )
 
@@ -1227,7 +1141,7 @@ class MatchWeightedDistributions():
             BP.setVal( _B3PMAG(k1_3P,k2_3P,mu1_3P,mu2_3P) )
             BPt.setVal( _BPT(k1_3P,k2_3P,mu1_3P,mu2_3P)   )
 
-            self._recalculatedData.addFast( recalculatedVars )
+            self._recalculatedData.add( recalculatedVars )
         
         self._recalculatedData.merge( copiedData )
         self._recalculatedData = RooDataSet(self._recalculatedData.GetName(), self._recalculatedData.GetTitle(), 
@@ -1239,6 +1153,8 @@ class MatchWeightedDistributions():
   
     def getDataSet( self ): return self._recalculatedData
 
+
+## micelanous impots / helping stuff
 
 # MC generating conditions  
 parValuesMcSim08_6KKmassBins = dict(
@@ -1255,8 +1171,8 @@ parValuesMcSim08_6KKmassBins = dict(
     ,AperpMag2         = 0.499**2 / (0.722**2 + 0.480**2 + 0.499**2) 
     ,AperpPhase        = 3.07
     ,Gamma             = 1. / 1.503 
-    ,__dGamma__        = 1. / 1.406 - 1. / 1.614
-    ,__phiCP__         = +0.07 
+    ,dGamma            = 1. / 1.406 - 1. / 1.614
+    ,phiCP             = +0.07 
     ,lambdaCP          = 1.    
     ,dM                = 17.8
     ,f_S_bin0          = 0.
@@ -1267,30 +1183,66 @@ parValuesMcSim08_6KKmassBins = dict(
     ,f_S_bin5          = 0.
     )
 
+# trackand B momenta ranges 
 trackMomentaRanges = dict(
-    Kminus_PX  = [ -17294 , 18421 ],
-    Kminus_PY  = [ -16579 , 13946 ],
-    Kminus_PZ  = [ 1647 , 427105 ],
-    Kminus_P   = [ 1712 , 427234 ],
-    Kplus_PX   = [ -19961 , 18023 ],
-    Kplus_PY   = [ -14371 , 21139 ],
-    Kplus_PZ   = [ 1714 , 412061 ],
-    Kplus_P    = [ 1767 , 412185 ],    
-    muminus_PX = [ -68298 , 49671 ],
-    muminus_PY = [ -41161 , 48935 ],
-    muminus_PZ = [ 2852 , 782041 ],
-    muminus_P  = [ 3001 , 782337 ],
-    muplus_PX  = [ -49519 , 43508 ],
-    muplus_PY  = [ -39317 , 41500 ],
-    muplus_PZ  = [ 2822 , 937801 ],
-    muplus_P   = [ 3002 , 938078 ],
-    B_P        = [ 18324 , 1518286 ],
-    B_Pt       = [ 2 , 94406 ]    
+    Kminus_PX  = [ -5e5 , 5e5 ],
+    Kminus_PY  = [ -5e5 , 5e5 ],
+    Kminus_PZ  = [    0 , 5e5 ],
+    Kminus_P   = [    0 , 5e5 ],
+    Kplus_PX   = [ -5e5 , 5e5 ],
+    Kplus_PY   = [ -5e5 , 5e5 ],
+    Kplus_PZ   = [    0 , 5e5 ],
+    Kplus_P    = [    0 , 5e5 ],
+    muminus_PX = [ -9e5 , 6e5 ],
+    muminus_PY = [ -9e5 , 6e5 ],
+    muminus_PZ = [    0 , 1e6 ],
+    muminus_P  = [    0 , 1e6 ],
+    muplus_PX  = [ -5e5 , 6e5 ],
+    muplus_PY  = [ -5e5 , 6e5 ],
+    muplus_PZ  = [ -5e5 , 1e6 ],
+    muplus_P   = [    0 , 1e6 ],
+    B_P        = [    0 , 1e6 ],
+    B_Pt       = [    0 , 2e5 ]    
     )
 
-# for i in range1.keys():
-#     min = range1[i][0]
-#     max = range1[i][1]
-#     if range2[i][0]<min: min = range2[i][0]
-#     if range2[i][1]>max: max = range2[i][1]
-#     final[i] = [min,max]
+# bokkeeping dictionaries for plotting
+# plotingScenarios = dict( BmommkkphysKKmom = [ ('mcData','BmomRewData'), ('BmomRewData','mkkRewData'), ('mkkRewData','mcDataPhysRew'), ('mcDataPhysRew','MomRewData') ],
+#                          BmomphysKKmom    = [ ('mcData','BmomRewData'), ('BmomRewData','mcDataPhysRew'), ('mcDataPhysRew','MomRewData') ],
+#                          mkkphysKKmom     = [ ('mcData','mkkRewData'), ('mkkRewData','mcDataPhysRew'), ('mcDataPhysRew','MomRewData') ],
+#                          physKKmom        = [ ('mcData','mcDataPhysRew' ), ('mcDataPhysRew','MomRewData') ]
+#                          )
+
+plotingScenarios = dict( BmommkkphysKKmom     = [ ('mcData','BmomRewData'), 
+                                                  ('mcData','BmomRewData','mkkRewData'), 
+                                                  ('mcData','BmomRewData','mkkRewData','mcDataPhysRew'), 
+                                                  ('mcData','BmomRewData','mkkRewData','mcDataPhysRew','MomRewData')
+                                                  ],
+                         TwoDBmommkkphysKKmom = [ ('mcData','BmomMkkRewData'), 
+                                                  ('mcData','BmomMkkRewData','mcDataPhysRew'), 
+                                                  ('mcData','BmomMkkRewData','mcDataPhysRew','MomRewData')
+                                                  ],
+                         mkkBmomphysKKmom     = [ ('mcData','mkkRewData'), 
+                                                  ('mcData','mkkRewData','BmomRewData'),                
+                                                  ('mcData','mkkRewData','BmomRewData','mcDataPhysRew') , 
+                                                  ('mcData','mkkRewData','BmomRewData','mcDataPhysRew','MomRewData') 
+                                                  ],
+                         BmomphysKKmom        = [ ('mcData','BmomRewData'), 
+                                                  ('mcData','BmomRewData','mcDataPhysRew'), 
+                                                  ('mcData','BmomRewData','mcDataPhysRew','MomRewData') 
+                                                  ],
+                         mkkphysKKmom         = [ ('mcData','mkkRewData'), 
+                                                  ('mcData','mkkRewData','mcDataPhysRew'), 
+                                                  ('mcData','mkkRewData','mcDataPhysRew','MomRewData')
+                                                  ],
+                         physKKmom            = [ ('mcData','mcDataPhysRew'), 
+                                                  ('mcData','mcDataPhysRew','MomRewData') 
+                                                  ]
+                         )
+ 
+weightNamesDataKeysMap = dict( mcData         = 'initSource', 
+                               mcDataPhysRew  = 'phys',
+                               mkkRewData     = 'mKK',
+                               MomRewData     = 'KKmom',
+                               BmomRewData    = 'Bmom',
+                               BmomMkkRewData = 'Bmom_mKK'
+                               )

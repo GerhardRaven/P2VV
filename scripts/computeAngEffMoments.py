@@ -163,11 +163,14 @@ if doSelection :
     if MCProd != 'real' :
         cuts += ' && ' + bkgcatCut + ' && ' + trueTimeCut
     if trigger == 'ExclBiased' :
-        cuts = 'sel == 1 && sel_cleantail==1 && hlt1_excl_biased_dec == 1 && hlt2_biased == 1 && ' + cuts
+        #cuts = 'sel == 1 && sel_cleantail==1 && hlt1_excl_biased_dec == 1 && hlt2_biased == 1 && ' + cuts
+        cuts = 'sel == 1 && sel_cleantail==1 && hlt1_excl_biased == 1 && hlt2_biased == 1 && ' + cuts
     elif trigger == 'Unbiased' :
-        cuts = 'sel == 1 && sel_cleantail==1 && hlt1_unbiased_dec == 1 && hlt2_biased == 1 && ' + cuts
+        #cuts = 'sel == 1 && sel_cleantail==1 && hlt1_unbiased_dec == 1 && hlt2_biased == 1 && ' + cuts
+        cuts = 'sel == 1 && sel_cleantail==1 && hlt1_unbiased == 1 && hlt2_biased == 1 && ' + cuts
     else :
-        cuts = 'sel == 1 && sel_cleantail==1 && (hlt1_unbiased_dec == 1 || hlt1_biased == 1) && hlt2_biased == 1 && ' + cuts
+        #cuts = 'sel == 1 && sel_cleantail==1 && (hlt1_unbiased_dec == 1 || hlt1_biased == 1) && hlt2_biased == 1 && ' + cuts
+        cuts = 'sel == 1 && sel_cleantail==1 && (hlt1_unbiased == 1 || hlt1_biased == 1) && hlt2_biased == 1 && ' + cuts
 
 readDataOpts = { }
 if cuts      : readDataOpts['ntupleCuts'] = cuts

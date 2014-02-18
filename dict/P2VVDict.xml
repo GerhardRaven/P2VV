@@ -46,6 +46,7 @@
         <class name = "RooConvertPolAmp" />
         <class name = "RooIpatia2" />
         <class name = "RooEffConstraint" />
+        <class name = "RooCombEffConstraint" />
 
         <class name = "std::map<RooAbsCategory*, std::string>" />
         <class name = "std::map<RooCategoryProxy*, std::string>" />

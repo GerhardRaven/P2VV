@@ -137,7 +137,7 @@ void copyFloatInTree(TTree& tree, const char* inBranch, const char* outBranch) {
   tree.FlushBaskets();
 }
 
-void addCategoryToTree(TTree& tree, const char* floatBranch,
+void addCategoryToTree(TTree& tree, const char* inBranch,
     const char* catBranch, std::vector<Double_t> boundaries,
     std::vector<Int_t> indices) {
   if (indices.size() != boundaries.size() + 1) {
@@ -148,17 +148,50 @@ void addCategoryToTree(TTree& tree, const char* floatBranch,
   }
 
   TString branchNameStr(catBranch);
-  Double_t* input = new Double_t(0.);
   Int_t* output = new Int_t(0);
-  tree.SetBranchAddress(floatBranch, input);
   TBranch* branch = tree.Branch(branchNameStr, output, branchNameStr + "/I");
+
+  TObjArray* lfList = tree.GetBranch(inBranch)->GetListOfLeaves();
+  TString brType = lfList->GetEntries() == 1 ?
+      ((TLeaf*)lfList->At(0))->GetTypeName() : "";
+  Double_t* inputD = 0; Float_t* inputF = 0;
+  Int_t* inputI = 0; UInt_t* inputUI = 0;
+  Long64_t* inputL = 0; ULong64_t* inputUL = 0;
+  if (brType == "Double_t") {
+    inputD = new Double_t(0.);
+    tree.SetBranchAddress(inBranch, inputD);
+  } else if (brType == "Float_t") {
+    inputF = new Float_t(0.);
+    tree.SetBranchAddress(inBranch, inputF);
+  } else if (brType == "Int_t") {
+    inputI = new Int_t(0);
+    tree.SetBranchAddress(inBranch, inputI);
+  } else if (brType == "UInt_t") {
+    inputUI = new UInt_t(0);
+    tree.SetBranchAddress(inBranch, inputUI);
+  } else if (brType == "Long64_t") {
+    inputL = new Long64_t(0);
+    tree.SetBranchAddress(inBranch, inputL);
+  } else if (brType == "ULong64_t") {
+    inputUL = new ULong64_t(0);
+    tree.SetBranchAddress(inBranch, inputUL);
+  } else {
+    cout << "P2VV - ERROR: addCategoryToTree(): branch \"" << inBranch
+      << "\" has unknown type \"" << brType << "\"" << endl;
+    assert(0);
+  }
 
   for (Long64_t it = 0; it < tree.GetEntries(); ++it) {
     tree.GetEntry(it);
     Int_t pos(0);
     for (std::vector<Double_t>::const_iterator boundIt = boundaries.begin();
         boundIt != boundaries.end(); ++boundIt) {
-      if (*input < *boundIt) break;
+      if (brType == "Double_t" && *inputD < *boundIt) break;
+      else if (brType == "Float_t" && (Double_t)*inputF < *boundIt) break;
+      else if (brType == "Int_t" && (Double_t)*inputI < *boundIt) break;
+      else if (brType == "UInt_t" && (Double_t)*inputUI < *boundIt) break;
+      else if (brType == "Long64_t" && (Double_t)*inputL < *boundIt) break;
+      else if (brType == "ULong64_t" && (Double_t)*inputUL < *boundIt) break;
       ++pos;
     }
     *output = indices[pos];

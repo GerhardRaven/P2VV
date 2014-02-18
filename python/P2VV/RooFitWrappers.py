@@ -1806,6 +1806,53 @@ class EffConstraint(Pdf):
 
     def _make_pdf(self) : pass    
 
+class CombEffConstraint(Pdf):
+    def __init__( self, **kwargs ) :
+        __check_req_kw__( 'Name', kwargs )
+        name = kwargs.pop('Name')
+        if name in self.ws() :
+            self._init( name, 'RooCombEffConstraint' )
+
+        else :
+            __check_req_kw__( 'NumBins', kwargs )
+            __check_req_kw__( 'Parameters', kwargs )
+            __check_req_kw__( 'SumW', kwargs )
+            __check_req_kw__( 'SumWSq', kwargs )
+            numBins = kwargs.pop('NumBins')
+            pars    = kwargs.pop('Parameters')
+            sumW    = kwargs.pop('SumW')
+            sumWSq  = kwargs.pop('SumWSq')
+            assert len(pars) == 5
+            assert len(sumW) == 6
+            assert len(sumWSq) == 6
+
+            args = [ name, name, numBins ]
+            from ROOT import RooArgList
+            for parsName in [ 'nu', 'eps1A', 'eps1B', 'eps2A', 'eps2B' ] :
+                assert parsName in pars and len( pars[parsName] ) in [ 1, numBins ]
+                al = RooArgList()
+                for par in pars[parsName] : al.add(__dref__(par))
+                args.append(al)
+
+            def __makeSumWVec(elems) :
+                from ROOT import std
+                vec = std.vector('vector<Double_t>')(6)
+                for vIt, catName in enumerate( [ '1A2A', '1A2B', '1A2AB', '1B2A', '1B2B', '1B2AB' ] ) :
+                    assert catName in elems and len( elems[catName] ) == numBins
+                    vec[vIt] = std.vector('Double_t')(numBins)
+                    for eIt in range(numBins) : vec[vIt][eIt] = elems[catName][eIt]
+                return vec
+            args.append( __makeSumWVec(sumW)   )
+            args.append( __makeSumWVec(sumWSq) )
+
+            from ROOT import RooCombEffConstraint
+            self._addObject( RooCombEffConstraint( *tuple(args) ) )
+            self._init(name, 'RooCombEffConstraint')
+
+        Pdf.__init__( self, Name = name, Type = 'RooCombEffConstraint' )
+
+    def _make_pdf(self) : pass
+
 class ResolutionModel(Pdf):
     def __init__(self, **kwargs):
         if 'Type' in kwargs and type( kwargs['Type'] ) != str : kwargs['Type'] = kwargs['Type'].__name__
@@ -1947,6 +1994,7 @@ class BinnedFun(RooObject):
         self.__fit = kwargs.pop('Fit', False)
         self.__binning = None
         self.__coefficients = {}
+        self.__yields = []
         
         if hist:
             self.__build_from_hist(self.__name, observable, hist )
@@ -2131,6 +2179,18 @@ class BinnedFun(RooObject):
 
     def coefficients(self):
         return self.__coefficients
+
+    def yields(self):
+        return self.__yields
+
+    def setYields(self, yields):
+        from ROOT import RooArgList
+        al = RooArgList()
+        self.__yields = []
+        for y in yields:
+            self.__yields.append(y)
+            al.add(__dref__(y))
+        __dref__(self).setYields(al)
 
 class CubicSplineFun(RooObject):
     def __init__(self, **kwargs):
