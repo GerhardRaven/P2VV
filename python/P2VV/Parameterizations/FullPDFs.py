@@ -435,8 +435,8 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
             splitConstr['betaTimeEff']['2012'] = ( -0.0083, None )
         else:
             splitConstr['betaTimeEff']['2012'] = ( 0., 0. )
-        splitConstr['sf_placeholder']['2011']   = (  0.0350,  0. )
-        splitConstr['sf_placeholder']['2012']   = (  0.0349,  0. )
+        splitConstr['sf_placeholder']['2011']   = (  0.0349,  0. )
+        splitConstr['sf_placeholder']['2012']   = (  0.0347,  0. )
         splitConstr['timeResMu']['2011']        = ( -0.00259, 0. )
         splitConstr['timeResMu']['2012']        = ( -0.00333, 0. )
         splitConstr['timeResFrac2']['2011']     = (  0.242,   0. )
@@ -1298,8 +1298,8 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
             timeResArgs['timeResSigma'] = observables['timeRes']
         elif '3fb' in timeResType.lower() :
             from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
-            timeResArgs = dict( time = observables['time'], sigmat = observables['timeRes'], Cache = True, PerEventError = True
-                               , Parameterise = 'RMS', TimeResSFParam = 'linear'
+            timeResArgs = dict( time = observables['time'], sigmat = observables['timeRes'], Cache = True
+                               , Parameterise = 'RMS', TimeResSFParam = 'quadratic_no_offset'
                                , ScaleFactors     = [ ( 2, 1.817 ), ( 1, 1.131 ) ]
                                , timeResMu        = dict( Value = 0., Constant = True ) #dict( Value = -0.00298, Constant = True )
                                , Fractions        = [ ( 2, 0.168 ) ]
