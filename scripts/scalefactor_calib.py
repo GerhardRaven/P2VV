@@ -398,12 +398,12 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
     
     canvas.cd(1)
     sf1_hist = draw_res_graph(res_graph, hist_events)
-    sf1_hist.GetYaxis().SetTitle('#bar{sf}')
+    sf1_hist.GetYaxis().SetTitle('#bar{#sigma}')
     sf1_hist.GetYaxis().SetTitleOffset(1.05)
     
     canvas.cd(2)
     sfo_hist = draw_res_graph(sfo_graph, hist_events)
-    sfo_hist.GetYaxis().SetTitle('sf_{#sigma}')
+    sfo_hist.GetYaxis().SetTitle('#sigma_{#sigma}')
     sfo_hist.GetYaxis().SetTitleOffset(1.05)
 
     from itertools import product
