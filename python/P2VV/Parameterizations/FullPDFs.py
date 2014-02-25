@@ -1310,6 +1310,19 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
                                , sf_sigma_quad    = dict( Value =  0.,   Constant = True ) #dict( Value = -0.0147151, Constant = True )
                                , sf_placeholder   = dict( Value =  0.,   Constant = True ) #dict( Value =  0.032,     Constant = True )
                               )
+            if 'linear' in timeResType.lower():
+                for pn in ('sf_mean_quad', 'sf_sigma_quad'):
+                    timeResArgs.pop(pn)
+                timeResArgs.update(dict(TimeResSFParam = 'linear',
+                                        sf_mean_offset = dict( Value =  0.,   Constant = True),
+                                        sf_sigma_offset = dict( Value =  0.,   Constant = True)))
+            if 'mean_param' in timeResType.lower():
+                timeResArgs.pop('timeResMu')
+                timeResArgs.update(dict(MeanParameterisation = 'quadratic', SplitPlaceholders = True,
+                                        timeResMu_offset = dict( Value =  0.,   Constant = True),
+                                        timeResMu_slope = dict( Value =  0.,   Constant = True),
+                                        timeResMu_quad = dict( Value =  0.,   Constant = True)))
+
         else :
             from P2VV.Parameterizations.TimeResolution import Paper2012_TimeResolution as TimeResolution
             timeResArgs['timeResMean'] = dict( Value = -4.0735e-03, Error = 1.33e-04 )
