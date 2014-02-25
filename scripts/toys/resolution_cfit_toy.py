@@ -1,17 +1,17 @@
 import sys
 import os
 try:
-    from P2VV.ToyMCUtils import Toy
+    from P2VV.ToyMCUtils import FitToy as Toy
 except ImportError:
     print 'Could not import P2VV version, trying local directory'
-    from ToyMCUtils import Toy
+    from ToyMCUtils import FitToy as Toy
 
 toy = Toy()
 parser = toy.parser()
 
 parser.add_option("--sfit", dest = "sFit", default = False,
                   action = 'store_true', help = "Generate with cFit, fit with sFit")
-parser.add_option("--correct_weights", dest = "correct_weights", default = False,
+parser.add_option("--correct-weights", dest = "correct_weights", default = False,
                   action = 'store_true', help = "Correct weights using 1 / (sum of weights^2)")
 
 (options, args) = toy.configure()
@@ -56,8 +56,8 @@ mu['Value'] = -0.00407301
 from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
 
 ## Signal and background time resolutions.
-tres_args = dict(time = time_obs, sigmat = st, Cache = True, PerEventError = True,
-                 Parameterise = 'Comb', TimeResSFParam = '', timeResMu = mu,
+tres_args = dict(time = time_obs, sigmat = st, Cache = True,
+                 Parameterise = 'RMS', TimeResSFParam = 'quadratic_no_offset', timeResMu = mu,
                  ScaleFactors = [(2, 2.1), (1, 1.26)], Fractions = [(2, 0.2)])
 sig_tres = TimeResolution(Name = 'sig_tres', **tres_args)
 
@@ -102,15 +102,7 @@ background = Component('background', (bkg_mpsi.pdf(), bkg_t.pdf(), bkg_ln.pdf())
 prompt_pdf = Prompt_Peak(time_obs, sig_tres.model(), Name = 'prompt_pdf')
 prompt = Component('prompt', (prompt_pdf.pdf(), psi_m, sig_ln.pdf()), Yield = (160160, 100, 500000))
 
-def make_wpv_pdf(prefix):
-    wpv_mean = RealVar('%swpv_mean' % prefix, Value = 0, MinMax = (-1, 1), Constant = True)
-    wpv_sigma = RealVar('%swpv_sigma' % prefix, Value = 0.305, MinMax = (0.01, 10), Constant = True)
-    return Pdf(Name = '%swpv_pdf' % prefix, Type = Gaussian, Parameters = (time_obs, wpv_mean, wpv_sigma))
-sig_wpv_pdf = make_wpv_pdf('sig_')
-
-sig_wpv = Component('sig_wpv', (sig_wpv_pdf, psi_m, sig_ln.pdf()), Yield = (552, 1, 50000))
-
-components = [prompt, psi_ll, background, sig_wpv]
+components = [prompt, psi_ll, background]
 
 ## PDF to generate with
 gen_obs = (time_obs, mpsi, st)
@@ -123,12 +115,13 @@ gen_params = param_file.Get("gen_params")
 gen_pdf_pars = gen_pdf.getParameters(RooArgSet(*gen_obs))
 
 for p in gen_pdf_pars:
-     gp = gen_params.find(p)
-     if not gp and not p.isConstant():
-         print 'cannot find %s' % p.GetName()
-     elif not p.isConstant():
-         p.setVal(gp.getVal())
-         p.setError(gp.getError())
+    gp = gen_params.find(p)
+    if not gp:
+        if not p.isConstant():
+            print 'cannot find %s' % p.GetName()
+    else:
+        p.setVal(gp.getVal())
+        p.setError(gp.getError())
 
 ## Fit options
 fitOpts = dict(  Optimize  = 2
@@ -142,7 +135,7 @@ toy.set_fit_opts(**fitOpts)
 
 if options.sFit:
     # Components for sFit
-    components = [prompt, psi_ll, sig_wpv]
+    components = [prompt, psi_ll]
 
     ## PDF for sFit
     fit_pdf = buildPdf(Components = components, Observables = (time_obs,), Name = 'fit_pdf')
@@ -153,7 +146,7 @@ if options.sFit:
     toy.set_transform(SWeightTransform(mass_pdf, 'prompt', fitOpts, correct_weights = options.correct_weights))
 else:
     # Components for cFit
-    components = [prompt, psi_ll, background, sig_wpv]
+    components = [prompt, psi_ll, background]
 
     ## PDF for cFit
     fit_pdf = buildPdf(Components = components, Observables = (time_obs, mpsi), Name = 'fit_pdf')

@@ -148,8 +148,8 @@ class FitToy(Toy):
         # Make another ArgSet to put the fit results in
         result_params = RooArgSet(pdf_params, "result_params")
 
-        transfrom = self.transform()
-        if transfrom:
+        transform = self.transform()
+        if transform:
             trans_params = transform.gen_params(gen_obs_set)
             for p in trans_params:
                 result_params.add(p)
@@ -179,8 +179,7 @@ class FitToy(Toy):
         from ROOT import RooRandom
         import struct, os
 
-        i = 0
-        while i < self.options().ntoys:
+        while self._data.numEntries() < self.options().ntoys:
             # Get a good random seed, set it and store it
             s = struct.unpack('I', os.urandom(4))[0]    
             RooRandom.randomGenerator().SetSeed(s)
@@ -205,6 +204,7 @@ class FitToy(Toy):
             if data.isWeighted() and 'SumW2Error' not in self.fit_opts():
                 self.fit_opts()['SumW2Error'] = False
 
+            j = 0
             while j < 4: 
                 fit_result = pdf.fitTo(data, NumCPU = self.options().ncpu, **(self.fit_opts()))
                 if fit_result.status() == 0:
@@ -375,7 +375,7 @@ class SWeightTransform(object):
             data = self.__sData.data(self.__comp)
             if self.__correct_weights:
                 from P2VV.Utilities.DataHandling import correctWeights
-                data = correctWeights(data, splitCatNames = None)
+                data = correctWeights(data, splitCatNames = None, ImportIntoWS = False)
             return data
         else:
             return None
