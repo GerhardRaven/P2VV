@@ -76,6 +76,7 @@ j.name = 'dilution_toys'
 
 # backend
 j.backend = PBS(queue = 'stbcq')
+j.submit()
 
 # change back to original location
 os.chdir(location)

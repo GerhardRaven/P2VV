@@ -155,8 +155,9 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         sf_param = kwargs.pop('TimeResSFParam', False)
         from P2VV.RooFitWrappers import RealVar
         self.__sf_placeholder = self._parseArg('sf_placeholder', kwargs, Value = 0,
-                                               MinMax = (-1e6, 1e6), Constant = True) 
-        if 'sigmat' in self.__mu_param:
+                                               MinMax = (-1e6, 1e6), Constant = True)
+        self.__split_placeholders = kwargs.pop('SplitPlaceholders', False)
+        if 'sigmat' in self.__mu_param or self.__split_placeholders:
             self.__mu_placeholder = self._parseArg('mu_placeholder', kwargs, Value = 0,
                                                    MinMax = (-1e6, 1e6), Constant = True)
         else:

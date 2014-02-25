@@ -160,7 +160,7 @@ parNames = {'N_prompt'         : ('#prompt', '\\# prompt \jpsi'),
             }
 
 import os
-prefix = '/stuff/PhD' if os.path.exists('/stuff') else '/bfys/raaij'
+prefix = '/stuff/PhD' if os.path.exists('/stuff') else '/project/bfys/raaij'
 input_data = {'2011_Reco14' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2011_Reco14_Stripv20r1_ntupleB_20131002.root'),
                                'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_Mixing_2011_Reco14_DataSet.root'),
                                'workspace' : 'Bs2JpsiPhi_WPV_2011_Reco14_workspace',

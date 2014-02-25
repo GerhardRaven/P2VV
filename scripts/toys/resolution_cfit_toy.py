@@ -11,6 +11,8 @@ parser = toy.parser()
 
 parser.add_option("--sfit", dest = "sFit", default = False,
                   action = 'store_true', help = "Generate with cFit, fit with sFit")
+parser.add_option("--correct_weights", dest = "correct_weights", default = False,
+                  action = 'store_true', help = "Correct weights using 1 / (sum of weights^2)")
 
 (options, args) = toy.configure()
 
@@ -148,7 +150,7 @@ if options.sFit:
     ## SWeights
     from P2VV.ToyMCUtils import SWeightTransform
     mass_pdf = buildPdf(Components = (prompt, background), Observables = (mpsi,), Name = 'mass_pdf')
-    toy.set_transform(SWeightTransform(mass_pdf, 'prompt', fitOpts))
+    toy.set_transform(SWeightTransform(mass_pdf, 'prompt', fitOpts, correct_weights = options.correct_weights))
 else:
     # Components for cFit
     components = [prompt, psi_ll, background, sig_wpv]

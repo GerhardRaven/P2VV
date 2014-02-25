@@ -327,11 +327,12 @@ class DilutionToy(Toy):
         return self._gen_params
 
 class SWeightTransform(object):
-    def __init__(self, pdf, component, fit_opts):
+    def __init__(self, pdf, component, fit_opts, correct_weights = True):
         self.__comp = component
         self.__pdf = pdf
         self.__fit_opts = fit_opts
         self.__result = None
+        self.__correct_weights = correct_weights
 
         from ROOT import RooCategory
         self.__status = RooCategory('sweight_status', 'sweight fit status')
@@ -371,7 +372,11 @@ class SWeightTransform(object):
         if success:
             from P2VV.Utilities.SWeights import SData
             self.__sData = SData(Pdf = self.__pdf, Data = data, Name = 'MassSPlot')
-            return self.__sData.data(self.__comp)
+            data = self.__sData.data(self.__comp)
+            if self.__correct_weights:
+                from P2VV.Utilities.DataHandling import correctWeights
+                data = correctWeights(data, splitCatNames = None)
+            return data
         else:
             return None
 
