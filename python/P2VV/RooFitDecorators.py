@@ -286,6 +286,8 @@ from ROOT import RooAbsData
 RooAbsData.createHistogram = __wrap_kw_subs( RooAbsData.createHistogram, True )
 RooAbsData.reduce          = __wrap_kw_subs( RooAbsData.reduce, True )
 RooAbsData.plotOn          = __wrap_kw_subs( RooAbsData.plotOn )
+from ROOT import RooDataHist
+RooDataHist.plotOn          = __wrap_kw_subs( RooDataHist.plotOn )
 from ROOT import RooAbsReal
 RooAbsReal.plotOn          = __wrap_kw_subs( RooAbsReal.plotOn )
 RooAbsReal.fillHistogram   = __wrap_kw_subs( RooAbsReal.fillHistogram )
