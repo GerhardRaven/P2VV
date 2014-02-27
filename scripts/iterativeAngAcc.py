@@ -16,7 +16,7 @@ parser.add_option('-d', '--physPars',     dest='physPars',     default = '',    
 parser.add_option('-f', '--fit',          dest='fit',          default = 'False',               help='switch on/off fitting')
 parser.add_option('-w', '--writeData',    dest='writeData',    default = 'False',               help='save mc datasets to file')
 parser.add_option('-p', '--makePlots',    dest='makePlots',    default = 'False',               help='switch on/off plotting')
-parser.add_option('-l', '--statOnPlots',  dest='statOnPlots',  default = 'False',               help='legend or stats in plots')
+# parser.add_option('-l', '--statOnPlots',  dest='statOnPlots',  default = 'False',               help='legend or stats in plots')
 parser.add_option('-c', '--combMoms',     dest='combMoms',     default = 'False',               help='combine 2011,2012 moments')
 parser.add_option('-R', '--reduced',      dest='reduced',      default = 'False',               help='apply a mass cut for a reduced sample')
 (options, args) = parser.parse_args()
@@ -229,6 +229,24 @@ if makePlots:
     try: case = plotingScenarios[plotScenarioKey]
     except KeyError: plot = False         
     if plot:
+        
+
+        from ROOT import RooDataHist, RooArgSet
+
+        binnedSetVars = RooArgSet()
+        for o in source().get():
+            if o.GetName() in ['truetime','mdau2','helcosthetaK','helcosthetaL','helphi',
+                               'Kplus_P','Kminus_P','muplus_P','muminus_P','B_P','B_Pt',
+                               ]:
+                binnedSetVars.add(o)
+
+
+
+        d = source()
+        dh = RooDataHist('e','ea', binnedSetVars, d)
+        assert False
+
+
         for dataSetKeys in case:
             dataSets = {}
             for data in dataSetKeys: dataSets[data] = mcDataMngr.getDataSet( weightNamesDataKeysMap[data] )
