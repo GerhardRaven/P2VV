@@ -1,8 +1,53 @@
 diff --git a/roofit/roofitcore/src/RooAbsData.cxx b/roofit/roofitcore/src/RooAbsData.cxx
-index 9781622..7108fa5 100644
+index 1bf12a4..5889036 100644
 --- a/roofit/roofitcore/src/RooAbsData.cxx
 +++ b/roofit/roofitcore/src/RooAbsData.cxx
-@@ -939,7 +939,7 @@ Double_t RooAbsData::moment(RooRealVar &var, Double_t order, Double_t offset, co
+@@ -45,6 +45,7 @@
+ #include "RooDataHist.h"
+ #include "RooCompositeDataStore.h"
+ #include "RooCategory.h"
++#include "RooTrace.h"
+ 
+ #include "RooRealVar.h"
+ #include "RooGlobalFunc.h"
+@@ -112,7 +113,8 @@ RooAbsData::RooAbsData()
+   _dstore = 0 ;
+   _iterator = _vars.createIterator() ;
+   _cacheIter = _cachedVars.createIterator() ;
+-  //cout << "created dataset " << this << endl ;
++
++  RooTrace::create(this) ;
+ }
+ 
+ 
+@@ -150,6 +152,8 @@ RooAbsData::RooAbsData(const char *name, const char *title, const RooArgSet& var
+ 
+   _iterator= _vars.createIterator();
+   _cacheIter = _cachedVars.createIterator() ;
++
++  RooTrace::create(this) ;
+ }
+ 
+ 
+@@ -202,7 +206,8 @@ RooAbsData::RooAbsData(const RooAbsData& other, const char* newname) :
+     // Convert to vector store if default is vector
+     _dstore = other._dstore->clone(_vars,newname?newname:other.GetName()) ;
+   }
+-  
++
++  RooTrace::create(this) ;
+ }
+ 
+ 
+@@ -228,6 +233,7 @@ RooAbsData::~RooAbsData()
+     delete iter->second ;
+   }
+ 
++  RooTrace::destroy(this) ;
+ }
+ 
+ 
+@@ -939,7 +945,7 @@ Double_t RooAbsData::moment(RooRealVar &var, Double_t order, Double_t offset, co
    }
  
    // Check if dataset is not empty
@@ -11,7 +56,7 @@ index 9781622..7108fa5 100644
      coutE(InputArguments) << "RooDataSet::moment(" << GetName() << ") WARNING: empty dataset" << endl ;
      return 0;
    }
-@@ -961,7 +961,7 @@ Double_t RooAbsData::moment(RooRealVar &var, Double_t order, Double_t offset, co
+@@ -961,7 +967,7 @@ Double_t RooAbsData::moment(RooRealVar &var, Double_t order, Double_t offset, co
      
      sum+= weight() * TMath::Power(varPtr->getVal() - offset,order);
    }
@@ -20,7 +65,7 @@ index 9781622..7108fa5 100644
  }
  
  
-@@ -998,7 +998,7 @@ Double_t RooAbsData::corrcov(RooRealVar &x,RooRealVar &y, const char* cutSpec, c
+@@ -998,7 +1004,7 @@ Double_t RooAbsData::corrcov(RooRealVar &x,RooRealVar &y, const char* cutSpec, c
    if (!xdata||!ydata) return 0 ;
  
    // Check if dataset is not empty
@@ -29,7 +74,7 @@ index 9781622..7108fa5 100644
      coutW(InputArguments) << "RooDataSet::" << (corr?"correlation":"covariance") << "(" << GetName() << ") WARNING: empty dataset, returning zero" << endl ;
      return 0;
    }
-@@ -1024,12 +1024,12 @@ Double_t RooAbsData::corrcov(RooRealVar &x,RooRealVar &y, const char* cutSpec, c
+@@ -1024,12 +1030,12 @@ Double_t RooAbsData::corrcov(RooRealVar &x,RooRealVar &y, const char* cutSpec, c
    }
  
    // Normalize entries
@@ -47,7 +92,7 @@ index 9781622..7108fa5 100644
    }
  
    // Cleanup
-@@ -1065,7 +1065,7 @@ TMatrixDSym* RooAbsData::corrcovMatrix(const RooArgList& vars, const char* cutSp
+@@ -1065,7 +1071,7 @@ TMatrixDSym* RooAbsData::corrcovMatrix(const RooArgList& vars, const char* cutSp
  
  
    // Check if dataset is not empty
@@ -56,7 +101,7 @@ index 9781622..7108fa5 100644
      coutW(InputArguments) << "RooDataSet::covariance(" << GetName() << ") WARNING: empty dataset, returning zero" << endl ;
      return 0;
    }
-@@ -1110,12 +1110,12 @@ TMatrixDSym* RooAbsData::corrcovMatrix(const RooArgList& vars, const char* cutSp
+@@ -1110,12 +1116,12 @@ TMatrixDSym* RooAbsData::corrcovMatrix(const RooArgList& vars, const char* cutSp
  
    // Normalize sums 
    for (Int_t ix=0 ; ix<varList.getSize() ; ix++) {
@@ -72,7 +117,7 @@ index 9781622..7108fa5 100644
      }
    }    
  
-@@ -1203,7 +1203,7 @@ RooRealVar* RooAbsData::rmsVar(RooRealVar &var, const char* cutSpec, const char*
+@@ -1203,7 +1209,7 @@ RooRealVar* RooAbsData::rmsVar(RooRealVar &var, const char* cutSpec, const char*
  
    // Fill in this variable's value and error
    Double_t meanVal(moment(var,1,0,cutSpec,cutRange)) ;

@@ -1,45 +1,34 @@
 diff --git a/roofit/roofitcore/inc/RooAbsAnaConvPdf.h b/roofit/roofitcore/inc/RooAbsAnaConvPdf.h
-index 5722ee6..d355a51 100644
+index 5722ee6..a40f507 100644
 --- a/roofit/roofitcore/inc/RooAbsAnaConvPdf.h
 +++ b/roofit/roofitcore/inc/RooAbsAnaConvPdf.h
-@@ -68,6 +68,11 @@ public:
-   virtual RooArgSet* coefVars(Int_t coefIdx) const ;
+@@ -69,6 +69,8 @@ public:
  
    virtual Bool_t isDirectGenSafe(const RooAbsArg& arg) const ;
-+
-+  const RooArgList& funcList() const { 
-+    // Return list of component functions
-+    return _convSet ; 
-+  }
      
++  virtual void setCacheAndTrackHints(RooArgSet&) ;
++
  protected:
    Double_t getCoefNorm(Int_t coefIdx, const RooArgSet* nset, const TNamed* rangeName) const ;
-diff --git a/roofit/roofitcore/src/RooAbsOptTestStatistic.cxx b/roofit/roofitcore/src/RooAbsOptTestStatistic.cxx
-index adf2282..75050a3 100644
---- a/roofit/roofitcore/src/RooAbsOptTestStatistic.cxx
-+++ b/roofit/roofitcore/src/RooAbsOptTestStatistic.cxx
-@@ -58,6 +58,7 @@
- #include "RooAddPdf.h"
- #include "RooProduct.h"
- #include "RooRealSumPdf.h"
-+#include "RooAbsAnaConvPdf.h"
- #include "RooTrace.h"
- #include "RooVectorDataStore.h" 
  
-@@ -692,6 +693,16 @@ void RooAbsOptTestStatistic::optimizeConstantTerms(Bool_t activate, Bool_t apply
- 	    }
- 	  }
- 	}
-+        RooAbsAnaConvPdf *cpdf = dynamic_cast<RooAbsAnaConvPdf*>(arg);
-+        if (cpdf) {
-+          RooFIter citer = cpdf->funcList().fwdIterator() ;
-+          RooAbsArg* carg ;
-+          while ((carg=citer.next())) {
-+            // cout << "Adding CacheAndTrack request to " << carg->GetName() << endl;
-+            carg->setAttribute("CacheAndTrack") ;
-+            trackNodes.add(*carg) ;
-+          }
-+        }
-       }
-     }
-     
+diff --git a/roofit/roofitcore/src/RooAbsAnaConvPdf.cxx b/roofit/roofitcore/src/RooAbsAnaConvPdf.cxx
+index 1812139..603966f 100644
+--- a/roofit/roofitcore/src/RooAbsAnaConvPdf.cxx
++++ b/roofit/roofitcore/src/RooAbsAnaConvPdf.cxx
+@@ -694,3 +694,16 @@ void RooAbsAnaConvPdf::printMultiline(ostream& os, Int_t contents, Bool_t verbos
+ }
+ 
+ 
++//_____________________________________________________________________________
++void RooAbsAnaConvPdf::setCacheAndTrackHints(RooArgSet& trackNodes)
++{
++  // Label OK'ed components with cache-and-track
++  RooFIter citer = _convSet.fwdIterator() ;
++  RooAbsArg* carg ;
++  while ((carg=citer.next())) {
++    if (carg->canNodeBeCached()==Always) {
++      trackNodes.add(*carg) ;
++      //cout << "tracking node RooAddPdf component " << carg->IsA()->GetName() << "::" << carg->GetName() << endl ;
++    }
++  }
++}
