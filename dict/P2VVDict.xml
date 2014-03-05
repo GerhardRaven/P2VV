@@ -74,6 +74,7 @@
         <function name = "addSWeightToTree" />
         <function name = "addIntegerToTree" />
         <function name = "addFloatToTree" />
+        <function name = "addProductToTree" />
         <function name = "copyFloatInTree" />
         <function name = "addCategoryToTree" />
         <function name = "addVertexErrors" />

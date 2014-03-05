@@ -48,6 +48,11 @@ def angularMomentIndices( label,angleFuncs ) :
                 raise RuntimeError('P2VV - ERROR: angularMomentIndices: not a valid angular efficiency configuration with transversity angles: %s'\
                                    % multiplyByAngEff)
             return [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 4, 0 ) ]
+        if case('basisSig6') :
+            if transAngles :
+                raise RuntimeError('P2VV - ERROR: angularMomentIndices: not a valid angular efficiency configuration with transversity angles: %s'\
+                                   % multiplyByAngEff)
+            return [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ), ( 0, 4, 0 ), ( 4, 0, 0 ) ]
         raise RuntimeError('P2VV - ERROR: angularMomentIndices: not a valid angular efficiency configuration: %s'\
                                % label)
 

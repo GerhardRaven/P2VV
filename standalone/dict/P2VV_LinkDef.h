@@ -49,6 +49,7 @@
 #pragma link C++ function addSWeightToTree;
 #pragma link C++ function addIntegerToTree;
 #pragma link C++ function addFloatToTree;
+#pragma link C++ function addProductToTree;
 #pragma link C++ function copyFloatInTree;
 #pragma link C++ function addCategoryToTree;
 #pragma link C++ function addVertexErrors;

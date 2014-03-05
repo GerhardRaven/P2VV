@@ -26,6 +26,7 @@
         <function name = "TreeToRooDataSet" />
         <function name = "addIntegerToTree" />
         <function name = "addFloatToTree" />
+        <function name = "addProductToTree" />
         <function name = "copyFloatInTree" />
         <function name = "addCategoryToTree" />
         <class name = "RooTransAngle" />

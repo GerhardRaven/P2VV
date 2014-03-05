@@ -1,18 +1,18 @@
 transAngles = False
-momentsFiles = [
-                  'hel_UB_UT_trueTime_BkgCat050_KK30_allOrders_Basis'
-#                , 'hel_UB_UT_trueTime_BkgCat050_KK30_alt_allOrders_Basis'
-#                , 'hel_UB_UT_trueTime_BkgCat050_KK30_PHSP_allOrders_Basis'
-#                  'trans_UB_UT_trueTime_BkgCat050_KK30_Basis'
-               ]
-dataFile  = 'hel_UB_UT_trueTime_BkgCat050_KK30.root'
-#dataFile  = 'trans_UB_UT_trueTime_BkgCat050_KK30.root'
-dataName  = 'DecayTree'
-plotsFile = 'angularEfficiencyHel.ps'
+momentsFiles = [ 'Sim08_hel_UB_UT_trueTime_BkgCat050_KK30_Basis_5thOrder' ]
+nTupleFilePath  = 'Sim08_hel_UB_UT_trueTime_BkgCat050_KK30_prodWeight.root'
+nTupleName  = 'DecayTree'
+plotsFile = 'angularEfficiency.ps'
 
 LHCbLabel = 'LHCb simulation'
 
-numBins = ( 20, 20, 20 )
+numBins = ( 30, 30, 30 )
+signMoms = [  ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 4, 0 )
+            , ( 4, 0, 0 )#, ( 3, 0, 0 )
+            #, ( 2, 2, 0 ), ( 2, 4, 0 )
+            , ( 0, 2, 2 )#, ( 0, 3, -2), ( 0, 4, -2 )
+            #, ( 4, 2, -1 ), ( 1, 5, 1 ), ( 1, 5, 3 ), ( 5, 4, -1 )
+           ]
 
 f10  = 462684. / ( 462684. + 112402. )
 f11  = 112402. / ( 462684. + 112402. )
@@ -65,24 +65,25 @@ angles = [ angleFuncs.angles[ang] for ang in [ 'cpsi', 'ctheta', 'phi' ] ]
 
 from P2VV.Utilities.DataMoments import RealMomentsBuilder
 from math import sqrt, pi
-#indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(6) for YIndex0 in range(6)\
-#                                          for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
-#indices  = [ ( PIndex, YIndex0, 0 ) for PIndex in range(5) for YIndex0 in range(5) ]
-indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
+indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(6) for YIndex0 in range(6)\
                                           for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
-indices += [ ( 0, 4, 0 ), ( 0, 4, 2 ), ( 0, 4, 4 ) ]
+#indices  = [ ( PIndex, YIndex0, 0 ) for PIndex in range(5) for YIndex0 in range(5) ]
+#indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in range(3)\
+#                                          for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
+#indices += [ ( 0, 4, 0 ), ( 0, 4, 2 ), ( 0, 4, 4 ) ]
 moments = RealMomentsBuilder()
 moments.appendPYList( angleFuncs.angles, indices )
 for file, fac in zip( momentsFiles, addFactors ) :
     moments.read( file, AddMoments = fac )
-moments.Print(  Scale = 1. / 2. / sqrt(pi), Names = 'p2vvab_0000|p2vvab_2000|p2vvab_0020|p2vvab_0022|p2vvab_0040|p2vvab_0042|p2vvab_0044'\
-                                                    if transAngles else 'p2vvab_0000|p2vvab_2000|p2vvab_0020|p2vvab_0040'
+moments.Print(  Scale = 1. / 2. / sqrt(pi)
+              , Names = '|'.join( 'p2vvab_%d0%d%s%d' % ( moms[0], moms[1], 'm' if moms[2] < 0 else '', moms[2] ) for moms in signMoms )
              )
-moments.Print( Scale = 1. / 2. / sqrt(pi), MinSignificance = 2. )
+moments.Print( Scale = 1. / 2. / sqrt(pi), MinSignificance = 2.5 )
 
 momFuncTerms = moments.buildPDFTerms( CoefNamePrefix = 'transC_' if transAngles else 'helC_'
-                                     , Names = 'p2vvab_0000|p2vvab_2000|p2vvab_0020|p2vvab_0022|p2vvab_0040|p2vvab_0042|p2vvab_0044'\
-                                               if transAngles else 'p2vvab_0000|p2vvab_2000|p2vvab_0020|p2vvab_0040' )
+                                     , Names = '|'.join( 'p2vvab_%d0%d%s%d' % ( moms[0], moms[1], 'm' if moms[2] < 0 else '', moms[2] )\
+                                                        for moms in signMoms )
+                                    )
 momFunc = momFuncTerms.buildAddition( 'efficiency' + ( 'Trans' if transAngles else 'Hel' ) )
 
 # create efficiency functions with alternative angular values for slices
@@ -168,7 +169,7 @@ for ( pad, func, angle, xTitle, yTitle, yScale, norm )\
            , angles
            , xLabels
            , yLabels[1]
-           , [ ( 0.88, 1.12 ), ( 0.9328, 1.1872 ), ( 0.88, 1.12 ) ] if not transAngles\
+           , [ ( 0.89, 1.11 ), ( 0.9345, 1.1655 ), ( 0.89, 1.11 ) ] if not transAngles\
              else [ ( 0.88, 1.12 ), ( 0.88, 1.12 ), ( 0.8976, 1.1424 ) ]
            , [ 1. / 4. / pi, 1. / 4. / pi, 1. / 4. ]
           ) :
@@ -189,16 +190,20 @@ for ( pad, func, angle, xTitle, yTitle, yScale, norm )\
         )
     LHCbText.Draw()
 
-if dataFile :
-    # read data set
+if nTupleFilePath :
+    # read n-tuple from file
     from ROOT import TFile
-    dataSetFile = TFile.Open(dataFile)
-    data = dataSetFile.Get(dataName)
-    dataSetFile.Close()
+    nTupleFile = TFile.Open(nTupleFilePath)
+    nTuple = nTupleFile.Get(nTupleName)
 
-    # apply efficiency weights to events in data set
+    # convert n-tuple to dataset
     from ROOT import RooDataSet
-    data = RooDataSet( 'effWeightData', 'effWeightData', data.get(), Import = data, WeightVar = ( 'effWeight', True ) )
+    obsSet = RooArgSet( ang._var for ang in angles )
+    from P2VV.RooFitWrappers import RealVar
+    evWeight = RealVar( Name = 'prodWeight', Value = 1. )
+    obsSet.add(evWeight._var)
+    data = RooDataSet( 'effWeightData', 'effWeightData', obsSet, Import = nTuple, WeightVar = ( 'prodWeight', True ) )
+    nTupleFile.Close()
 
     # plot binned efficiency function integrals
     canvs += [  TCanvas( 'cpsiDataCanv',   'Angular Efficiency' )
@@ -210,7 +215,7 @@ if dataFile :
                , angles
                , xLabels
                , yLabels[1]
-               , [ ( 0.88, 1.12 ), ( 0.9328, 1.1872 ), ( 0.88, 1.12 ) ] if not transAngles\
+               , [ ( 0.89, 1.11 ), ( 0.9345, 1.1655 ), ( 0.89, 1.11 ) ] if not transAngles\
                  else [ ( 0.88, 1.12 ), ( 0.88, 1.12 ), ( 0.8976, 1.1424 ) ]
                , numBins
               ) :
@@ -241,7 +246,7 @@ if dataFile :
                , angles
                , xLabels
                , yLabels[1]
-               , [ ( 0.88, 1.12 ), ( 0.9328, 1.1872 ), ( 0.88, 1.12 ) ] if not transAngles\
+               , [ ( 0.89, 1.11 ), ( 0.9345, 1.1655 ), ( 0.89, 1.11 ) ] if not transAngles\
                  else [ ( 0.88, 1.12 ), ( 0.88, 1.12 ), ( 0.8976, 1.1424 ) ]
                , [ 1. / 4. / pi, 1. / 4. / pi, 1. / 4. ]
                , numBins
@@ -305,7 +310,7 @@ for integ, canv, xTitle, yTitle, zTitle, zScale\
     canv.SetPhi(55)
     canv.Update()
 
-if dataFile :
+if nTupleFilePath :
     # plot 2D efficiency binned function integrals
     from ROOT import TH2D
     integrals += [  TH2D( 'cthetaPhiEffHist',  'Angular Efficiency', 10, -1., +1., 10, -pi, +pi )
