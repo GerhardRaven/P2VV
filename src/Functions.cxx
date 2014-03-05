@@ -105,6 +105,57 @@ void addFloatToTree(TTree& tree, Double_t value, const char* branchName) {
   tree.FlushBaskets();
 }
 
+void addProductToTree(TTree& tree, vector<TString> inBranches,
+    const char* outBranch) {
+  vector<Float_t*> inputF;
+  vector<Double_t*> inputD;
+  for (vector<TString>::const_iterator brIt = inBranches.begin();
+      brIt != inBranches.end(); ++brIt) {
+    TObjArray* lfList = tree.GetBranch(*brIt)->GetListOfLeaves();
+    TString brType = lfList->GetEntries() == 1 ?
+        ((TLeaf*)lfList->At(0))->GetTypeName() : "";
+    if (brType == "Double_t") {
+      Double_t* input = new Double_t(0.);
+      tree.SetBranchAddress(*brIt, input);
+      inputD.push_back(input);
+    } else if (brType == "Float_t") {
+      cout << "P2VV - INFO: copyFloatInTree(): values from Float_t branch \""
+        << *brIt << "\" will be converted to double precision" << endl;
+      Float_t* input = new Float_t(0.);
+      tree.SetBranchAddress(*brIt, input);
+      inputF.push_back(input);
+    } else {
+      cout << "P2VV - ERROR: addProductToTree(): branch \"" << *brIt
+        << "\" has unknown type \"" << brType << "\"" << endl;
+      assert(0);
+    }
+  }
+  if (inputF.size() + inputD.size() <= 0.) {
+      cout << "P2VV - ERROR: addProductToTree(): no input branches found"
+          << endl;
+      assert(0);
+  }
+
+  TString branchNameStr(outBranch);
+  Double_t* output = new Double_t(0.);
+  TBranch* branch = tree.Branch(branchNameStr, output, branchNameStr + "/D");
+
+  for (Long64_t it = 0; it < tree.GetEntries(); ++it) {
+    tree.GetEntry(it);
+    *output = 1.;
+    for (vector<Float_t*>::const_iterator fIt = inputF.begin();
+        fIt != inputF.end(); ++fIt) {
+      *output *= *(*fIt);
+    }
+    for (vector<Double_t*>::const_iterator dIt = inputD.begin();
+        dIt != inputD.end(); ++dIt) {
+      *output *= *(*dIt);
+    }
+    branch->Fill();
+  }
+  tree.FlushBaskets();
+}
+
 void copyFloatInTree(TTree& tree, const char* inBranch, const char* outBranch) {
   Float_t*  inputF = 0;
   Double_t* inputD = 0;

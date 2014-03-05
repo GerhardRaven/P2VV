@@ -20,6 +20,8 @@ void addSWeightToTree(const RooDataSet& ds, TTree& tree, const std::string& bran
                       const std::string& cut = std::string("1"));
 void addIntegerToTree(TTree& tree, Int_t value, const char* branchName);
 void addFloatToTree(TTree& tree, Double_t value, const char* branchName);
+void addProductToTree(TTree& tree, std::vector<TString> inBranches,
+    const char* outBranch);
 void copyFloatInTree(TTree& tree, const char* inBranch, const char* outBranch);
 void addCategoryToTree(TTree& tree, const char* inBranch,
     const char* catBranch, std::vector<Double_t> boundaries,
