@@ -418,11 +418,11 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
         self['KKMassBinBounds'] = [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ]
         self['CSPValues']       = [ 0.9178, 0.9022, 0.8619, 0.8875, 0.9360, 0.9641 ]
 
-        self['externalConstr'] = dict(  wTagP0OS       = (  0.3853, 0.0044 )
+        self['externalConstr'] = dict(  wTagP0OS       = (  0.3791, 0.0044 )
                                       , wTagP1OS       = (  1.000,  0.035  )
                                       , wTagDelP0OS    = (  0.0140, 0.     )
                                       , wTagDelP1OS    = (  0.066,  0.     )
-                                      , wTagP0SS       = (  0.450,  0.005  )
+                                      , wTagP0SS       = (  0.445,  0.005  )
                                       , wTagP1SS       = (  1.00,   0.09   )
                                       , wTagDelP0SS    = ( -0.016,  0.     )
                                       , wTagDelP1SS    = (  0.007,  0.     )
@@ -469,11 +469,11 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
 
         from P2VV.Imports import extConstraintValues
         extConstraintValues.setVal( 'DM',      ( 17.768,  0.024   ) )
-        extConstraintValues.setVal( 'P0OS',    (  0.3853, 0.0044, 0.3853 ) )
+        extConstraintValues.setVal( 'P0OS',    (  0.3791, 0.0044, 0.3791 ) )
         extConstraintValues.setVal( 'P1OS',    (  1.00,   0.035  ) )
         extConstraintValues.setVal( 'DelP0OS', (  0.0140, 0.0012 ) )
         extConstraintValues.setVal( 'DelP1OS', (  0.066,  0.012  ) )
-        extConstraintValues.setVal( 'P0SS',    (  0.450,  0.005, 0.450 ) )
+        extConstraintValues.setVal( 'P0SS',    (  0.445,  0.005, 0.445 ) )
         extConstraintValues.setVal( 'P1SS',    (  1.00,   0.09   ) )
         extConstraintValues.setVal( 'DelP0SS', ( -0.016,  0.002  ) )
         extConstraintValues.setVal( 'DelP1SS', (  0.007,  0.019  ) )
