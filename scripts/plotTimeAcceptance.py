@@ -4,6 +4,7 @@ histsFilePath = 'timeAcc.root'
 histsType = 'fit' # 'hists' # 'fit'
 dataPath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
 nTupleFilePath = 'fitNTuple_peakBkg_2011_2012_Reco14_TOS_20140215.root'
+#nTupleFilePath = 'DEC/fitNTuple_peakBkg_2011_2012_Reco14_20140116.root'
 nTupleName = 'DecayTree'
 period2011 = '' # 'summer'
 applyExclBScale = True
@@ -25,11 +26,11 @@ histNames = dict(  UB_2011    = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt
                  , exclB_2012 = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
                 )
 accHists = { }
-accHists = {  '2011' : dict(  file  = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
+accHists = {  '2011' : dict(  file  = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins_TOS.root'
                             , UB    = histNames['UB_2011']
                             , exclB = histNames['exclB_2011']
                            )
-            , '2012' : dict(  file  = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
+            , '2012' : dict(  file  = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_40bins_TOS.root'
                             , UB    = histNames['UB_2012']
                             , exclB = histNames['exclB_2012']
                            )
