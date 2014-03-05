@@ -29,6 +29,28 @@ def compareDistributions( **kwargs ):
     names = '\n'
     for d in data.itervalues(): names +=  d.GetName() + '\n'
     
+
+    # make a binned data set to accelerate
+    # from ROOT import RooDataHist, RooArgSet
+    # binnedSetVars = RooArgSet()
+    # for o in data['mcData'].get():
+    #     if o.GetName() in ['truetime','mdau2','helcosthetaK','helcosthetaL','helphi',
+    #                        'Kplus_P','Kminus_P','muplus_P','muminus_P','B_P','B_Pt',
+    #                        ]:
+    #         binnedSetVars.add(o)
+
+    # print data
+    # for d in data.keys():
+    #     # data[d] = RooDataHist(d.GetName() + 'binned', d.GetTitle() + 'binned', binnedSetVars, d)
+    #     print data
+    #     print d
+    #     print binnedSetVars
+
+    #     dh = RooDataHist(data[d].GetName() + '_b' , data[d].GetTitle() + '_b', binnedSetVars)
+        
+    #     import pdb; pdb.set_trace()
+
+
     # get observables and x ranges
     observables, Kmomenta, muMomenta, trackMomRangeX = [], [], [], {}
     for obs in obsSet:
@@ -85,6 +107,12 @@ def compareDistributions( **kwargs ):
     dataOpts    = dict()    
     for key in colors.keys():
         if data.has_key(key): dataOpts[key] = dict( MarkerColor = colors[key], **stdDrawOpts  )
+        if 'Sdata' in key:    dataOpts[key]['Invisible'] = ()
+
+    # remove data entry from legend
+    if stats: 
+        makeStatKeys = data.keys() 
+        makeStatKeys.remove('Sdata')
 
     print 'P2VV - INFO: compareDistributions: Making comparition plots for datasets:', names
     # plot angles and decay time
@@ -97,11 +125,13 @@ def compareDistributions( **kwargs ):
         ):
         print 'P2VV - INFO: compareDistributions: Plotting %s.'%obs.GetName()
         anglesFrames, leg = compareDataSets( canv, obs, data = data, dataOpts = dataOpts, logy = logY,
-                                       frameOpts = dict( Bins = 30 ), 
-                                       )
+                                             frameOpts = dict( Bins = 30 ), 
+                                             includeInLegend = makeStatKeys,
+                                             save = True if stats and not Legend else False 
+                                             )
         # make assymetry plots 
         makeAssymetryPlot(assymCanv, anglesFrames, referenceHistName, len(data.keys()), 
-                               yRange=assymYrange, save = True if stats and not Legend else False 
+                          yRange=assymYrange, save = True if stats and not Legend else False 
                           )
     
     # plot Kaon and muon momenta
@@ -122,7 +152,8 @@ def compareDistributions( **kwargs ):
         # plot
         momFrame, leg = compareDataSets( canv, obs, data = data, dataOpts = dataOpts,
                                          frameOpts    = dict( Bins = 30, Range=trackMomRangeX[obs.GetName()] ),
-                                         statOn       = printStats,
+                                         statOn       = printStats, includeInLegend = makeStatKeys,
+                                         save = True if stats and not Legend else False 
                                          )
         makeAssymetryPlot( assymCanv, momFrame, referenceHistName, len(data.keys()), 
                            yRange=assymYrange, save = printStats
@@ -130,7 +161,6 @@ def compareDistributions( **kwargs ):
     
 
         if 'Kplus_PX' in obs.GetName():break
-
 
     # plot KKMass
     print 'P2VV - INFO: compareDistributions: Plotting KKmass.'
@@ -140,7 +170,9 @@ def compareDistributions( **kwargs ):
                                         dataOpts = dataOpts, 
                                         xTitle = 'm(KK) [MeV/c^{2}]',
                                         frameOpts = dict( Bins = 40 ),
-                                        statOn    = True if stats and not Legend else False
+                                        statOn    = True if stats and not Legend else False,
+                                        includeInLegend = makeStatKeys,
+                                        save = True if stats and not Legend else False 
                                         )
     makeAssymetryPlot( KKMassCanv.cd(2), KKMassFrame, referenceHistName, len(data.keys()),
                        save = True if stats and not Legend else False 
@@ -150,9 +182,11 @@ def compareDistributions( **kwargs ):
     for pad, obs, rangeY in zip( [1,2], [ B_P,B_Pt], [(0.,5e5),(0.,3e4)] ):
         print 'P2VV - INFO: compareDistributions: Plotting %s.'%obs.GetName()
         BmomFrame, leg = compareDataSets( BmomCanv.cd(pad), obs, data = data, dataOpts = dataOpts, 
-                                     frameOpts = dict( Bins=70, Range=rangeY ),
-                                     statOn    = True if stats and not Legend else False
-                                     )
+                                          frameOpts = dict( Bins=70, Range=rangeY ),
+                                          statOn    = True if stats and not Legend else False,
+                                          includeInLegend = makeStatKeys,
+                                          save = True if stats and not Legend else False 
+                                          )
         makeAssymetryPlot( BmomCanv.cd(pad+2), BmomFrame, referenceHistName, len(data.keys()),
                            save = True if stats and not Legend else False 
                            )
@@ -802,10 +836,27 @@ class MatchPhysics( ):
         
         # read ntuple
         from P2VV.Utilities.DataHandling import readData
-        readOpts = { 'ntupleCuts' : 'mass>5350 && mass<5355' } if kwargs.pop('Reduced', False) else  { }
-        self._data = readData( nTupleFile, dataSetName=nTupleName, NTuple=True, observables=self._obsSet, **readOpts)
+        # readOpts = { 'ntupleCuts' : 'mass>5350 && mass<5355' } if kwargs.pop('Reduced', False) else  { }
+        # self._data = readData( nTupleFile, dataSetName=nTupleName, NTuple=True, observables=self._obsSet, **readOpts)
+        # self._data.SetName( 'mcData_' + MCProd )
+        # readOpts = { 'ntupleCuts' : 'mass>5350 && mass<5355' } if kwargs.pop('Reduced', False) else  { }
+        self._data = readData( nTupleFile, dataSetName=nTupleName, NTuple=True, observables=self._obsSet)
         self._data.SetName( 'mcData_' + MCProd )
-           
+
+
+
+        if kwargs.pop('Reduced',False):
+            from ROOT import TRandom3, RooDataSet
+            reducedData = RooDataSet(self._data.GetName(), self._data.GetTitle(), self._data.get() )
+            r = TRandom3()
+            for ev in self._data:
+                rdm = r.Uniform()
+                if rdm >.8:
+                    reducedData.add(self._data.get())
+            self._data = reducedData
+            self._data.Print()
+
+   
         # build pdf
         from P2VV.Parameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
         amplitudes = Amplitudes(  A0Mag2 = A0Mag2Val, AperpMag2 = AperpMag2Val
