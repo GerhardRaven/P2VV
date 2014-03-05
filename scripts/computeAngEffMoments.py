@@ -340,6 +340,7 @@ indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(3) for YIndex0 in 
 indices += [ ( 0, 4, 0 ), ( 0, 4, 2 ), ( 0, 4, 4 ) ]
 #indices  = [ ( PIndex, YIndex0, YIndex1 ) for PIndex in range(4) for YIndex0 in range(4) for YIndex1 in range( -YIndex0, YIndex0 + 1 )\
 #             if PIndex == 3 or YIndex0 == 3 ]
+#indices  = [ ( 0, YIndex0, YIndex1 ) for YIndex0 in range(6) for YIndex1 in range( -YIndex0, YIndex0 + 1 ) ]
 #indices = [ ( PIndex, 2, YIndex1 ) for PIndex in range(40) for YIndex1 in [ +1, -1 ] ]
 
 basisMoments = RealMomentsBuilder()
@@ -373,6 +374,7 @@ basisMoments.Print( Scale = PDFInt /  2. / sqrt(pi), MinSignificance = 5. )
 ###############################################
 
 if addInvPdf and normPdf :
+    print 'adding efficiency weights to dataset'
     from ROOT import RooArgSet, RooArgList, RooFormulaVar, RooConstVar
     rooIntSet  = RooArgSet( var._var for var in intSet  )
     rooNormSet = RooArgSet( var._var for var in normSet )
@@ -388,10 +390,12 @@ if addInvPdf and normPdf :
 ############################
 
 if dataSetFile :
-    from ROOT import TFile
+    print 'converting dataset to n-tuple'
+    from ROOT import TFile, TObject
     dataFile = TFile.Open( dataSetFile, 'RECREATE' )
-    dataFile.Add(data)
-    dataFile.Write()
+    nTuple = data.buildTree( Name = nTupleName, Title = nTupleName, WeightName = weightVar, RooFitFormat = False )
+    print 'writing n-tuple to file %s' % dataSetFile
+    dataFile.Write( dataSetFile, TObject.kOverwrite )
     dataFile.Close()
 
 
