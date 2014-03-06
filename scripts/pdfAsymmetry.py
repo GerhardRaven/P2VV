@@ -87,12 +87,12 @@ dataSetAsymW.Print()
 from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_RunIAnalysis as PdfConfig
 pdfConfig = PdfConfig( RunPeriods = '3fb' )
 
-timeEffFile2011 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
-timeEffFile2012 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
+timeEffFile2011 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins_TOS.root'
+timeEffFile2012 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_40bins_TOS.root'
 pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file'] = timeEffFile2011
 pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] )['file'] = timeEffFile2012
-pdfConfig['anglesEffType'] = 'basisSig4'
-pdfConfig['angEffMomsFiles'] = dataPath + 'Sim08_hel_UB_UT_trueTime_BkgCat050_KK30_Basis'
+pdfConfig['anglesEffType'] = 'basisSig6'
+pdfConfig['angEffMomsFiles'] = dataPath + 'angEffNominalRew_5thOrder.par'
 pdfConfig['signalData'] = dataSetAsymW
 pdfConfig['readFromWS'] = True
 

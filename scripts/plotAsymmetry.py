@@ -1,9 +1,9 @@
 createDataSets    = True
 plotData          = True
 plotPDFInt        = False
-plotPDF           = True
+plotPDF           = False
 blind             = True
-applyDilWeights   = False
+applyDilWeights   = True
 applyAngWeights   = '' # 'para_perp'
 dilutionCut       = -1
 dataPath          = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
@@ -11,7 +11,7 @@ plotsFilePath     = 'asymPlot.ps' # 'asymPlot_08bins_m1p590_f0050_b.ps' # 'asymP
 plotsROOTFilePath = 'asymPlot.root'
 dataSetName       = 'JpsiKK_sigSWeight'
 dataSetFileIn     = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
-dataSetFileOut    = 'asymmetryData_temp.root' # 'asymmetryData.root' # 'asymmetryData_para_perp.root'
+dataSetFileOut    = 'asymmetryData.root'
 pdfFilePaths      = 'pdfVals/pdfVals_08bins_m1p590_*_f0050_b.par' # 'pdfVals/pdfVals_08bins_m1p590_*_f0050_b.par' # 'pdfVals/pdfVals_08bins_m0p500_*_f0050_b.par' # 'pdfVals/pdfVals_04bins_m1p045_*_f00255075_b.par'
 timeFracs         = [ '0.00', '0.50' ] # [ '0.00', '0.50' ] # [ '0.00', '0.25', '0.50', '0.75' ]
 if blind :
@@ -21,12 +21,12 @@ else :
 
 from math import pi, sqrt, sin, cos, atan2
 numTimeBins = 8 # 4
-Deltam      = 17.762
+Deltam      = 17.761
 oscPeriod   = 2. * pi / Deltam
-phis        = 0.0792
-lamb        = 0.962
-AperpSq     = 0.253
-fS          = 0.046
+phis        = 0.076
+lamb        = 0.960
+AperpSq     = 0.251
+fS          = ( 2484. * 0.426 + 9997. * 0.0586 + 34557. * 0.0097 + 28320. * 0.0093 + 12567. * 0.0477 + 7751. * 0.1918 ) / 95677.
 binOffset   = -0.5 - atan2( 1. - lamb**2, 2. * ( (1. - fS) * (1. - 2. * AperpSq) - fS ) * lamb * sin(phis) ) / 2. / pi * float(numTimeBins)
 asymMax     = 0.08
 
