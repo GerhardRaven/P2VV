@@ -467,6 +467,12 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
                 constr.addSettings( [ 'runPeriod' ], [ [ 'p2012' ] ], vals['2012'] )
                 self['externalConstr'][par] = constr
 
+        # hack to not use beta until we have its value
+        self['externalConstr']['betaTimeEff'] = ( 0., 0. )
+        if 'runPeriod' in self['splitParams'] :
+            self['splitParams']['runPeriod'].remove('betaTimeEff')
+            self['splitParams']['runPeriod'].append('Gamma')
+
         from P2VV.Imports import extConstraintValues
         extConstraintValues.setVal( 'DM',      ( 17.768,  0.024   ) )
         extConstraintValues.setVal( 'P0OS',    (  0.3791, 0.0044, 0.3791 ) )

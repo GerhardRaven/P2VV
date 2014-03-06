@@ -157,10 +157,10 @@ if 'Parameterization' in pdfConfig['timeEffParameters'] and pdfConfig['timeEffPa
 #pdfConfig['externalConstr']['wTagDelP1SS'] = (  0.007,  0. )
 #pdfConfig['externalConstr']['dM']          = (  17.768, 0.024  )
 #pdfConfig['externalConstr'].pop('betaTimeEff')
-pdfConfig['externalConstr']['betaTimeEff'] = ( 0., 0. )
+#pdfConfig['externalConstr']['betaTimeEff'] = ( 0., 0. )
 #pdfConfig['externalConstr']['betaTimeEff'][1] = ( dict( runPeriod = [ 'p2012' ] ), ( -0.0135, 0.004 ) )
-pdfConfig['splitParams']['runPeriod'].remove('betaTimeEff')
-pdfConfig['splitParams']['runPeriod'].append('Gamma')
+#pdfConfig['splitParams']['runPeriod'].remove('betaTimeEff')
+#pdfConfig['splitParams']['runPeriod'].append('Gamma')
 
 #for par in [ 'tres_placeholder', 'timeResMu', 'timeResFrac2', 'sf_mean_offset', 'sf_mean_slope', 'sf_sigma_offset', 'sf_sigma_slope' ] :
 #    pdfConfig['splitParams']['runPeriod'].remove(par)
