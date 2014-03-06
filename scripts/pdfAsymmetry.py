@@ -5,7 +5,7 @@ applyPlotWeights = True
 blindVars        = [ 'phiCP', 'dGamma' ]
 
 from math import pi, sqrt
-Deltam         = 17.762
+Deltam         = 17.761
 numTimeBinsTot = 8
 timeBins       = [ 0 ]
 periods        = [ 0 ]
