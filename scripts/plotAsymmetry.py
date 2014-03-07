@@ -12,7 +12,7 @@ plotsROOTFilePath = 'asymPlot.root'
 dataSetName       = 'JpsiKK_sigSWeight'
 dataSetFileIn     = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
 dataSetFileOut    = 'asymmetryData.root'
-pdfFilePaths      = 'pdfVals/pdfVals_08bins_m1p590_*_f0050_b.par' # 'pdfVals/pdfVals_08bins_m1p590_*_f0050_b.par' # 'pdfVals/pdfVals_08bins_m0p500_*_f0050_b.par' # 'pdfVals/pdfVals_04bins_m1p045_*_f00255075_b.par'
+pdfFilePaths      = 'pdfVals/pdfVals_08bins_m1p641_b*_p*_f0050_b.par'
 timeFracs         = [ '0.00', '0.50' ] # [ '0.00', '0.50' ] # [ '0.00', '0.25', '0.50', '0.75' ]
 if blind :
     addText = 'blind: C #approx 0.04; S #approx -0.08'
@@ -28,7 +28,7 @@ lamb        = 0.960
 AperpSq     = 0.251
 fS          = ( 2484. * 0.426 + 9997. * 0.0586 + 34557. * 0.0097 + 28320. * 0.0093 + 12567. * 0.0477 + 7751. * 0.1918 ) / 95677.
 binOffset   = -0.5 - atan2( 1. - lamb**2, 2. * ( (1. - fS) * (1. - 2. * AperpSq) - fS ) * lamb * sin(phis) ) / 2. / pi * float(numTimeBins)
-asymMax     = 0.08
+asymMax     = 0.10
 
 # function to set graph attributes
 def setGraphAtts( graph, colour, markerSize, minimum, maximum ) :
@@ -40,11 +40,13 @@ def setGraphAtts( graph, colour, markerSize, minimum, maximum ) :
     graph.SetMarkerSize(markerSize)
     graph.GetXaxis().SetTitle('Decay time (modulo 2#pi/#Deltam_{s}) [ps]')
     graph.GetYaxis().SetTitle('B/#bar{B}-tag asymmetry')
-    graph.GetXaxis().SetTitleOffset(1.1)
+    graph.GetXaxis().SetTitleOffset(1.2)
     graph.GetYaxis().SetTitleOffset(1.2)
     graph.GetXaxis().SetLimits( binOffset / float(numTimeBins) * oscPeriod, ( 1. + binOffset / float(numTimeBins) ) * oscPeriod )
     graph.SetMinimum(minimum)
     graph.SetMaximum(maximum)
+    graph.GetXaxis().SetNdivisions( 10, 5, 0, True )
+    graph.GetYaxis().SetNdivisions(  5, 5, 0, True )
 
 from ROOT import TGraphErrors as Graph
 Graph.setAtts = setGraphAtts
@@ -184,6 +186,8 @@ timeArrPdf = array( 'd', [ ( float(it) + binOffset + float(frac) ) / float(numTi
                          + [ ( 1. + ( 1. + binOffset + float( timeFracs[0] ) ) / float(numTimeBins) ) * oscPeriod ] )
 timeErrArrPdf = array( 'd', [ 0. ] * len(timeArrPdf) )
 
+pdfBlindVals    = { }
+pdfIntBlindVals = { }
 if blind or plotPDFInt or plotPDF :
     # read files with PDF values
     from glob import glob
@@ -225,7 +229,7 @@ if blind or plotPDFInt or plotPDF :
 
         pdfIntVals['plus'][bin]  += plusIntVal
         pdfIntVals['minus'][bin] += minIntVal
-        if blind :
+        if blind or readBlindPdf :
             assert plusIntBlindVal != None and minIntBlindVal != None and readBlindPdf
             pdfIntBlindVals['plus'][bin]  += plusIntBlindVal
             pdfIntBlindVals['minus'][bin] += minIntBlindVal
@@ -252,11 +256,11 @@ if plotPDF :
 pdfIntGraph = None
 if plotPDFInt :
     # plot integrated-PDF asymmetry in time bins
-    if blind or not pdfBlindIntVals :
+    if blind or not pdfIntBlindVals :
         intVals = pdfIntVals
     else :
         intVals = pdfIntBlindVals
-        
+
     pdfIntArr = array( 'd', [ 2. * pVal / ( pVal + mVal ) - 1. for pVal, mVal in zip( intVals['plus'], intVals['minus'] ) ] )
     pdfIntArr.append( pdfIntArr[0] )
     pdfIntErrArr = array( 'd', [ 0. ] * len(pdfIntArr) )
@@ -347,7 +351,7 @@ if dataGraph : dataGraph.Draw('P SAMES')
 if pdfIntGraph : pdfIntGraph.Draw('P SAMES')
 if pdfGraph : pdfGraph.Draw('C SAMES')
 label.DrawLatex( tMin + 0.77 * ( tMax - tMin ), 0.76 * asymMax, 'LHCb' )
-if addText : text.DrawLatex( 0.5 * ( tMax + tMin ), -0.8 * asymMax, addText )
+if addText : text.DrawLatex( 0.5 * ( tMax + tMin ), -0.7 * asymMax, addText )
 canv.Print(plotsFilePath)
 
 # save graphs and canvas
