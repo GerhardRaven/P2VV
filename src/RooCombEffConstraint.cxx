@@ -116,14 +116,22 @@ RooCombEffConstraint::RooCombEffConstraint(const char *name, const char *title,
 
     vector<Double_t> sWVec;
     vector<Double_t> sWSqVec;
+    Bool_t zeroWeight = kFALSE;
     for (Int_t bIt = 0; bIt < _nBins; ++bIt) {
       Double_t sW = cIt != 1
           ? sumW[cIt][bIt] : sumW[1][bIt] + sumW[4][bIt];
       Double_t sWSq = cIt != 1
           ? sumWSq[cIt][bIt] : sumWSq[1][bIt] + sumWSq[4][bIt];
-      assert(sW > 0.01 && sWSq > 0.01);
+      assert((sW > 0.01 && sWSq > 0.01) || (sW == 0. && sWSq == 0.));
+      if (sW == 0.) zeroWeight = kTRUE;
       sWVec.push_back(sW);
       sWSqVec.push_back(sWSq);
+    }
+    if (zeroWeight) {
+      coutW(InputArguments) << "RooCombEffConstraint::ctor(" << GetName()
+          << "): zero sums of (squared) weights found for category " << cIt + 1
+          << ": constraining corresponding yield parameters to zero"
+          <<  std::endl;
     }
     _sumW.push_back(sWVec);
     _sumWSq.push_back(sWSqVec);
@@ -207,11 +215,18 @@ Double_t RooCombEffConstraint::getLogVal(const RooArgSet* nset) const
     Double_t nu[5] = {e1A * nu2A, (e1A + e1B) * nu2B, e1A * nu2AB,
         e1B * nu2A, e1B * nu2AB};
 
+    // construct log-likelihood sum for five nu values
     for (Int_t cIt = 0; cIt < 5; ++cIt) {
-      Double_t sumW = _sumW[cIt][bIt];
       Double_t sumWSq = _sumWSq[cIt][bIt];
-      Double_t nuN = nuNorm(nu[cIt], sumW, _normFac[cIt], bIt);
-      lnL += sumW / sumWSq * (sumW * TMath::Log(nuN) - nu[cIt]);
+      if (sumWSq > 0.) {
+        // use modified poisson constraint for this category
+        Double_t sumW = _sumW[cIt][bIt];
+        Double_t nuN = nuNorm(nu[cIt], sumW, _normFac[cIt], bIt);
+        lnL += sumW / sumWSq * (sumW * TMath::Log(nuN) - nu[cIt]);
+      } else {
+        // use "zero" constraint for this category
+        lnL += -1.e10 * nu[cIt] * nu[cIt];
+      }
     }
   }
 

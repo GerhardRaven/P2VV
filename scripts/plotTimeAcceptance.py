@@ -1,7 +1,7 @@
 from math import sqrt
 plotsFilePath = 'timeAcc.ps'
 histsFilePath = 'timeAcc.root'
-histsType = 'fit' # 'hists' # 'fit'
+histsType = 'hists' # 'hists' # 'fit'
 dataPath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
 nTupleFilePath = 'fitNTuple_peakBkg_2011_2012_Reco14_TOS_20140215.root'
 #nTupleFilePath = 'DEC/fitNTuple_peakBkg_2011_2012_Reco14_20140116.root'
@@ -13,12 +13,13 @@ incHLT2UB = False
 hlt1UnbEff = 0.7
 plotMinMax = dict( UB = ( 0.85, 1.0 ), exclB = ( 0.3, 1.5 ) if applyExclBScale else ( 0.05, 0.22 ) )
 
+#binBounds = [ 0.3, 14.0 ]
 #binBounds = [ 0.3, 0.5, 1.0, 1.7, 2.7, 14.0 ]
-#binBounds = [ 0.3, 0.46, 0.63, 0.83, 1.05, 1.32, 1.65, 2.07, 2.67, 3.7, 14. ]
-binBounds = [  0.30000, 0.33726, 0.37550, 0.41475, 0.45508, 0.49654, 0.53920, 0.58314, 0.62843, 0.67516, 0.72342, 0.77332, 0.82497, 0.87849
-             , 0.93404, 0.99177, 1.05185, 1.11448, 1.17991, 1.24837, 1.32018, 1.39567, 1.47524, 1.55936, 1.64858, 1.74356, 1.84509, 1.95415
-             , 2.07194, 2.19998, 2.34022, 2.49526, 2.66856, 2.86502, 3.09180, 3.36000, 3.68820, 4.11123, 4.70718, 5.72483, 14.00000
-            ]
+binBounds = [ 0.3, 0.46, 0.63, 0.83, 1.05, 1.32, 1.65, 2.07, 2.67, 3.7, 14. ]
+#binBounds = [  0.30000, 0.33726, 0.37550, 0.41475, 0.45508, 0.49654, 0.53920, 0.58314, 0.62843, 0.67516, 0.72342, 0.77332, 0.82497, 0.87849
+#             , 0.93404, 0.99177, 1.05185, 1.11448, 1.17991, 1.24837, 1.32018, 1.39567, 1.47524, 1.55936, 1.64858, 1.74356, 1.84509, 1.95415
+#             , 2.07194, 2.19998, 2.34022, 2.49526, 2.66856, 2.86502, 3.09180, 3.36000, 3.68820, 4.11123, 4.70718, 5.72483, 14.00000
+#            ]
 
 histNames = dict(  UB_2011    = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
                  , UB_2012    = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
@@ -26,15 +27,15 @@ histNames = dict(  UB_2011    = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt
                  , exclB_2012 = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
                 )
 accHists = { }
-accHists = {  '2011' : dict(  file  = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins_TOS.root'
-                            , UB    = histNames['UB_2011']
-                            , exclB = histNames['exclB_2011']
-                           )
-            , '2012' : dict(  file  = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_40bins_TOS.root'
-                            , UB    = histNames['UB_2012']
-                            , exclB = histNames['exclB_2012']
-                           )
-           }
+#accHists = {  '2011' : dict(  file  = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins_TOS.root'
+#                            , UB    = histNames['UB_2011']
+#                            , exclB = histNames['exclB_2011']
+#                           )
+#            , '2012' : dict(  file  = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_40bins_TOS.root'
+#                            , UB    = histNames['UB_2012']
+#                            , exclB = histNames['exclB_2012']
+#                           )
+#           }
 
 # 5 bins, uniform UB (2011: 0.4813; 2012: 0.4388)
 #fitAccLevels = {  ('2011', 'hlt1_exclB' ) : [  ( 0.0692, 0.0036 ), ( 0.1056, 0.0031 ), ( 0.1328, 0.0036 ), ( 0.1440, 0.0041 )
@@ -135,15 +136,15 @@ fitAccLevels = {  ('2011', 'hlt1_exclB' ) : [  ( 0.0635, 0.0079 ), ( 0.0563, 0.0
 
 
 fitAcc = { }
-fitAcc = {  ('2011',    'UB') : [ eff for eff in fitAccLevels[ ( '2011', 'hlt2_B' ) ] ]
-          , ('2011', 'exclB') : [ ( eff1[0] * eff2[0], sqrt( eff2[0]**2 * eff1[1]**2 + eff1[0]**2 * eff2[1]**2 ) )\
-                                  for eff1, eff2 in zip( fitAccLevels[ ( '2011', 'hlt1_exclB' ) ], fitAccLevels[ ( '2011', 'hlt2_B' ) ] )
-                                ]
-          , ('2012',  'UB')   : [ eff for eff in fitAccLevels[ ( '2012', 'hlt2_B' ) ] ]
-          , ('2012', 'exclB') : [ ( eff1[0] * eff2[0], sqrt( eff2[0]**2 * eff1[1]**2 + eff1[0]**2 * eff2[1]**2 ) )\
-                                  for eff1, eff2 in zip( fitAccLevels[ ( '2012', 'hlt1_exclB' ) ], fitAccLevels[ ( '2012', 'hlt2_B' ) ] )
-                                ]
-         }
+#fitAcc = {  ('2011',    'UB') : [ eff for eff in fitAccLevels[ ( '2011', 'hlt2_B' ) ] ]
+#          , ('2011', 'exclB') : [ ( eff1[0] * eff2[0], sqrt( eff2[0]**2 * eff1[1]**2 + eff1[0]**2 * eff2[1]**2 ) )\
+#                                  for eff1, eff2 in zip( fitAccLevels[ ( '2011', 'hlt1_exclB' ) ], fitAccLevels[ ( '2011', 'hlt2_B' ) ] )
+#                                ]
+#          , ('2012',  'UB')   : [ eff for eff in fitAccLevels[ ( '2012', 'hlt2_B' ) ] ]
+#          , ('2012', 'exclB') : [ ( eff1[0] * eff2[0], sqrt( eff2[0]**2 * eff1[1]**2 + eff1[0]**2 * eff2[1]**2 ) )\
+#                                  for eff1, eff2 in zip( fitAccLevels[ ( '2012', 'hlt1_exclB' ) ], fitAccLevels[ ( '2012', 'hlt2_B' ) ] )
+#                                ]
+#         }
 #fitAcc = {  ('2011',    'UB') : [  ( 0.475428,   0.       ), ( 4.1717e-01, 2.68e-02 ), ( 4.3387e-01, 2.76e-02 ), ( 4.9658e-01, 3.05e-02 )
 #                                 , ( 5.3039e-01, 3.21e-02 ), ( 5.0833e-01, 3.11e-02 ), ( 4.9299e-01, 3.04e-02 ), ( 5.0210e-01, 3.08e-02 )
 #                                 , ( 5.0438e-01, 3.09e-02 ), ( 5.0947e-01, 3.11e-02 ), ( 5.1237e-01, 3.13e-02 ), ( 4.8296e-01, 2.99e-02 )
@@ -205,8 +206,8 @@ for trigger in [ 'UB', 'exclB' ] :
         sumWSq[ ( period, trigger, ( 1, 1 ) ) ] = [ 0. ] * ( len(binBounds) - 1 )
         selStr = 'hlt1_excl_biased%s==%d && runPeriod==%s' % ( '' if hlt1TOS else '_dec', trigger == 'exclB', period )
         #selStr = 'hlt1_excl_biased==%d && runPeriod==%s' % ( trigger == 'exclB', period )
-        if period == '2011' and period2011 == 'summer' : selStr += '&& runNumber > 87219 && runNumber < 94386'
-        elif period == '2011' and period2011 == 'autumn' : selStr += '&& runNumber > 94386'
+        if period == '2011' and period2011 == 'summer' : selStr += '&& firstData == 1'
+        elif period == '2011' and period2011 == 'autumn' : selStr += '&& firstData == 0'
 
         dummyFile = TFile.Open( 'dummy.root', 'RECREATE' )
         nTupleSel = nTuple.CopyTree(selStr)
@@ -311,14 +312,14 @@ for period in [ '2011', '2012' ] :
             countGraph.SetMinimum( plotMinMax[trigger][0] )
             countGraph.SetMaximum( plotMinMax[trigger][1] )
             countGraph.SetMarkerStyle(kFullDotLarge)
-            countGraph.SetLineColor(kRed)
-            countGraph.SetMarkerColor(kRed)
+            countGraph.SetLineColor(kBlue)
+            countGraph.SetMarkerColor(kBlue)
             countGraph.SetLineWidth(3)
             countGraph.SetMarkerSize(1.0)
             countGraph.GetXaxis().SetTitle('time bin')
             countGraph.GetYaxis().SetTitle('acceptance (a.u.)')
             if histsType != 'fit' :
-                for binIt, val in enumerate(histArr) : hists[trigger].SetBinContent( binIt + 1, val )
+                for binIt, val in enumerate(countArr) : hists[trigger].SetBinContent( binIt + 1, val )
         else :
             countGraph = None
 
@@ -331,8 +332,8 @@ for period in [ '2011', '2012' ] :
             fitGraph.SetMinimum( plotMinMax[trigger][0] )
             fitGraph.SetMaximum( plotMinMax[trigger][1] )
             fitGraph.SetMarkerStyle(kFullDotLarge)
-            fitGraph.SetLineColor(kBlue)
-            fitGraph.SetMarkerColor(kBlue)
+            fitGraph.SetLineColor(kRed)
+            fitGraph.SetMarkerColor(kRed)
             fitGraph.SetLineWidth(3)
             fitGraph.SetMarkerSize(1.0)
             fitGraph.GetXaxis().SetTitle('time bin')
