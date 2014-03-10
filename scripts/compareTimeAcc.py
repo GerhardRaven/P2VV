@@ -1,4 +1,4 @@
-runPeriod = 2012
+runPeriod = 2011
 constrName = 'runPeriod_p%d_poisson' % runPeriod
 binBounds = [ 0.3, 0.46, 0.63, 0.83, 1.05, 1.32, 1.65, 2.07, 2.67, 3.7, 14. ]
 HLT1UB = 'runPeriod_p%d_hlt1_excl_biased_notExclB' % runPeriod + '_bin_%03d'
@@ -41,11 +41,14 @@ def setParameters( setting, parSet, preScale, parSetIn ) :
 
 from P2VV.Load import LHCbStyle
 from array import array
-from ROOT import TGraphAsymmErrors, TCanvas, kFullDotLarge, kBlue
+from ROOT import TGraphAsymmErrors, TLatex, TCanvas, kFullDotLarge, kBlue
 graphs = [ ]
 canvs = [ ]
 timeValsArr = array( 'd', range( 1, len(binBounds) ) )
 timeErrArr = array( 'd', [ 0. ] * len(timeValsArr) )
+label = TLatex()
+label.SetTextAlign(32)
+label.SetTextSize(0.072)
 def createGraph( accType, accValsArr, accErrLoArr, accErrHiArr, minMax = ( None, None ) ) :
     graph = TGraphAsymmErrors( len(timeValsArr), timeValsArr, accValsArr, timeErrArr, timeErrArr, accErrLoArr, accErrHiArr )
     if minMax[0] != None : graph.SetMinimum( minMax[0] )
@@ -69,6 +72,7 @@ def createGraph( accType, accValsArr, accErrLoArr, accErrHiArr, minMax = ( None,
     canv.SetBottomMargin(0.18)
     canv.SetTopMargin(0.05)
     graph.Draw('ALP')
+    label.DrawLatex( timeValsArr[-1], graph.GetMinimum() + 0.15 * ( graph.GetMaximum() - graph.GetMinimum() ), 'LHCb unofficial' )
     canvs.append(canv)
 
 from ROOT import RooArgSet
