@@ -1,4 +1,4 @@
-dataSetPath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats.root'
+dataSetPath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_20140309.root'
 dataSetName   = 'JpsiKK_sigSWeight'
 plotsFilePath = 'sigWeights.ps'
 massName      = 'mass'
