@@ -132,11 +132,21 @@ from P2VV.Utilities.DataHandling import correctWeights
 fitData = correctWeights( dataSet, [ 'runPeriod', 'KKMassCat' ] )
 fitResult = pdf.fitTo( fitData, SumW2Error = False, Save = True, NumCPU = numCPU, Optimize = 2, Timer = True, Minimizer = 'Minuit2'
                       , Strategy = 1, Offset = True )
+
 if pdfConfig['lambdaCPParam'] == 'observables_CPVDecay' :
     from P2VV.Imports import parNames, parValuesCPVDecay as parValues
 else :
     from P2VV.Imports import parNames, parValues
-fitResult.PrintSpecial( text = True, ParNames = parNames, ParValues = parValues )
+print 120 * '-'
+print 'parameter values:'
+fitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames, ParValues = parValues )
+print 120 * '-'
+print 'correlation matrix:'
+fitResult.correlationMatrix().Print()
+print 120 * '-'
+print 'covariance matrix:'
+fitResult.covarianceMatrix().Print()
+print 120 * '-' + '\n'
 
 if parFileOut :
     # write parameters to file
