@@ -1853,6 +1853,35 @@ class CombEffConstraint(Pdf):
 
     def _make_pdf(self) : pass
 
+
+class ExplicitNormPdf(Pdf):
+    def __init__( self, **kwargs ) :
+        __check_req_kw__( 'Name', kwargs )
+        __check_req_kw__( 'Observables', kwargs )
+        __check_req_kw__( 'Function', kwargs )
+        from ROOT import RooArgSet
+        name = kwargs.pop('Name')
+        obsSet = RooArgSet( __dref__(obs) for obs in kwargs.pop('Observables') )
+        intObsSet = RooArgSet( __dref__(obs) for obs in kwargs.pop( 'IntegrationObs', [ ] ) )
+        func = __dref__( kwargs.pop('Function') )
+        normFunc = __dref__( kwargs.pop( 'NormFunction', func ) )
+        normFac = kwargs.pop( 'NormFactor', 1. )
+        projData = kwargs.pop( 'ProjectionData', None )
+        intRangeFunc = kwargs.pop( 'IntegRangeFunc', '' )
+        intRangeNorm = kwargs.pop( 'IntegRangeNorm', '' )
+
+        from ROOT import RooExplicitNormPdf
+        if projData :
+            pdf = RooExplicitNormPdf( name, name, obsSet, intObsSet, func, normFunc, normFac, projData, intRangeFunc, intRangeNorm )
+        else :
+            pdf = RooExplicitNormPdf( name, name, obsSet, intObsSet, func, normFunc, normFac, intRangeFunc, intRangeNorm )
+        self._addObject(pdf)
+        self._init( name, 'RooExplicitNormPdf' )
+        Pdf.__init__( self, Name = name, Type = 'RooExplicitNormPdf' )
+
+    def _make_pdf(self) : pass
+
+
 class ResolutionModel(Pdf):
     def __init__(self, **kwargs):
         if 'Type' in kwargs and type( kwargs['Type'] ) != str : kwargs['Type'] = kwargs['Type'].__name__
