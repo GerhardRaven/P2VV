@@ -79,7 +79,7 @@ pdfConfig['constrainBeta']     = ''  # '' / 'constrain' / 'fixed' / 'noBeta'
 
 timeEffFile2011 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins_TOS.root' # 'timeAcc_10bins_2011.root' # 'Bs_HltPropertimeAcceptance_Data_2011_40bins_TOS.root'
 timeEffFile2012 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_40bins_TOS.root' # 'timeAcc_10bins_2012.root' # 'Bs_HltPropertimeAcceptance_Data_2012_40bins_TOS.root'
-timeEffHist2011UB = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted' # 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached' # 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+timeEffHist2011UB = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached' # 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
 if pdfConfig['timeEffType'].startswith('fit') :
     pdfConfig['timeEffData']['file'] = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_20140309.root'
     pdfConfig['externalConstr']['acceptance'] = SimulCatSettings('acceptanceConstr')
@@ -89,7 +89,6 @@ if pdfConfig['timeEffType'].startswith('fit') :
     pdfConfig['externalConstr']['acceptance'].addSettings(['runPeriod'], [['p2012']],
                                                           {('hlt1_excl_biased_dec', 'exclB') : (0.65, 0.01),
                                                            ('hlt2_biased', 'B') : (0.65, 0.01)})
-    #pdfConfig['externalConstr']['betaTimeEff'][1] = ({'runPeriod': ['p2012']}, ( -0.0135, 0.004 ))
 
 if pdfConfig['runPeriods'] == [ 2011 ] :
     pdfConfig['timeEffHistFiles']['file'] = timeEffFile2011

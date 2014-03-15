@@ -317,6 +317,8 @@ class Bs2Jpsiphi_2011Analysis( Bs2Jpsiphi_PdfConfiguration ) :
         self['sigFrac']    = 0.51
         self['runPeriods'] = [ ]
 
+        self['obsDict']['hlt1ExclB'] = ( 'hlt1_excl_biased_dec', 'HLT1 excl. B.', { 'exclB' : 1, 'notExclB' : 0 } )
+
         self['timeResType']   = 'eventNoMean'
         self['constrainBeta'] = 'noBeta'
 
@@ -396,7 +398,7 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
         self['obsDict']['wTagSS'] = ( 'tagomega_ss_nn', 'SS est. wrong-tag prob.', '', 0.25, 0., 0.50001 )
 
         timeEff2011 = dict(  file      = 'data/Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
-                           , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+                           , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
                            , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
                           )
         timeEff2012 = dict(  file      = 'data/Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
@@ -426,15 +428,12 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
                                       , wTagP1SS       = (  1.00,   0.09   )
                                       , wTagDelP0SS    = ( -0.016,  0.     )
                                       , wTagDelP1SS    = (  0.007,  0.     )
-                                      , dM             = (  17.768, 0.024  )
+                                      #, dM             = (  17.768, 0.024  )
                                      )
         from collections import defaultdict
         splitConstr = defaultdict(dict)
-        splitConstr['betaTimeEff']['2011']      = ( -0.0083,  0.004 )
-        if runPeriods == '3fb':
-            splitConstr['betaTimeEff']['2012'] = ( -0.0083, None )
-        else:
-            splitConstr['betaTimeEff']['2012'] = ( 0., 0. )
+        splitConstr['betaTimeEff']['2011']      = ( -0.0090,  0.0022 )
+        splitConstr['betaTimeEff']['2012']      = ( -0.0124,  0.0019 )
         splitConstr['sf_placeholder']['2011']   = (  0.0349,  0. )
         splitConstr['sf_placeholder']['2012']   = (  0.0347,  0. )
         splitConstr['timeResMu']['2011']        = ( -0.00259, 0. )
@@ -466,12 +465,6 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
                 constr.addSettings( [ 'runPeriod' ], [ [ 'p2011' ] ], vals['2011'] )
                 constr.addSettings( [ 'runPeriod' ], [ [ 'p2012' ] ], vals['2012'] )
                 self['externalConstr'][par] = constr
-
-        # hack to not use beta until we have its value
-        self['externalConstr']['betaTimeEff'] = ( 0., 0. )
-        if 'runPeriod' in self['splitParams'] :
-            self['splitParams']['runPeriod'].remove('betaTimeEff')
-            self['splitParams']['runPeriod'].append('Gamma')
 
         from P2VV.Imports import extConstraintValues
         extConstraintValues.setVal( 'DM',      ( 17.768,  0.024   ) )
