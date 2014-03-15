@@ -28,7 +28,7 @@ from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_RunIAnalysis as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
-parFileIn   = '20112012Reco14DataPlotValues_6KKMassBins.par'
+parFileIn   = '/project/bfys/jleerdam/softDevel/P2VV2/test/20112012Reco14DataPlotValues_6KKMassBins.par'
 dataPath    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
 dataSetName = 'JpsiKK_sigSWeight'
 dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140309.root'
@@ -54,7 +54,7 @@ rangeName = 'Bulk' if plotVar == 'timeLin' else ''
 
 # plot options
 from ROOT import gStyle, kBlack, kBlue, kRed, kGreen, kMagenta, kSolid, kDashed, kFullCircle, kFullSquare, kFullDotLarge
-from P2VV.Load import RooFitOutput, LHCbStyle
+from P2VV.Load import LHCbStyle
 #gStyle.SetEndErrorSize(3)
 lineWidth     = 3
 lineColor     = kBlue if plotComp == 'total' else kRed if plotComp in [ 'phi', 'even' ] else kGreen+3 if plotComp == 'odd' else kMagenta+3
@@ -205,7 +205,7 @@ plotPdf = ExplicitNormPdf(  Name           = '%sPdf_%s' % ( plotVar, plotComp )
                           , Function       = func
                           , NormFunction   = pdf
                           , NormFactor     = normFac
-                          , ProjectionData = None #projData
+                          , ProjectionData = projData
                          )
 
 
@@ -221,12 +221,12 @@ canv.SetRightMargin(0.05)
 canv.SetBottomMargin(0.18)
 canv.SetTopMargin(0.05)
 
-dataSet1 = dataSet.reduce( ArgSet = [ ws['time'], ws['helcosthetaK'], ws['helcosthetaL'], ws['helphi'] ] )
-
 print 'makeProjectionPlot: plotting variable "%s" for component "%s"' % ( plotVar, plotComp )
 binWidth = ( xMax - xMin ) / float( numBins[plotVar] ) / ( pi if plotVar == 'phi' else 1. )
 from P2VV.Utilities.Plotting import plot
-plots = plot(  canv, obs, dataSet1, plotPdf
+#redDataSet = dataSet.reduce( ArgSet = [ ws['time'], ws['helcosthetaK'], ws['helcosthetaL'], ws['helphi'] ] )
+#plots = plot(  canv, obs, redDataSet, plotPdf
+plots = plot(  canv, obs, dataSet, plotPdf
              , xTitle       = obsXTitles[plotVar]
              , yTitle       = obsYTitles[plotVar] % binWidth, logy = True if plotVar == 'timeLog' else False
              , xTitleOffset = xTitleOffset
