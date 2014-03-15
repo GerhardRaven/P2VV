@@ -32,8 +32,8 @@ parFileIn   = '/project/bfys/jleerdam/softDevel/P2VV2/test/20112012Reco14DataPlo
 dataPath    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
 dataSetName = 'JpsiKK_sigSWeight'
 dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140309.root'
-plotsFilePath = '/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/projPlot_%s_%s.ps' % ( plotVar, plotComp )
-ROOTFilePath  = '/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/projPlot_%s_%s.root' % ( plotVar, plotComp )
+plotsFilePath = '/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/projPlot_%s_%s_moreBins.ps' % ( plotVar, plotComp )
+ROOTFilePath  = '/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/projPlot_%s_%s_moreBins.root' % ( plotVar, plotComp )
 
 # PDF options
 pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file']\
@@ -48,7 +48,7 @@ pdfConfig['lambdaCPParam'] = 'lambPhi'
 # variables
 varNames = [ 'time', 'helcosthetaK', 'helcosthetaL', 'helphi' ]
 varDict = dict( timeLin = 'time', timeLog = 'time', ctk = 'helcosthetaK', ctl = 'helcosthetaL', phi = 'helphi' )
-numBins = dict( timeLin = 40,     timeLog = 50,     ctk = 30,             ctl = 30,             phi = 30       )
+numBins = dict( timeLin = 47,     timeLog = 69,     ctk = 40,             ctl = 40,             phi = 40       )
 parDict = dict( A0Mag2 = 'A0Mag2', AparMag2 = 'AparMag2', AperpMag2 = 'AperpMag2', f_S = 'f_S' )
 rangeName = 'Bulk' if plotVar == 'timeLin' else ''
 
@@ -73,11 +73,11 @@ obsXTitles = dict(  timeLin = 'Decay time [ps]'
                   , ctl     = 'cos#kern[0.1]{#theta_{#mu}}'
                   , phi     = '#varphi_{h} [rad]'
                  )
-obsYTitles = dict(  timeLin = 'Candidates / (%.4f ps)'
-                  , timeLog = 'Candidates / (%.3f ps)'
-                  , ctk     = 'Candidates / %.3f'
-                  , ctl     = 'Candidates / %.3f'
-                  , phi     = 'Candidates / (%.3f#kern[0.3]{#pi} rad)'
+obsYTitles = dict(  timeLin = 'Candidates / (%.2g ps)'
+                  , timeLog = 'Candidates / (%.2g ps)'
+                  , ctk     = 'Candidates / %.2g'
+                  , ctl     = 'Candidates / %.2g'
+                  , phi     = 'Candidates / (%.2g#kern[0.3]{#pi} rad)'
                  )
 xTitleOffset = 1.10
 yTitleOffsets = dict(  timeLin = 1.15
