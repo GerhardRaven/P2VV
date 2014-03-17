@@ -53,9 +53,9 @@ if pdfConfig['lambdaCPParam'] == 'observables_CPVDecay' :
 
 pdfConfig['timeEffType'] = 'paper2012' if fixLowAcc else 'fit_uniformUB'
 pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file']\
-        = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins_TOS.root'
+        = dataPath + 'timeAcceptanceFit_2011.root' # 'Bs_HltPropertimeAcceptance_Data_2011_40bins_TOS.root'
 pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] )['file']\
-        = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_40bins_TOS.root'
+        = dataPath + 'timeAcceptanceFit_2012.root' # 'Bs_HltPropertimeAcceptance_Data_2012_40bins_TOS.root'
 if pdfConfig['timeEffType'].startswith('fit') :
     from P2VV.Parameterizations.FullPDFs import SimulCatSettings
     pdfConfig['timeEffData']['file'] = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_20140309.root'
@@ -70,7 +70,7 @@ if fixUpAcc :
     for it, sett in enumerate( pdfConfig['externalConstr']['betaTimeEff'] ) :
         per = sett[0]['runPeriod']
         assert per in [ [ 'p2011' ], [ 'p2012' ] ]
-        pdfConfig['externalConstr']['betaTimeEff'][it] = ( sett[0], ( -0.0090, 0. ) if per == [ 'p2011' ] else ( -0.0124, 0. ) )
+        pdfConfig['externalConstr']['betaTimeEff'][it] = ( sett[0], ( -0.008639, 0. ) if per == [ 'p2011' ] else ( -0.012669, 0. ) )
 
 pdfConfig['anglesEffType'] = 'weights'
 pdfConfig['angEffMomsFiles'] = dataPath + 'angEffNominalRew_moms.par'
