@@ -29,47 +29,45 @@ def compareDistributions( **kwargs ):
     names = '\n'
     for d in data.itervalues(): names +=  d.GetName() + '\n'
     
-
-    # make a binned data set to accelerate
-    # from ROOT import RooDataHist, RooArgSet
-    # binnedSetVars = RooArgSet()
-    # for o in data['mcData'].get():
-    #     if o.GetName() in ['truetime','mdau2','helcosthetaK','helcosthetaL','helphi',
-    #                        'Kplus_P','Kminus_P','muplus_P','muminus_P','B_P','B_Pt',
-    #                        ]:
-    #         binnedSetVars.add(o)
-
-    # print data
-    # for d in data.keys():
-    #     # data[d] = RooDataHist(d.GetName() + 'binned', d.GetTitle() + 'binned', binnedSetVars, d)
-    #     print data
-    #     print d
-    #     print binnedSetVars
-
-    #     dh = RooDataHist(data[d].GetName() + '_b' , data[d].GetTitle() + '_b', binnedSetVars)
-        
-    #     import pdb; pdb.set_trace()
-
-
-    # get observables and x ranges
+    # get observables and, ranges and nBins
     observables, Kmomenta, muMomenta, trackMomRangeX = [], [], [], {}
     for obs in obsSet:
+        obs.setBins(150)
         obsName = obs.GetName()
-        if 'hel' in obsName or 'time' in obsName: observables.append(obs)
+        if 'hel' in obsName or 'time' in obsName: 
+            obs.setBins(30)
+            observables.append(obs)
         elif obsName.startswith('K') and not obsName.startswith('KK'):
             if   'X' in obsName or 'Y' in obsName: trackMomRangeX[obsName] = (-5e3,5e3)
-            elif 'Z' in obsName:                   trackMomRangeX[obsName] = (-5e2,1e5)
-            else:                                  trackMomRangeX[obsName] = ( 0., 1e5)
+            elif 'Z' in obsName:                   trackMomRangeX[obsName] = (-15e4,15e4)
+            else:                                  trackMomRangeX[obsName] = ( 0., 15e4)
             Kmomenta.append(obs)
         elif obsName.startswith('mu'):
             if   'X' in obsName or 'Y' in obsName: trackMomRangeX[obsName] = (-1e4,1e4)
-            elif 'Z' in obsName:                   trackMomRangeX[obsName] = (-1e3,2e5)
-            else:                                  trackMomRangeX[obsName] = ( 0., 2e5)
+            elif 'Z' in obsName:                   trackMomRangeX[obsName] = (-15e4,15e4)
+            else:                                  trackMomRangeX[obsName] = ( 0., 15e4)
             muMomenta.append(obs)
         elif obsName == 'mdau2': KKMass = obs
         elif obsName == 'B_P':   B_P = obs
-        elif obsName == 'B_Pt':   B_Pt = obs
-        
+        elif obsName == 'B_Pt':  B_Pt = obs
+
+    # make a binned data set to accelerate
+    binData = True
+    if binData:
+        dataSetKeys = data.keys()
+        data['binned'] = dict( observables={}, KplusMom={}, KminusMom={}, 
+                               muplusMom={}, muminusMom={}, BpBpt_mkk={}
+                               )
+        from ROOT import RooDataHist, RooArgSet
+        for d in dataSetKeys:
+            data['binned']['observables'][d] = RooDataHist(data[d].GetName() + '_obs_binned',     data[d].GetTitle() + '_obs_binned',     RooArgSet(observables),       data[d])
+            data['binned']['KplusMom'][d]    = RooDataHist(data[d].GetName() + '_Kplmom_binned',  data[d].GetTitle() + '_Kplmom_binned',  RooArgSet(Kmomenta[0:4]),     data[d])
+            data['binned']['KminusMom'][d]   = RooDataHist(data[d].GetName() + '_Kminmom_binned', data[d].GetTitle() + '_Kminmom_binned', RooArgSet(Kmomenta[4:8]),     data[d])
+            data['binned']['muplusMom'][d]   = RooDataHist(data[d].GetName() + '_muplMom_binned', data[d].GetTitle() + '_muplMom_binned', RooArgSet(muMomenta[0:4]),    data[d])
+            data['binned']['muminusMom'][d]  = RooDataHist(data[d].GetName() + '_mumin_binned',   data[d].GetTitle() + '_mumin_binned',     RooArgSet(muMomenta[4:8]),    data[d])
+            data['binned']['BpBpt_mkk'][d]   = RooDataHist(data[d].GetName() + '_Bpmkk_binned',   data[d].GetTitle() + '_Bpmkk_binned',     RooArgSet([KKMass,B_P,B_Pt]), data[d])
+    else: dataSetKeys = data.keys()
+
     # assymetry plots are compared w.r.t. the sData
     referenceHistName = 'h_' + data['Sdata'].GetName() 
 
@@ -81,7 +79,7 @@ def compareDistributions( **kwargs ):
 
     # make canvases
     namePF          = '' 
-    for name in data.keys(): namePF += name + '_' 
+    for name in dataSetKeys: namePF += name + '_' 
     namePF += kwargs.pop('prodData')
     obsCanv         = TCanvas('anglesTime_%s_'%itNumb + namePF       ,'anglesTime_%s'%itNumb)
     assymObsCanv    = TCanvas('assymAnglesTime_%s_'%itNumb + namePF  ,'assymAnglesTime_%s'%itNumb)
@@ -111,7 +109,7 @@ def compareDistributions( **kwargs ):
 
     # remove data entry from legend
     if stats: 
-        makeStatKeys = data.keys() 
+        makeStatKeys = dataSetKeys 
         makeStatKeys.remove('Sdata')
 
     print 'P2VV - INFO: compareDistributions: Making comparition plots for datasets:', names
@@ -124,16 +122,17 @@ def compareDistributions( **kwargs ):
         3 * [(-.1,.1),] + [(-3,3)]
         ):
         print 'P2VV - INFO: compareDistributions: Plotting %s.'%obs.GetName()
-        anglesFrames, leg = compareDataSets( canv, obs, data = data, dataOpts = dataOpts, logy = logY,
-                                             frameOpts = dict( Bins = 30 ), 
+        anglesFrames, leg = compareDataSets( canv, obs, dataOpts = dataOpts, logy = logY,
+                                             data = data['binned']['observables'] if binData else data,
+                                             # frameOpts = dict( Bins = 30 ), 
                                              includeInLegend = makeStatKeys,
                                              save = True if stats and not Legend else False 
                                              )
         # make assymetry plots 
-        makeAssymetryPlot(assymCanv, anglesFrames, referenceHistName, len(data.keys()), 
+        makeAssymetryPlot(assymCanv, anglesFrames, referenceHistName, len(dataSetKeys), 
                           yRange=assymYrange, save = True if stats and not Legend else False 
                           )
-    
+
     # plot Kaon and muon momenta
     print 'P2VV - INFO: compareDistributions: Plotting track momenta.'
     for canv, assymCanv, obs, assymYrange in zip( 
@@ -146,48 +145,58 @@ def compareDistributions( **kwargs ):
         
         # make stats box only for *_P, and increase marker size.
         printStats = False if any( ['PX' in obs.GetName(), 'PY' in obs.GetName(), 'PZ' in obs.GetName()] ) else True
-        for d in data.keys():        
+        for d in dataSetKeys:        
             dataOpts[d]['MarkerSize'] = 1.5 if printStats and stats and not Legend else stdDrawOpts['MarkerSize']
                 
         # plot
-        momFrame, leg = compareDataSets( canv, obs, data = data, dataOpts = dataOpts,
-                                         frameOpts    = dict( Bins = 30, Range=trackMomRangeX[obs.GetName()] ),
+        if   'Kplus'   in obs.GetName(): dataSet = data['binned']['KplusMom']
+        elif 'Kminus'  in obs.GetName(): dataSet = data['binned']['KminusMom']
+        elif 'muplus'  in obs.GetName(): dataSet = data['binned']['muplusMom']
+        elif 'muminus' in obs.GetName(): dataSet = data['binned']['muminusMom']
+
+
+        obs.Print()
+        dataSet.Print()
+
+        momFrame, leg = compareDataSets( canv, obs, data = dataSet, dataOpts = dataOpts,
+                                         frameOpts    = dict( Range=trackMomRangeX[obs.GetName()] ),
                                          statOn       = printStats, includeInLegend = makeStatKeys,
                                          save = True if stats and not Legend else False 
                                          )
-        makeAssymetryPlot( assymCanv, momFrame, referenceHistName, len(data.keys()), 
+        makeAssymetryPlot( assymCanv, momFrame, referenceHistName, len(dataSetKeys), 
                            yRange=assymYrange, save = printStats
                            ) 
     
 
-        if 'Kplus_PX' in obs.GetName():break
+    assert False
 
     # plot KKMass
     print 'P2VV - INFO: compareDistributions: Plotting KKmass.'
-    for d in data.keys():        
+    for d in dataSetKeys:        
         dataOpts[d]['MarkerSize'] = 1.5 if printStats and stats and not Legend else stdDrawOpts['MarkerSize']
-    KKMassFrame, leg = compareDataSets( KKMassCanv.cd(1), KKMass, data = data, 
+    KKMassFrame, leg = compareDataSets( KKMassCanv.cd(1), KKMass, data = data['binned']['BpBpt_mkk'][d], 
                                         dataOpts = dataOpts, 
                                         xTitle = 'm(KK) [MeV/c^{2}]',
-                                        frameOpts = dict( Bins = 40 ),
+                                        #frameOpts = dict( Bins = 40 ),
                                         statOn    = True if stats and not Legend else False,
                                         includeInLegend = makeStatKeys,
                                         save = True if stats and not Legend else False 
                                         )
-    makeAssymetryPlot( KKMassCanv.cd(2), KKMassFrame, referenceHistName, len(data.keys()),
+    makeAssymetryPlot( KKMassCanv.cd(2), KKMassFrame, referenceHistName, len(dataSetKeys),
                        save = True if stats and not Legend else False 
                        )
 
     # plot B_P and B_Pt
-    for pad, obs, rangeY in zip( [1,2], [ B_P,B_Pt], [(0.,5e5),(0.,3e4)] ):
+    for pad, obs, rangeX in zip( [1,2], [ B_P,B_Pt], [(0.,5e5),(0.,3e4)] ):
         print 'P2VV - INFO: compareDistributions: Plotting %s.'%obs.GetName()
-        BmomFrame, leg = compareDataSets( BmomCanv.cd(pad), obs, data = data, dataOpts = dataOpts, 
-                                          frameOpts = dict( Bins=70, Range=rangeY ),
+        BmomFrame, leg = compareDataSets( BmomCanv.cd(pad), obs, data = data['binned']['BpBpt_mkk'][d], 
+                                          dataOpts  = dataOpts, 
+                                          frameOpts = dict( Range=rangeX ),
                                           statOn    = True if stats and not Legend else False,
                                           includeInLegend = makeStatKeys,
                                           save = True if stats and not Legend else False 
                                           )
-        makeAssymetryPlot( BmomCanv.cd(pad+2), BmomFrame, referenceHistName, len(data.keys()),
+        makeAssymetryPlot( BmomCanv.cd(pad+2), BmomFrame, referenceHistName, len(dataSetKeys),
                            save = True if stats and not Legend else False 
                            )
 
@@ -836,27 +845,10 @@ class MatchPhysics( ):
         
         # read ntuple
         from P2VV.Utilities.DataHandling import readData
-        # readOpts = { 'ntupleCuts' : 'mass>5350 && mass<5355' } if kwargs.pop('Reduced', False) else  { }
-        # self._data = readData( nTupleFile, dataSetName=nTupleName, NTuple=True, observables=self._obsSet, **readOpts)
-        # self._data.SetName( 'mcData_' + MCProd )
-        # readOpts = { 'ntupleCuts' : 'mass>5350 && mass<5355' } if kwargs.pop('Reduced', False) else  { }
-        self._data = readData( nTupleFile, dataSetName=nTupleName, NTuple=True, observables=self._obsSet)
+        readOpts = { 'ntupleCuts' : 'mass>5350 && mass<5355' } if kwargs.pop('Reduced', False) else  { }
+        self._data = readData( nTupleFile, dataSetName=nTupleName, NTuple=True, observables=self._obsSet, **readOpts)
         self._data.SetName( 'mcData_' + MCProd )
-
-
-
-        if kwargs.pop('Reduced',False):
-            from ROOT import TRandom3, RooDataSet
-            reducedData = RooDataSet(self._data.GetName(), self._data.GetTitle(), self._data.get() )
-            r = TRandom3()
-            for ev in self._data:
-                rdm = r.Uniform()
-                if rdm >.8:
-                    reducedData.add(self._data.get())
-            self._data = reducedData
-            self._data.Print()
-
-   
+         
         # build pdf
         from P2VV.Parameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
         amplitudes = Amplitudes(  A0Mag2 = A0Mag2Val, AperpMag2 = AperpMag2Val
