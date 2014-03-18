@@ -77,8 +77,8 @@ pdfConfig['timeEffType']       = 'paper2012' # 'fit_uniformUB' # 'paper2012' # '
 pdfConfig['timeEffParameters'] = { } # dict(RandomBinOrder = False) # dict( Parameterization = 'Spline', Fit = False ) # dict( Fit = False, RandomBinOrder = False )
 pdfConfig['constrainBeta']     = ''  # '' / 'constrain' / 'fixed' / 'noBeta'
 
-timeEffFile2011 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins_TOS.root' # 'timeAcc_10bins_2011.root' # 'Bs_HltPropertimeAcceptance_Data_2011_40bins_TOS.root'
-timeEffFile2012 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_40bins_TOS.root' # 'timeAcc_10bins_2012.root' # 'Bs_HltPropertimeAcceptance_Data_2012_40bins_TOS.root'
+timeEffFile2011 = dataPath + 'timeAcceptanceFit_2011.root' # 'Bs_HltPropertimeAcceptance_Data_2011_40bins_TOS.root'
+timeEffFile2012 = dataPath + 'timeAcceptanceFit_2012.root' # 'Bs_HltPropertimeAcceptance_Data_2012_40bins_TOS.root'
 timeEffHist2011UB = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached' # 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
 if pdfConfig['timeEffType'].startswith('fit') :
     pdfConfig['timeEffData']['file'] = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_20140309.root'
@@ -682,8 +682,10 @@ if doFit :
         from P2VV.Imports import parNames, parValues
     print 'JvLFit: parameters:'
     fitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames, ParValues = parValues )
-    fitResult.covarianceMatrix().Print()
+    print 'JvLFit: correlation matrix:'
     fitResult.correlationMatrix().Print()
+    print 'JvLFit: covariance matrix:'
+    fitResult.covarianceMatrix().Print()
 
     print 120 * '=' + '\n'
 
