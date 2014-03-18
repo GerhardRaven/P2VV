@@ -834,6 +834,12 @@ class MatchPhysics( ):
         self._obsSet = [ trueTime, time, KKMass ] + angles + [ KKMassCat ]
         self._normSet = angles
 
+        # # include additional observables
+        # hlt1_eB      = RooObject._rooobject('hlt1_excl_biased') if ws['hlt1_excl_biased'] else _createGetObservable('hlt1_excl_biased')
+        # tagCatP2VVOS = RooObject._rooobject('tagCatP2VVOS') if ws['tagCatP2VVOS'] else _createGetObservable('tagCatP2VVOS')
+        # tagCatP2VVSS = RooObject._rooobject('tagCatP2VVSS') if ws['tagCatP2VVSS'] else _createGetObservable('tagCatP2VVSS')
+        # self._obsSet += [hlt1_eB, tagCatP2VVOS, tagCatP2VVSS]
+
         # set momenta range and put them in obsSet
         print 'P2VV - INFO: Setting track and B momenta ranges.'
         from P2VV.Utilities.MCReweighting import trackMomentaRanges
