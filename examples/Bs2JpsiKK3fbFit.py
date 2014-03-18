@@ -6,6 +6,9 @@ model = 'lamb_phi'  # 'phi' / 'lamb_phi' / 'polarDep'
 fixLowAcc = True
 fixUpAcc  = False
 numCPU = 7
+dataPath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
+workPath = '/project/bfys/jleerdam/softDevel/P2VV2/test/'
+dataSetFile = 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140309.root'
 
 import sys
 if len(sys.argv) > 1 :
@@ -15,36 +18,46 @@ if len(sys.argv) > 1 :
     parser.add_argument('fixLowAcc')
     parser.add_argument('fixUpAcc')
     parser.add_argument( 'numCPU', type = int )
+    if len(sys.argv) > 5 :
+        parser.add_argument('dataPath')
+        parser.add_argument('workPath')
+        parser.add_argument('dataSetFile')
 
     args = parser.parse_args()
     model = args.model
     fixLowAcc = True if args.fixLowAcc.lower() == 'true' else False
     fixUpAcc  = True if args.fixUpAcc.lower()  == 'true' else False
     numCPU = args.numCPU
+    if len(sys.argv) > 5 :
+        if args.dataPath : dataPath = args.dataPath
+        if args.workPath : workPath = args.workPath
+        if args.dataSetFile : dataSetFile = args.dataSetFile
 
 assert model in [ 'phi', 'lamb_phi', 'polarDep' ]
 assert type(fixLowAcc) == bool
 assert type(fixUpAcc)  == bool
 assert type(numCPU) == int and numCPU > 0 and numCPU < 20
+if dataPath and dataPath[-1] != '/' : dataPath += '/'
+if workPath and workPath[-1] != '/' : workPath += '/'
+assert dataSetFile
 
 print 'job parameters:'
 print '  model: %s' % model
 print '  fix lower decay-time acceptance: %s' % ( 'true' if fixLowAcc else 'false' )
 print '  fix upper decay-time acceptance: %s' % ( 'true' if fixUpAcc  else 'false' )
+print '  number of cores: %d' % numCPU
+print '  data path: %s' % dataPath
+print '  work path: %s' % workPath
+print '  dataset file: %s' % dataSetFile
 
 from math import pi
 from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_RunIAnalysis as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
-parFileIn   = '/project/bfys/jleerdam/softDevel/P2VV2/test/fitResults/Reco14/timeEff/20112012Reco14DataFitValues_6KKMassBins_CPVDecay.par'\
-              if model == 'polarDep' else\
-              '/project/bfys/jleerdam/softDevel/P2VV2/test/fitResults/Reco14/timeEff/20112012Reco14DataFitValues_6KKMassBins.par'
-parFileOut  = '/project/bfys/jleerdam/softDevel/P2VV2/test/fitResults/Reco14/timeEff/%s_%sLow_%sUp.par'\
-              % ( model, 'fix' if fixLowAcc else 'float', 'fix' if fixUpAcc else 'float' )
-dataPath    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
+parFileIn  = workPath + '20112012Reco14DataFitValues_6KKMassBins%s.par' % ( '_CPVDecay' if model == 'polarDep' else '' )
+parFileOut = workPath + '%s_%sLow_%sUp.par' % ( model, 'fix' if fixLowAcc else 'float', 'fix' if fixUpAcc else 'float' )
 dataSetName = 'JpsiKK_sigSWeight'
-dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140309.root'
 
 # PDF options
 pdfConfig['lambdaCPParam'] = 'observables_CPVDecay' if model == 'polarDep' else 'lambPhi'
@@ -86,7 +99,7 @@ ws = RooObject( workspace = 'JpsiphiWorkspace' ).ws()
 
 # read data set from file
 from P2VV.Utilities.DataHandling import readData
-dataSet = readData( filePath = dataSetFile, dataSetName = dataSetName,  NTuple = False )
+dataSet = readData( filePath = dataPath + dataSetFile, dataSetName = dataSetName,  NTuple = False )
 pdfConfig['signalData'] = dataSet
 pdfConfig['readFromWS'] = True
 
