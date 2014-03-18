@@ -157,6 +157,8 @@ fitResult = pdf.fitTo( fitData, SumW2Error = False, Save = True, NumCPU = args.n
 
 if pdfConfig['lambdaCPParam'] == 'observables_CPVDecay' :
     from P2VV.Imports import parNames, parValuesCPVDecay as parValues
+elif args.model == 'phi' :
+    from P2VV.Imports import parNames, parValuesFixLamb as parValues
 else :
     from P2VV.Imports import parNames, parValues
 print 120 * '-'
