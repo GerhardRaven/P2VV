@@ -51,8 +51,6 @@ parser.add_option("--split-mean", dest = "split_mean", default = False, action =
                   help = 'Split the mean of the Gaussians in a simultaneous fit.')
 parser.add_option("--split-frac", dest = "split_frac", default = False, action = 'store_true',
                   help = 'Split the fraction of the Gaussians in a simultaneous fit.')
-parser.add_option("--split-scalefactors", dest = "split_sfs", default = False, action = 'store_true',
-                  help = 'Split the scalefactors of the Gaussians in a simultaneous fit.')
 parser.add_option("--split-observable", dest = "split", default = 'sigmat', action = 'store', type = 'string',
                   help = 'Which categories should be used to split, [sigmat, momentum, pt, ppt, nPV, pv_zerr]')
 parser.add_option("--correct-errors", dest = "correct_errors", default = False, action = 'store_true',
@@ -74,6 +72,8 @@ parser.add_option("--make-binning", action="callback", callback=mb_callback, typ
                   'observable; comma separated list')
 parser.add_option("--excl-biased", action="store_true", dest = "excl_biased", default = False,
                   help = 'Use excl biased events, only for signal MC')
+parser.add_option("--cleantail", action="store_true", dest = "cleantail", default = False,
+                  help = 'Always apply cleantail cut.')
 
 (options, args) = parser.parse_args()
 
@@ -115,7 +115,7 @@ from P2VV.Load import LHCbStyle
 ## Extra name for fit result and plots
 extra_name = [args[1]]
 for a, n in [('parameterise', None), ('wpv', 'wpv_type'), ('sf_param', None),
-             ('peak_only', 'peak'), ('add_background', 'cfit'), ('split_sfs', 'split'),
+             ('peak_only', 'peak'), ('add_background', 'cfit'),
              ('use_refit', 'PVRefit')]:
     v = getattr(options, a)
     if v:
@@ -197,7 +197,7 @@ elif args[1] == 'double':
     sf_pee = options.simultaneous and options.sf_param
     tres_args = dict(time = time_obs, sigmat = st, Cache = True, Parameterise = options.parameterise,
                      TimeResSFParam = options.sf_param, SplitFracs = options.split_frac,
-                     timeResMu = mu, Simultaneous = options.simultaneous, SplitSFS = options.split_sfs,
+                     timeResMu = mu, Simultaneous = options.simultaneous,
                      ScaleFactors = [(2, 2.00), (1, 1.174)] if sf_pee else [(2, 0.1), (1, 0.06)],
                      Fractions = [(2, 0.143)], SplitMean = options.split_mean,
                      MeanParameterisation = options.mu_param)
@@ -209,11 +209,11 @@ elif args[1] == 'double':
 elif args[1] == 'triple':
     from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
     sig_tres = TimeResolution(Name = 'tres', time = time_obs, sigmat = st, Cache = True,
-                                 PerEventError = options.pee, SplitFracs = options.split_frac,
-                                 TimeResSFParam = options.sf_param, Parameterise = options.parameterise,
-                                 ScaleFactors = [(3, 1.5), (2, 4), (1, 1.4)], MeanParameterisation = options.mu_param,
-                                 Fractions = [(3, 0.1), (2, 0.2)], SplitMean = options.split_mean,
-                                 Simultaneous = options.simultaneous)
+                              SplitFracs = options.split_frac,
+                              TimeResSFParam = options.sf_param, Parameterise = options.parameterise,
+                              ScaleFactors = [(3, 1.5), (2, 4), (1, 1.4)], MeanParameterisation = options.mu_param,
+                              Fractions = [(3, 0.1), (2, 0.2)], SplitMean = options.split_mean,
+                              Simultaneous = options.simultaneous)
 
 # J/psi mass pdf
 from P2VV.Parameterizations.MassPDFs import DoubleCB_Psi_Mass as PsiMassPdf
@@ -234,8 +234,8 @@ bkg_m = Pdf(Name = 'gauss', Type = Gaussian, Parameters = (m, mean, sigma))
 from P2VV.Parameterizations.TimePDFs import LP2011_Background_Time as Background_Time
 psi_t = Background_Time( Name = 'psi_t', time = time_obs, resolutionModel = sig_tres.model()
                          , psi_t_fml    = dict(Name = 'psi_t_fml',    Value = 6.7195e-01)
-                         , psi_t_ll_tau = dict(Name = 'psi_t_ll_tau', Value = 1.3672, MinMax = (0.01,  2.5))
-                         , psi_t_ml_tau = dict(Name = 'psi_t_ml_tau', Value = 1.3405e-01, MinMax = (0.01, 2.5))
+                         , psi_t_ll_tau = dict(Name = 'psi_t_ll_tau', Value = 1.3672, MinMax = (0.0001,  2.5))
+                         , psi_t_ml_tau = dict(Name = 'psi_t_ml_tau', Value = 1.3405e-01, MinMax = (0.0001, 2.5))
                          )
 psi_t = psi_t.pdf()
 
@@ -246,7 +246,7 @@ psi_ll = Component('psi_ll', (psi_m, bkg_m, psi_t), Yield= (8.5575e+03,100,50000
 from P2VV.Parameterizations.TimePDFs import Prompt_Peak
 background = Component('background', (bkg_mpsi.pdf(), bkg_m), Yield = (19620,100,500000) )
 if options.add_background:
-    bkg_t = Prompt_Peak(time_obs, bkg_tres.model(), Name = 'bkg_pdf')
+    bkg_t = Prompt_Peak(time_obs, bkg_tres.model(), Name = 'bkg_prompt_pdf')
     background[t] = bkg_t.pdf()
 
 # B signal component
@@ -274,7 +274,7 @@ else:
     hlt1_cut = 'hlt1_unbiased == 1'
 cut = 'sel == 1 && ' + hlt1_cut + ' && hlt2_unbiased == 1 && '
 cut += ' && '.join(['%s < 4' % e for e in ['muplus_track_chi2ndof', 'muminus_track_chi2ndof', 'Kplus_track_chi2ndof', 'Kminus_track_chi2ndof']])
-if not options.wpv or (options.wpv and (options.wpv_type in ["Gauss", 'Rest'])):
+if options.cleantail or not options.wpv or (options.wpv and (options.wpv_type in ["Gauss", 'Rest'])):
     cut += ' && sel_cleantail == 1'
 if signal_MC:
     cut += ' && abs(trueid) == 531'
@@ -426,9 +426,9 @@ if fit_mass:
               , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack, Binning = 50)
               , pdfOpts  = dict(LineWidth = 2, **pdfOpts)
               , plotResidHist = 'BX'
-              , xTitle = '#mu^{+}#mu^{-} invariant mass [MeV/c^{2}]'
-              , yTitle = 'Candidates / (%5.2f MeV/c^{2})' % ((mass_obs.getMax() - mass_obs.getMin()) / float(50))
-              , yTitleOffset = 0.9
+              , xTitle = 'M(#mu^{+}#mu^{-}) [MeV/c^{2}]'
+              , yTitle = '# Candidates'
+              , yTitleOffset = 1 / 0.7
               , components = { 'sig_*'     : dict( LineColor = kOrange,   LineStyle = kDashed )
                                , 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed )
                                , 'bkg_*'  : dict( LineColor = kRed, LineStyle = kDashed )
@@ -918,8 +918,8 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
                       , dataOpts = dict(MarkerSize = 0.8, Binning = bins, MarkerColor = kBlack, Cut = cut)
                       , pdfOpts  = dict(LineWidth = 4, **pdfOpts)
                       , xTitle = 'decay time [ps]'
-                      , yTitle = 'Candidates / (XX ps)'
-                      , yTitleOffset = 0.95
+                      , yTitle = 'Candidates / % 4.3f' % bins.averageBinWidth()
+                      , yTitleOffset = 1 / 0.7
                       , logy = pl
                       , plotResidHist = 'BX'
                       ## , components = { 'wpv_*'     : dict( LineColor = kRed,   LineStyle = kDashed )
@@ -944,8 +944,8 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
                   , dataOpts = dict(MarkerSize = 0.8, Binning = bins, MarkerColor = kBlack)
                   , pdfOpts  = dict(LineWidth = 4, **pdfOpts)
                   , xTitle = 'decay time [ps]'
-                  , yTitle = 'Candidates / (XX ps)'
-                  , yTitleOffset = 0.95
+                  , yTitle = 'Candidates / (%4.3f ps)' % bins.averageBinWidth()
+                  , yTitleOffset = 1 / 0.7
                   , logy = pl
                   , plotResidHist = 'BX')
         
@@ -1044,7 +1044,7 @@ if False:
                   , dataOpts = dict(MarkerSize = 0.8, Binning = binning, MarkerColor = kBlack)
                   , pdfOpts  = dict(LineWidth = 4, **pdfOpts)
                   , xTitle = 'decay time [ps]'
-                  , yTitle = 'Candidates / (XX ps)'
-                  , yTitleOffset = 1
+                  , yTitle = '# Candidates'
+                  , yTitleOffset = 1 / 0.7
                   , logy = False
                   , plotResidHist = 'BX')
