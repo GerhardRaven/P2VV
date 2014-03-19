@@ -238,7 +238,7 @@ def cleanP2VVPlotStash():
 # easily create an observable using information from the PdfConfig class
 def _createGetObservable(name):
     from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_RunIAnalysis 
-    PdfConfig = Bs2Jpsiphi_RunIAnalysis( RunPeriods = '3fb' )
+    PdfConfig = Bs2Jpsiphi_RunIAnalysis( )
     obsDict = PdfConfig['obsDict']
     
     if name == 'helcosthetaK': name = 'cpsi'
@@ -378,42 +378,6 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
         for ev in target: targetListX += [ (ev.find(var[0]).getVal(), target.weight()) ] if fixBinSumW else [ (ev.find(var[0]).getVal(),1) ]
         for ev in target: targetListY += [ ev.find(var[1]).getVal() ]
 
-# BELOW THIS IS TESTING REGION, DO NOT DELETE BEFORE OR AFTER THIS BOX
-        targetListX.sort()
-        targetListY.sort()
-
-
-        from math import sqrt, cos, sin ,pi
-        rhoDistr = []
-        rho = lambda x,y: sqrt(x**2 + y**2)  
-        theta = pi / 4
-        x = lambda r: r * cos(theta)
-        y = lambda r: r * sin(theta)
-    
-    #    for x_, y_ in zip(targetListX,targetListY): rhoDistr += [ rho(x_[0],y_) ] 
-    #    rhoDistr.sort()
-
-        eventCount = 0
-        binstat = target.numEntries() / nbins if not fixBinSumW else target.sumEntries() / nbins 
-        lowBounds = [ rho(xMin,yMin) ]
-        while True:
-            if eventCount + 1 >= target.numEntries(): break
-            binContentCount = 0
-            while binContentCount < binstat and eventCount < target.numEntries():
-#                lowBound_i = rhoDistr[eventCount]
-                lowBound_i = rho( targetListX[eventCount][0], targetListX[eventCount][0] )
-                binContentCount += 1 if not fixBinSumW else targetListX[eventCount][1]  
-                eventCount += 1
-            lowBounds += [ lowBound_i ]
-
-        lowboundsX = map( x, lowBounds )
-        lowboundsY = map( y, lowBounds )
-        
-        lowboundsX, lowboundsY = array('f',lowboundsX), array('f',lowboundsY)
-
-        print 'bincontent:',   binstat
-# END OF TESTING BOX
-        
         sourceHist = TH2D('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins[0], lowboundsX, nbins[1], lowboundsY )
         targetHist = TH2D('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins[0], lowboundsX, nbins[1], lowboundsY )
 
@@ -825,20 +789,21 @@ class MatchPhysics( ):
         self._angleFuncs = angleFuncs
 
         # get observables (get the wrapper instead of the base objects!!)
+        iTag      = _createGetObservable('iTag')
         trueTime  = _createGetObservable('truetime')
         time      = RooObject._rooobject('time') if ws['time'] else _createGetObservable('time')
         angles    = [ RooObject._rooobject(o) for o in ['helcosthetaK','helcosthetaL','helphi'] ]
-        iTag      = _createGetObservable('iTag')
-        KKMass    = RooObject._rooobject('KKMass') if ws['KKMass'] else _createGetObservable('KKMass')
+        timeRes   = RooObject._rooobject('sigmat')    if ws['sigmat'] else _createGetObservable('timeRes') 
+        KKMass    = RooObject._rooobject('KKMass')    if ws['KKMass'] else _createGetObservable('KKMass')
         KKMassCat = RooObject._rooobject('KKMassCat') if ws['KKMassCat'] else _createGetObservable('KKMassCat')
-        self._obsSet = [ trueTime, time, KKMass ] + angles + [ KKMassCat ]
+        self._obsSet = [ trueTime, time, timeRes, KKMass, KKMassCat ] + angles
         self._normSet = angles
 
-        # # include additional observables
-        # hlt1_eB      = RooObject._rooobject('hlt1_excl_biased') if ws['hlt1_excl_biased'] else _createGetObservable('hlt1_excl_biased')
-        # tagCatP2VVOS = RooObject._rooobject('tagCatP2VVOS') if ws['tagCatP2VVOS'] else _createGetObservable('tagCatP2VVOS')
-        # tagCatP2VVSS = RooObject._rooobject('tagCatP2VVSS') if ws['tagCatP2VVSS'] else _createGetObservable('tagCatP2VVSS')
-        # self._obsSet += [hlt1_eB, tagCatP2VVOS, tagCatP2VVSS]
+        # include additional observables
+        hlt1ExclB = RooObject._rooobject('hlt1_excl_biased') if ws['hlt1_excl_biased'] else _createGetObservable('hlt1ExclB')
+        tagCatOS  = RooObject._rooobject('tagCatP2VVOS')     if ws['tagCatP2VVOS'] else _createGetObservable('tagCatOS')
+        tagCatSS  = RooObject._rooobject('tagCatP2VVSS')     if ws['tagCatP2VVSS'] else _createGetObservable('tagCatSS')
+        self._obsSet += [hlt1ExclB,tagCatOS, tagCatSS]
 
         # set momenta range and put them in obsSet
         print 'P2VV - INFO: Setting track and B momenta ranges.'
@@ -1254,13 +1219,7 @@ trackMomentaRanges = dict(
     B_Pt       = [    0 , 2e5 ]    
     )
 
-# bokkeeping dictionaries for plotting
-# plotingScenarios = dict( BmommkkphysKKmom = [ ('mcData','BmomRewData'), ('BmomRewData','mkkRewData'), ('mkkRewData','mcDataPhysRew'), ('mcDataPhysRew','MomRewData') ],
-#                          BmomphysKKmom    = [ ('mcData','BmomRewData'), ('BmomRewData','mcDataPhysRew'), ('mcDataPhysRew','MomRewData') ],
-#                          mkkphysKKmom     = [ ('mcData','mkkRewData'), ('mkkRewData','mcDataPhysRew'), ('mcDataPhysRew','MomRewData') ],
-#                          physKKmom        = [ ('mcData','mcDataPhysRew' ), ('mcDataPhysRew','MomRewData') ]
-#                          )
-
+# bookeeping dictionaries for ploting
 plotingScenarios = dict( BmommkkphysKKmom     = [ ('mcData','BmomRewData'), 
                                                   ('mcData','BmomRewData','mkkRewData'), 
                                                   ('mcData','BmomRewData','mkkRewData','mcDataPhysRew'), 
