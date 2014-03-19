@@ -247,32 +247,23 @@ def dilution_bins(data, t_var, sigmat, sigmat_cat, result = None, signal = [], s
 
 # Calculate dilution
 def dilution_ft(data, t_var, t_range = None, parameters = None, signal = [], subtract = [],
-                raw = False, simultaneous = False, n_bins = 512, st = None, mean_param = None,
-                quiet = False):
+                full_pdf = None, raw = False, simultaneous = False, n_bins = 512, st = None,
+                mean_param = None, quiet = False):
     if mean_param: assert(st)
 
     from ROOT import RooBinning
     if not t_range:
         ft_left = 0
         t_range = ft_left - t_var.getMin()
-        diff = t_range / float(n_bins)
-        dilution_bounds = array('d', (t_var.getMin() + i * diff for i in range(n_bins + 1)))
-        b = diff
-        t_max = t_var.getMax()
-        while b < t_max:
-            dilution_bounds.append(b)
-            b += diff
-        if dilution_bounds[-1] != t_max:
-            dilution_bounds.append(t_max)
     else:
-        diff = t_range / float(n_bins)
         ft_left = t_var.getMin()
-        dilution_bounds = array('d', (t_var.getMin() + i * diff for i in range(n_bins + 1)))
+
+    diff = t_range / float(n_bins)
+    dilution_bounds = array('d', (t_var.getMin() + i * diff for i in range(n_bins + 1)))
 
     for i in range(len(dilution_bounds) -1):
         if dilution_bounds[i + 1] <= dilution_bounds[i]:
             print i
-
     dilution_binning = RooBinning(len(dilution_bounds) - 1, dilution_bounds)
     dilution_binning.SetName('dilution_binning')
     ## t_var.setBinning(dilution_binning)
@@ -335,51 +326,56 @@ def dilution_ft(data, t_var, t_range = None, parameters = None, signal = [], sub
     from ROOT import RooFit
     from P2VV.RooFitWrappers import buildPdf
 
-    sig_yield_names = [s.getYield().GetName() if type(s) != str else s for s in signal]
-    signal_yields = [p for p in parameters if any([p.GetName().startswith(s) for s in sig_yield_names])]
+    signal_yields = {}
+    for c in signal:
+        y = filter(lambda p: p.GetName() == c.getYield().GetName(), [p for p in parameters])[0]
+        signal_yields[c] = y
     data_int = data_histo.Integral()
 
-    # Set the correct yields in the pdf
-    # Build the PDF used for subtraction.
-    subtract_pdf = buildPdf(Components = subtract, Observables = (t_var,),
-                            Name='subtract_%s_pdf' % '_'.join(c.GetName() for c in subtract))
-    sub_pars = subtract_pdf.getVariables()
-    for res_par in parameters:
-        sub_par = sub_pars.find(res_par.GetName())
-        if sub_par:
-            print 'setting value of subtract pdf parameter %s' % sub_par.GetName()
-            sub_par.setVal(res_par.getVal())
-            sub_par.setError(res_par.getError())
-
-    subtract_yields = {}
-    for b in subtract:
-        subtract_yields[b] = [p for p in parameters if p.GetName().startswith(b.getYield().GetName())]
-
+    signal_pdfs = {}
+    for c in signal:
+        pdf = filter(lambda pdf: pdf.GetName() == c[(t_var,)].GetName(), full_pdf.PDFs())[0]
+        y = [p for p in parameters if p.GetName() == c.getYield().GetName()][0]
+        signal_pdfs[c] = (y, pdf)
+    
+    subtract_pdfs = {}
     for c in subtract:
-        y = c.getYield()
-        result_yield = sum([cy.getVal() for cy in subtract_yields[c]])
-        pdf_yield = subtract_pdf.getVariables().find(y.GetName())
-        if not pdf_yield:
-            break
-        print 'setting yield %s of subtract pdf' % pdf_yield.GetName()
-        pdf_yield.setVal(result_yield)
+        pdf = filter(lambda pdf: pdf.GetName() == c[(t_var,)].GetName(), full_pdf.PDFs())[0]
+        y = [p for p in parameters if p.GetName() == c.getYield().GetName()][0]
+        subtract_pdfs[c] = (y, pdf)
 
-    subtract_histo = subtract_pdf.createHistogram(subtract_pdf.GetName().replace('_pdf', '_histo'), t_var._target_(),
-                                                  RooFit.Binning(dilution_binning),
-                                                  RooFit.Scaling(False))
+    from ROOT import RooArgSet
+    t_var.setRange('dilution', (t_var.getMin(), t_var.getMin() + t_range))
 
     # Calculate appropriate scale factor. Scale histograms such that the ratio
-    # of their integrals match the ratio of wpv / total yields
-    n_subtract = sum([b.getVal() for yields in subtract_yields.itervalues() for b in yields])
-    total = sum([s.getVal() for s in signal_yields] + [n_subtract])
-    sub_int = subtract_histo.Integral()
-    scale =  (data_int * n_subtract) / (sub_int * total)
-    subtract_histo.Scale(scale)
+    # of their integrals match the ratio of subtract / total yields
+    n_subtract = {}
+    for c, (y, pdf) in subtract_pdfs.iteritems():
+        I = pdf.createIntegral(RooArgSet(t_var), Range = 'dilution')
+        n_subtract[c] = I.getVal() * y.getVal()
 
-    # Add like this to preserve errors
+    total = sum(n_subtract.itervalues())
+    for c, (y, pdf) in signal_pdfs.iteritems():
+        I = pdf.createIntegral(RooArgSet(t_var), Range = 'dilution')
+        total += I.getVal() * y.getVal()
+
+    # Histogram from which stuff will be subtracted
     tmp_histo = data_histo.Clone('tmp_histo')
-    tmp_histo.Add(subtract_histo, -1)
+    subtract_histo = None
 
+    for c, (y, pdf) in subtract_pdfs.iteritems():
+        sub_histo = pdf.createHistogram(pdf.GetName() + '_histo', t_var._target_(),
+                                        RooFit.Binning(dilution_binning), RooFit.Scaling(False))
+        sub_int = sub_histo.Integral()
+        scale = (data_int * n_subtract[c]) / (sub_int * total)
+        sub_histo.Scale(scale)
+        # Add like this to preserve errors
+        if not subtract_histo:
+            subtract_histo = sub_histo
+        else:
+            subtract_histo.Add(sub_histo)
+        tmp_histo.Add(sub_histo, -1)
+        
     # Fill the FT histogram
     ft_bounds = array('d', (ft_left + i * diff for i in range(n_bins + 1)))
     ft_histo = __make_ft_histo(tmp_histo, ft_bounds)
@@ -561,26 +557,22 @@ class SolveSF(object):
 from P2VV.PropagateErrors import Parameter
 
 class DilutionCSFS(object):
-    def __init__(self, st_mean, result_dir, result_name = 'time_result_double_RMS_Gauss_linear'):
-        self.__result_name = result_name
-        self.__result = result_dir.Get(self.__result_name)
-        if not self.__result:
-            raise RuntimeError('no result available')
-
+    def __init__(self, st_mean, result):
+        self.__result = result
         def __mkp(result, name):
             p = result.floatParsFinal().find(name)
             return Parameter(name, p.getVal(), p.getError())
 
         self.__dms = Parameter('dms', 17.768,  0.024)
         self.__st_mean = st_mean
-        self.__sfm_offset = __mkp(self.__result, "sf_mean_offset")
-        self.__sfm_slope = __mkp(self.__result, "sf_mean_slope")
-        self.__sfm_slope.setValue(self.__sfm_slope.value() / 0.06)
-        self.__sfm_slope.setError(self.__sfm_slope.error() / 0.06)
-        self.__sfs_offset = __mkp(self.__result, "sf_sigma_offset")
-        self.__sfs_slope = __mkp(self.__result, "sf_sigma_slope")
-        self.__sfs_slope.setValue(self.__sfs_slope.value() / 0.06)
-        self.__sfs_slope.setError(self.__sfs_slope.error() / 0.06)
+        self.__sfm_offset = __mkp(self.__result, "sf_mean_slope")
+        self.__sfm_slope = __mkp(self.__result, "sf_mean_quad")
+        self.__sfm_slope.setValue(self.__sfm_slope.value())
+        self.__sfm_slope.setError(self.__sfm_slope.error())
+        self.__sfs_offset = __mkp(self.__result, "sf_sigma_slope")
+        self.__sfs_slope = __mkp(self.__result, "sf_sigma_quad")
+        self.__sfs_slope.setValue(self.__sfs_slope.value())
+        self.__sfs_slope.setError(self.__sfs_slope.error())
         self.__frac = __mkp(self.__result, "timeResFrac2")
         from ROOT import RooArgList
         self.__cv = self.__result.reducedCovarianceMatrix(RooArgList(*[self.__result.floatParsFinal().find(p.name()) for p in [self.__sfm_offset, self.__sfm_slope, self.__frac, self.__sfs_offset, self.__sfs_slope]]))
@@ -619,11 +611,8 @@ class DilutionCSFS(object):
         return sum(pars[i + 1] * pow(st - pars[0], i) for i in range(len(pars) - 1))
 
 class DilutionCSFC(object):
-    def __init__(self, st_mean, result_dir, result_name = 'time_result_double_Comb_Gauss_linear'):
-        self.__result_name = result_name
-        self.__result = result_dir.Get(self.__result_name)
-        if not self.__result:
-            raise RuntimeError('no result available')
+    def __init__(self, st_mean, result):
+        self.__result = result
 
         def __mkp(result, name):
             p = result.floatParsFinal().find(name)
@@ -631,11 +620,11 @@ class DilutionCSFC(object):
 
         self.__dms = Parameter('dms', 17.768,  0.024)
         self.__st_mean = st_mean
-        self.__sfc_offset = __mkp(self.__result, "sfc_offset")
-        self.__sfc_slope = __mkp(self.__result, "sfc_slope")
+        self.__sfc_offset = __mkp(self.__result, "sfc_slope")
+        self.__sfc_slope = __mkp(self.__result, "sfc_quad")
         self.__frac = __mkp(self.__result, "timeResFrac2")
-        self.__sf2_offset = __mkp(self.__result, "sf2_offset")
-        self.__sf2_slope = __mkp(self.__result, "sf2_slope")
+        self.__sf2_offset = __mkp(self.__result, "sf2_slope")
+        self.__sf2_slope = __mkp(self.__result, "sf2_quad")
         from ROOT import RooArgList
         self.__cv = self.__result.reducedCovarianceMatrix(RooArgList(*[self.__result.floatParsFinal().find(p.name()) for p in [self.__sfc_offset, self.__sfc_slope, self.__frac, self.__sf2_offset, self.__sf2_slope]]))
 
@@ -680,16 +669,12 @@ class DilutionSG(object):
         return p[0].value() * st
 
 class DilutionSFC(object):
-    def __init__(self, result_dir, result_name = 'time_result_double_Comb_Gauss'):
+    def __init__(self, result):
         def __mkp(result, name):
             p = result.floatParsFinal().find(name)
             return Parameter(name, p.getVal(), p.getError())
 
-        self.__result_name = result_name
-        self.__result = result_dir.Get(self.__result_name)
-        if not self.__result:
-            raise RuntimeError('no result available')
-
+        self.__result = result
         self.__dms = Parameter('dms', 17.768,  0.024)
         self.__sfc = __mkp(self.__result, "timeResComb")
         self.__frac = __mkp(self.__result, "timeResFrac2")
@@ -714,20 +699,16 @@ class DilutionSFC(object):
 from math import sqrt
 
 class DilutionSFS(object):
-    def __init__(self, result_dir, result_name = 'time_result_double_RMS_Gauss'):
+    def __init__(self, result):
         def __mkp(result, name):
             p = result.floatParsFinal().find(name)
             return Parameter(name, p.getVal(), p.getError())
 
-        self.__result_name = result_name
-        self.__result = result_dir.Get(self.__result_name)
-        if not self.__result:
-            raise RuntimeError('no result available')
-
+        self.__result = result
         self.__dms = Parameter('dms', 17.768,  0.024)
-        self.__sfc = __mkp(self.__result, "timeResSFMean")
+        self.__sfc = __mkp(self.__result, "sf_mean_slope")
         self.__frac = __mkp(self.__result, "timeResFrac2")
-        self.__sfs = __mkp(self.__result, "timeResSFSigma")
+        self.__sfs = __mkp(self.__result, "sf_sigma_slope")
         from ROOT import RooArgList
         self.__cv = self.__result.reducedCovarianceMatrix(RooArgList(*[self.__result.floatParsFinal().find(p.name()) for p in [self.__sfc, self.__frac, self.__sfs]]))
 
