@@ -30,6 +30,7 @@ from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as 
 tres_args = dict(time = t, sigmat = st, Cache = True)
 tres_1 = Multi_TimeResolution(Name = 'tres', ParNamePrefix = 'one',
                               TimeResSFParam = 'linear',
+                              timeResMu = dict(Value = 0.),
                               sf_one_offset = dict(Value = 0, Constant = True),
                               sf_one_slope = dict(Value = 1.174),
                               sf_two_offset = dict(Value = 0, Constant = True),
