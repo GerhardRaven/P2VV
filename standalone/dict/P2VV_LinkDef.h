@@ -53,6 +53,7 @@
 #pragma link C++ function copyFloatInTree;
 #pragma link C++ function addCategoryToTree;
 #pragma link C++ function addVertexErrors;
+#pragma link C++ function addJpsiDLS;
 #pragma link C++ function hessian;
 #pragma link C++ function hessian_with_errors;
 #pragma link C++ function gradient;
