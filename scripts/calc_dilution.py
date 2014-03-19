@@ -8,7 +8,7 @@ from math import sqrt
 parser = optparse.OptionParser(usage = '%prog data_type')
 (options, args) = parser.parse_args()
 
-prefix = '/stuff/PhD' if os.path.exists('/stuff') else '/bfys/raaij'
+prefix = '/stuff/PhD' if os.path.exists('/stuff') else '/project/bfys/raaij'
 input_data = {'2011' : {'data' : os.path.join(prefix, 'p2vv/data/P2VVDataSets2011Reco12_4KKMassBins_2TagCats.root'),
                         'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Prescaled_cache.root'),
                         'result_dir' : {'simple' : '1bin_15500.00fs_simple/2027465761870101697/results',
@@ -79,17 +79,14 @@ simul_result_dir = cache_file.Get(input_data['result_dir']['simul'])
 
 from P2VV.Dilution import DilutionCSFC, DilutionCSFS, DilutionSG, DilutionSFS, DilutionSFC
 dilutions = {}
-for calc_type, cargs, name in [(DilutionCSFS, (st_mean, simul_result_dir), 'double_sig_calibrated'),
-                               (DilutionCSFC, (st_mean, simul_result_dir), 'double_av_calibrated'),
-                               (DilutionSFC, (simple_result_dir,), 'double_av'),
-                               (DilutionSFS, (simple_result_dir,), 'double_sig'),
+for calc_type, cargs, name in [(DilutionCSFS, (st_mean, simple_result_dir.Get('time_result_double_RMS_Gauss_quadratic_no_offset')), 'double_sig_calibrated'),
+                               (DilutionSFS, (simple_result_dir.Get('time_result_double_RMS_Gauss_linear_no_offset'),), 'double_sig'),
                                (DilutionSG, (), 'single')]:                      
-    try:
-        calc = calc_type(*cargs)
-        dilutions[name] = [calc.dilution(bin_data) for bin_data in binned_data]
-        print 'dilution for %s = %5.4f +- %5.4f' % (tuple([name]) + calc.dilution(st_data))
-    except RuntimeError:
+    if cargs and not cargs[-1]:
         continue
+    calc = calc_type(*cargs)
+    dilutions[name] = [calc.dilution(bin_data) for bin_data in binned_data]
+    print 'dilution for %s = %5.4f +- %5.4f' % (tuple([name]) + calc.dilution(st_data))
 
 graphs = []
 from ROOT import TCanvas, TGraphErrors, TLegend
