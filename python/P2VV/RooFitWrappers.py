@@ -1144,22 +1144,22 @@ class ProdPdf(Pdf):
 class SumPdf(Pdf):
     def __init__(self, **kwargs) :
         self._yields = {}
-        pdfs = list(kwargs['PDFs'])
-        co = set([ i for pdf in pdfs for i in pdf.ConditionalObservables() ])
+        self.__pdfs = list(kwargs['PDFs'])
+        co = set([ i for pdf in self.__pdfs for i in pdf.ConditionalObservables() ])
         if 'ConditionalObservables' in kwargs :
             if co != set(kwargs['ConditionalObservables']):
                 print 'WARNING: inconsistent conditional observables: %s vs %s' % ( co, kwargs['ConditionalObservables'] )
         elif co :
             kwargs['ConditionalObservables'] = list(co)
 
-        ec = set([ i for pdf in pdfs for i in pdf.ExternalConstraints() ])
+        ec = set([ i for pdf in self.__pdfs for i in pdf.ExternalConstraints() ])
         if 'ExternalConstraints' in kwargs:
             if ec != set(kwargs['ExternalConstraints']):
                 print 'WARNING: inconsistent external constraints: %s vs %s' % ( ec, kwargs['ExternalConstraints'] )
         elif ec:
             kwargs['ExternalConstraints'] = ec
 
-        diff = set([p.GetName() for p in pdfs]).symmetric_difference(set(kwargs['Yields'].keys()))
+        diff = set([p.GetName() for p in self.__pdfs]).symmetric_difference(set(kwargs['Yields'].keys()))
         if len(diff) not in [0, 1]:
             raise StandardError('The number of yield variables must be equal to or 1'
                                 + 'less then the number of PDFs.')
@@ -1194,6 +1194,9 @@ class SumPdf(Pdf):
     def _separator(self):
         return '_P_'
 
+    def PDFs(self):
+        return self.__pdfs
+    
 class SimultaneousPdf( Pdf ) :
     def __init__( self, Name, **kwargs ) :
         args = { 'Name' : Name }
