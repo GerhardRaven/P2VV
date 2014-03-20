@@ -9,6 +9,7 @@ parser.add_argument( '--jobName', '-N', default = 'Bs2JpsiKKFit' )
 parser.add_argument( '--model', '-m', default = 'lamb_phi' )  # 'phi' / 'lamb_phi' / 'polarDep'
 parser.add_argument( '--fixLowAcc', '-l', default = True )
 parser.add_argument( '--fixUpAcc', '-u', default = False )
+parser.add_argument( '--fixTagging', '-ta', default = False )
 parser.add_argument( '--numCPU', '-c', type = int, default = 2 )
 parser.add_argument( '--dataPath', '-d', default = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14' )
 parser.add_argument( '--workPath', '-w', default = '/project/bfys/jleerdam/softDevel/P2VV2/test' )
@@ -25,6 +26,7 @@ args = parser.parse_args()
 assert args.model in [ 'phi', 'lamb_phi', 'polarDep' ]
 fixLowAcc = False if not args.fixLowAcc or str( args.fixLowAcc ).lower() in [ 'false', '0' ] else True
 fixUpAcc = False if not args.fixUpAcc or str( args.fixUpAcc ).lower() in [ 'false', '0' ] else True
+fixTagging = False if not args.fixTagging or str( args.fixTagging ).lower() in [ 'false', '0' ] else True
 assert type(args.numCPU) == int and args.numCPU > 0 and args.numCPU < 20
 dataPath = args.dataPath
 workPath = args.workPath
@@ -39,9 +41,9 @@ elif parFileIn :
     parFileIn = workPath + parFileIn
 parFileOut = args.parFileOut
 if parFileOut == None :
-    parFileOut = workPath + '%s%s_%sLow_%sUp.par'\
+    parFileOut = workPath + '%s%s_%sLow_%sUp_%sTag.par'\
                  % ( args.jobName + ( '_' if args.jobName else '' ), args.model, 'fix' if fixLowAcc else 'float'
-                    , 'fix' if fixUpAcc else 'float' )
+                    , 'fix' if fixUpAcc else 'float', 'fix' if fixTagging else 'float' )
 elif parFileOut :
     parFileOut = workPath + parFileOut
 timeAccFile2011 = dataPath + args.timeAccFile2011
@@ -55,6 +57,7 @@ if args.jobName :
 print '  model: %s' % args.model
 print '  fix lower decay-time acceptance: %s' % ( 'true' if fixLowAcc else 'false' )
 print '  fix upper decay-time acceptance: %s' % ( 'true' if fixUpAcc  else 'false' )
+print '  fix tagging calibration: %s' % ( 'true' if fixTagging else 'false' )
 print '  number of cores: %d' % args.numCPU
 print '  data path: %s' % dataPath
 print '  work path: %s' % workPath
@@ -93,6 +96,12 @@ if fixUpAcc :
         per = sett[0]['runPeriod']
         assert per in [ [ 'p2011' ], [ 'p2012' ] ]
         pdfConfig['externalConstr']['betaTimeEff'][it] = ( sett[0], ( -0.008639, 0. ) if per == [ 'p2011' ] else ( -0.012669, 0. ) )
+
+if fixTagging :
+    pdfConfig['externalConstr']['wTagP0OS'] = ( 0.381529, 0. )
+    pdfConfig['externalConstr']['wTagP1OS'] = ( 1.01185,  0. )
+    pdfConfig['externalConstr']['wTagP0SS'] = ( 0.445857, 0. )
+    pdfConfig['externalConstr']['wTagP1SS'] = ( 0.9581,   0. )
 
 pdfConfig['anglesEffType'] = 'weights'
 pdfConfig['angEffMomsFiles'] = angAccFile
