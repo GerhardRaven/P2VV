@@ -13,7 +13,7 @@ parser.add_argument( '--fixUpAcc', '-u', default = False )
 parser.add_argument( '--fixTagging', '-ta', default = False )
 parser.add_argument( '--numCPU', '-c', type = int, default = 2 )
 parser.add_argument( '--runMinos', '-mi', default = '' )
-parser.add_argument( '--minosPars', '-mp', default = '' )
+parser.add_argument( '--minosPars', '-mp', default = None )
 parser.add_argument( '--dataPath', '-d', default = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14' )
 parser.add_argument( '--workPath', '-w', default = '/project/bfys/jleerdam/softDevel/P2VV2/test' )
 parser.add_argument( '--dataSetFile', '-f', default = 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140309.root' )
@@ -32,7 +32,7 @@ fixLowAcc = False if not args.fixLowAcc or str( args.fixLowAcc ).lower() in [ 'f
 fixUpAcc = False if not args.fixUpAcc or str( args.fixUpAcc ).lower() in [ 'false', '0' ] else True
 fixTagging = False if not args.fixTagging or str( args.fixTagging ).lower() in [ 'false', '0' ] else True
 assert type(args.numCPU) == int and args.numCPU > 0 and args.numCPU < 20
-minosPars = args.minosPars.split(',') if args.minosPars else [ ]
+minosPars = args.minosPars.split(',') if args.minosPars and str(args.minosPars) != 'None' else [ ]
 runMinos = False if ( args.runMinos == '' and not minosPars ) or str( args.runMinos ).lower() in [ 'false', '0' ] else True
 dataPath = args.dataPath
 workPath = args.workPath
