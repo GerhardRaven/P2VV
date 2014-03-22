@@ -7,10 +7,13 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument( '--jobName', '-N', default = 'Bs2JpsiKKFit' )
 parser.add_argument( '--model', '-m', default = 'lamb_phi' )  # 'phi' / 'lamb_phi' / 'polarDep'
+parser.add_argument( '--blind', '-b', default = True )
 parser.add_argument( '--fixLowAcc', '-l', default = True )
 parser.add_argument( '--fixUpAcc', '-u', default = False )
 parser.add_argument( '--fixTagging', '-ta', default = False )
 parser.add_argument( '--numCPU', '-c', type = int, default = 2 )
+parser.add_argument( '--runMinos', '-mi', default = '' )
+parser.add_argument( '--minosPars', '-mp', default = '' )
 parser.add_argument( '--dataPath', '-d', default = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14' )
 parser.add_argument( '--workPath', '-w', default = '/project/bfys/jleerdam/softDevel/P2VV2/test' )
 parser.add_argument( '--dataSetFile', '-f', default = 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140309.root' )
@@ -24,10 +27,13 @@ parser.add_argument( '--angAccFile', '-a', default = 'angEffNominalRew_moms.par'
 
 args = parser.parse_args()
 assert args.model in [ 'phi', 'lamb_phi', 'polarDep' ]
+blind = False if not args.blind or str( args.blind ).lower() in [ 'false', '0' ] else True
 fixLowAcc = False if not args.fixLowAcc or str( args.fixLowAcc ).lower() in [ 'false', '0' ] else True
 fixUpAcc = False if not args.fixUpAcc or str( args.fixUpAcc ).lower() in [ 'false', '0' ] else True
 fixTagging = False if not args.fixTagging or str( args.fixTagging ).lower() in [ 'false', '0' ] else True
 assert type(args.numCPU) == int and args.numCPU > 0 and args.numCPU < 20
+minosPars = args.minosPars.split(',') if args.minosPars else [ ]
+runMinos = False if ( args.runMinos == '' and not minosPars ) or str( args.runMinos ).lower() in [ 'false', '0' ] else True
 dataPath = args.dataPath
 workPath = args.workPath
 if dataPath and dataPath[-1] != '/' : dataPath += '/'
@@ -55,10 +61,13 @@ print 'job parameters:'
 if args.jobName :
     print '  job name: %s' % args.jobName
 print '  model: %s' % args.model
+print '  blind analysis: %s' % ( 'true' if blind else 'false' )
 print '  fix lower decay-time acceptance: %s' % ( 'true' if fixLowAcc else 'false' )
 print '  fix upper decay-time acceptance: %s' % ( 'true' if fixUpAcc  else 'false' )
 print '  fix tagging calibration: %s' % ( 'true' if fixTagging else 'false' )
 print '  number of cores: %d' % args.numCPU
+print '  run Minos: %s' % ( 'true' if runMinos else 'false' )
+print '  Minos parameters:', ', '.join( '"%s"' % par for par in minosPars )
 print '  data path: %s' % dataPath
 print '  work path: %s' % workPath
 print '  dataset file: %s' % dataSetFile
@@ -74,6 +83,9 @@ print '  angular acceptance file: %s' % angAccFile
 from math import pi
 from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_RunIAnalysis as PdfConfig
 pdfConfig = PdfConfig()
+if not blind :
+    pdfConfig['blind'] = { }
+
 pdfConfig['lambdaCPParam'] = 'observables_CPVDecay' if args.model == 'polarDep' else 'lambPhi'
 if pdfConfig['lambdaCPParam'] == 'observables_CPVDecay' :
     pdfConfig['splitParams']['KKMassCat'] = [ 'av' + par if par == 'f_S' else par for par in pdfConfig['splitParams']['KKMassCat'] ]
@@ -96,12 +108,13 @@ if fixUpAcc :
         per = sett[0]['runPeriod']
         assert per in [ [ 'p2011' ], [ 'p2012' ] ]
         pdfConfig['externalConstr']['betaTimeEff'][it] = ( sett[0], ( -0.008639, 0. ) if per == [ 'p2011' ] else ( -0.012669, 0. ) )
+        #pdfConfig['externalConstr']['betaTimeEff'][it] = ( sett[0], ( -0.0090, 0. ) if per == [ 'p2011' ] else ( -0.0124, 0. ) )
 
 if fixTagging :
-    pdfConfig['externalConstr']['wTagP0OS'] = ( 0.381529, 0. )
-    pdfConfig['externalConstr']['wTagP1OS'] = ( 1.01185,  0. )
-    pdfConfig['externalConstr']['wTagP0SS'] = ( 0.445857, 0. )
-    pdfConfig['externalConstr']['wTagP1SS'] = ( 0.9581,   0. )
+    pdfConfig['externalConstr']['wTagP0OS'] = ( 0.38152932, 0. )#( 0.3791, 0.00001 )
+    pdfConfig['externalConstr']['wTagP1OS'] = ( 1.01185080, 0. )#( 1.,     0.00001 )
+    pdfConfig['externalConstr']['wTagP0SS'] = ( 0.44585657, 0. )#( 0.445,  0.00001 )
+    pdfConfig['externalConstr']['wTagP1SS'] = ( 0.95813908, 0. )#( 1.,     0.00001 )
 
 pdfConfig['anglesEffType'] = 'weights'
 pdfConfig['angEffMomsFiles'] = angAccFile
@@ -133,7 +146,7 @@ if parFileIn :
 
 # fix of float |lambda|
 if args.model == 'phi' :
-    ws['lambdaCP'].setVal(1.)
+    ws['lambdaCP'].setVal(1.)# 0.96340)
     ws['lambdaCP'].setConstant(True)
 elif args.model == 'lamb_phi' :
     ws['lambdaCP'].setConstant(False)
@@ -158,11 +171,27 @@ for constr in pdf.ExternalConstraints() : constr.Print()
 ## fit data ##
 ##############
 
+# get parameters for Minos
+if runMinos and not minosPars :
+    blindAdd = '__' if pdfConfig['blind'] else ''
+    minosPars += [ 'Gamma', '{0}dGamma{0}'.format(blindAdd), 'dM', 'AparPhase', 'AperpPhase' ]
+    if args.model in [ 'phi', 'lamb_phi' ] :
+        minosPars += [ '{0}phiCP{0}'.format(blindAdd), 'A0Mag2', 'AperpMag2' ]
+    if args.model == 'lamb_phi' :
+        minosPars += [ 'lambdaCP' ]
+    elif args.model == 'polarDep' :
+        minosPars += [ '{0}phiCPAv{0}'.format(blindAdd), '{0}phiCPRel_Apar{0}'.format(blindAdd)
+                      , '{0}phiCPRel_AperpApar{0}'.format(blindAdd), '{0}phiCPRel_AS{0}'.format(blindAdd)
+                      , 'CCPAv', 'CCPRel_Apar', 'CCPRel_Aperp', 'CCPAv_AS', 'avA02', 'avAperp2' ]
+minosPars = [ pdfPars.find(par) for par in minosPars ]
+if minosPars :
+    print 'Bs2JpsiKK3fbFit: running Minos for parameters', ', '.join( '"%s"' % par.GetName() for par in minosPars )
+
 # fit data
 from P2VV.Utilities.DataHandling import correctWeights
 fitData = correctWeights( dataSet, [ 'runPeriod', 'KKMassCat' ] )
 fitResult = pdf.fitTo( fitData, SumW2Error = False, Save = True, NumCPU = args.numCPU, Optimize = 2, Timer = True, Minimizer = 'Minuit2'
-                      , Strategy = 1, Offset = True )
+                      , Strategy = 1, Offset = True, Minos = minosPars )
 
 if pdfConfig['lambdaCPParam'] == 'observables_CPVDecay' :
     from P2VV.Imports import parNames, parValuesCPVDecay as parValues
