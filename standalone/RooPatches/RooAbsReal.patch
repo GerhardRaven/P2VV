@@ -1,8 +1,49 @@
+diff --git a/roofit/roofitcore/inc/RooAbsReal.h b/roofit/roofitcore/inc/RooAbsReal.h
+index c85bc45..a104f8c 100644
+--- a/roofit/roofitcore/inc/RooAbsReal.h
++++ b/roofit/roofitcore/inc/RooAbsReal.h
+@@ -328,7 +328,6 @@ protected:
+ 
+   
+  public:
+-  const RooAbsReal* createPlotProjection(const RooArgSet& depVars, const RooArgSet& projVars) const ;
+   const RooAbsReal* createPlotProjection(const RooArgSet& depVars, const RooArgSet& projVars, RooArgSet*& cloneSet) const ;
+   const RooAbsReal *createPlotProjection(const RooArgSet &dependentVars, const RooArgSet *projectedVars,
+ 				         RooArgSet *&cloneSet, const char* rangeName=0, const RooArgSet* condObs=0) const;
 diff --git a/roofit/roofitcore/src/RooAbsReal.cxx b/roofit/roofitcore/src/RooAbsReal.cxx
-index 0e1b530..9c938ed 100644
+index d5aec1d..2e089c3 100644
 --- a/roofit/roofitcore/src/RooAbsReal.cxx
 +++ b/roofit/roofitcore/src/RooAbsReal.cxx
-@@ -2019,7 +2019,7 @@ RooPlot* RooAbsReal::plotOn(RooPlot *frame, PlotOpt o) const
+@@ -809,19 +809,6 @@ const RooAbsReal* RooAbsReal::createPlotProjection(const RooArgSet& depVars, con
+   return createPlotProjection(depVars,&projVars,cloneSet) ; 
+ }
+ 
+-
+-
+-//_____________________________________________________________________________
+-const RooAbsReal* RooAbsReal::createPlotProjection(const RooArgSet& depVars, const RooArgSet& projVars) const 
+-{
+-  // Utility function for plotOn() that creates a projection of a function or p.d.f 
+-  // to be plotted on a RooPlot. 
+-  RooArgSet* cloneSet = new RooArgSet() ;
+-  return createPlotProjection(depVars,&projVars,cloneSet) ; 
+-}
+-
+-
+-
+ //_____________________________________________________________________________
+ const RooAbsReal *RooAbsReal::createPlotProjection(const RooArgSet &dependentVars, const RooArgSet *projectedVars,
+ 						   RooArgSet *&cloneSet, const char* rangeName, const RooArgSet* condObs) const 
+@@ -2030,7 +2017,7 @@ RooPlot* RooAbsReal::plotOn(RooPlot *frame, PlotOpt o) const
+   }
+ 
+   // Create projection integral
+-  RooArgSet* projectionCompList ;
++  RooArgSet* projectionCompList = 0 ;
+ 
+   RooArgSet* deps = getObservables(frame->getNormVars()) ;
+   deps->remove(projectedVars,kTRUE,kTRUE) ;
+@@ -2208,7 +2195,7 @@ RooPlot* RooAbsReal::plotOn(RooPlot *frame, PlotOpt o) const
      }
  
      // add this new curve to the specified plot frame
@@ -11,7 +52,7 @@ index 0e1b530..9c938ed 100644
  
      if (projDataSel!=o.projData) delete projDataSel ;
         
-@@ -3465,6 +3465,14 @@ void RooAbsReal::logEvalError(const char* message, const char* serverValueString
+@@ -3654,6 +3641,14 @@ void RooAbsReal::logEvalError(const char* message, const char* serverValueString
    } else if (_evalErrorMode==CollectErrors) {
      _evalErrorList[this].first = oss2.str().c_str() ;
      _evalErrorList[this].second.push_back(ee) ;

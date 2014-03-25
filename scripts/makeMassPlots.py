@@ -3,10 +3,10 @@
 ####################
 
 dataSetName = 'JpsiKK_sigSWeight'
-dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/P2VVDataSets2011Reco12_4KKMassBins_2TagCats.root'
+dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_20140309.root'
 
-mumuPlotsFilePath = 'mumuMass2011.ps'
-KKPlotsFilePath   = 'KKMass2011.ps'
+mumuPlotsFilePath = 'mumuMass.ps'
+KKPlotsFilePath   = 'KKMass.ps'
 
 fitOpts = dict( NumCPU = 8, Optimize = 2, Timer = True, Minimizer = 'Minuit2', Strategy = 1, Offset = True )
 
@@ -20,25 +20,33 @@ gStyle.SetLineStyleString( 9, ' 100 20'       )
 ## Read data and get observables ##
 ###################################
 
+from P2VV.Load import P2VVLibrary, LHCbStyle
+
 # workspace
 from P2VV.RooFitWrappers import RooObject
 ws = RooObject( workspace = 'JpsiphiWorkspace' ).ws()
 
 # read data set from file
 from P2VV.Utilities.DataHandling import readData
-sigData = readData( filePath = dataSetFile, dataSetName = dataSetName,  NTuple = False )
+sigData = readData( filePath = dataSetFile, dataSetName = dataSetName, NTuple = False )
+sigData = sigData.reduce('hlt2_biased==1')
+sigData.Print()
 
 # get observables
 from P2VV.RooFitWrappers import RealVar
 mumuMass = RealVar('mdau1')
 KKMass   = RealVar('mdau2')
 
+# LHCb label
+from ROOT import TLatex
+label = TLatex()
+label.SetTextAlign(12)
+label.SetTextSize(0.072)
+
 
 ###########################################################################################################################################
 ## Make mumu mass plots ##
 ##########################
-
-from P2VV.Load import P2VVLibrary, LHCbStyle
 
 from P2VV.Parameterizations.MassPDFs import CB_Signal_Mass, DoubleCB_Signal_Mass, Linear_Background_Mass
 #mumuSig = CB_Signal_Mass(  Name             = 'sig_mumu'
@@ -90,18 +98,11 @@ mumuMassPdf.plotOn(mumuMassPlot, LineWidth = 3)
 
 binWidth = ( mumuMassPlot.GetXaxis().GetXmax() - mumuMassPlot.GetXaxis().GetXmin() ) / float( mumuMassPlot.GetNbinsX() )
 mumuMassPlot.SetXTitle('m(#mu^{+}#mu^{-}) [MeV/c^{2}]')
-mumuMassPlot.SetYTitle('Candidates / (%d MeV/c^{2})' % binWidth )
-mumuMassPlot.SetTitleOffset( 1.1,  'x' )
+mumuMassPlot.SetYTitle('Candidates / (%.2g MeV/c^{2})' % binWidth )
+mumuMassPlot.SetMinimum(0.)
+mumuMassPlot.SetMaximum(6200.)
+mumuMassPlot.SetTitleOffset( 1.10, 'x' )
 mumuMassPlot.SetTitleOffset( 1.15, 'y' )
-
-#LHCbLabel
-from ROOT import TPaveText
-LHCbLabel = TPaveText( 0.24, 0.81, 0.37, 0.89, 'BRNDC')
-LHCbLabel.AddText('LHCb')
-LHCbLabel.SetFillColor(0)
-LHCbLabel.SetTextAlign(12)
-LHCbLabel.SetTextSize(0.072)
-LHCbLabel.SetBorderSize(0)
 
 from ROOT import TCanvas
 mumuMassCanv = TCanvas('mumuMassCanv')
@@ -110,11 +111,11 @@ mumuMassCanv.SetRightMargin(0.05)
 mumuMassCanv.SetBottomMargin(0.18)
 mumuMassCanv.SetTopMargin(0.05)
 mumuMassPlot.Draw()
-#LHCbLabel.Draw()
+label.DrawLatexNDC( 0.25, 0.85, 'LHCb' )
 mumuMassCanv.Print( mumuPlotsFilePath + '(' )
 
-mumuMassPlot.SetMinimum(7.)#3.)
-mumuMassPlot.SetMaximum(7.e3)#3.e3)
+mumuMassPlot.SetMinimum(2.e1)
+mumuMassPlot.SetMaximum(1.e4)
 mumuMassPlot.SetTitleOffset( 1.0, 'y' )
 
 mumuMassCanvLog = TCanvas('mumuMassCanvLog')
@@ -124,7 +125,7 @@ mumuMassCanvLog.SetBottomMargin(0.18)
 mumuMassCanvLog.SetTopMargin(0.05)
 mumuMassCanvLog.SetLogy(True)
 mumuMassPlot.Draw()
-#LHCbLabel.Draw()
+label.DrawLatexNDC( 0.25, 0.85, 'LHCb' )
 mumuMassCanvLog.Print( mumuPlotsFilePath + ')' )
 
 
@@ -178,17 +179,19 @@ fitResult = KKMassPdf.fitTo( sigData, SumW2Error = False, Save = True, Minos = F
 fitResult.PrintSpecial( text = True )
 
 #Plot
-KKMassPlot = KKMassVar.frame(60)
+KKMassPlot = KKMassVar.frame(120)
 
 sigData.plotOn( KKMassPlot, MarkerStyle = kFullCircle, MarkerSize = 0.7, LineWidth = 3 )
 KKMassPdf.plotOn( KKMassPlot, LineStyle = kSolid, LineWidth = 3, LineColor = kBlue                                   )
-KKMassPdf.plotOn( KKMassPlot, LineStyle = 7,      LineWidth = 3, LineColor = kRed,         Components = 'phiMassPdf' )
-KKMassPdf.plotOn( KKMassPlot, LineStyle = 5,      LineWidth = 3, LineColor = kMagenta + 3, Components = 'KKSWavePdf' )
+#KKMassPdf.plotOn( KKMassPlot, LineStyle = 7,      LineWidth = 3, LineColor = kRed,         Components = 'phiMassPdf' )
+#KKMassPdf.plotOn( KKMassPlot, LineStyle = 5,      LineWidth = 3, LineColor = kMagenta + 3, Components = 'KKSWavePdf' )
 
 binWidth = ( KKMassPlot.GetXaxis().GetXmax() - KKMassPlot.GetXaxis().GetXmin() ) / float( KKMassPlot.GetNbinsX() )
 KKMassPlot.SetXTitle('m(K^{+}K^{-}) [MeV/c^{2}]')
-KKMassPlot.SetYTitle('Candidates / (%d MeV/c^{2})' % binWidth )
-KKMassPlot.SetTitleOffset( 1.1,  'x' )
+KKMassPlot.SetYTitle('Candidates / (%.2g MeV/c^{2})' % binWidth )
+KKMassPlot.SetMinimum(0.)
+KKMassPlot.SetMaximum(6200.)
+KKMassPlot.SetTitleOffset( 1.10, 'x' )
 KKMassPlot.SetTitleOffset( 1.15, 'y' )
 
 KKMassPlot.SetMinimum(0.)
@@ -199,11 +202,11 @@ KKMassCanv.SetRightMargin(0.05)
 KKMassCanv.SetBottomMargin(0.18)
 KKMassCanv.SetTopMargin(0.05)
 KKMassPlot.Draw()
-#LHCbLabel.Draw()
+label.DrawLatexNDC( 0.25, 0.85, 'LHCb' )
 KKMassCanv.Print( KKPlotsFilePath + '(' )
 
-KKMassPlot.SetMinimum(2.)
-KKMassPlot.SetMaximum(1.e4)
+KKMassPlot.SetMinimum(1.e1)
+KKMassPlot.SetMaximum(2.e4)
 KKMassPlot.SetTitleOffset( 1.0, 'y' )
 
 KKMassCanvLog = TCanvas('KKMassCanvLog')
@@ -213,5 +216,5 @@ KKMassCanvLog.SetBottomMargin(0.18)
 KKMassCanvLog.SetTopMargin(0.05)
 KKMassCanvLog.SetLogy(True)
 KKMassPlot.Draw()
-#LHCbLabel.Draw()
+label.DrawLatexNDC( 0.25, 0.85, 'LHCb' )
 KKMassCanvLog.Print( KKPlotsFilePath + ')' )

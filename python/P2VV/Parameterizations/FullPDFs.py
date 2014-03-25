@@ -54,7 +54,7 @@ class PdfConfiguration( dict ) :
             par.setVal( self._parameters[ par.GetName() ][0] )
             par.setError( self._parameters[ par.GetName() ][1] )
             if self._parameters[ par.GetName() ][2] < 0. :
-                par.setError( self._parameters[ par.GetName() ][2], self._parameters[ par.GetName() ][3] )
+                par.setAsymError( self._parameters[ par.GetName() ][2], self._parameters[ par.GetName() ][3] )
             par.setMin( self._parameters[ par.GetName() ][4] )
             par.setMax( self._parameters[ par.GetName() ][5] )
             par.setConstant( False if self._parameters[ par.GetName() ][6] else True )
@@ -96,23 +96,26 @@ class PdfConfiguration( dict ) :
                     fitStatus = ( int( line[5][ : -1 ] ), float( line[8][ : -1 ] ), float( line[11] ) )
                 continue
 
-            # check moment format
-            if len(line) != 6 : continue
+            # check parameter format
+            if len(line) not in [ 6, 8 ] : continue
 
             # check name
             if nameExpr and not nameExpr.match(line[0]) : continue
 
             try :
+              add = 0 if len(line) == 6 else 2
               parVal   = float(line[1])
               parErr   = float(line[2])
-              parMin   = float(line[3])
-              parMax   = float(line[4])
-              parFloat = ( line[5] == 'True' )
+              parErrLo = float(line[3]) if add else +1.
+              parErrHi = float(line[4]) if add else -1.
+              parMin   = float(line[3 + add])
+              parMax   = float(line[4 + add])
+              parFloat = ( line[5 + add] == 'True' )
             except :
               continue
 
             # set parameter values
-            self.addParameter( line[0], ( parVal, parErr, +1., -1., parMin, parMax, parFloat ) )
+            self.addParameter( line[0], ( parVal, parErr, parErrLo, parErrHi, parMin, parMax, parFloat ) )
             numPars += 1
 
         parFile.close()
@@ -166,10 +169,10 @@ class PdfConfiguration( dict ) :
                   + '# floating:         \'{0}\'\n'.format( 'True' if floating == True else ( 'False' if floating == False else '' ) )\
                   + '# fit status:       status = {0:d}; NLL = {1:+.16g}; EDM = {2:.3g}\n'.format( fitStat[0], fitStat[1], fitStat[2] )\
                   + '#\n'\
-                  + '# ' + '-' * (79 + maxLenName) + '\n'\
-                  + ( '# {0:<%s}   {1:<14}   {2:<13}   {3:<14}   {4:<14}   {5:<}\n' % maxLenName )\
-                      .format( 'parameter', 'value', 'error', 'min', 'max', 'floating?' )\
-                  + '# ' + '-' * (79 + maxLenName) + '\n'
+                  + '# ' + '-' * (111 + maxLenName) + '\n'\
+                  + ( '# {0:<%s}   {1:<14}   {2:<13}   {3:<13}   {4:<13}   {5:<14}   {6:<14}   {7:<}\n' % maxLenName )\
+                      .format( 'parameter', 'value', 'error', 'error low', 'error high', 'min', 'max', 'floating?' )\
+                  + '# ' + '-' * (111 + maxLenName) + '\n'
 
         numPars = 0
         from P2VV.Imports import commonParNames
@@ -181,15 +184,16 @@ class PdfConfiguration( dict ) :
             if ( floating == True and not parVals[6] ) or ( floating == False and parVals[6] ) : continue
 
             if fileFormat != 'common' :
-                cont += ( '  {0:<%s}   {1:<+14.8g}   {2:<13.8g}   {3:<+14.8g}   {4:<+14.8g}   {5:<}\n' % maxLenName )\
-                          .format( parName, parVals[0], parVals[1], parVals[4], parVals[5], 'True' if parVals[6] else 'False' )
+                cont += ( '  {0:<%s}   {1:<+14.8g}   {2:<13.8g}   {3:<13.8g}   {4:<13.8g}   {5:<+14.8g}   {6:<+14.8g}   {7:<}\n'\
+                          % maxLenName ).format( parName, parVals[0], parVals[1], parVals[2], parVals[3], parVals[4], parVals[5]
+                                                , 'True' if parVals[6] else 'False' )
             else :
                 cont += '{0:s}\t{1:+.8g}\t{2:.8g}\t{3:+.8g}\t{4:+.8g}\n'\
                           .format( commonParNames[parName], parVals[0], parVals[1], parVals[2], parVals[3] )
             numPars += 1
 
         if fileFormat != 'common' :
-            cont += '# ' + '-' * (79 + maxLenName) + '\n'
+            cont += '# ' + '-' * (111 + maxLenName) + '\n'
 
         # write content to file
         parFile.write(cont)
@@ -317,6 +321,8 @@ class Bs2Jpsiphi_2011Analysis( Bs2Jpsiphi_PdfConfiguration ) :
         self['sigFrac']    = 0.51
         self['runPeriods'] = [ ]
 
+        self['obsDict']['hlt1ExclB'] = ( 'hlt1_excl_biased_dec', 'HLT1 excl. B.', { 'exclB' : 1, 'notExclB' : 0 } )
+
         self['timeResType']   = 'eventNoMean'
         self['constrainBeta'] = 'noBeta'
 
@@ -396,7 +402,7 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
         self['obsDict']['wTagSS'] = ( 'tagomega_ss_nn', 'SS est. wrong-tag prob.', '', 0.25, 0., 0.50001 )
 
         timeEff2011 = dict(  file      = 'data/Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
-                           , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+                           , hlt1UB    = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
                            , hlt1ExclB = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1TrackAndTrackMuonExcl_Hlt2DiMuonDetached'
                           )
         timeEff2012 = dict(  file      = 'data/Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
@@ -418,37 +424,34 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
         self['KKMassBinBounds'] = [ 990., 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12., 1050. ]
         self['CSPValues']       = [ 0.9178, 0.9022, 0.8619, 0.8875, 0.9360, 0.9641 ]
 
-        self['externalConstr'] = dict(  wTagP0OS       = (  0.3853, 0.0044 )
+        self['externalConstr'] = dict(  wTagP0OS       = (  0.3791, 0.0044 )
                                       , wTagP1OS       = (  1.000,  0.035  )
                                       , wTagDelP0OS    = (  0.0140, 0.     )
                                       , wTagDelP1OS    = (  0.066,  0.     )
-                                      , wTagP0SS       = (  0.450,  0.005  )
+                                      , wTagP0SS       = (  0.445,  0.005  )
                                       , wTagP1SS       = (  1.00,   0.09   )
                                       , wTagDelP0SS    = ( -0.016,  0.     )
                                       , wTagDelP1SS    = (  0.007,  0.     )
-                                      , dM             = (  17.768, 0.024  )
+                                      #, dM             = (  17.768, 0.024  )
                                      )
         from collections import defaultdict
         splitConstr = defaultdict(dict)
-        splitConstr['betaTimeEff']['2011']      = ( -0.0083,  0.004 )
-        if runPeriods == '3fb':
-            splitConstr['betaTimeEff']['2012'] = ( -0.0083, None )
-        else:
-            splitConstr['betaTimeEff']['2012'] = ( 0., 0. )
-        splitConstr['sf_placeholder']['2011']   = (  0.0349,  0. )
-        splitConstr['sf_placeholder']['2012']   = (  0.0347,  0. )
-        splitConstr['timeResMu']['2011']        = ( -0.00259, 0. )
-        splitConstr['timeResMu']['2012']        = ( -0.00333, 0. )
-        splitConstr['timeResFrac2']['2011']     = (  0.242,   0. )
-        splitConstr['timeResFrac2']['2012']     = (  0.239,   0. )
-        splitConstr['sf_mean_offset']['2011']   = (  1.4273,  0. )
-        splitConstr['sf_mean_offset']['2012']   = (  1.4887,  0. )
-        splitConstr['sf_mean_slope']['2011']    = ( -1.93,    0. )
-        splitConstr['sf_mean_slope']['2012']    = ( -3.88,    0. )
-        splitConstr['sf_sigma_offset']['2011']  = (  0.3857,  0. )
-        splitConstr['sf_sigma_offset']['2012']  = (  0.4143,  0. )
-        splitConstr['sf_sigma_slope']['2011']   = ( -0.63,    0. )
-        splitConstr['sf_sigma_slope']['2012']   = ( -2.80,    0. )
+        splitConstr['betaTimeEff']['2011']      = ( -0.0090,  0.0022 )
+        splitConstr['betaTimeEff']['2012']      = ( -0.0124,  0.0019 )
+        splitConstr['sf_placeholder']['2011']   = (  0.0350,  0. ) # (  0.0349,  0. )
+        splitConstr['sf_placeholder']['2012']   = (  0.0349,  0. ) # (  0.0347,  0. )
+        splitConstr['timeResMu']['2011']        = ( -0.00255, 0. ) # ( -0.00259, 0. )
+        splitConstr['timeResMu']['2012']        = ( -0.00322, 0. ) # ( -0.00333, 0. )
+        splitConstr['timeResFrac2']['2011']     = (  0.244,   0. ) # (  0.242,   0. )
+        splitConstr['timeResFrac2']['2012']     = (  0.239,   0. ) # (  0.239,   0. )
+        splitConstr['sf_mean_offset']['2011']   = (  1.4207,  0. ) # (  1.4273,  0. )
+        splitConstr['sf_mean_offset']['2012']   = (  1.4811,  0. ) # (  1.4887,  0. )
+        splitConstr['sf_mean_slope']['2011']    = ( -2.85,    0. ) # ( -1.93,    0. )
+        splitConstr['sf_mean_slope']['2012']    = ( -4.96,    0. ) # ( -3.88,    0. )
+        splitConstr['sf_sigma_offset']['2011']  = (  0.3778,  0. ) # (  0.3857,  0. )
+        splitConstr['sf_sigma_offset']['2012']  = (  0.4057,  0. ) # (  0.4143,  0. )
+        splitConstr['sf_sigma_slope']['2011']   = ( -1.55,    0. ) # ( -0.63,    0. )
+        splitConstr['sf_sigma_slope']['2012']   = ( -2.88,    0. ) # ( -2.80,    0. )
         if runPeriods in [ '2011', '2012' ] :
             self['externalConstr']['betaTimeEff']     = splitConstr['betaTimeEff']     [runPeriods]
             self['externalConstr']['sf_placeholder']  = splitConstr['sf_placeholder'][runPeriods]
@@ -469,11 +472,11 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
 
         from P2VV.Imports import extConstraintValues
         extConstraintValues.setVal( 'DM',      ( 17.768,  0.024   ) )
-        extConstraintValues.setVal( 'P0OS',    (  0.3853, 0.0044, 0.3853 ) )
+        extConstraintValues.setVal( 'P0OS',    (  0.3791, 0.0044, 0.3791 ) )
         extConstraintValues.setVal( 'P1OS',    (  1.00,   0.035  ) )
         extConstraintValues.setVal( 'DelP0OS', (  0.0140, 0.0012 ) )
         extConstraintValues.setVal( 'DelP1OS', (  0.066,  0.012  ) )
-        extConstraintValues.setVal( 'P0SS',    (  0.450,  0.005, 0.450 ) )
+        extConstraintValues.setVal( 'P0SS',    (  0.445,  0.005, 0.445 ) )
         extConstraintValues.setVal( 'P1SS',    (  1.00,   0.09   ) )
         extConstraintValues.setVal( 'DelP0SS', ( -0.016,  0.002  ) )
         extConstraintValues.setVal( 'DelP1SS', (  0.007,  0.019  ) )

@@ -414,7 +414,7 @@ def makeAssymetryPlot( canv, frame, refHist, numOfFrames, yRange=[], save=False 
   
     # grab reference histogram
     for h in HistList: 
-        if h.GetName()==refHist: hRef = h
+        if refHist in h.GetName(): hRef = h
     if not hRef: assert False, 'P2VV - ERROR: makeAssymetryPlot(): Cannot find reference histogram.'
     HistList.remove(hRef)
     
