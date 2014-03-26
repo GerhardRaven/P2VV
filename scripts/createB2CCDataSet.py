@@ -2,8 +2,8 @@
 ## script settings ##
 #####################
 
-nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs2JpsiPhi_2011_2012_s20_dv33r6p1_20140213_tupleB_selTrig_TOS.root'
-#nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_hope_the_last_one_add.root'
+#nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs2JpsiPhi_2011_2012_s20_dv33r6p1_20140213_tupleB_selTrig_TOS.root'
+nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_hope_the_last_one_add_20140309.root'
 #nTupleFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_MC2011_Sim08a_ntupleB_20130909_add.root'
 #nTupleFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_MC2012_ntupleB_20130904_add.root'
 nTupleName       = 'DecayTree'
@@ -77,10 +77,10 @@ KKMMin  = KKMassBinBounds[0]
 KKMMax  = KKMassBinBounds[-1]
 
 obsKeys = [#  'sWeights_ipatia'
-           #  'wMC'
-           #, 'firstData', 'polarity'
-             'runPeriod'
-           , 'mass', 'KKMass'#, 'mumuMass'
+             'wMC'
+           , 'firstData', 'hlt2_prescale', 'polarity'
+           , 'runPeriod'
+           , 'mass', 'KKMass', 'mumuMass'
            , 'time', 'timeRes'
            #, 'truetime'
            , 'ctk', 'ctl', 'phih'
@@ -105,6 +105,7 @@ if addTrackMomenta :
 obsDict = dict(  runPeriod = ( 'runPeriod',            'run period', dict( [ ( 'p%d' % period, period ) for period in runPeriods ] ) )
                , wMC       = ( 'wMC',                  'pbkgWeight',              '',          0.,     -RooInf, +RooInf     )
                , firstData = ( 'firstData',            'first data',      { 'first' : +1, 'later' : 0 }                     )
+               , hlt2_prescale = ( 'hlt2_prescale',    'HLT2 prescale',   { 'presc' : +1, 'noPresc' : 0, 'notDef1' : -1, 'notDef2' : -2 } )
                , polarity  = ( 'polarity',             'magnet polarity', { 'up' : +1, 'down' : -1, 'noPol' : 0 }           )
                , mass      = ( 'mass',                 'm(J/#psi K^{+}K^{-})',    'MeV/c^{2}', 5368.,  5200.,   5550.       )
                , mumuMass  = ( 'mdau1',                'm(#mu^{+}#mu^{-})',       'MeV/c^{2}', 3096.,  3030.,   3150.       )
@@ -275,7 +276,7 @@ from P2VV.Imports import cutSelStrings
 ntupleCuts = cutSelStrings[dataCuts]
 ntupleCuts = ntupleCuts.replace('sel == 1', 'sel_daughter1 && sel_qualitycut && sel_clonecut')
 if dataSample == 'Summer2011' :
-    ntupleCuts = 'runNumber > 87219 && runNumber < 94386' + ( ' && ' if ntupleCuts else '' ) + ntupleCuts
+    ntupleCuts = 'runNumber >= 87219 && runNumber <= 94386' + ( ' && ' if ntupleCuts else '' ) + ntupleCuts
 elif dataSample and type(dataSample) == str : ntupleCuts += ( ' && ' if ntupleCuts else '' ) + dataSample
 
 from P2VV.Imports import triggerSelStrings

@@ -48,7 +48,7 @@ class Gamma_LifetimeParams( LifetimeParams ) :
         else :
             # include "upper decay-time efficiency" effect in PDF: exp(-Gamma*t) --> exp(+beta*t) * exp(-Gamma*t) = exp(-(Gamma-beta)*t)
             self._parseArg( 'betaTimeEff', kwargs, Title = 'Upper time efficiency factor', Unit = 'ps^{-1}', Value = BetaTimeEffVal
-                           , Error = BetaTimeEffErr, MinMax = ( -RooInf, +RooInf ) )
+                           , Error = BetaTimeEffErr, MinMax = ( -0.3, +0.3 ) )
             self._parseArg( 'timeEffGamma', kwargs, Title = 'Efficiency corrected Gamma', Formula = '@0-@1'
                            , Arguments = [ self._Gamma, self._betaTimeEff ], ObjectType = 'FormulaVar' )
 

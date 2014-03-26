@@ -42,10 +42,10 @@ RooExplicitNormPdf::RooExplicitNormPdf(const char *name, const char* title,
   _parSet("parSet", "parameters set", this),
   _functionOrig(&function),
   _normFuncOrig(&normFunc),
+  _functionClones(0),
+  _normFuncClones(0),
   _function(0),
   _normFunc(0),
-  _functionInteg(0),
-  _normFuncInteg(0),
   _normFactor(normFactor),
   _projData(0)
 {
@@ -62,10 +62,10 @@ RooExplicitNormPdf::RooExplicitNormPdf(const char *name, const char* title,
   _parSet("parSet", "parameters set", this),
   _functionOrig(&function),
   _normFuncOrig(&normFunc),
+  _functionClones(0),
+  _normFuncClones(0),
   _function(0),
   _normFunc(0),
-  _functionInteg(0),
-  _normFuncInteg(0),
   _normFactor(normFactor),
   _projData(&projectionData)
 {
@@ -83,10 +83,10 @@ RooExplicitNormPdf::RooExplicitNormPdf(const char *name, const char* title,
   _parSet("parSet", "parameters set", this),
   _functionOrig(&function),
   _normFuncOrig(&normFunc),
+  _functionClones(0),
+  _normFuncClones(0),
   _function(0),
   _normFunc(0),
-  _functionInteg(0),
-  _normFuncInteg(0),
   _normFactor(normFactor),
   _projData(0),
   _intRangeFunc(intRangeFunc),
@@ -106,10 +106,10 @@ RooExplicitNormPdf::RooExplicitNormPdf(const char *name, const char* title,
   _parSet("parSet", "parameters set", this),
   _functionOrig(&function),
   _normFuncOrig(&normFunc),
+  _functionClones(0),
+  _normFuncClones(0),
   _function(0),
   _normFunc(0),
-  _functionInteg(0),
-  _normFuncInteg(0),
   _normFactor(normFactor),
   _projData(&projectionData),
   _intRangeFunc(intRangeFunc),
@@ -127,10 +127,10 @@ RooExplicitNormPdf::RooExplicitNormPdf(const RooExplicitNormPdf& other,
   _parSet("parSet", this, other._parSet),
   _functionOrig(other._functionOrig),
   _normFuncOrig(other._normFuncOrig),
+  _functionClones(0),
+  _normFuncClones(0),
   _function(0),
   _normFunc(0),
-  _functionInteg(0),
-  _normFuncInteg(0),
   _normFactor(other._normFactor),
   _projData(other._projData),
   _intRangeFunc(other._intRangeFunc),
@@ -140,8 +140,14 @@ RooExplicitNormPdf::RooExplicitNormPdf(const RooExplicitNormPdf& other,
 //_____________________________________________________________________________
 RooExplicitNormPdf::~RooExplicitNormPdf()
 {
-  if (_function != 0 && _function != _functionOrig) delete _function;
-  if (_normFunc != 0 && _normFunc != _normFuncOrig) delete _normFunc;
+  if (_functionClones != 0) {
+    _functionClones->removeAll();
+    delete _functionClones;
+  }
+  if (_normFuncClones != 0) {
+    _normFuncClones->removeAll();
+    delete _normFuncClones;
+  }
 }
 
 //_____________________________________________________________________________
@@ -218,51 +224,46 @@ void RooExplicitNormPdf::initFunctions() const
 {
   _functionOrig->getVal();
   _normFuncOrig->getVal();
-  if (_function != 0 && _function != _functionOrig) {
-    delete _function;
-    _function = 0;
+
+  // make a clone of the function
+  RooAbsReal* funcClone = 0;
+  if (_functionClones != 0) {
+    _functionClones->removeAll();
+    delete _functionClones;
   }
-  if (_normFunc != 0 && _normFunc != _normFuncOrig) {
-    delete _normFunc;
-    _normFunc = 0;
-  }
-  if (_functionInteg != 0 && _functionInteg != _functionOrig) {
-    delete _functionInteg;
-    _functionInteg = 0;
-  }
-  if (_normFuncInteg != 0 && _normFuncInteg != _normFuncOrig) {
-    delete _normFuncInteg;
-    _normFuncInteg = 0;
+  _functionClones = (RooArgSet*)RooArgSet(*_functionOrig).snapshot(kTRUE);
+  if (!_functionClones) {
+    coutE(Eval) << "RooExplicitNormPdf::initFunctions(" << GetName()
+        << "): Couldn't deep-clone the function" << std::endl;
+    assert(0);
+    _functionClones = new RooArgSet;
+    funcClone = (RooAbsReal*)_functionOrig->clone(_functionOrig->GetName());
+  } else {
+    funcClone = (RooAbsReal*)_functionClones->find(_functionOrig->GetName());
   }
 
-  // create customizers for the function and normalization function
-  RooCustomizer funcCust(*_functionOrig, "function");
-  RooCustomizer normCust(*_normFuncOrig, "normFunc");
-
-  RooArgSet* funcObsSet = _functionOrig->getVariables();
-  RooArgSet* normObsSet = _normFuncOrig->getVariables();
-  RooAbsArg* obs = 0;
+  // make a clone of the normalization function
+  RooAbsReal* normClone = 0;
+  if (_normFuncClones != 0) {
+    _normFuncClones->removeAll();
+    delete _normFuncClones;
+  }
+  _normFuncClones = (RooArgSet*)RooArgSet(*_normFuncOrig).snapshot(kTRUE);
+  if (!_normFuncClones) {
+    coutE(Eval) << "RooExplicitNormPdf::initFunctions(" << GetName()
+        << "): Couldn't deep-clone the normalization function" << std::endl;
+    assert(0);
+    _normFuncClones = new RooArgSet;
+    normClone = (RooAbsReal*)_normFuncOrig->clone(_normFuncOrig->GetName());
+  } else {
+    normClone = (RooAbsReal*)_normFuncClones->find(_normFuncOrig->GetName());
+  }
 
   // replace observables in functions by observables in our set
-  RooFIter obsIter = _obsSet.fwdIterator();
-  while ((obs = (RooAbsArg*)obsIter.next()) != 0) {
-    RooAbsArg* obsFunc = funcObsSet->find(obs->GetName());
-    if (obsFunc != 0) funcCust.replaceArg(*obsFunc, *obs);
-    obsFunc = normObsSet->find(obs->GetName());
-    if (obsFunc != 0) normCust.replaceArg(*obsFunc, *obs);
-  }
-
+  RooArgSet redirectSet(_obsSet);
   if (_projData) {
     // replace observables in functions by observables in projection data set
-    obsIter = _projData->get()->fwdIterator();
-    while ((obs = (RooAbsArg*)obsIter.next()) != 0) {
-      if (_obsSet.find(obs->GetName()) != 0) continue;
-
-      RooAbsArg* obsFunc = funcObsSet->find(obs->GetName());
-      if (obsFunc != 0) funcCust.replaceArg(*obsFunc, *obs);
-      obsFunc = normObsSet->find(obs->GetName());
-      if (obsFunc != 0) normCust.replaceArg(*obsFunc, *obs);
-    }
+    redirectSet.add(*_projData->get());
 
     coutI(Eval) << "RooExplicitNormPdf::initFunctions(" << GetName()
         << "): evaluating integral as a data-weighted average with data set \""
@@ -271,50 +272,47 @@ void RooExplicitNormPdf::initFunctions() const
     coutI(Eval) << "conditional observables: ";
     _projData->get()->Print();
   }
-
-  delete funcObsSet;
-  delete normObsSet;
-
-  // build functions with replaced observables
-  _functionInteg = (RooAbsReal*)funcCust.build();
-  _normFuncInteg = (RooAbsReal*)normCust.build();
-  funcObsSet = _functionInteg->getVariables();
-  normObsSet = _normFuncInteg->getVariables();
+  funcClone->recursiveRedirectServers(redirectSet, kFALSE, kFALSE, kFALSE);
+  normClone->recursiveRedirectServers(redirectSet, kFALSE, kFALSE, kFALSE);
 
   // integrate function
-  RooArgSet funcIntSet;
-  obsIter = _intObsSet.fwdIterator();
+  RooArgSet intSet;
+  RooArgSet* funcObsSet = funcClone->getVariables();
+  RooFIter obsIter = _intObsSet.fwdIterator();
+  RooAbsArg* obs = 0;
   while ((obs = (RooAbsArg*)obsIter.next()) != 0) {
     RooAbsArg* obsFunc = funcObsSet->find(obs->GetName());
-    if (obsFunc != 0) funcIntSet.add(*obsFunc);
+    if (obsFunc != 0) intSet.add(*obsFunc);
   }
-  if (funcIntSet.getSize() > 0) {
-    _function = _functionInteg->createIntegral(funcIntSet, 0, 0,
+  if (intSet.getSize() > 0) {
+    _function = funcClone->createIntegral(intSet, 0, 0,
         (_intRangeFunc.Length() > 0 ? _intRangeFunc.Data() : 0));
+    _functionClones->addOwned(*_function);
   } else {
-    _function = _functionInteg;
+    _function = funcClone;
   }
+  delete funcObsSet;
 
   // integrate normalization function
-  RooArgSet normIntSet;
+  intSet.removeAll();
+  RooArgSet* normObsSet = normClone->getVariables();
   obsIter = _obsSet.fwdIterator();
   while ((obs = (RooAbsArg*)obsIter.next()) != 0) {
     RooAbsArg* obsFunc = normObsSet->find(obs->GetName());
-    if (obsFunc != 0) normIntSet.add(*obsFunc);
+    if (obsFunc != 0) intSet.add(*obsFunc);
   }
   obsIter = _intObsSet.fwdIterator();
   while ((obs = (RooAbsArg*)obsIter.next()) != 0) {
     RooAbsArg* obsFunc = normObsSet->find(obs->GetName());
-    if (obsFunc != 0) normIntSet.add(*obsFunc);
+    if (obsFunc != 0) intSet.add(*obsFunc);
   }
-  if (normIntSet.getSize() > 0) {
-    _normFunc = _normFuncInteg->createIntegral(normIntSet, 0, 0,
+  if (intSet.getSize() > 0) {
+    _normFunc = normClone->createIntegral(intSet, 0, 0,
         (_intRangeNorm.Length() > 0 ? _intRangeNorm.Data() : 0));
+    _normFuncClones->addOwned(*_normFunc);
   } else {
-    _normFunc = _normFuncInteg;
+    _normFunc = normClone;
   }
-
-  delete funcObsSet;
   delete normObsSet;
 
   // print functions
