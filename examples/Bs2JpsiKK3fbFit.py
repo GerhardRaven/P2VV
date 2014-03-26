@@ -10,20 +10,21 @@ parser.add_argument( '--model', '-m', default = 'lamb_phi' )  # 'phi' / 'lamb_ph
 parser.add_argument( '--blind', '-b', default = True )
 parser.add_argument( '--fixLowAcc', '-l', default = True )
 parser.add_argument( '--fixUpAcc', '-u', default = False )
-parser.add_argument( '--fixTagging', '-ta', default = False )
+parser.add_argument( '--fixTagging', '-a', default = False )
 parser.add_argument( '--numCPU', '-c', type = int, default = 2 )
-parser.add_argument( '--runMinos', '-mi', default = '' )
-parser.add_argument( '--minosPars', '-mp', default = None )
+parser.add_argument( '--runHesse', '-e', default = True )
+parser.add_argument( '--runMinos', '-s', default = '' )
+parser.add_argument( '--minosPars', '-p', default = None )
 parser.add_argument( '--dataPath', '-d', default = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14' )
 parser.add_argument( '--workPath', '-w', default = '/project/bfys/jleerdam/softDevel/P2VV2/test' )
 parser.add_argument( '--dataSetFile', '-f', default = 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140309.root' )
-parser.add_argument( '--accDataSetFile', '-af', default =  'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_20140309.root' )
+parser.add_argument( '--accDataSetFile', '-g', default =  'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_20140309.root' )
 parser.add_argument( '--dataSetName', '-n', default = 'JpsiKK_sigSWeight' )
 parser.add_argument( '--parFileIn', '-i' )
 parser.add_argument( '--parFileOut', '-o' )
-parser.add_argument( '--timeAccFile2011', '-t11', default = 'timeAcceptanceFit_2011.root' )
-parser.add_argument( '--timeAccFile2012', '-t12', default = 'timeAcceptanceFit_2012.root' )
-parser.add_argument( '--angAccFile', '-a', default = 'angEffNominalRew_moms.par' )
+parser.add_argument( '--timeAccFile2011', '-x', default = 'timeAcceptanceFit_2011.root' )
+parser.add_argument( '--timeAccFile2012', '-y', default = 'timeAcceptanceFit_2012.root' )
+parser.add_argument( '--angAccFile', '-z', default = 'angEffNominalRew_moms.par' )
 
 args = parser.parse_args()
 assert args.model in [ 'phi', 'lamb_phi', 'polarDep' ]
@@ -32,6 +33,7 @@ fixLowAcc = False if not args.fixLowAcc or str( args.fixLowAcc ).lower() in [ 'f
 fixUpAcc = False if not args.fixUpAcc or str( args.fixUpAcc ).lower() in [ 'false', '0' ] else True
 fixTagging = False if not args.fixTagging or str( args.fixTagging ).lower() in [ 'false', '0' ] else True
 assert type(args.numCPU) == int and args.numCPU > 0 and args.numCPU < 20
+runHesse = False if not args.runHesse or str( args.runHesse ).lower() in [ 'false', '0' ] else True
 minosPars = args.minosPars.split(',') if args.minosPars and str(args.minosPars) != 'None' else [ ]
 runMinos = False if ( args.runMinos == '' and not minosPars ) or str( args.runMinos ).lower() in [ 'false', '0' ] else True
 dataPath = args.dataPath
@@ -66,6 +68,7 @@ print '  fix lower decay-time acceptance: %s' % ( 'true' if fixLowAcc else 'fals
 print '  fix upper decay-time acceptance: %s' % ( 'true' if fixUpAcc  else 'false' )
 print '  fix tagging calibration: %s' % ( 'true' if fixTagging else 'false' )
 print '  number of cores: %d' % args.numCPU
+print '  run Hesse: %s' % ( 'true' if runHesse else 'false' )
 print '  run Minos: %s' % ( 'true' if runMinos else 'false' )
 print '  Minos parameters:', ', '.join( '"%s"' % par for par in minosPars )
 print '  data path: %s' % dataPath
@@ -78,6 +81,10 @@ print '  output parameter file: %s' % parFileOut
 print '  time acceptance file 2011: %s' % timeAccFile2011
 print '  time acceptance file 2012: %s' % timeAccFile2012
 print '  angular acceptance file: %s' % angAccFile
+
+# clear command-line options
+import sys
+sys.argv = sys.argv[ 0 : 1 ]
 
 # PDF options
 from math import pi
@@ -107,7 +114,7 @@ if fixUpAcc :
     for it, sett in enumerate( pdfConfig['externalConstr']['betaTimeEff'] ) :
         per = sett[0]['runPeriod']
         assert per in [ [ 'p2011' ], [ 'p2012' ] ]
-        pdfConfig['externalConstr']['betaTimeEff'][it] = ( sett[0], ( -0.008639, 0. ) if per == [ 'p2011' ] else ( -0.012669, 0. ) )
+        pdfConfig['externalConstr']['betaTimeEff'][it] = ( sett[0], ( -0.008636559, 0. ) if per == [ 'p2011' ] else ( -0.012665049, 0. ) )
         #pdfConfig['externalConstr']['betaTimeEff'][it] = ( sett[0], ( -0.0090, 0. ) if per == [ 'p2011' ] else ( -0.0124, 0. ) )
 
 if fixTagging :
@@ -191,7 +198,7 @@ if minosPars :
 from P2VV.Utilities.DataHandling import correctWeights
 fitData = correctWeights( dataSet, [ 'runPeriod', 'KKMassCat' ] )
 fitResult = pdf.fitTo( fitData, SumW2Error = False, Save = True, NumCPU = args.numCPU, Optimize = 2, Timer = True, Minimizer = 'Minuit2'
-                      , Strategy = 1, Offset = True, Minos = minosPars )
+                      , Strategy = 1, Offset = True, Hesse = runHesse, Minos = minosPars )
 
 if pdfConfig['lambdaCPParam'] == 'observables_CPVDecay' :
     from P2VV.Imports import parNames, parValuesCPVDecay as parValues
