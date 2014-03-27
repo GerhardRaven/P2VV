@@ -127,6 +127,8 @@ class PdfConfiguration( dict ) :
         return fitStatus
 
     def writeParametersToFile( self, filePath = 'parameters', **kwargs ) :
+        verb = kwargs.pop( 'Verbose', True )
+
         # get arguments
         fileFormat = kwargs.pop( 'Format', '' )
         assert fileFormat in [ '', 'common' ]\
@@ -199,8 +201,9 @@ class PdfConfiguration( dict ) :
         parFile.write(cont)
         parFile.close()
 
-        print 'P2VV - INFO: PdfConfiguration.writeParametersToFile(): %d parameter%s written to file \"%s\"'\
-                % ( numPars, '' if numPars == 1 else 's', filePath )
+        if verb :
+            print 'P2VV - INFO: PdfConfiguration.writeParametersToFile(): %d parameter%s written to file \"%s\"'\
+                  % ( numPars, '' if numPars == 1 else 's', filePath )
 
 
 # B_s^0 -> J/psi phi analysis configuration
