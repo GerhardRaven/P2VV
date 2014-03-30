@@ -827,10 +827,12 @@ class RealMomentsBuilder ( dict ) :
         coefs    = [ ]
         effFuncs = [ ]
         coefName = kwargs.pop( 'CoefName', 'effC' )
-        from P2VV.RooFitWrappers import ConstVar
+        constCoefs = kwargs.pop( 'ConstCoefs', True )
+        from P2VV.RooFitWrappers import ConstVar, RealVar
         for funcName, coef, effFunc in self._iterFuncAndCoef( Names = 'p2vvab.*' ) :
             name = ( '%s_%d%d%d' % ( ( coefName, ) + tuple( self._basisFuncIndices[funcName] ) ) ).replace( '-', 'm' )
-            coefs.append( ConstVar( Name = name, Value = coef[0] ) )
+            coefs.append( ConstVar( Name = name, Value = coef[0] ) if constCoefs\
+                          else RealVar( Name = name, Value = coef[0], Constant = True ) )
             effFuncs.append(effFunc)
 
         bases = [ ]

@@ -259,10 +259,11 @@ class Bs2Jpsiphi_PdfConfiguration( PdfConfiguration ) :
         self['timeEffData']       = dict( file = 'timeEffData.root', name = 'JpsiKK_sigSWeight' )
         self['timeEffParameters'] = { }
 
-        self['transAngles']     = False        # use transversity angles?
-        self['anglesEffType']   = 'weights'    # '' / 'weights' / 'basis012' / 'basis012Plus' / 'basis012Thetal' / 'basis0123' / 'basis01234' / 'basisSig3' / 'basisSig4'
-        self['angEffMomsFiles'] = ''
-        self['angularRanges']   = dict( cpsi = [ ], ctheta = [ ], phi = [ ] )
+        self['transAngles']      = False        # use transversity angles?
+        self['anglesEffType']    = 'weights'    # '' / 'weights' / 'basis012' / 'basis012Plus' / 'basis012Thetal' / 'basis0123' / 'basis01234' / 'basisSig3' / 'basisSig4'
+        self['constAngEffCoefs'] = True         # make angular efficiency coefficients ConstVars?
+        self['angEffMomsFiles']  = ''
+        self['angularRanges']    = dict( cpsi = [ ], ctheta = [ ], phi = [ ] )
 
         self['sigTaggingType']   = 'tagUntag'    # 'histPdf' / 'tagUntag' / 'tagCats' / 'tagUntagRelative' / 'tagCatsRelative'
         self['tagPdfType']       = ''
@@ -605,7 +606,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         for par in [ 'sFit', 'KKMassBinBounds', 'obsDict', 'CSPValues', 'condTagging', 'contEstWTag', 'SSTagging', 'transAngles'
                     , 'numEvents', 'sigFrac', 'paramKKMass', 'amplitudeParam', 'ASParam', 'signalData', 'fitOptions', 'parNamePrefix'
                     , 'tagPdfType', 'timeEffType', 'timeEffHistFiles', 'timeEffData', 'timeEffParameters', 'anglesEffType'
-                    , 'angEffMomsFiles', 'readFromWS', 'splitParams', 'externalConstr', 'runPeriods', 'timeEffConstraintType' ] :
+                    , 'constAngEffCoefs', 'angEffMomsFiles', 'readFromWS', 'splitParams', 'externalConstr', 'runPeriods'
+                    , 'timeEffConstraintType' ] :
             self[par] = getKWArg( self, { }, par )
 
         from P2VV.Parameterizations.GeneralUtils import setParNamePrefix, getParNamePrefix
@@ -2145,6 +2147,7 @@ def multiplyByAngularAcceptance( pdf, self, **kwargs ) :
     angleFuncs     = getKWArg( self, kwargs, 'angleFuncs' )
     parNamePrefix  = getKWArg( self, kwargs, 'parNamePrefix', '' )
     coefNamePF     = getKWArg( self, kwargs, 'coefNamePF', '' )
+    constCoefs     = getKWArg( self, kwargs, 'constAngEffCoefs', True )
 
     print 'P2VV - INFO: multiplyByAngularAcceptance(): multiplying PDF "%s" with angular efficiency moments from file "%s"'\
           % ( pdf.GetName(), angEffMomsFile )
@@ -2155,8 +2158,8 @@ def multiplyByAngularAcceptance( pdf, self, **kwargs ) :
     moments.appendPYList( angleFuncs.angles, angularMomentIndices( anglesEffType, angleFuncs ) )
     moments.read(angEffMomsFile)
     moments.Print()
-    moments.multiplyPDFWithEff( pdf, CoefName = parNamePrefix + ( '_' if parNamePrefix else '' ) + 'effC'\
-                                                + ( '_' if coefNamePF else '' ) + coefNamePF )
+    moments.multiplyPDFWithEff( pdf, ConstCoefs = constCoefs, CoefName = parNamePrefix + ( '_' if parNamePrefix else '' ) + 'effC'\
+                                                                         + ( '_' if coefNamePF else '' ) + coefNamePF )
 
     return pdf
 

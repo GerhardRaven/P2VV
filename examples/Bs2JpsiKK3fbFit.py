@@ -25,6 +25,7 @@ parser.add_argument( '--parFileOut', '-o' )
 parser.add_argument( '--timeAccFile2011', '-x', default = 'timeAcceptanceFit_2011.root' )
 parser.add_argument( '--timeAccFile2012', '-y', default = 'timeAcceptanceFit_2012.root' )
 parser.add_argument( '--angAccFile', '-z', default = 'angEffNominalRew_moms.par' )
+parser.add_argument( '--constAngAcc', '-q', default = True )
 
 args = parser.parse_args()
 assert args.model in [ 'phi', 'lamb_phi', 'polarDep' ]
@@ -44,7 +45,8 @@ dataSetFile = dataPath + args.dataSetFile
 accDataSetFile = dataPath + args.accDataSetFile
 parFileIn = args.parFileIn
 if parFileIn == None :
-    parFileIn = workPath + '20112012Reco14DataFitValues_6KKMassBins%s.par' % ( '_CPVDecay' if args.model == 'polarDep' else '' )
+    parFileIn = workPath + '20112012Reco14DataFitValues_6KKMassBins%s.par'\
+                           % ( '_CPVDecay' if args.model == 'polarDep' else '_fixedLamb' if args.model == 'phi' else '' )
 elif parFileIn :
     parFileIn = workPath + parFileIn
 parFileOut = args.parFileOut
@@ -57,6 +59,7 @@ elif parFileOut :
 timeAccFile2011 = dataPath + args.timeAccFile2011
 timeAccFile2012 = dataPath + args.timeAccFile2012
 angAccFile = dataPath + args.angAccFile
+constAngAcc = False if not args.constAngAcc or str( args.constAngAcc ).lower() in [ 'false', '0' ] else True
 
 # print script settings
 print 'job parameters:'
@@ -81,6 +84,7 @@ print '  output parameter file: %s' % parFileOut
 print '  time acceptance file 2011: %s' % timeAccFile2011
 print '  time acceptance file 2012: %s' % timeAccFile2012
 print '  angular acceptance file: %s' % angAccFile
+print '  constant angular acceptance parameters: %s' % ( 'true' if constAngAcc else 'false' )
 
 # clear command-line options
 import sys
@@ -124,6 +128,7 @@ if fixTagging :
     pdfConfig['externalConstr']['wTagP1SS'] = ( 0.95813206, 0. )#( 1.,     0.00001 )
 
 pdfConfig['anglesEffType'] = 'weights'
+pdfConfig['constAngEffCoefs'] = constAngAcc
 pdfConfig['angEffMomsFiles'] = angAccFile
 
 
