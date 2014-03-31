@@ -103,7 +103,7 @@ elif pdfConfig['runPeriods'] == [ 2011, 2012 ] :
     #        = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
 
 pdfConfig['anglesEffType'] = 'weights' # 'basis012' # 'basisSig6'
-pdfConfig['constAngEffCoefs'] = False
+pdfConfig['constAngEffCoefs'] = True
 pdfConfig['angEffMomsFiles'] = dataPath + 'angEffNominalRew_moms.par' # 'angEffNominalRew_5thOrder.par' # 'angEffNominalRew_moms.par' # 'angEffNominalNoRew_moms.par' # 'Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
 #angEffMomsFiles = SimulCatSettings('angEffMomsFiles')
 #angEffMomsFiles.addSettings( [ 'KKMassCat' ], [ [ 'bin0', 'bin1', 'bin2' ] ]
