@@ -102,8 +102,11 @@ if pdfConfig['lambdaCPParam'] == 'observables_CPVDecay' :
     pdfConfig['splitParams']['KKMassCat'] = [ 'av' + par if par == 'f_S' else par for par in pdfConfig['splitParams']['KKMassCat'] ]
 
 pdfConfig['timeEffType'] = 'paper2012' if fixLowAcc else 'fit_uniformUB'
+#timeAccHistHLT1UB2011 = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+timeAccHistHLT1UB2011 = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
 pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file'] = timeAccFile2011
 pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] )['file'] = timeAccFile2012
+pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['hlt1UB'] = timeAccHistHLT1UB2011
 if pdfConfig['timeEffType'].startswith('fit') :
     from P2VV.Parameterizations.FullPDFs import SimulCatSettings
     pdfConfig['timeEffData']['file'] = accDataSetFile
