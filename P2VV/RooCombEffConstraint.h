@@ -37,7 +37,7 @@ public:
       const RooArgList& nu, const RooArgList& eps1A, const RooArgList& eps1B,
       const RooArgList& eps2A, const RooArgList& eps2B,
       const vector< vector<Double_t> >& sumW,
-      const vector< vector<Double_t> >& sumWSq);
+      const vector< vector<Double_t> >& sumWSq, Int_t strategy = 0);
 
   RooCombEffConstraint(const RooCombEffConstraint& other, const char* name=0);
 
@@ -55,6 +55,8 @@ public:
 
   virtual Double_t getLogVal(const RooArgSet* nset = 0) const;
 
+  virtual Int_t strategy() const {return _strat;}
+
   virtual const RooArgList& nu()    const {return _nu;   }
   virtual const RooArgList& eps1A() const {return _eps1A;}
   virtual const RooArgList& eps1B() const {return _eps1B;}
@@ -70,6 +72,7 @@ private:
   inline Double_t nuNorm(const Double_t nu, const Double_t sumW,
       std::vector<Double_t>& normFac, const Int_t ind) const;
 
+  Int_t _strat;
   RooListProxy _nu;
   RooListProxy _eps1A;
   RooListProxy _eps1B;

@@ -393,7 +393,7 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
             constraints.add(EffConstraint(Name = constraint_name, **args))
         return constraints
 
-    def build_poisson_constraints(self, data, observables):
+    def build_poisson_constraints(self, data, observables, strategy = 1):
         # get acceptance parameters and observables
         from collections import defaultdict
         binning = self._shape.base_binning()
@@ -447,7 +447,7 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
         self.__bc.run()
 
         # create a dictionary of constraint arguments
-        constrArgs = dict(Name = '%s_poisson' % prefix, NumBins = numBins, Parameters = {},
+        constrArgs = dict(Name = '%s_poisson' % prefix, Strategy = strategy, NumBins = numBins, Parameters = {},
                           SumW = dict([(n, self.__bc.get_bins('all', catStates[n])) for n in combCats]),
                           SumWSq = dict([(n, self.__bc.get_binsSq('all', catStates[n])) for n in combCats]))
 

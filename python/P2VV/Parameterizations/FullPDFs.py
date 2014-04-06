@@ -252,7 +252,7 @@ class Bs2Jpsiphi_PdfConfiguration( PdfConfiguration ) :
         self['timeResType']        = ''               # '' / 'event' / 'eventNoMean' / 'eventConstMean' / '3Gauss' / 'event3fb'
         self['constrainTResScale'] = ''               # '' / 'constrain' / 'fixed'
         self['timeEffType']        = 'paper2012'      # 'HLT1Unbiased' / 'HLT1ExclBiased' / 'paper2012' / 'fit'
-        self['timeEffConstraintType'] = 'poisson'     # 'poisson' / 'multinomial' / 'average'
+        self['timeEffConstraintType'] = 'poisson'     # 'poisson' / 'poisson_minimal' / 'multinomial' / 'average'
         self['constrainDeltaM']    = ''               # '' / 'constrain' / 'fixed'
 
         self['timeEffHistFiles']  = { }
@@ -1014,7 +1014,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                     ]
                                     )
                                )
-        if 'acceptance' in externalConstr and timeEffConstraintType in [ 'poisson', 'multinomial' ] :
+        if 'acceptance' in externalConstr and timeEffConstraintType in [ 'poisson', 'poisson_minimal', 'multinomial' ] :
             from P2VV.Utilities.DataHandling import readData
             data = readData( filePath = timeEffData['file'], dataSetName = timeEffData['name'],  NTuple = False, ImportIntoWS = False )
             constraints |= self.__eff_constraints(externalConstr, simulPdf, data, observables, timeEffConstraintType)
@@ -1067,16 +1067,18 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         # Time res model constraints include those form the acceptance
         constraints = set()
         acc_settings = externalConstr.pop('acceptance', None)
-        buildFunc = 'build_poisson_constraints' if type == 'poisson' else 'build_multinomial_constraints'
+        buildFunc = 'build_poisson_constraints' if type.startswith('poisson') else 'build_multinomial_constraints'
+        buildArgs = [data, observables]
+        if type.endswith('minimal') : buildArgs.append(2)
         if acc_settings and simulPdf:
             for (key, model) in self['timeResModels'].iteritems():
                 if key == 'prototype' or not hasattr(model, buildFunc):
                     continue
-                constraints |= getattr(model, buildFunc)(data, observables)
+                constraints |= getattr(model, buildFunc)(*tuple(buildArgs))
         elif acc_settings:
             acceptance = timeResModels['prototype']
             if hasattr(acceptance, buildFunc):
-                constraints |= getattr(acceptance, buildFunc)(data, observables)
+                constraints |= getattr(acceptance, buildFunc)(*tuple(buildArgs))
         return constraints
     
     def __av_eff_constraints(self, externalConstr, simulPdf):

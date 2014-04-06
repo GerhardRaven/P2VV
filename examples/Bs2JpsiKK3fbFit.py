@@ -19,6 +19,7 @@ parser.add_argument( '--dataPath', '-d', default = '/project/bfys/jleerdam/data/
 parser.add_argument( '--workPath', '-w', default = '/project/bfys/jleerdam/softDevel/P2VV2/test' )
 parser.add_argument( '--dataSetFile', '-f', default = 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140309.root' )
 parser.add_argument( '--accDataSetFile', '-g', default =  'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_20140309.root' )
+parser.add_argument( '--timeAccConstr', '-j', default = 'poisson' )
 parser.add_argument( '--dataSetName', '-n', default = 'JpsiKK_sigSWeight' )
 parser.add_argument( '--parFileIn', '-i' )
 parser.add_argument( '--parFileOut', '-o' )
@@ -43,6 +44,7 @@ if dataPath and dataPath[-1] != '/' : dataPath += '/'
 if workPath and workPath[-1] != '/' : workPath += '/'
 dataSetFile = dataPath + args.dataSetFile
 accDataSetFile = dataPath + args.accDataSetFile
+assert args.timeAccConstr in [ 'poisson', 'poisson_minimal', 'multinomial', 'average' ]
 parFileIn = args.parFileIn
 if parFileIn == None :
     parFileIn = workPath + '20112012Reco14DataFitValues_6KKMassBins%s.par'\
@@ -78,6 +80,7 @@ print '  data path: %s' % dataPath
 print '  work path: %s' % workPath
 print '  dataset file: %s' % dataSetFile
 print '  acceptance dataset file: %s' % accDataSetFile
+print '  time acceptance constraint: %s' % args.timeAccConstr
 print '  dataset name: %s' % args.dataSetName
 print '  input parameter file: %s' % parFileIn
 print '  output parameter file: %s' % parFileOut
@@ -108,6 +111,7 @@ pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file'
 pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] )['file'] = timeAccFile2012
 pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['hlt1UB'] = timeAccHistHLT1UB2011
 if pdfConfig['timeEffType'].startswith('fit') :
+    pdfConfig['timeEffConstraintType'] = args.timeAccConstr
     from P2VV.Parameterizations.FullPDFs import SimulCatSettings
     pdfConfig['timeEffData']['file'] = accDataSetFile
     pdfConfig['externalConstr']['acceptance'] = SimulCatSettings('acceptanceConstr')
