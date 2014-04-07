@@ -74,9 +74,11 @@
         <function name = "addSWeightToTree" />
         <function name = "addIntegerToTree" />
         <function name = "addFloatToTree" />
+        <function name = "addProductToTree" />
         <function name = "copyFloatInTree" />
         <function name = "addCategoryToTree" />
         <function name = "addVertexErrors" />
+        <function name = "addJpsiDLS" />
         <function name = "sigmaFromFT" />
         <function name = "hessian" />
         <function name = "hessian_with_errors" />

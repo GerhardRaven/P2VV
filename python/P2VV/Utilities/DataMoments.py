@@ -48,6 +48,11 @@ def angularMomentIndices( label,angleFuncs ) :
                 raise RuntimeError('P2VV - ERROR: angularMomentIndices: not a valid angular efficiency configuration with transversity angles: %s'\
                                    % multiplyByAngEff)
             return [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 4, 0 ) ]
+        if case('basisSig6') :
+            if transAngles :
+                raise RuntimeError('P2VV - ERROR: angularMomentIndices: not a valid angular efficiency configuration with transversity angles: %s'\
+                                   % multiplyByAngEff)
+            return [ ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 2, 2 ), ( 0, 4, 0 ), ( 4, 0, 0 ) ]
         raise RuntimeError('P2VV - ERROR: angularMomentIndices: not a valid angular efficiency configuration: %s'\
                                % label)
 
@@ -166,6 +171,7 @@ def printMoments( **kwargs ) :
 def writeMoments( filePath = 'moments', **kwargs ) :
     # parse arguments
     assert getMomentFuncArgs( 'writeMoments', kwargs ), 'P2VV - ERROR: writeMoments(): unable to parse function arguments'
+    verb = kwargs.pop( 'Verbose', True )
 
     # get file path and name
     filePath = filePath.strip()
@@ -237,13 +243,15 @@ def writeMoments( filePath = 'moments', **kwargs ) :
     momFile.write(cont)
     momFile.close()
 
-    print 'P2VV - INFO: writeMoments(): %d efficiency moment%s written to file \"%s\"'\
-            % ( numMoments, '' if numMoments == 1 else 's', filePath )
+    if verb :
+        print 'P2VV - INFO: writeMoments(): %d efficiency moment%s written to file \"%s\"'\
+              % ( numMoments, '' if numMoments == 1 else 's', filePath )
 
 
 def readMoments( filePath = 'moments', **kwargs ) :
     # parse arguments
     assert getMomentFuncArgs( 'readMoments', kwargs ), 'P2VV - ERROR: readMoments(): unable to parse function arguments'
+    verb = kwargs.pop( 'Verbose', True )
 
     # reset moments and correlations dictionaries
     if not kwargs['addFacs'] :
@@ -343,11 +351,13 @@ def readMoments( filePath = 'moments', **kwargs ) :
             assert len(kwargs['correlations']) == numMoments\
                    , 'P2VV - ERROR: readMoments(): number of rows in correlation matrix is not consistent with number of moments read'
 
-    print 'P2VV - INFO: readMoments(): %d efficiency moment%s read from file \"%s\"'\
-          % ( numMoments, '' if numMoments == 1 else 's', filePath )
+    if verb :
+        print 'P2VV - INFO: readMoments(): %d efficiency moment%s read from file \"%s\"'\
+              % ( numMoments, '' if numMoments == 1 else 's', filePath )
 
 
 def convertEffWeightsToMoments( Weights, **kwargs ) :
+    verb = kwargs.pop( 'Verbose', True )
     pols = [ '0 0', 'para para', 'perp perp', '0 para', '0 perp', 'para perp', 'S S', '0 S', 'para S', 'perp S' ]
     wNames = kwargs.pop( 'WeightNames'
                         , { '0 0' : 'Re_ang_A0_A0', 'para para' : 'Re_ang_Apar_Apar', 'perp perp' : 'Re_ang_Aperp_Aperp'
@@ -392,13 +402,13 @@ def convertEffWeightsToMoments( Weights, **kwargs ) :
     # get scale factor for moment coefficient
     scale = kwargs.pop( 'Scale', 1. )
 
-    if kwargs.pop( 'PrintMoments', True ) :
+    if verb or kwargs.pop( 'PrintMoments', verb ) :
         # print moments to screen
         printMoments( BasisFuncNames = momNames, Moments = moms, Scale = scale )
 
     if kwargs.get( 'OutputFilePath', '' ) :
         # write the moments to a file
-        writeMoments( kwargs.pop('OutputFilePath'), BasisFuncNames = momNames, Moments = moms, Scale = scale )
+        writeMoments( kwargs.pop('OutputFilePath'), BasisFuncNames = momNames, Moments = moms, Scale = scale, Verbose = verb )
 
     # check if there are remaining keyword arguments
     assert len(kwargs) == 0, 'P2VV - ERROR: convertEffWeightsToMoments(): unused keyword arguments: %s' % kwargs
@@ -822,10 +832,12 @@ class RealMomentsBuilder ( dict ) :
         coefs    = [ ]
         effFuncs = [ ]
         coefName = kwargs.pop( 'CoefName', 'effC' )
-        from P2VV.RooFitWrappers import ConstVar
+        constCoefs = kwargs.pop( 'ConstCoefs', True )
+        from P2VV.RooFitWrappers import ConstVar, RealVar
         for funcName, coef, effFunc in self._iterFuncAndCoef( Names = 'p2vvab.*' ) :
             name = ( '%s_%d%d%d' % ( ( coefName, ) + tuple( self._basisFuncIndices[funcName] ) ) ).replace( '-', 'm' )
-            coefs.append( ConstVar( Name = name, Value = coef[0] ) )
+            coefs.append( ConstVar( Name = name, Value = coef[0] ) if constCoefs\
+                          else RealVar( Name = name, Value = coef[0], Constant = True ) )
             effFuncs.append(effFunc)
 
         bases = [ ]

@@ -85,10 +85,10 @@ protected:
   RooSetProxy _parSet;
   const RooAbsReal* _functionOrig;
   const RooAbsReal* _normFuncOrig;
+  mutable RooArgSet* _functionClones; //!
+  mutable RooArgSet* _normFuncClones; //!
   mutable RooAbsReal* _function; //!
   mutable RooAbsReal* _normFunc; //!
-  mutable RooAbsReal* _functionInteg; //!
-  mutable RooAbsReal* _normFuncInteg; //!
   Double_t _normFactor;
   const RooAbsData* _projData;
   TString _intRangeFunc;

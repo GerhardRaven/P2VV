@@ -17,7 +17,7 @@ makeKKMassPlots     = False
 plotAnglesNoEff     = False
 corrSFitErr         = ( 'sumWeight', [ 'runPeriod', 'KKMassCat' ] )
 randomParVals       = ( ) #( 0.2, 12345 )
-dataPath            = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
+dataPath            = '/project/bfys/raaij/p2vv/data/' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
 
 plotsFile     = 'temp.ps'   #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.ps'
 plotsROOTFile = 'temp.root' #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.root'
@@ -30,11 +30,11 @@ if generateData :
 elif pdfConfig['sFit'] :
     dataSetName = 'JpsiKK_sigSWeight'
     if pdfConfig['runPeriods'] == [ 2011 ] :
-        dataSetFile = dataPath + 'P2VVDataSets2011Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
+        dataSetFile = dataPath + 'P2VVDataSets2011Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140309.root'
     elif pdfConfig['runPeriods'] == [ 2012 ] :
-        dataSetFile = dataPath + 'P2VVDataSets2012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
+        dataSetFile = dataPath + 'P2VVDataSets2012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140309.root'
     else :
-        dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
+        dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140309.root'
 else :
     dataSetName = 'JpsiKK'
     dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats.root'
@@ -72,16 +72,108 @@ constLambdaCP     = ''  # 'lamb'
 equalAbsLambdaCPs = False
 
 # PDF options
-pdfConfig['timeResType']       = 'event3fb' # 'eventNoMean'
-pdfConfig['timeEffType']       = 'paper2012' # 'fit_uniformUB' # 'paper2012' # 'HLT1Unbiased'
-pdfConfig['timeEffParameters'] = { } # dict(RandomBinOrder = False) # dict( Parameterization = 'Spline', Fit = False ) # dict( Fit = False, RandomBinOrder = False )
-pdfConfig['constrainBeta']     = ''  # '' / 'constrain' / 'fixed' / 'noBeta'
+pdfConfig['timeResType']           = 'event3fb' # 'eventNoMean'
+pdfConfig['timeEffType']           = 'paper2012' # 'fit_uniformUB' # 'paper2012' # 'HLT1Unbiased'
+pdfConfig['timeEffConstraintType'] = 'poisson'
+pdfConfig['timeEffParameters']     = { } # dict(RandomBinOrder = False) # dict( Parameterization = 'Spline', Fit = False ) # dict( Fit = False, RandomBinOrder = False )
+pdfConfig['constrainBeta']         = ''  # '' / 'constrain' / 'fixed' / 'noBeta'
 
-timeEffFile2011 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
-timeEffFile2012 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
-timeEffHist2011UB = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted' # 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached' # 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+timeEffFile2011 = dataPath + 'timeAcceptanceFit_2011.root' # 'Bs_HltPropertimeAcceptance_Data_2011_40bins_TOS.root'
+timeEffFile2012 = dataPath + 'timeAcceptanceFit_2012.root' # 'Bs_HltPropertimeAcceptance_Data_2012_40bins_TOS.root'
+timeEffHist2011UB = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached' # 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+
+from collections import defaultdict
+splitConstr = defaultdict(dict)
+if timeResSystType == 'mean_param':
+    pdfConfig['timeResType'] += '_mean_param'
+    splitConstr['mu_placeholder']['2011']  = (  0.0350, 0. )
+
+    ## offset differences
+    ## 2011 : -0.00075
+    ## 2012  : -0.0012
+    ## splitConstr['timeResMu']['2011']        = ( -0.00259 -0.00075, 0. )
+    ## splitConstr['timeResMu']['2012']        = ( -0.00333 -0.0012 , 0. )
+
+    splitConstr['timeResMu_offset']['2011'] = ( -0.00259 - 0.00075, 0. )
+    splitConstr['timeResMu_slope']['2011']  = ( -0.1742, 0. )
+    splitConstr['timeResMu_quad']['2011']   = ( -6.64, 0. )
+    
+    splitConstr['mu_placeholder']['2012']  =  (  0.0349, 0. )
+    splitConstr['timeResMu_offset']['2012'] = ( -0.00333 - 0.0012, 0. )
+    splitConstr['timeResMu_slope']['2012']  = ( -0.1953, 0. )
+    splitConstr['timeResMu_quad']['2012']   = ( -6.90, 0. )
+    split_runPeriod = set(pdfConfig['splitParams']['runPeriod'])
+    for pn in ('timeResMu',):
+        pdfConfig['externalConstr'].pop(pn)
+        pdfConfig['splitParams']['runPeriod'].remove(pn)
+    for par, vals in splitConstr.iteritems() :
+        if par not in split_runPeriod:
+            pdfConfig['splitParams']['runPeriod'].append(par)
+
+if pdfConfig['timeResType'].endswith('linear'):
+    from collections import defaultdict
+    splitConstr = defaultdict(dict)
+    splitConstr['sf_placeholder']['2011']  = (  0.0350, 0. )
+    splitConstr['sf_mean_offset']['2011']  = ( 0.04956, 0. )
+    splitConstr['sf_mean_slope']['2011']   = (   1.313, 0. )
+    splitConstr['timeResFrac2']['2011']    = (  0.2449, 0. )
+    splitConstr['sf_sigma_offset']['2011'] = ( 0.01302, 0. )
+    splitConstr['sf_sigma_slope']['2011']  = (  0.2668, 0. )
+
+    splitConstr['sf_placeholder']['2012']  =  (  0.0349, 0. )
+    splitConstr['sf_mean_offset']['2012']  =  ( 0.05139, 0. )
+    splitConstr['sf_mean_slope']['2012']   =  (   1.304, 0. )
+    splitConstr['timeResFrac2']['2012']    =  (   0.244, 0. )
+    splitConstr['sf_sigma_offset']['2012'] =  ( 0.01385, 0. )
+    splitConstr['sf_sigma_slope']['2012']  =  (   0.242, 0. )
+    for pn in ('sf_mean_quad', 'sf_sigma_quad'):
+        pdfConfig['externalConstr'].pop(pn)
+        pdfConfig['splitParams']['runPeriod'].remove(pn)
+    split_runPeriod = set(pdfConfig['splitParams']['runPeriod'])
+    for par, vals in splitConstr.iteritems() :
+        if par not in split_runPeriod:
+            pdfConfig['splitParams']['runPeriod'].append(par)
+
+if timeResSystType == 'quadratic_no_offset':
+    from collections import defaultdict
+    splitConstr = defaultdict(dict)
+    splitConstr['sf_placeholder']['2011']  = (  0.0350,  0. )
+    splitConstr['sf_mean_slope']['2011']   = (  1.427, 0. )
+    splitConstr['sf_mean_quad']['2011']    = ( -7.802, 0. )
+    splitConstr['timeResFrac2']['2011']    = ( 0.1572, 0. )
+    splitConstr['sf_sigma_slope']['2011']  = ( 0.3301, 0. )
+    splitConstr['sf_sigma_quad']['2011']   = (  2.755, 0. )
+
+    splitConstr['sf_placeholder']['2012']  =  (  0.0349,  0. )
+    splitConstr['sf_mean_slope']['2012']   =  (  1.435, 0. )
+    splitConstr['sf_mean_quad']['2012']    =  (  5.233, 0. )
+    splitConstr['timeResFrac2']['2012']    =  (  0.312, 0. )
+    splitConstr['sf_sigma_slope']['2012']  =  ( 0.2775, 0. )
+    splitConstr['sf_sigma_quad']['2012']   =  (  1.846, 0. )
+elif timeResSystType == 'linear':
+
+    splitConstr['sf_placeholder']['2011']  = (  0.0349, 0. )
+    splitConstr['sf_mean_offset']['2011']  = (  0.04499, 0. )
+    splitConstr['sf_mean_slope']['2011']   = (    1.285, 0. )
+    splitConstr['timeResFrac2']['2011']    = (   0.3254, 0. )
+    splitConstr['sf_sigma_offset']['2011'] = ( 0.009135, 0. )
+    splitConstr['sf_sigma_slope']['2011']  = (    0.261, 0. )
+    
+    splitConstr['sf_placeholder']['2012']  =  ( 0.0350, 0. )
+    splitConstr['sf_mean_offset']['2012']  =  (  0.04475, 0. )
+    splitConstr['sf_mean_slope']['2012']   =  (    1.282, 0. )
+    splitConstr['timeResFrac2']['2012']    =  (   0.4581, 0. )
+    splitConstr['sf_sigma_offset']['2012'] =  ( 0.006587, 0. )
+    splitConstr['sf_sigma_slope']['2012']  =  (   0.1887, 0. )
+
+for par, vals in splitConstr.iteritems() :
+    constr = SimulCatSettings( '%sConstr' % par )
+    constr.addSettings( [ 'runPeriod' ], [ [ 'p2011' ] ], vals['2011'] )
+    constr.addSettings( [ 'runPeriod' ], [ [ 'p2012' ] ], vals['2012'] )
+    pdfConfig['externalConstr'][par] = constr
+
 if pdfConfig['timeEffType'].startswith('fit') :
-    pdfConfig['timeEffData']['file'] = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats.root'
+    pdfConfig['timeEffData']['file'] = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_20140309.root'
     pdfConfig['externalConstr']['acceptance'] = SimulCatSettings('acceptanceConstr')
     pdfConfig['externalConstr']['acceptance'].addSettings(['runPeriod'], [['p2011']],
                                                           {('hlt1_excl_biased_dec', 'exclB') : (0.65, 0.01),
@@ -89,7 +181,6 @@ if pdfConfig['timeEffType'].startswith('fit') :
     pdfConfig['externalConstr']['acceptance'].addSettings(['runPeriod'], [['p2012']],
                                                           {('hlt1_excl_biased_dec', 'exclB') : (0.65, 0.01),
                                                            ('hlt2_biased', 'B') : (0.65, 0.01)})
-    pdfConfig['externalConstr']['betaTimeEff'][1] = ({'runPeriod': ['p2012']}, ( -0.0135, 0.004 ))
 
 if pdfConfig['runPeriods'] == [ 2011 ] :
     pdfConfig['timeEffHistFiles']['file'] = timeEffFile2011
@@ -103,8 +194,9 @@ elif pdfConfig['runPeriods'] == [ 2011, 2012 ] :
     #pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['hlt1UB']\
     #        = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
 
-pdfConfig['anglesEffType'] = 'weights'  # 'weights' # 'basis012' # 'basisSig4'
-pdfConfig['angEffMomsFiles'] = dataPath + 'angEffNominalRew_moms.par' # 'angEffNominalNoRew_moms.par' # 'Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
+pdfConfig['anglesEffType'] = 'weights' # 'basis012' # 'basisSig6'
+pdfConfig['constAngEffCoefs'] = True
+pdfConfig['angEffMomsFiles'] = dataPath + 'angEffNominalRew_moms.par' # 'angEffNominalRew_5thOrder.par' # 'angEffNominalRew_moms.par' # 'angEffNominalNoRew_moms.par' # 'Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
 #angEffMomsFiles = SimulCatSettings('angEffMomsFiles')
 #angEffMomsFiles.addSettings( [ 'KKMassCat' ], [ [ 'bin0', 'bin1', 'bin2' ] ]
 #                            , dataPath + 'Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK09901020_Phys_moms_norm'
@@ -159,8 +251,13 @@ if 'Parameterization' in pdfConfig['timeEffParameters'] and pdfConfig['timeEffPa
 #pdfConfig['externalConstr'].pop('betaTimeEff')
 #pdfConfig['externalConstr']['betaTimeEff'] = ( 0., 0. )
 #pdfConfig['externalConstr']['betaTimeEff'][1] = ( dict( runPeriod = [ 'p2012' ] ), ( -0.0135, 0.004 ) )
+#pdfConfig['externalConstr']['betaTimeEff'] = SimulCatSettings('betaConstr')
+#pdfConfig['externalConstr']['betaTimeEff'].addSettings( [ 'runPeriod' ], [ [ 'p2011' ] ], ( -0.0083, 0. ) )
+#pdfConfig['externalConstr']['betaTimeEff'].addSettings( [ 'runPeriod' ], [ [ 'p2012' ] ], ( -0.0083, 0. ) )
 #pdfConfig['splitParams']['runPeriod'].remove('betaTimeEff')
+#pdfConfig['splitParams']['runPeriod'].append('betaTimeEff')
 #pdfConfig['splitParams']['runPeriod'].append('Gamma')
+#pdfConfig['splitParams']['runPeriod'].remove('Gamma')
 
 #for par in [ 'tres_placeholder', 'timeResMu', 'timeResFrac2', 'sf_mean_offset', 'sf_mean_slope', 'sf_sigma_offset', 'sf_sigma_slope' ] :
 #    pdfConfig['splitParams']['runPeriod'].remove(par)
@@ -674,12 +771,16 @@ if doFit :
 
     if 'CPVDecay' in pdfConfig['lambdaCPParam'] :
         from P2VV.Imports import parNames, parValuesCPVDecay as parValues
+    elif 'lamb' in constLambdaCP.lower() :
+        from P2VV.Imports import parNames, parValuesFixLamb as parValues
     else :
         from P2VV.Imports import parNames, parValues
     print 'JvLFit: parameters:'
     fitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames, ParValues = parValues )
-    fitResult.covarianceMatrix().Print()
+    print 'JvLFit: correlation matrix:'
     fitResult.correlationMatrix().Print()
+    print 'JvLFit: covariance matrix:'
+    fitResult.covarianceMatrix().Print()
 
     print 120 * '=' + '\n'
 

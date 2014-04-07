@@ -333,11 +333,13 @@ def compareDataSets( canv, obs, data={}, dataOpts={}, frameOpts={}, **kwargs):
                                                            dataSet2   = dict( MarkerColor = 4, MarkerSize = 1 )  )
                                          frameOpts = dict( Bins = 100, Range=( lo, high ) )             
                                                            """
-    logy         = kwargs.pop( 'logy',        False ) 
-    RangeY       = kwargs.pop( 'RangeY',         [] )
-    titleY       = kwargs.pop( 'titleY',         '' )
-    statOn       = kwargs.pop( 'statOn',       False)
-    Xtitle       = kwargs.pop('xTitle',         ''  )
+    logy          = kwargs.pop( 'logy',           False ) 
+    RangeY        = kwargs.pop( 'RangeY',            [] )
+    titleY        = kwargs.pop( 'titleY',            '' )
+    statOn        = kwargs.pop( 'statOn',          False)
+    legendEntries = kwargs.pop( 'includeInLegend',   [] )
+    Xtitle        = kwargs.pop( 'xTitle',           ''  )
+    save          = kwargs.pop('save',             False)
 
     # get dataset scales (scale down the largest samples)
     entries = [ data[k].sumEntries() for k in data.keys() ]
@@ -353,14 +355,14 @@ def compareDataSets( canv, obs, data={}, dataOpts={}, frameOpts={}, **kwargs):
 
     if statOn: # make legend with mean and rms                                                                                                                     
         from ROOT import TPaveText                                                                                                               
-        legend = TPaveText(.442, .625, .945, .951, 'NDC' )                                                                                       
+        legend = TPaveText(.455, .818, .944, .951, 'NDC' )                                                                                       
         legend.SetFillColor(0)                                                                                                                   
-        legend.SetShadowColor(0)                                                                                                                 
-                               
+        legend.SetShadowColor(0)           
+                 
     YaxisMaxima, YaxisMinima = [], []                                                                                                                     
     for d in data.keys():                                                                                                                        
         frame = data[d].plotOn( obsFrame, **dataOpts[d] )                                                                                        
-        if statOn:                                                                                                                               
+        if statOn and d in legendEntries:
             mean = data[d].meanVar(obs).getVal()                                                                                                 
             rms  = data[d].rmsVar(obs).getVal()                                                                                                  
             legend.AddText( '#color[%s]{#bullet} mean=%.3e, rms=%.3e'%(dataOpts[d]['MarkerColor'],mean,rms) )                                    
@@ -376,7 +378,7 @@ def compareDataSets( canv, obs, data={}, dataOpts={}, frameOpts={}, **kwargs):
         obsFrame.SetAxisRange( min(YaxisMinima),  1.15 * min(scales) * max(YaxisMaxima) , 'Y' )
     obsFrame.SetYTitle(titleY)
     obsFrame.SetTitle('')
-    xtitle = Xtitle if Xtitle else obsFrame.GetXaxis().GetTitle().replace('(M','[M').replace('c^2)','c^{2]}') 
+    xtitle = Xtitle if Xtitle else obsFrame.GetXaxis().GetTitle().replace('(M','[M').replace('c^2)','c^{2}]') 
     obsFrame.SetXTitle(xtitle)
     obsFrame.SetName( obs.GetName() )
 
@@ -386,7 +388,7 @@ def compareDataSets( canv, obs, data={}, dataOpts={}, frameOpts={}, **kwargs):
             obsFrame.SetMinimum(.1)
         canv.SetLogy(1)
     
-    # draw
+    # draw / save
     canv.cd()
     obsFrame.Draw()
     if statOn: # save intemediate canvas.
@@ -396,6 +398,10 @@ def compareDataSets( canv, obs, data={}, dataOpts={}, frameOpts={}, **kwargs):
         obsFrame.Draw()
         legend.Draw()
         c.Print(obs.GetName() +'_'+ canv.GetName() + '.pdf')
+        if save:
+            names = ''
+            for n in legendEntries: names += n + '_' 
+            saveInRootFile(c, obsFrame.getPlotVar().GetName() +'_'+ names)
         return obsFrame, legend
     return obsFrame, None
 
@@ -408,7 +414,7 @@ def makeAssymetryPlot( canv, frame, refHist, numOfFrames, yRange=[], save=False 
   
     # grab reference histogram
     for h in HistList: 
-        if h.GetName()==refHist: hRef = h
+        if refHist in h.GetName(): hRef = h
     if not hRef: assert False, 'P2VV - ERROR: makeAssymetryPlot(): Cannot find reference histogram.'
     HistList.remove(hRef)
     
@@ -478,6 +484,7 @@ def makeAssymetryPlot( canv, frame, refHist, numOfFrames, yRange=[], save=False 
         onePlot.Draw('APZ')
         histNames = ''
         for h in HistList: histNames += h.GetName().replace('h_','') 
+        saveInRootFile(cw,'assym_' + frame.getPlotVar().GetName() +'_'+ histNames)
 
     for g in assymPlotsList: 
         canv.cd()
@@ -486,7 +493,7 @@ def makeAssymetryPlot( canv, frame, refHist, numOfFrames, yRange=[], save=False 
             cw.cd()
             g.Draw('ZPsame')
             cw.Print('assym_' + frame.getPlotVar().GetName() +'_'+ histNames + '.pdf')
-    saveInRootFile(cw,'assym_' + frame.getPlotVar().GetName() +'_'+ histNames)   
+    
     del assymPlotsList
     
 

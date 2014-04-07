@@ -393,7 +393,7 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
             constraints.add(EffConstraint(Name = constraint_name, **args))
         return constraints
 
-    def build_poisson_constraints(self, data, observables):
+    def build_poisson_constraints(self, data, observables, strategy = 1):
         # get acceptance parameters and observables
         from collections import defaultdict
         binning = self._shape.base_binning()
@@ -447,7 +447,7 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
         self.__bc.run()
 
         # create a dictionary of constraint arguments
-        constrArgs = dict(Name = '%s_poisson' % prefix, NumBins = numBins, Parameters = {},
+        constrArgs = dict(Name = '%s_poisson' % prefix, Strategy = strategy, NumBins = numBins, Parameters = {},
                           SumW = dict([(n, self.__bc.get_bins('all', catStates[n])) for n in combCats]),
                           SumWSq = dict([(n, self.__bc.get_binsSq('all', catStates[n])) for n in combCats]))
 
@@ -474,23 +474,40 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
             N_1B2A  = sum(constrArgs['SumW']['1B2A'])
             N_1B2B  = sum(constrArgs['SumW']['1B2B'])
             N_1B2AB = sum(constrArgs['SumW']['1B2AB'])
-            if eps1ACommon > 0.:
-                eps1A = eps1ACommon
-            else:
-                sumWTot = 0.
-                eps1A = 0.
-                for bIt in range(numBins):
-                    sumW = sum(constrArgs['SumW'][cat][bIt] for cat in ['1A2A', '1A2B', '1A2AB', '1B2A', '1B2B', '1B2AB'])
-                    sumWTot += sumW
-                    eps1A += sumW * constrArgs['Parameters']['eps1A'][bIt].getVal()
-                eps1A /= sumWTot
+            if len(constrArgs['Parameters']['eps1B']) == 1 :
+                if eps1ACommon > 0.:
+                    eps1A = eps1ACommon
+                else:
+                    sumWTot = 0.
+                    eps1A = 0.
+                    for bIt in range(numBins):
+                        sumW = sum(constrArgs['SumW'][cat][bIt] for cat in ['1A2A', '1A2B', '1A2AB', '1B2A', '1B2B', '1B2AB'])
+                        sumWTot += sumW
+                        eps1A += sumW * constrArgs['Parameters']['eps1A'][bIt].getVal()
+                    eps1A /= sumWTot
 
-            eps1B = (N_1B2A + N_1B2AB) / (N_1A2A + N_1A2AB) * eps1A
-            eps2A = (N_1A2AB + N_1B2AB) / (N_1A2B + N_1B2B + N_1A2AB + N_1B2AB)
-            eps2B = (N_1A2AB + N_1B2AB) / (N_1A2A + N_1B2A + N_1A2AB + N_1B2AB)
-            if len(constrArgs['Parameters']['eps1B']) == 1: constrArgs['Parameters']['eps1B'][0].setVal(eps1B)
-            if len(constrArgs['Parameters']['eps2A']) == 1: constrArgs['Parameters']['eps2A'][0].setVal(eps2A)
-            if len(constrArgs['Parameters']['eps2B']) == 1: constrArgs['Parameters']['eps2B'][0].setVal(eps2B)
+                eps1B = (N_1B2A + N_1B2AB) / (N_1A2A + N_1A2AB) * eps1A
+                constrArgs['Parameters']['eps1B'][0].setVal(eps1B)
+            if len(constrArgs['Parameters']['eps2A']) == 1:
+                wSq_2B = sum(constrArgs['SumWSq']['1A2B']) + sum(constrArgs['SumWSq']['1B2B'])
+                if abs(wSq_2B) > 1.e-5:
+                    eps2A = (N_1A2AB + N_1B2AB) / (N_1A2B + N_1B2B + N_1A2AB + N_1B2AB)
+                    constrArgs['Parameters']['eps2A'][0].setVal(eps2A)
+                else:
+                    assert abs(N_1A2B) <= 1.e-5 and abs(N_1B2B) <= 1.e-5
+                    if constrArgs['Parameters']['eps2A'][0].getMax() < 1.: constrArgs['Parameters']['eps2A'][0].setMax(1.)
+                    constrArgs['Parameters']['eps2A'][0].setVal(1.)
+                    constrArgs['Parameters']['eps2A'][0].setConstant()
+            if len(constrArgs['Parameters']['eps2B']) == 1:
+                wSq_2A = sum(constrArgs['SumWSq']['1A2A']) + sum(constrArgs['SumWSq']['1B2A'])
+                if abs(wSq_2A) > 1.e-5:
+                    eps2B = (N_1A2AB + N_1B2AB) / (N_1A2A + N_1B2A + N_1A2AB + N_1B2AB)
+                    constrArgs['Parameters']['eps2B'][0].setVal(eps2B)
+                else:
+                    assert abs(N_1A2A) <= 1.e-5 and abs(N_1B2A) <= 1.e-5
+                    if constrArgs['Parameters']['eps2B'][0].getMax() < 1.: constrArgs['Parameters']['eps2B'][0].setMax(1.)
+                    constrArgs['Parameters']['eps2B'][0].setVal(1.)
+                    constrArgs['Parameters']['eps2B'][0].setConstant()
 
         for bIt in range(numBins):
             # set values for one bin
@@ -501,16 +518,32 @@ class Paper2012_csg_TimeAcceptance(TimeAcceptance):
             N_1B2B  = constrArgs['SumW']['1B2B'][bIt]
             N_1B2AB = constrArgs['SumW']['1B2AB'][bIt]
             eps1A = eps1ACommon if eps1ACommon > 0. else constrArgs['Parameters']['eps1A'][bIt].getVal()
-            nu    = (N_1A2A + N_1A2AB) * (N_1A2B + N_1A2AB) / N_1A2AB / eps1A
-            eps1B = (N_1B2A + N_1B2AB) / (N_1A2A + N_1A2AB) * eps1A
-            eps2A = (N_1A2AB + N_1B2AB) / (N_1A2B + N_1B2B + N_1A2AB + N_1B2AB)
-            eps2B = (N_1A2AB + N_1B2AB) / (N_1A2A + N_1B2A + N_1A2AB + N_1B2AB)
-
+            nu = (N_1A2A + N_1A2AB) * (N_1A2B + N_1A2AB) / N_1A2AB / eps1A
             constrArgs['Parameters']['nu'][bIt].setRange((max(0., nu - 10. * sqrt(nu)), nu + 10. * sqrt(nu)))
             constrArgs['Parameters']['nu'][bIt].setVal(nu)
-            if len(constrArgs['Parameters']['eps1B']) == numBins: constrArgs['Parameters']['eps1B'][bIt].setVal(eps1B)
-            if len(constrArgs['Parameters']['eps2A']) == numBins: constrArgs['Parameters']['eps2A'][bIt].setVal(eps2A)
-            if len(constrArgs['Parameters']['eps2B']) == numBins: constrArgs['Parameters']['eps2B'][bIt].setVal(eps2B)
+            if len(constrArgs['Parameters']['eps1B']) == numBins:
+                eps1B = (N_1B2A + N_1B2AB) / (N_1A2A + N_1A2AB) * eps1A
+                constrArgs['Parameters']['eps1B'][bIt].setVal(eps1B)
+            if len(constrArgs['Parameters']['eps2A']) == numBins:
+                wSq_2B = constrArgs['SumWSq']['1A2B'][bIt] + constrArgs['SumWSq']['1B2B'][bIt]
+                if abs(wSq_2B) > 1.e-5:
+                    eps2A = (N_1A2AB + N_1B2AB) / (N_1A2B + N_1B2B + N_1A2AB + N_1B2AB)
+                    constrArgs['Parameters']['eps2A'][bIt].setVal(eps2A)
+                else:
+                    assert abs(N_1A2B) <= 1.e-5 and abs(N_1B2B) <= 1.e-5
+                    if constrArgs['Parameters']['eps2A'][bIt].getMax() < 1.: constrArgs['Parameters']['eps2A'][bIt].setMax(1.)
+                    constrArgs['Parameters']['eps2A'][bIt].setVal(1.)
+                    constrArgs['Parameters']['eps2A'][bIt].setConstant()
+            if len(constrArgs['Parameters']['eps2B']) == numBins:
+                wSq_2A = constrArgs['SumWSq']['1A2A'][bIt] + constrArgs['SumWSq']['1B2A'][bIt]
+                if abs(wSq_2A) > 1.e-5:
+                    eps2B = (N_1A2AB + N_1B2AB) / (N_1A2A + N_1B2A + N_1A2AB + N_1B2AB)
+                    constrArgs['Parameters']['eps2B'][bIt].setVal(eps2B)
+                else:
+                    assert abs(N_1A2A) <= 1.e-5 and abs(N_1B2A) <= 1.e-5
+                    if constrArgs['Parameters']['eps2B'][bIt].getMax() < 1.: constrArgs['Parameters']['eps2B'][bIt].setMax(1.)
+                    constrArgs['Parameters']['eps2B'][bIt].setVal(1.)
+                    constrArgs['Parameters']['eps2B'][bIt].setConstant()
 
         # create Poisson constraint
         from P2VV.RooFitWrappers import CombEffConstraint

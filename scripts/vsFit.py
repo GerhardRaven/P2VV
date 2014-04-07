@@ -1,3 +1,7 @@
+#####################################################################################################################
+## configuration  ##
+############################
+
 from optparse import OptionParser
 parser = OptionParser()
 parser.add_option('-d', '--FitData',      dest='FitData',      default='',        help='' )
@@ -6,45 +10,47 @@ parser.add_option('-i', '--ParFileIn',    dest='ParFileIn',    default='',      
 parser.add_option('-o', '--ParFileOut',   dest='ParFileOut',   default='',        help='' )
 parser.add_option('-b', '--writeUnBlPar', dest='writeUnBlPar', default='True',    help='' )
 parser.add_option('-u', '--unblind',      dest='unblind',      default='False',   help='' )
+parser.add_option('-c', '--NumCpu',       dest='NumCpu',       default=8,         help='', type=int )
 (options, args) = parser.parse_args()
 
 # data
-dataPath    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
-myPath = '/project/bfys/vsyropou/data/'
-dataSetFile = options.FitData if options.FitData else dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
+dataPath    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/'
+myPath = '/project/bfys/vsyropou/data/Bs2JpsiPhi/'
+dataSetFile = options.FitData if options.FitData else \
+              dataPath + 'angEff/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
 dataSetName = 'JpsiKK_sigSWeight'
 
 # read / write fited parameters from file
 parFileIn = options.ParFileIn if options.ParFileIn \
-    else myPath + 'nominalFitResults/20112012Reco14DataFitValues_6KKMassBins.par'
+    else myPath + 'nominalFitResults/corrAngAccDEC/20112012Reco14DataFitValues_6KKMassBins.root'
 parFileOut = options.ParFileOut if options.ParFileOut else '20112012Reco14DataFitValues_6KKMassBins.par'
-
-fitOpts = dict(  NumCPU    = 8
-               , Optimize  = 2
-               , Timer     = True
-#               , Verbose   = True
-#               , Hesse     = False
-               , Minimizer = 'Minuit2'
-               , Strategy  = 1
-               , Offset    = True
-              )
 
 # PDF configuration
 from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_RunIAnalysis as PdfConfig
-pdfConfig = PdfConfig( RunPeriods = '3fb' )
+pdfConfig = PdfConfig()
 
 # swich blidn on/off
 if 'True' in options.unblind: pdfConfig['blind'] = {}
 
+# cpv parametrization
+pdfConfig['lambdaCPParam'] = 'lambPhi'
+
 # acceptances
-pdfConfig['timeEffParameters'] = dict()
-timeEffFile2011 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins.root'
-timeEffFile2012 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_40bins.root'
-pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file'] = timeEffFile2011
-pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] )['file'] = timeEffFile2012
-pdfConfig['anglesEffType'] = 'weights'
+ # decay time
+pdfConfig['timeEffType']   = 'paper2012'
+pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file']\
+        = dataPath + 'Reco14/timeAcceptanceFit_2011.root' # Bs_HltPropertimeAcceptance_Data_2011_40bins_TOS.root'
+pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] )['file']\
+        = dataPath + 'Reco14/timeAcceptanceFit_2012.root' # Bs_HltPropertimeAcceptance_Data_2012_40bins_TOS.root'
+ # decay angles
+pdfConfig['anglesEffType']   = 'weights'
 pdfConfig['angEffMomsFiles'] = options.AngAccFile if options.AngAccFile \
-    else myPath + 'uncorrecteEffMoments/MC20112012_Sim08/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_weights'
+    else myPath   + 'angEffMoments/correctedEffMoms/DEC/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm_fromAna' # Iter. proc. corrected acc. of DEC dataset  
+#   else myPath   + 'angEffMoments/uncorrecteEffMoments/TOS/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'     # Uncorrected acc of TOS dataset
+
+#####################################################################################################################
+## read data and build pdf ##
+############################
 
 # workspace
 from P2VV.RooFitWrappers import RooObject
@@ -71,8 +77,20 @@ if parFileIn:
     pdfConfig.setParametersInPdf(pdf)
 print '-' * 80 + '\n\n'
 
-# fit data
-fitResult = pdf.fitTo( fitData, SumW2Error = False, Save = True, **fitOpts )
+# fix-float lambda
+ws['lambdaCP'].setConstant(False)
+
+
+###########################################################################################################################################
+## fit data ##
+##############
+
+# fit
+fitResult = pdf.fitTo( fitData, SumW2Error = False, Save = True, NumCPU = options.NumCpu, Optimize = 2, Timer = True, 
+                       Minimizer = 'Minuit2', Strategy = 1, Offset = True 
+                       )
+
+# save
 from P2VV.Imports import parNames, parValues
 fitResult.PrintSpecial( text = True, ParNames = parNames, ParValues = parValues )
 fitResult.SetName( parFileOut.replace('.par','') )

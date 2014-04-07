@@ -29,25 +29,45 @@ def compareDistributions( **kwargs ):
     names = '\n'
     for d in data.itervalues(): names +=  d.GetName() + '\n'
     
-    # get observables and x ranges
+    # get observables and, ranges and nBins
     observables, Kmomenta, muMomenta, trackMomRangeX = [], [], [], {}
     for obs in obsSet:
+        obs.setBins(150)
         obsName = obs.GetName()
-        if 'hel' in obsName or 'time' in obsName: observables.append(obs)
+        if 'hel' in obsName or 'time' in obsName: 
+            obs.setBins(30)
+            observables.append(obs)
         elif obsName.startswith('K') and not obsName.startswith('KK'):
             if   'X' in obsName or 'Y' in obsName: trackMomRangeX[obsName] = (-5e3,5e3)
-            elif 'Z' in obsName:                   trackMomRangeX[obsName] = (-5e2,1e5)
-            else:                                  trackMomRangeX[obsName] = ( 0., 1e5)
+            elif 'Z' in obsName:                   trackMomRangeX[obsName] = (-15e4,15e4)
+            else:                                  trackMomRangeX[obsName] = ( 0., 15e4)
             Kmomenta.append(obs)
         elif obsName.startswith('mu'):
             if   'X' in obsName or 'Y' in obsName: trackMomRangeX[obsName] = (-1e4,1e4)
-            elif 'Z' in obsName:                   trackMomRangeX[obsName] = (-1e3,2e5)
-            else:                                  trackMomRangeX[obsName] = ( 0., 2e5)
+            elif 'Z' in obsName:                   trackMomRangeX[obsName] = (-15e4,15e4)
+            else:                                  trackMomRangeX[obsName] = ( 0., 15e4)
             muMomenta.append(obs)
         elif obsName == 'mdau2': KKMass = obs
         elif obsName == 'B_P':   B_P = obs
-        elif obsName == 'B_Pt':   B_Pt = obs
-        
+        elif obsName == 'B_Pt':  B_Pt = obs
+
+    # make a binned data set to accelerate
+    binData = True
+    if binData:
+        dataSetKeys = data.keys()
+        data['binned'] = dict( observables={}, KplusMom={}, KminusMom={}, 
+                               muplusMom={}, muminusMom={}, BpBpt_mkk={}
+                               )
+        from ROOT import RooDataHist, RooArgSet
+        for d in dataSetKeys:
+            data['binned']['observables'][d] = RooDataHist(data[d].GetName() + '_obs_binned',     data[d].GetTitle() + '_obs_binned',     RooArgSet(observables),       data[d])
+            data['binned']['KplusMom'][d]    = RooDataHist(data[d].GetName() + '_Kplmom_binned',  data[d].GetTitle() + '_Kplmom_binned',  RooArgSet(Kmomenta[0:4]),     data[d])
+            data['binned']['KminusMom'][d]   = RooDataHist(data[d].GetName() + '_Kminmom_binned', data[d].GetTitle() + '_Kminmom_binned', RooArgSet(Kmomenta[4:8]),     data[d])
+            data['binned']['muplusMom'][d]   = RooDataHist(data[d].GetName() + '_muplMom_binned', data[d].GetTitle() + '_muplMom_binned', RooArgSet(muMomenta[0:4]),    data[d])
+            data['binned']['muminusMom'][d]  = RooDataHist(data[d].GetName() + '_mumin_binned',   data[d].GetTitle() + '_mumin_binned',     RooArgSet(muMomenta[4:8]),    data[d])
+            data['binned']['BpBpt_mkk'][d]   = RooDataHist(data[d].GetName() + '_Bpmkk_binned',   data[d].GetTitle() + '_Bpmkk_binned',     RooArgSet([KKMass,B_P,B_Pt]), data[d])
+    else: dataSetKeys = data.keys()
+
     # assymetry plots are compared w.r.t. the sData
     referenceHistName = 'h_' + data['Sdata'].GetName() 
 
@@ -59,7 +79,7 @@ def compareDistributions( **kwargs ):
 
     # make canvases
     namePF          = '' 
-    for name in data.keys(): namePF += name + '_' 
+    for name in dataSetKeys: namePF += name + '_' 
     namePF += kwargs.pop('prodData')
     obsCanv         = TCanvas('anglesTime_%s_'%itNumb + namePF       ,'anglesTime_%s'%itNumb)
     assymObsCanv    = TCanvas('assymAnglesTime_%s_'%itNumb + namePF  ,'assymAnglesTime_%s'%itNumb)
@@ -85,6 +105,12 @@ def compareDistributions( **kwargs ):
     dataOpts    = dict()    
     for key in colors.keys():
         if data.has_key(key): dataOpts[key] = dict( MarkerColor = colors[key], **stdDrawOpts  )
+        if 'Sdata' in key:    dataOpts[key]['Invisible'] = ()
+
+    # remove data entry from legend
+    if stats: 
+        makeStatKeys = dataSetKeys 
+        makeStatKeys.remove('Sdata')
 
     print 'P2VV - INFO: compareDistributions: Making comparition plots for datasets:', names
     # plot angles and decay time
@@ -96,14 +122,17 @@ def compareDistributions( **kwargs ):
         3 * [(-.1,.1),] + [(-3,3)]
         ):
         print 'P2VV - INFO: compareDistributions: Plotting %s.'%obs.GetName()
-        anglesFrames, leg = compareDataSets( canv, obs, data = data, dataOpts = dataOpts, logy = logY,
-                                       frameOpts = dict( Bins = 30 ), 
-                                       )
+        anglesFrames, leg = compareDataSets( canv, obs, dataOpts = dataOpts, logy = logY,
+                                             data = data['binned']['observables'] if binData else data,
+                                             # frameOpts = dict( Bins = 30 ), 
+                                             includeInLegend = makeStatKeys,
+                                             save = True if stats and not Legend else False 
+                                             )
         # make assymetry plots 
-        makeAssymetryPlot(assymCanv, anglesFrames, referenceHistName, len(data.keys()), 
-                               yRange=assymYrange, save = True if stats and not Legend else False 
+        makeAssymetryPlot(assymCanv, anglesFrames, referenceHistName, len(dataSetKeys), 
+                          yRange=assymYrange, save = True if stats and not Legend else False 
                           )
-    
+
     # plot Kaon and muon momenta
     print 'P2VV - INFO: compareDistributions: Plotting track momenta.'
     for canv, assymCanv, obs, assymYrange in zip( 
@@ -116,44 +145,58 @@ def compareDistributions( **kwargs ):
         
         # make stats box only for *_P, and increase marker size.
         printStats = False if any( ['PX' in obs.GetName(), 'PY' in obs.GetName(), 'PZ' in obs.GetName()] ) else True
-        for d in data.keys():        
+        for d in dataSetKeys:        
             dataOpts[d]['MarkerSize'] = 1.5 if printStats and stats and not Legend else stdDrawOpts['MarkerSize']
                 
         # plot
-        momFrame, leg = compareDataSets( canv, obs, data = data, dataOpts = dataOpts,
-                                         frameOpts    = dict( Bins = 30, Range=trackMomRangeX[obs.GetName()] ),
-                                         statOn       = printStats,
+        if   'Kplus'   in obs.GetName(): dataSet = data['binned']['KplusMom']
+        elif 'Kminus'  in obs.GetName(): dataSet = data['binned']['KminusMom']
+        elif 'muplus'  in obs.GetName(): dataSet = data['binned']['muplusMom']
+        elif 'muminus' in obs.GetName(): dataSet = data['binned']['muminusMom']
+
+
+        obs.Print()
+        dataSet.Print()
+
+        momFrame, leg = compareDataSets( canv, obs, data = dataSet, dataOpts = dataOpts,
+                                         frameOpts    = dict( Range=trackMomRangeX[obs.GetName()] ),
+                                         statOn       = printStats, includeInLegend = makeStatKeys,
+                                         save = True if stats and not Legend else False 
                                          )
-        makeAssymetryPlot( assymCanv, momFrame, referenceHistName, len(data.keys()), 
+        makeAssymetryPlot( assymCanv, momFrame, referenceHistName, len(dataSetKeys), 
                            yRange=assymYrange, save = printStats
                            ) 
     
 
-        if 'Kplus_PX' in obs.GetName():break
-
+    assert False
 
     # plot KKMass
     print 'P2VV - INFO: compareDistributions: Plotting KKmass.'
-    for d in data.keys():        
+    for d in dataSetKeys:        
         dataOpts[d]['MarkerSize'] = 1.5 if printStats and stats and not Legend else stdDrawOpts['MarkerSize']
-    KKMassFrame, leg = compareDataSets( KKMassCanv.cd(1), KKMass, data = data, 
+    KKMassFrame, leg = compareDataSets( KKMassCanv.cd(1), KKMass, data = data['binned']['BpBpt_mkk'][d], 
                                         dataOpts = dataOpts, 
                                         xTitle = 'm(KK) [MeV/c^{2}]',
-                                        frameOpts = dict( Bins = 40 ),
-                                        statOn    = True if stats and not Legend else False
+                                        #frameOpts = dict( Bins = 40 ),
+                                        statOn    = True if stats and not Legend else False,
+                                        includeInLegend = makeStatKeys,
+                                        save = True if stats and not Legend else False 
                                         )
-    makeAssymetryPlot( KKMassCanv.cd(2), KKMassFrame, referenceHistName, len(data.keys()),
+    makeAssymetryPlot( KKMassCanv.cd(2), KKMassFrame, referenceHistName, len(dataSetKeys),
                        save = True if stats and not Legend else False 
                        )
 
     # plot B_P and B_Pt
-    for pad, obs, rangeY in zip( [1,2], [ B_P,B_Pt], [(0.,5e5),(0.,3e4)] ):
+    for pad, obs, rangeX in zip( [1,2], [ B_P,B_Pt], [(0.,5e5),(0.,3e4)] ):
         print 'P2VV - INFO: compareDistributions: Plotting %s.'%obs.GetName()
-        BmomFrame, leg = compareDataSets( BmomCanv.cd(pad), obs, data = data, dataOpts = dataOpts, 
-                                     frameOpts = dict( Bins=70, Range=rangeY ),
-                                     statOn    = True if stats and not Legend else False
-                                     )
-        makeAssymetryPlot( BmomCanv.cd(pad+2), BmomFrame, referenceHistName, len(data.keys()),
+        BmomFrame, leg = compareDataSets( BmomCanv.cd(pad), obs, data = data['binned']['BpBpt_mkk'][d], 
+                                          dataOpts  = dataOpts, 
+                                          frameOpts = dict( Range=rangeX ),
+                                          statOn    = True if stats and not Legend else False,
+                                          includeInLegend = makeStatKeys,
+                                          save = True if stats and not Legend else False 
+                                          )
+        makeAssymetryPlot( BmomCanv.cd(pad+2), BmomFrame, referenceHistName, len(dataSetKeys),
                            save = True if stats and not Legend else False 
                            )
 
@@ -195,7 +238,7 @@ def cleanP2VVPlotStash():
 # easily create an observable using information from the PdfConfig class
 def _createGetObservable(name):
     from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_RunIAnalysis 
-    PdfConfig = Bs2Jpsiphi_RunIAnalysis( RunPeriods = '3fb' )
+    PdfConfig = Bs2Jpsiphi_RunIAnalysis( )
     obsDict = PdfConfig['obsDict']
     
     if name == 'helcosthetaK': name = 'cpsi'
@@ -335,42 +378,6 @@ def TwoDimentionalVerticalReweighting(source, target, nbins, var, **kwargs):
         for ev in target: targetListX += [ (ev.find(var[0]).getVal(), target.weight()) ] if fixBinSumW else [ (ev.find(var[0]).getVal(),1) ]
         for ev in target: targetListY += [ ev.find(var[1]).getVal() ]
 
-# BELOW THIS IS TESTING REGION, DO NOT DELETE BEFORE OR AFTER THIS BOX
-        targetListX.sort()
-        targetListY.sort()
-
-
-        from math import sqrt, cos, sin ,pi
-        rhoDistr = []
-        rho = lambda x,y: sqrt(x**2 + y**2)  
-        theta = pi / 4
-        x = lambda r: r * cos(theta)
-        y = lambda r: r * sin(theta)
-    
-    #    for x_, y_ in zip(targetListX,targetListY): rhoDistr += [ rho(x_[0],y_) ] 
-    #    rhoDistr.sort()
-
-        eventCount = 0
-        binstat = target.numEntries() / nbins if not fixBinSumW else target.sumEntries() / nbins 
-        lowBounds = [ rho(xMin,yMin) ]
-        while True:
-            if eventCount + 1 >= target.numEntries(): break
-            binContentCount = 0
-            while binContentCount < binstat and eventCount < target.numEntries():
-#                lowBound_i = rhoDistr[eventCount]
-                lowBound_i = rho( targetListX[eventCount][0], targetListX[eventCount][0] )
-                binContentCount += 1 if not fixBinSumW else targetListX[eventCount][1]  
-                eventCount += 1
-            lowBounds += [ lowBound_i ]
-
-        lowboundsX = map( x, lowBounds )
-        lowboundsY = map( y, lowBounds )
-        
-        lowboundsX, lowboundsY = array('f',lowboundsX), array('f',lowboundsY)
-
-        print 'bincontent:',   binstat
-# END OF TESTING BOX
-        
         sourceHist = TH2D('h_'+source.GetName(), 'h_'+source.GetTitle(), nbins[0], lowboundsX, nbins[1], lowboundsY )
         targetHist = TH2D('h_'+target.GetName(), 'h_'+target.GetTitle(), nbins[0], lowboundsX, nbins[1], lowboundsY )
 
@@ -782,14 +789,21 @@ class MatchPhysics( ):
         self._angleFuncs = angleFuncs
 
         # get observables (get the wrapper instead of the base objects!!)
+        iTag      = _createGetObservable('iTag')
         trueTime  = _createGetObservable('truetime')
         time      = RooObject._rooobject('time') if ws['time'] else _createGetObservable('time')
         angles    = [ RooObject._rooobject(o) for o in ['helcosthetaK','helcosthetaL','helphi'] ]
-        iTag      = _createGetObservable('iTag')
-        KKMass    = RooObject._rooobject('KKMass') if ws['KKMass'] else _createGetObservable('KKMass')
+        timeRes   = RooObject._rooobject('sigmat')    if ws['sigmat'] else _createGetObservable('timeRes') 
+        KKMass    = RooObject._rooobject('KKMass')    if ws['KKMass'] else _createGetObservable('KKMass')
         KKMassCat = RooObject._rooobject('KKMassCat') if ws['KKMassCat'] else _createGetObservable('KKMassCat')
-        self._obsSet = [ trueTime, time, KKMass ] + angles + [ KKMassCat ]
+        self._obsSet = [ trueTime, time, timeRes, KKMass, KKMassCat ] + angles
         self._normSet = angles
+
+        # include additional observables
+        hlt1ExclB = RooObject._rooobject('hlt1_excl_biased') if ws['hlt1_excl_biased'] else _createGetObservable('hlt1ExclB')
+        tagCatOS  = RooObject._rooobject('tagCatP2VVOS')     if ws['tagCatP2VVOS'] else _createGetObservable('tagCatOS')
+        tagCatSS  = RooObject._rooobject('tagCatP2VVSS')     if ws['tagCatP2VVSS'] else _createGetObservable('tagCatSS')
+        self._obsSet += [hlt1ExclB,tagCatOS, tagCatSS]
 
         # set momenta range and put them in obsSet
         print 'P2VV - INFO: Setting track and B momenta ranges.'
@@ -805,7 +819,7 @@ class MatchPhysics( ):
         readOpts = { 'ntupleCuts' : 'mass>5350 && mass<5355' } if kwargs.pop('Reduced', False) else  { }
         self._data = readData( nTupleFile, dataSetName=nTupleName, NTuple=True, observables=self._obsSet, **readOpts)
         self._data.SetName( 'mcData_' + MCProd )
-           
+         
         # build pdf
         from P2VV.Parameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
         amplitudes = Amplitudes(  A0Mag2 = A0Mag2Val, AperpMag2 = AperpMag2Val
@@ -1205,13 +1219,7 @@ trackMomentaRanges = dict(
     B_Pt       = [    0 , 2e5 ]    
     )
 
-# bokkeeping dictionaries for plotting
-# plotingScenarios = dict( BmommkkphysKKmom = [ ('mcData','BmomRewData'), ('BmomRewData','mkkRewData'), ('mkkRewData','mcDataPhysRew'), ('mcDataPhysRew','MomRewData') ],
-#                          BmomphysKKmom    = [ ('mcData','BmomRewData'), ('BmomRewData','mcDataPhysRew'), ('mcDataPhysRew','MomRewData') ],
-#                          mkkphysKKmom     = [ ('mcData','mkkRewData'), ('mkkRewData','mcDataPhysRew'), ('mcDataPhysRew','MomRewData') ],
-#                          physKKmom        = [ ('mcData','mcDataPhysRew' ), ('mcDataPhysRew','MomRewData') ]
-#                          )
-
+# bookeeping dictionaries for ploting
 plotingScenarios = dict( BmommkkphysKKmom     = [ ('mcData','BmomRewData'), 
                                                   ('mcData','BmomRewData','mkkRewData'), 
                                                   ('mcData','BmomRewData','mkkRewData','mcDataPhysRew'), 

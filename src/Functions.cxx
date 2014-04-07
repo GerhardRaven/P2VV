@@ -105,6 +105,57 @@ void addFloatToTree(TTree& tree, Double_t value, const char* branchName) {
   tree.FlushBaskets();
 }
 
+void addProductToTree(TTree& tree, vector<TString> inBranches,
+    const char* outBranch) {
+  vector<Float_t*> inputF;
+  vector<Double_t*> inputD;
+  for (vector<TString>::const_iterator brIt = inBranches.begin();
+      brIt != inBranches.end(); ++brIt) {
+    TObjArray* lfList = tree.GetBranch(*brIt)->GetListOfLeaves();
+    TString brType = lfList->GetEntries() == 1 ?
+        ((TLeaf*)lfList->At(0))->GetTypeName() : "";
+    if (brType == "Double_t") {
+      Double_t* input = new Double_t(0.);
+      tree.SetBranchAddress(*brIt, input);
+      inputD.push_back(input);
+    } else if (brType == "Float_t") {
+      cout << "P2VV - INFO: copyFloatInTree(): values from Float_t branch \""
+        << *brIt << "\" will be converted to double precision" << endl;
+      Float_t* input = new Float_t(0.);
+      tree.SetBranchAddress(*brIt, input);
+      inputF.push_back(input);
+    } else {
+      cout << "P2VV - ERROR: addProductToTree(): branch \"" << *brIt
+        << "\" has unknown type \"" << brType << "\"" << endl;
+      assert(0);
+    }
+  }
+  if (inputF.size() + inputD.size() <= 0.) {
+      cout << "P2VV - ERROR: addProductToTree(): no input branches found"
+          << endl;
+      assert(0);
+  }
+
+  TString branchNameStr(outBranch);
+  Double_t* output = new Double_t(0.);
+  TBranch* branch = tree.Branch(branchNameStr, output, branchNameStr + "/D");
+
+  for (Long64_t it = 0; it < tree.GetEntries(); ++it) {
+    tree.GetEntry(it);
+    *output = 1.;
+    for (vector<Float_t*>::const_iterator fIt = inputF.begin();
+        fIt != inputF.end(); ++fIt) {
+      *output *= *(*fIt);
+    }
+    for (vector<Double_t*>::const_iterator dIt = inputD.begin();
+        dIt != inputD.end(); ++dIt) {
+      *output *= *(*dIt);
+    }
+    branch->Fill();
+  }
+  tree.FlushBaskets();
+}
+
 void copyFloatInTree(TTree& tree, const char* inBranch, const char* outBranch) {
   Float_t*  inputF = 0;
   Double_t* inputD = 0;
@@ -286,6 +337,94 @@ void addVertexErrors(TTree* tree, const std::list<RooDataSet*>& dss, const std::
 
       // Result is (c * tau)^2, set value in ps
       psi_err->setVal(sqrt(r(0, 0)) / 0.299792458);
+      ds->fill();
+   }
+   cout << endl;
+
+   cout << "Adding vertex errors to RooDataSets" << endl;
+   for (list<RooDataSet*>::const_iterator it = dss.begin(), end = dss.end(); it != end; ++it) {
+      (*it)->merge(ds);
+   }
+}
+
+void addJpsiDLS(TTree* tree, const std::list<RooDataSet*>& dss, const std::string& cut) {
+
+   cout << "Reading tree " << tree->GetName() << " to get vertex errors." << endl;
+
+   tree->Draw(">>dls_elist", cut.c_str(), "entrylist");
+   TEntryList *cut_list = static_cast<TEntryList*>(gDirectory->Get( "dls_elist" ));
+
+   Double_t x = 0., y = 0., z = 0.;
+   Double_t pv_x = 0., pv_y = 0., pv_z = 0.;
+
+   Float_t cov_pv[3][3];
+   Float_t cov_jpsi[3][3];
+
+   tree->SetBranchAddress("J_psi_1S_OWNPV_X", &pv_x);
+   tree->SetBranchAddress("J_psi_1S_OWNPV_Y", &pv_y);
+   tree->SetBranchAddress("J_psi_1S_OWNPV_Z", &pv_z);
+
+   tree->SetBranchAddress("J_psi_1S_ENDVERTEX_X", &x);
+   tree->SetBranchAddress("J_psi_1S_ENDVERTEX_Y", &y);
+   tree->SetBranchAddress("J_psi_1S_ENDVERTEX_Z", &z);
+
+   tree->SetBranchAddress("J_psi_1S_OWNPV_COV_", &cov_pv);
+   tree->SetBranchAddress("J_psi_1S_ENDVERTEX_COV_", &cov_jpsi);
+
+   TMatrixT<float> X(3, 1);
+   TMatrixT<float> r(1, 1);
+   TMatrixT<float> tmp(3, 1);
+
+   RooRealVar* dl = new RooRealVar("jpsi_DL", "jpsi_DL", -1000, 1000);
+   RooRealVar* dls = new RooRealVar("jpsi_DLS", "jpsi_DLS", -1000, 1000);
+
+   RooDataSet* ds = new RooDataSet("dls", "dls", RooArgSet(*dl, *dls));
+   const RooArgSet* obs = ds->get();
+   std::string dln = dl->GetName();
+   std::string dlsn = dls->GetName();
+   delete dl;
+   delete dls;
+   dl = static_cast<RooRealVar*>(obs->find(dln.c_str()));
+   dls = static_cast<RooRealVar*>(obs->find(dlsn.c_str()));
+
+   Long64_t n = tree->GetEntries();
+   for (Long64_t i = 0; i < n; ++i) {
+      if (i != 0 && i != n && i % (n / 20) == 0) {
+         cout << int(double(i + 20) / double(n) * 100) << "% ";
+         cout.flush();
+      }
+      if (!cut_list->Contains(i)) {
+         continue;
+      } else {
+         tree->GetEntry(i);
+      }
+
+      double D = sqrt((x - pv_x) * (x - pv_x) + (y- pv_y) * (y- pv_y) + (z- pv_z) + (z- pv_z));
+      dl->setVal(D);
+
+      X(0, 0) = x - pv_x;
+      X(1, 0) = y - pv_y;
+      X(2, 0) = z - pv_z;
+      X *= 1 / D;
+
+      TMatrixT<float> X_T(TMatrixT<float>::kTransposed, X);
+
+      TMatrixT<float> cjpsi(3, 3, &cov_jpsi[0][0]);
+
+      tmp.Mult(cjpsi, X);
+      r.Mult(X_T, tmp);
+
+      // Result is (c * tau)^2, set value in ps
+      double dle_jpsi = sqrt(r(0, 0));
+
+      TMatrixT<float> cpv(3, 3, &cov_pv[0][0]);
+      tmp.Mult(cpv, X);
+      r.Mult(X_T, tmp);
+
+      // Result is (c * tau)^2, set value in ps
+      double dle_pv = sqrt(r(0, 0));
+
+      dls->setVal(sqrt(dle_jpsi * dle_jpsi + dle_pv * dle_pv));
       ds->fill();
    }
    cout << endl;

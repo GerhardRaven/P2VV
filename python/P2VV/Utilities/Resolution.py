@@ -135,28 +135,29 @@ class SplitNPV(SplitUtil):
         bins = array('d', [-0.5 + i for i in range(5)] + [12])
         fmt = 'nPV_simul'
         SplitUtil.__init__(self, [nPV], {nPV : bins}, {nPV : 'nPV'}, fmt)
-
-parNames = {'N_prompt'         : ('#prompt', '\\# prompt \jpsi'),
-            'N_psi_ll'         : ('#longlived', '\\# long--lived \jpsi'),
+        
+parNames = {'N_prompt'         : ('#prompt',     '$N_{\\text{prompt}}$'),
+            'N_psi_ll'         : ('#longlived',  '$N_{\\text{ll}}$'),
+            'N_signal'         : ('#signal',     '\\# signal'),
             'N_bkg'            : ('#background', '\\# background'),
-            'N_signal'         : ('#signal', '\\# signal'),
-            'N_sig_wpv'        : ('#wpv' , '\\# wrong PV'),
-            'psi_t_fml'        : ('frac short lift', 'fraction short lived'),
-            'psi_t_ll_tau'     : ('tau long', 'long--lived $\\tau$'),
-            'psi_t_ml_tau'     : ('tau short', 'short--lived $\\tau$'),
-            'timeResMu'        : ('mean of Gaussians', 'common mean of Gaussians'),
+            'N_sig_wpv'        : ('#wpv' ,       '$N_{\\text{WPV}}$'),
+            'psi_t_fml'        : ('frac short lift', '$f_{\\text{sl}}$'),
+            'psi_t_ll_tau'     : ('tau long', '$\\tau_{\\text{ll}}$'),
+            'psi_t_ml_tau'     : ('tau short', '$\\tau_{\\text{sl}}$'),
+            'timeResMu'        : ('mean of Gaussians', '$\\mu$'),
             'timeResComb'      : ('sf comb', '$\\text{sf}_{\\text{comb}}$'),
-            'timeResFrac2'     : ('frac G2', 'fraction 2nd Gauss'),
+            'timeResFrac2'     : ('frac G2', '$f_2$'),
             'timeResSigmaSF_2' : ('sf G2', '$\\text{sf}_{2}$'),
             'timeResSigmaSF_1' : ('sf G1', '$\\text{sf}_{1}$'),
             'timeResSFMean'    : ('sf mean', '$\\overline{\\mathrm{sf}}$'),
             'timeResSFSigma'   : ('sf sigma', '$\\mathrm{sf}_{\sigma}$'),
             'sf_mean_offset'   : ('mean width offset', '$\\overline{\\sigma}$ offset'),
-            'sf_mean_slope'    : ('mean width slope', '$\\overline{\\sigma}$ slope'),
-            'sf_mean_quad'     : ('mean width quad', '$\\overline{\\sigma}$ quad'),
+            'sf_mean_slope'    : ('mean width slope', '$\\overline{\\sigma}$ $c_0$'),
+            'sf_mean_quad'     : ('mean width quad', '$\\overline{\\sigma}$ $c_1$'),
             'sf_sigma_offset'  : ('sigma width offset', '$\\sigma$ offset'),
-            'sf_sigma_slope'   : ('sigma width slope', '$\\sigma$ slope'),
-            'sf_sigma_quad'    : ('sigma width quad', '$\\sigma$ quad')
+            'sf_sigma_slope'   : ('sigma width slope', '$\\sigma_\\sigma$ $c_0$'),
+            'sf_sigma_quad'    : ('sigma width quad', '$\\sigma_\\sigma$ $c_1$'),
+            'sig_wpv_sigma'    : ('sigma WPV', '$\\sigma_{\\text{WPV}}$')
             }
 
 import os

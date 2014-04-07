@@ -1,0 +1,21 @@
+diff --git a/roofit/roostats/src/SPlot.cxx b/roofit/roostats/src/SPlot.cxx
+index c297e73..f007793 100644
+--- a/roofit/roostats/src/SPlot.cxx
++++ b/roofit/roostats/src/SPlot.cxx
+@@ -378,7 +378,7 @@ void SPlot::AddSWeight( RooAbsPdf* pdf, const RooArgList &yieldsTmp,
+   // Fit yields to the data with all other variables held constant
+   // This is necessary because SPlot assumes the yields minimixe -Log(likelihood)
+ 
+-  pdf->fitTo(*fSData, RooFit::Extended(kTRUE), RooFit::SumW2Error(kTRUE), RooFit::PrintLevel(-1), RooFit::PrintEvalErrors(-1) );
++  //pdf->fitTo(*fSData, RooFit::Extended(kTRUE), RooFit::SumW2Error(kTRUE), RooFit::PrintLevel(-1), RooFit::PrintEvalErrors(-1) );
+ 
+   // Hold the value of the fitted yields
+   std::vector<double> yieldsHolder;
+@@ -628,6 +628,7 @@ void SPlot::AddSWeight( RooAbsPdf* pdf, const RooArgList &yieldsTmp,
+   // Add the SWeights to the original data set
+ 
+   fSData->merge(sWeightData);
++  delete sWeightData;
+ 
+   //Restore yield values
+ 

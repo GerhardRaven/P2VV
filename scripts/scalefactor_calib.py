@@ -420,7 +420,7 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
         mean_canvas.SetLeftMargin(0.15)
         __canvases.append(mean_canvas)
         mean_graph.Draw("AP")
-        mean_graph.GetXaxis().SetTitle("estimated decay time error [ps]")
+        mean_graph.GetXaxis().SetTitle("#sigma_{t} [ps]")
         mean_graph.GetYaxis().SetTitle("#mu [ps]  ")
         mean_graph.GetYaxis().SetTitleOffset(1.07)
         def __dg(n, c):

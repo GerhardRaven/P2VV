@@ -1,6 +1,6 @@
 ########################################################################################################################
 ## Configuration ##
-################################
+###################
 from optparse import OptionParser
 parser = OptionParser()
 parser.add_option('-r', '--KKmomRew',     dest='KKmomRew',     default = 'vertical',            help='KK momentum reweighting approach (vertical/horizontal)')
@@ -11,17 +11,15 @@ parser.add_option('-e', '--eqStatBins',   dest='eqStatBins',   default = 'False'
 parser.add_option('-m', '--sevdaImpmnt',  dest='sevdaImpmnt',  default = 'True',                help='use only w_pkk weights to calcllate eff. oments')
 parser.add_option('-s', '--MCProd',       dest='MCProd',       default = '2011',                help='choose mc sample ( 2011,2012 )')
 parser.add_option('-n', '--iterNum',      dest='iterNum',      default = 1, type=int,           help='iteration number')
-parser.add_option('-a', '--nomAngAcc',    dest='nomAngAcc',    default = '',                    help='nominal angular acceptance')
 parser.add_option('-d', '--physPars',     dest='physPars',     default = '',                    help='physics aprameters')
-parser.add_option('-f', '--fit',          dest='fit',          default = 'False',               help='switch on/off fitting')
 parser.add_option('-w', '--writeData',    dest='writeData',    default = 'False',               help='save mc datasets to file')
 parser.add_option('-p', '--makePlots',    dest='makePlots',    default = 'False',               help='switch on/off plotting')
-parser.add_option('-l', '--statOnPlots',  dest='statOnPlots',  default = 'False',               help='legend or stats in plots')
+# parser.add_option('-l', '--statOnPlots',  dest='statOnPlots',  default = 'False',               help='legend or stats in plots')
 parser.add_option('-c', '--combMoms',     dest='combMoms',     default = 'False',               help='combine 2011,2012 moments')
 parser.add_option('-R', '--reduced',      dest='reduced',      default = 'False',               help='apply a mass cut for a reduced sample')
 (options, args) = parser.parse_args()
 
-# reweightng flow control
+# reweightng features control
 iterNumb              = options.iterNum
 RewApproach           = options.KKmomRew
 equalStatBins         = True if 'True' in options.eqStatBins else False
@@ -46,14 +44,12 @@ delIntermediateMoms   = False
 scaleWeightsToNumEntr = False
 reduced               = True if 'True' in options.reduced else False
 
-# fit configuration
-doFit            = True if 'True' in options.fit else False
-nCPU             = 8
-initialFitOnData = False
-
 # plotig configuration
 makePlots = True if 'True' in options.makePlots else False
 
+###########################################################################################################
+## specify inputs ##
+####################
 # source distribution
 dataSetsPath     = '/project/bfys/jleerdam/data/Bs2Jpsiphi/angEff/'
 mcData11FileName = 'Bs2JpsiPhi_MC2011_Sim08a_ntupleB_20130909_angEff.root'
@@ -64,22 +60,18 @@ if MCProd == '2012': monteCarloData = dataSetsPath + mcData12FileName
 
 # target distribution
 dataPath     = dataSetsPath + 'P2VVDataSets%sReco14_I2Mass_6KKMassBins_2TagCats_kinematics_HLT2B.root'%MCProd
-fitDataPath  = dataSetsPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root' if doFit else None
 sDataName    = 'JpsiKK_sigSWeight'
-sWeightsName = 'sWeights_ipatia'
+# sWeightsName = 'sWeights_ipatia'
 
-# nominal angluar acceptance 
-nomAngEffMomentsFile = options.nomAngAcc if options.nomAngAcc \
-    else '/project/bfys/vsyropou/data/uncorrecteEffMoments/MC20112012_Sim08/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_weights'
+# angluar acceptance baseline filename  
 outputEffMomentsBaselineName = 'hel_UB_UT_trueTime_BkgCat050_KK30'
 
 # source generating physics  parameters
-## TODO:: set mc pars from a file just like setdatapars
 from P2VV.Utilities.MCReweighting import parValuesMcSim08_6KKmassBins as monteCarloParameters
 
 # target physics parameters
 dataParameters = options.physPars if options.physPars\
-    else '/project/bfys/vsyropou/data/nominalFitResults/20112012Reco14DataFitValues_6KKMassBins_unbl.par'
+    else '/project/bfys/vsyropou/data/Bs2JpsiPhi/nominalFitResults/corrAngAccDEC/20112012Reco14DataFitValues_6KKMassBins_unbl.par'
 
 ###########################################################################################################################
 ## Begin iterative procedure  ##
@@ -95,16 +87,22 @@ from ROOT import TFile
 from math import pi, sqrt
 import os, gc
 
-# define a workspace
+print 'P2VV - INFO: Start reweighting mc data_%s.'%MCProd
+print 'P2VV - INFO:\n  Source distribution file: %s. \n  Target distribution file: %s.'%(monteCarloData,dataPath)
+source = lambda: mcDataMngr.getDataSet()      # distribution to be reweighted
+target = TFile.Open(dataPath).Get(sDataName)  # distribution to be matched with
+
+# workspace
 worksp = RooObject( workspace = 'iterativeProcedure' ).ws()
 
-# initialise physics matching class and build MC pdf
+# build MC pdf, initialise physics matching class
 print 'P2VV - INFO: Iteration Number %s. Running reweighting procedure in sample %s'%(iterNumb, mcData11FileName if MCProd=='2011' else mcData12FileName)
 PhysicsReweight = MatchPhysics( monteCarloData, mcTupleName , MonteCarloProduction = MCProd, Reduced = reduced )
 
-# manage the weights (avoid creating too many datasets)
+# manage the weights efficiently
 mcDataMngr = WeightedDataSetsManager( source = PhysicsReweight.getDataSet() )
 mcDataMngr['saveIntermediateDatasets'] = True if makePlots else False
+mcDataMngr['iterationNumber']          = iterNumb
 
 # get observables
 angles     = [worksp[o] for o in ['helcosthetaK','helcosthetaL','helphi']]
@@ -115,13 +113,6 @@ Kmomenta   = [worksp[o] for o in [ '%s_%s' % ( part, comp ) for part in ['Kplus'
 Bmomenta   = [ worksp['B_P'], worksp['B_Pt'] ]
 KKMass     = [worksp['mdau2']]
 KKMassCat  = PhysicsReweight.getPdf().indexCat()
-
-# begin reweighting procedure
-print 'P2VV - INFO: Start reweighting mc data_%s.'%MCProd
-print 'P2VV - INFO:\n  Source distribution file: %s. \n  Target distribution file: %s.'%(monteCarloData,dataPath)
-source = lambda: mcDataMngr.getDataSet()
-target = TFile.Open(dataPath).Get(sDataName)
-mcDataMngr['iterationNumber'] = iterNumb
 
 # match B momentum and / or mkk, (with different order)
 if reweightBmomentum and reweightMkk:
@@ -239,7 +230,6 @@ if makePlots:
                                               Legend   = False,
                                               **dataSets
                                               )
-            assert False
         # plot weights
         plotWeightsList = []
         if (reweightKKmom,RewApproach)==(True,'vertical'):  plotWeightsList += [ KmomentaWeightsName ]    
@@ -250,12 +240,25 @@ if makePlots:
     else: print 'P2VV - WARNING: There is no point in ploting with this reweighting configuration, skipping plotting.'
 
 # write weighted mc data to a file
-if writeWeightedData: # TODO: got errors fix this
+if writeWeightedData:
+    from ROOT import TObject
+
+    # weight name
+    wName = 'w_'
+    for name in mcDataMngr['WeightsLists'].keys(): wName += name + '_'
+    wName += str(iterNumb)
+
+    # open file
     weightedMcFileName = monteCarloData.partition(dataSetsPath)[2].partition('.root')[0] + '_' + str(iterNumb) + '.root'
     wMcFile = TFile.Open( weightedMcFileName, 'recreate')
-    mcDataMngr.getDataSet().Write()
+    tree = mcDataMngr.getDataSet().buildTree( Name         = mcDataMngr.getDataSet().GetName(),
+                                              Title        = mcDataMngr.getDataSet().GetTitle(),
+                                              WeightName   = wName,
+                                              RooFitFormat = False
+                                              )
+    tree.Write('',TObject.kOverwrite)
     wMcFile.Close()
-    del wMcFile
+    del wMcFile, tree
     print 'P2VV -INFO: Wrote reweighted MC dataset to file %s'%weightedMcFileName
 
 # save memory

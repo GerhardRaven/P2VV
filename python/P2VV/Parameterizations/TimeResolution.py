@@ -3,6 +3,7 @@
 ##                                                                                                                                       ##
 ## authors:                                                                                                                              ##
 ##   GR,  Gerhard Raven,      Nikhef & VU, Gerhard.Raven@nikhef.nl                                                                       ##
+##   RA,  Roel Aaij           Nikhef, roel.aaij@nikhef.nl                                                                                ##
 ##                                                                                                                                       ##
 ###########################################################################################################################################
 
@@ -147,7 +148,6 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         gexps = kwargs.pop('GExp', dict([(i[0], False) for i in sigmasSFs]))
         fracs     = kwargs.pop('Fractions', [(2, 0.165)])
         split_fracs = kwargs.pop('SplitFracs', True)
-        split_sfs = kwargs.pop('SplitSFS', False)
         self.__split_mean = kwargs.pop('SplitMean', False)
         self.__simultaneous = kwargs.pop('Simultaneous', False)
         self.__mu_param = kwargs.pop('MeanParameterisation', '')
@@ -164,7 +164,8 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
             self.__mu_placeholder = self.__sf_placeholder
         
         assert(len(sigmasSFs) - 1 == len(fracs))
-
+        assert(not (self.__simultaneous and self.__sf_param))
+        
         ## If this is to be fitted in a non-simultaneous fit, the mean sigmat
         ## value should be passed in to get the parameterisation correct.
         assert(not (self.__split_mean and self.__mu_param))
@@ -197,7 +198,6 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                                              ObjectType = 'FormulaVar', Arguments = args)
         self._cache = kwargs.pop('Cache', True)
         param = kwargs.pop('Parameterise', False)
-        pee = not (self.__simultaneous and ((sf_param and not split_sfs) or self.__mu_param))
         assert(param in [False, 'RMS', 'Comb'])
         self._timeResSigmasSFs = [ self._parseArg( 'timeResSigmaSF_%s' % num, kwargs, Value = val, MinMax = (0.001, 20) )\
                                   for num, val in sigmasSFs ]
@@ -216,16 +216,9 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                 self._parseArg('sf_mean_quad', kwargs, Value = -4, MinMax = (-20, 20))
                 self._parseArg('sf_sigma_quad', kwargs, Value = 8, MinMax = (-20, 20))
             if sf_param == 'linear':
-                if self.__simultaneous:
-                    formula = '@2 + @3 * (@0 - @1)'
-                    args = {'mean'  : [self._sigmat, self.__sf_placeholder, self._sf_mean_offset, self._sf_mean_slope],
-                            'sigma' : [self._sigmat, self.__sf_placeholder, self._sf_sigma_offset, self._sf_sigma_slope]}
-                    if split_sfs:
-                        self._splitVars += [self._sf_mean_slope, self._sf_sigma_slope]
-                else:
-                    formula = '@2 + @3 * (@0 - @1)'
-                    args = {'mean'  : [self._sigmat, self.__sf_placeholder, self._sf_mean_offset, self._sf_mean_slope],
-                            'sigma' : [self._sigmat, self.__sf_placeholder, self._sf_sigma_offset, self._sf_sigma_slope]}
+                formula = '@2 + @3 * (@0 - @1)'
+                args = {'mean'  : [self._sigmat, self.__sf_placeholder, self._sf_mean_offset, self._sf_mean_slope],
+                        'sigma' : [self._sigmat, self.__sf_placeholder, self._sf_sigma_offset, self._sf_sigma_slope]}
                 self._sf_mean = self._parseArg('timeResSFMean_linear', kwargs,
                                                 Formula = formula, ObjectType = 'FormulaVar',
                                                 Arguments = args['mean'])
@@ -233,16 +226,9 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                                                 Formula = formula, ObjectType = 'FormulaVar',
                                                 Arguments = args['sigma'])
             elif sf_param == 'linear_no_offset':
-                if self.__simultaneous:
-                    formula = '@1 * @0'
-                    args = {'mean'  : [self.__sf_placeholder, self._sf_mean_slope],
-                            'sigma' : [self.__sf_placeholder, self._sf_sigma_slope]}
-                    if split_sfs:
-                        self._splitVars += [self._sf_mean_slope, self._sf_sigma_slope]
-                else:
-                    formula = '@1 * @0'
-                    args = {'mean'  : [self._sigmat, self._sf_mean_slope],
-                            'sigma' : [self._sigmat, self._sf_sigma_slope]}
+                formula = '@1 * @0'
+                args = {'mean'  : [self._sigmat, self._sf_mean_slope],
+                        'sigma' : [self._sigmat, self._sf_sigma_slope]}
                 self._sf_mean = self._parseArg('timeResSFMean_linear', kwargs,
                                                 Formula = formula, ObjectType = 'FormulaVar',
                                                 Arguments = args['mean'])
@@ -250,17 +236,8 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                                                 Formula = formula, ObjectType = 'FormulaVar',
                                                 Arguments = args['sigma'])
             elif sf_param == ('quadratic'):
-                if self.__simultaneous:
-                    formula = '@1 + @2 * @0 + @3 * @0 * @0'
-                    args = {'mean'  : [self.__sf_placeholder, self._sf_mean_offset,
-                                       self._sf_mean_slope, self._sf_mean_quad],
-                            'sigma' : [self.__sf_placeholder, self._sf_sigma_offset,
-                                       self._sf_sigma_slope, self._sf_sigma_quad]}
-                    if split_sfs:
-                        self._splitVars += [self._sf_mean_slope, self._sf_sigma_slope, self._sf_mean_quad, self._sf_sigma_quad]
-                else:
-                    formula = '@2 + @3 * (@0 - @1) + @4 * (@0 - @1) * (@0 - @1)'
-                    args = {'mean'  : [self._sigmat, self.__sf_placeholder, self._sf_mean_offset, self._sf_mean_slope, self._sf_mean_quad],
+                formula = '@2 + @3 * (@0 - @1) + @4 * (@0 - @1) * (@0 - @1)'
+                args = {'mean'  : [self._sigmat, self.__sf_placeholder, self._sf_mean_offset, self._sf_mean_slope, self._sf_mean_quad],
                             'sigma' : [self._sigmat, self.__sf_placeholder, self._sf_sigma_offset, self._sf_sigma_slope, self._sf_sigma_quad]}
                 self._sf_mean = self._parseArg('timeResSFMean_quad', kwargs,
                                                 Formula = formula, ObjectType = 'FormulaVar',
@@ -269,16 +246,9 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                                                 Formula = formula, ObjectType = 'FormulaVar',
                                                 Arguments = args['sigma'])
             elif sf_param == ('quadratic_no_offset'):
-                if self.__simultaneous:
-                    formula = '(@2 + @3 * @0) * @1'
-                    args = {'mean'  : [self.__sf_placeholder, self._sigmat, self._sf_mean_slope, self._sf_mean_quad],
-                            'sigma' : [self.__sf_placeholder, self._sigmat, self._sf_sigma_slope, self._sf_sigma_quad]}
-                    if split_sfs:
-                        self._splitVars += [self._sf_mean_slope, self._sf_sigma_slope, self._sf_mean_quad, self._sf_sigma_quad]
-                else:
-                    formula = '(@2 + @3 * (@0 - @1)) * @0'
-                    args = {'mean'  : [self._sigmat, self.__sf_placeholder, self._sf_mean_slope, self._sf_mean_quad],
-                            'sigma' : [self._sigmat, self.__sf_placeholder, self._sf_sigma_slope, self._sf_sigma_quad]}
+                formula = '(@2 + @3 * (@0 - @1)) * @0'
+                args = {'mean'  : [self._sigmat, self.__sf_placeholder, self._sf_mean_slope, self._sf_mean_quad],
+                        'sigma' : [self._sigmat, self.__sf_placeholder, self._sf_sigma_slope, self._sf_sigma_quad]}
                 self._sf_mean = self._parseArg('timeResSFMean_quad', kwargs,
                                                 Formula = formula, ObjectType = 'FormulaVar',
                                                 Arguments = args['mean'])
@@ -310,16 +280,9 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                 self._parseArg('sf_two_offset', kwargs, Value = 0.4, MinMax = (-10, 10))
                 self._parseArg('sf_two_slope', kwargs, Value = 1., MinMax = (0.1, 10))
             if sf_param == 'linear':
-                if self.__simultaneous:
-                    formula = '@1 + @2 * @0'
-                    args = {'one' : [self.__sf_placeholder, self._sf_one_offset, self._sf_one_slope],
-                            'two' : [self.__sf_placeholder, self._sf_two_offset, self._sf_two_slope]}
-                    if split_sfs:
-                        self._splitVars += [self._sf_one_slope, self._sf_two_slope]
-                else:
-                    formula = '@2 + @3 * (@0 - @1)'
-                    args = {'one' : [self._sigmat, self.__sf_placeholder, self._sf_one_offset, self._sf_one_slope],
-                            'two' : [self._sigmat, self.__sf_placeholder, self._sf_two_offset, self._sf_two_slope]}
+                formula = '@2 + @3 * (@0 - @1)'
+                args = {'one' : [self._sigmat, self.__sf_placeholder, self._sf_one_offset, self._sf_one_slope],
+                        'two' : [self._sigmat, self.__sf_placeholder, self._sf_two_offset, self._sf_two_slope]}
                 self._sf_one = self._parseArg('sf_one_linear', kwargs,
                                                 Formula = formula, ObjectType = 'FormulaVar',
                                                 Arguments = args['one'])
@@ -329,16 +292,9 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                 self._timeResSigmasSFs[-1] = self._sf_one
                 self._timeResSigmasSFs[-2] = self._sf_two
             elif sf_param == 'linear_no_offset':
-                if self.__simultaneous:
-                    formula = '@1 * @0'
-                    args = {'one' : [self.__sf_placeholder, self._sf_one_slope],
-                            'two' : [self.__sf_placeholder, self._sf_two_slope]}
-                    if split_sfs:
-                        self._splitVars += [self._sf_mean_slope, self._sf_sigma_slope]
-                else:
-                    formula = '@1 * @0'
-                    args = {'one' : [self._sigmat, self._sf_one_slope],
-                            'two' : [self._sigmat, self._sf_two_slope]}
+                formula = '@1 * @0'
+                args = {'one' : [self._sigmat, self._sf_one_slope],
+                        'two' : [self._sigmat, self._sf_two_slope]}
                 self._sf_one = self._parseArg('sf_one_linear', kwargs,
                                                 Formula = formula, ObjectType = 'FormulaVar',
                                                 Arguments = args['one'])
@@ -350,16 +306,9 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
             elif sf_param == 'quadratic':
                 self._parseArg('sf_one_quad', kwargs, Value = 0.1, MinMax = (-10, 10) )
                 self._parseArg('sf_two_quad', kwargs, Value = 0.1, MinMax = (-10, 10) )
-                if self.__simultaneous:
-                    formula = '@1 + @2 * @0 + @3 * @0 * @0'
-                    args = {'one' : [self.__sf_placeholder, self._sf_one_offset, self._sf_one_slope, self._sf_one_quad],
-                            'two' : [self.__sf_placeholder, self._sf_two_offset, self._sf_two_slope, self._sf_two_quad]}
-                    if split_sfs:
-                        self._splitVars += [self._sf_one_slope, self._sf_one_quad, self._sf_two_slope, self._sf_two_quad]
-                else:
-                    formula = '@2 + @3 * (@0 - @1) + @4 * (@0 - @1) * (@0 - @1)'
-                    args = {'one' : [self._sigmat, self.__sf_placeholder, self._sf_one_offset, self._sf_one_slope, self._sf_one_quad],
-                            'two' : [self._sigmat, self.__sf_placeholder, self._sf_two_offset, self._sf_two_slope, self._sf_two_quad]}
+                formula = '@2 + @3 * (@0 - @1) + @4 * (@0 - @1) * (@0 - @1)'
+                args = {'one' : [self._sigmat, self.__sf_placeholder, self._sf_one_offset, self._sf_one_slope, self._sf_one_quad],
+                        'two' : [self._sigmat, self.__sf_placeholder, self._sf_two_offset, self._sf_two_slope, self._sf_two_quad]}
                 self._sf_one = self._parseArg('timeResSFMean_quad', kwargs,
                                                 Formula = formula, ObjectType = 'FormulaVar',
                                                 Arguments = args['one'])
@@ -391,7 +340,7 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
             model_type = GExpModel if gexp else GaussModel
             model = ResolutionModel(  Name = '%stimeResGauss_%s' % (namePF, numVal[0]),
                                       Type = model_type, Parameters = params,
-                                      ConditionalObservables = [ self._sigmat ] if pee else [])
+                                      ConditionalObservables = [self._sigmat])
             models.append(model)
         TimeResolution.__init__(self, Name = Name
                                 , Model = AddModel(Name, Models = models, Fractions = self._timeResFracs)
@@ -574,7 +523,3 @@ class GExp_Gauss(TimeResolution):
                                 Model = AddModel("%sadd_model" % namePF, Fractions = [gexp_frac],
                                                  Models = [gexp_model, gauss_model],
                                                  ConditionalObservables = [sigmat]), Cache = cache)
-
-
-def rms(sf1, f, sf2):
-   return (1 - f) * sf1 * sf1 + f * sf2 * sf2

@@ -74,8 +74,9 @@ RooCombEffConstraint::RooCombEffConstraint(const char *name, const char *title,
     Int_t numBins, const RooArgList& nu, const RooArgList& eps1A,
     const RooArgList& eps1B, const RooArgList& eps2A, const RooArgList& eps2B,
     const vector< vector<Double_t> >& sumW,
-    const vector< vector<Double_t> >& sumWSq) :
+    const vector< vector<Double_t> >& sumWSq, Int_t strategy) :
   RooAbsPdf(name, title),
+  _strat(strategy),
   _nu("!nu", "nu", this),
   _eps1A("!eps1A", "epsilon 1A", this),
   _eps1B("!eps1B", "epsilon 1B", this),
@@ -83,6 +84,8 @@ RooCombEffConstraint::RooCombEffConstraint(const char *name, const char *title,
   _eps2B("!eps2B", "epsilon 2B", this),
   _nBins(numBins)
 {
+  assert(_strat == 0 || _strat == 1 || _strat == 2);
+
   assert(_nBins > 0 && (nu.getSize() == 1 || nu.getSize() == _nBins)
        && (eps1A.getSize() == 1 || eps1A.getSize() == _nBins)
        && (eps1B.getSize() == 1 || eps1B.getSize() == _nBins)
@@ -107,23 +110,37 @@ RooCombEffConstraint::RooCombEffConstraint(const char *name, const char *title,
   for (Int_t cIt = 0; cIt < 6; ++cIt) {
     assert((Int_t)sumW[cIt].size() == _nBins
         && (Int_t)sumWSq[cIt].size() == _nBins);
-    if (cIt == 1) {
-      assert((Int_t)sumW[4].size() == _nBins
-          && (Int_t)sumWSq[4].size() == _nBins);
-    } else if (cIt == 4) {
+    if ((_strat == 1 && cIt == 1) || (_strat == 2 && cIt == 3)) {
+      assert((Int_t)sumW[_strat == 1 ? 4 : 5].size() == _nBins
+          && (Int_t)sumWSq[_strat == 1 ? 4 : 5].size() == _nBins);
+    } else if ((_strat == 1 && cIt == 4)
+        || (_strat == 2 && (cIt == 4 || cIt == 5))) {
       continue;
     }
 
     vector<Double_t> sWVec;
     vector<Double_t> sWSqVec;
+    Bool_t zeroWeight = kFALSE;
     for (Int_t bIt = 0; bIt < _nBins; ++bIt) {
-      Double_t sW = cIt != 1
-          ? sumW[cIt][bIt] : sumW[1][bIt] + sumW[4][bIt];
-      Double_t sWSq = cIt != 1
-          ? sumWSq[cIt][bIt] : sumWSq[1][bIt] + sumWSq[4][bIt];
-      assert(sW > 0.01 && sWSq > 0.01);
+      Double_t sW = sumW[cIt][bIt];
+      Double_t sWSq = sumWSq[cIt][bIt];
+      if (_strat == 1 && cIt == 1) {
+        sW += sumW[4][bIt];
+        sWSq += sumWSq[4][bIt];
+      } else if (_strat == 2 && cIt == 3) {
+        sW += sumW[5][bIt];
+        sWSq += sumWSq[5][bIt];
+      }
+      assert((sW > 0.01 && sWSq > 0.01) || (sW == 0. && sWSq == 0.));
+      if (sW == 0.) zeroWeight = kTRUE;
       sWVec.push_back(sW);
       sWSqVec.push_back(sWSq);
+    }
+    if (zeroWeight) {
+      coutW(InputArguments) << "RooCombEffConstraint::ctor(" << GetName()
+          << "): zero sums of (squared) weights found for category " << cIt + 1
+          << ": constraining corresponding yield parameters to zero"
+          <<  std::endl;
     }
     _sumW.push_back(sWVec);
     _sumWSq.push_back(sWSqVec);
@@ -135,6 +152,7 @@ RooCombEffConstraint::RooCombEffConstraint(const char *name, const char *title,
 RooCombEffConstraint::RooCombEffConstraint(const RooCombEffConstraint& other,
     const char* name) :
   RooAbsPdf(other, name),
+  _strat(other._strat),
   _nu("!nu", this, other._nu),
   _eps1A("!eps1A", this, other._eps1A),
   _eps1B("!eps1B", this, other._eps1B),
@@ -204,14 +222,39 @@ Double_t RooCombEffConstraint::getLogVal(const RooArgSet* nset) const
     Double_t nu2A  = e2A * (1. - e2B) * nuTot;
     Double_t nu2B  = (1. - e2A) * e2B * nuTot;
     Double_t nu2AB = e2A * e2B * nuTot;
-    Double_t nu[5] = {e1A * nu2A, (e1A + e1B) * nu2B, e1A * nu2AB,
-        e1B * nu2A, e1B * nu2AB};
+    std::vector<Double_t> nu;
+    if (_strat == 1) {
+      nu.push_back(e1A * nu2A);
+      nu.push_back((e1A + e1B) * nu2B);
+      nu.push_back(e1A * nu2AB);
+      nu.push_back(e1B * nu2A);
+      nu.push_back(e1B * nu2AB);
+    } else if (_strat == 2) {
+      nu.push_back(e1A * nu2A);
+      nu.push_back(e1A * nu2B);
+      nu.push_back(e1A * nu2AB);
+      nu.push_back(e1B * (nu2A + nu2AB));
+    } else {
+      nu.push_back(e1A * nu2A);
+      nu.push_back(e1A * nu2B);
+      nu.push_back(e1A * nu2AB);
+      nu.push_back(e1B * nu2A);
+      nu.push_back(e1B * nu2B);
+      nu.push_back(e1B * nu2AB);
+    }
 
-    for (Int_t cIt = 0; cIt < 5; ++cIt) {
-      Double_t sumW = _sumW[cIt][bIt];
+    // construct log-likelihood sum for five nu values
+    for (UInt_t cIt = 0; cIt < nu.size(); ++cIt) {
       Double_t sumWSq = _sumWSq[cIt][bIt];
-      Double_t nuN = nuNorm(nu[cIt], sumW, _normFac[cIt], bIt);
-      lnL += sumW / sumWSq * (sumW * TMath::Log(nuN) - nu[cIt]);
+      if (sumWSq > 0.) {
+        // use modified poisson constraint for this category
+        Double_t sumW = _sumW[cIt][bIt];
+        Double_t nuN = nuNorm(nu[cIt], sumW, _normFac[cIt], bIt);
+        lnL += sumW / sumWSq * (sumW * TMath::Log(nuN) - nu[cIt]);
+      } else {
+        // use "zero" constraint for this category
+        lnL += -1.e10 * nu[cIt] * nu[cIt];
+      }
     }
   }
 
