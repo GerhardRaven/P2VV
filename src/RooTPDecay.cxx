@@ -32,6 +32,7 @@
 #include "RooRealVar.h"
 #include "RooRandom.h"
 #include "RooGaussian.h"
+#include "RooGenContext.h"
 
 // Local
 #include "P2VV/RooTPDecay.h"
@@ -58,9 +59,9 @@ RooTPDecay::RooTPDecay(const char *name, const char *title,
      _z("z", "z coordinate", this, z, kFALSE, kFALSE),
      _zPDF("zPDF", "Z distribution PDF", this, zPDF, kFALSE, kFALSE),
      _d("TPDecay_distance", "TPDecay_distance", -50, 50),
-     _mean("TPDecay_mean", "TPDecay_mean", 0.1),
-     _gmean("TPDecay_gmean", "TPDecay_gmean", 0.0),
-     _sigma("TPDecay_smearing", "TPDecay_smearing", 0.1)
+     _mean("TPDecay_mean", "TPDecay_mean", 0.2),
+     _sigma("TPDecay_smearing", "TPDecay_smearing", 0.1),
+     _debug(false)
 {
    _nPV.Print("v");
    _tps.add(tps);
@@ -68,7 +69,7 @@ RooTPDecay::RooTPDecay(const char *name, const char *title,
    _max = t.getMax();
    assert(_tps.getSize() > 0 && _tps.getSize() % 2 == 0);
 
-   _gauss = new RooGaussian("TPDecay_gauss", "TPDecay_gauss", _d, _gmean, _sigma);
+   _gauss = new RooGaussian("TPDecay_gauss", "TPDecay_gauss", _d, _mean, _sigma);
 
 }
 
@@ -82,10 +83,10 @@ RooTPDecay::RooTPDecay(const RooTPDecay& other, const char* name)
      _zPDF("zPDF", this, other._zPDF),
      _d(other._d),
      _mean(other._mean),
-     _gmean(other._gmean),
      _sigma(other._sigma),
      _min(other._min),
-     _max(other._max)
+     _max(other._max),
+     _debug(other._debug)
 {
    // Copy constructor
    const char* gname = other._gauss->GetName();
@@ -102,6 +103,15 @@ RooTPDecay::~RooTPDecay()
 }
 
 
+//_____________________________________________________________________________
+RooAbsGenContext* RooTPDecay::genContext(const RooArgSet &vars, const RooDataSet *prototype,
+                                         const RooArgSet* auxProto, Bool_t verbose) const
+{
+   // Interface function to create a generator context from a p.d.f. The tps are forced
+   // to be generated directly.
+   RooArgSet tps(_tps);
+   return new RooGenContext(*this, vars, prototype, auxProto, verbose, &tps);
+}
 
 //_____________________________________________________________________________
 Int_t RooTPDecay::getGenerator(const RooArgSet& directVars, RooArgSet &generateVars, Bool_t /*staticInitOK*/) const
@@ -131,16 +141,17 @@ void RooTPDecay::initGenerator(Int_t /*code*/)
    _gauss->initGenerator(_gCode);
 }
 
-#ifdef STANDALONE
 //_____________________________________________________________________________
 void RooTPDecay::generateEvent(Int_t code)
 {
    
    assert(code == 1 || code == 2) ;
-   // Generate decay time
-   RooDecay::generateEvent(code);
 
-   if (code == 2) return;
+   if (code == 2) {
+      // Generate decay time
+      RooDecay::generateEvent(code);
+      return;
+   }
 
    vector<double> PVz;
    PVz.reserve(10);
@@ -163,6 +174,9 @@ void RooTPDecay::generateEvent(Int_t code)
          if (f > rand) break;
          ++n;
       }
+
+      if (_debug) cout << "nPV = " << n << endl;
+
       for (int i = 0; i < n; ++i) {
          RooAbsPdf* zPDF = static_cast<RooAbsPdf*>(_zPDF.absArg());
          zPDF->generateEvent(_zCode);
@@ -178,18 +192,31 @@ void RooTPDecay::generateEvent(Int_t code)
          j++;
       }
 
+      if (_debug) cout << "origin PV = " << j << endl;
+
       // Add the decay time at all turning points. The first TP is from true to false
       // and the last from false to true.
       for (size_t i = 0; i < PVz.size(); ++i) {
          double z = PVz[i];
+         if (_debug) cout << "PVz = " << z << endl;
 
          // Smear the turning point distance
          _gauss->generateEvent(_gCode);
-         double d = fabs(_d.getVal()) + _mean.getVal();
-         tps.push_back(make_pair((PVz[j] - (z + d)) / c_light, (PVz[j] - (z - d)) / c_light));
+         double d = fabs(_d.getVal());
+         double tp_min = (PVz[j] - (z + d)) / c_light, tp_max = (PVz[j] - (z - d)) / c_light;
+         if (_debug) cout << "tps = " << tp_min << " " << tp_max << endl;
+         tps.push_back(make_pair(tp_min, tp_max));
       }
 
       std::sort(tps.begin(), tps.end(), sort_tps);
+      if (_debug) {
+         cout << "tps = ";
+         for (size_t i = 0; i < tps.size(); ++i) {
+            if (i != 0) cout << " ";
+            cout << "(" << tps[i].first << "," << tps[i].second << ")";
+         }
+         cout << endl;
+      }
 
       // Check for overlaps
       for (size_t i = 0; i < tps.size(); ++i) {
@@ -203,10 +230,19 @@ void RooTPDecay::generateEvent(Int_t code)
          }
       }
 
+      if (_debug) {
+         cout << "ao tps = ";
+         for (size_t i = 0; i < tps.size(); ++i) {
+            if (i != 0) cout << " ";
+            cout << "(" << tps[i].first << "," << tps[i].second << ")";
+         }
+         cout << endl;
+      }
+
       // Check if the lifetime / momentum combination yields a candidate inside the acceptance.
       bool bad = false;
-      for (size_t i = 0; i < tps.size() - 1; ++i) {
-         if (_t > tps[i].first && _t < tps[i + 1].second) {
+      for (size_t i = 0; i < tps.size(); ++i) {
+         if (_t > tps[i].first && _t < tps[i].second) {
             bad = true;
             break;
          }
@@ -214,10 +250,13 @@ void RooTPDecay::generateEvent(Int_t code)
 
       // Try again
       if (bad) {
+         if (_debug) cout << "t = " << double(_t) << " not in acceptance." << endl;
          tps.clear();
          PVz.clear();
          continue;
-      }
+      } else if (_debug) {
+         cout << "t = " << double(_t) << " in acceptance." << endl;
+      } 
 
       // Copy to a regular vector
       for (size_t i = 0; i < tps.size(); ++i) {
@@ -243,6 +282,19 @@ void RooTPDecay::generateEvent(Int_t code)
          if (i == (tmp_tps.size() - 1)) {
             new_tps.push_back(_max);
          }
+      }
+      if (new_tps.empty()) {
+         // Nothing left in lifetime range.
+         continue;
+      }
+
+      if (_debug) {
+         cout << "new_tps = ";
+         for (size_t i = 0; i < new_tps.size(); ++i) {
+            if (i != 0) cout << ",";
+            cout << new_tps[i];
+         }
+         cout << endl;
       }
 
       assert(new_tps.size() != 0 &&  new_tps.size() % 2 == 0);
@@ -274,6 +326,15 @@ void RooTPDecay::generateEvent(Int_t code)
          }
       }
 
+      if (_debug) {
+         cout << "tmp_tps = ";
+         for (size_t i = 0; i < tmp_tps.size(); ++i) {
+            if (i != 0) cout << ",";
+            cout << tmp_tps[i];
+         }
+         cout << endl;
+      }
+
       // Set output RealVars to generated values
       for (size_t i = 0; i < tmp_tps.size(); ++i) {
          RooAbsRealLValue* tp = dynamic_cast<RooAbsRealLValue*>(_tps.at(i));
@@ -282,10 +343,3 @@ void RooTPDecay::generateEvent(Int_t code)
       break;
    }  
 }
-#else
-//_____________________________________________________________________________
-void RooTPDecay::generateEvent(Int_t /* code */)
-{
-   
-}
-#endif

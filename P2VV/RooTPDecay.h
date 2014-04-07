@@ -36,15 +36,22 @@ public:
    virtual TObject* clone(const char* newname) const { return new RooTPDecay(*this, newname); }
    virtual ~RooTPDecay();
 
+   virtual RooAbsGenContext* genContext(const RooArgSet &vars, const RooDataSet *prototype=0, 
+                                        const RooArgSet* auxProto=0, Bool_t verbose= kFALSE) const ;
+
    virtual Int_t getGenerator(const RooArgSet& directVars, RooArgSet &generateVars, Bool_t staticInitOK=kTRUE) const;
    virtual void initGenerator(Int_t /*code*/);
    virtual void generateEvent(Int_t code);
+
   
-   double getDistance() const { return _mean.getVal(); }
+   double distance() const { return _mean.getVal(); }
    void setDistance(const double d) { _mean.setVal(d); }
 
-   double getSmearing() const { return _sigma.getVal(); }
+   double smearing() const { return _sigma.getVal(); }
    void setSmearing(const double s) { _sigma.setVal(s); }
+
+   void setDebug(bool d) { _debug = d; }
+   bool debug() { return _debug; }
 
 protected:
 
@@ -57,12 +64,12 @@ protected:
    // default distance = 0.1 mm (0.3ps * c_light)
    RooRealVar   _d;
    RooRealVar   _mean;
-   RooConstVar  _gmean;
    RooRealVar   _sigma;
    RooGaussian* _gauss;
    mutable int  _gCode;
    double       _min;
    double       _max;
+   bool         _debug;
 
    ClassDef(RooTPDecay,1) // General decay function p.d.f 
 };

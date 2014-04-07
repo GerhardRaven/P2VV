@@ -77,5 +77,8 @@ struct Instantiations {
    std::vector<std::pair<double, double> > _i21;
    std::pair<TMatrixDSym, TMatrixDSym> _i22;
 
+   std::map<std::string, RooDataSet*> _i23;
+   std::pair<std::string, RooDataSet*> _i24;
+
 };
 #endif // DICT_P2VVDICT_H
