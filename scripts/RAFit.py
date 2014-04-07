@@ -71,11 +71,12 @@ constLambdaCP     = ''  # 'lamb'
 equalAbsLambdaCPs = False
 
 # PDF options
-pdfConfig['timeResType']       = 'event3fb' # 'eventNoMean'
-timeResSystType                = 'mean_param' # 'mean_param', 'quadratic_no_offset', 'linear'
-pdfConfig['timeEffType']       = 'paper2012' # 'fit_uniformUB' # 'fit_uniformUB' # 'paper2012' # 'HLT1Unbiased'
-pdfConfig['timeEffParameters'] = { } # dict(RandomBinOrder = False) # dict( Parameterization = 'Spline', Fit = False ) # dict( Fit = False, RandomBinOrder = False )
-pdfConfig['constrainBeta']     = ''  # '' / 'constrain' / 'fixed' / 'noBeta'
+pdfConfig['timeResType']           = 'event3fb' # 'eventNoMean'
+timeResSystType                    = 'mean_param' # 'mean_param', 'quadratic_no_offset', 'linear'
+pdfConfig['timeEffType']           = 'paper2012' # 'fit_uniformUB' # 'fit_uniformUB' # 'paper2012' # 'HLT1Unbiased'
+pdfConfig['timeEffConstraintType'] = 'poisson'
+pdfConfig['timeEffParameters']     = { } # dict(RandomBinOrder = False) # dict( Parameterization = 'Spline', Fit = False ) # dict( Fit = False, RandomBinOrder = False )
+pdfConfig['constrainBeta']         = ''  # '' / 'constrain' / 'fixed' / 'noBeta'
 
 timeEffFile2011 = dataPath + 'timeAcceptanceFit_2011.root' # 'Bs_HltPropertimeAcceptance_Data_2011_40bins_TOS.root'
 timeEffFile2012 = dataPath + 'timeAcceptanceFit_2012.root' # 'Bs_HltPropertimeAcceptance_Data_2012_40bins_TOS.root'
