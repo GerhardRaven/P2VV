@@ -11,10 +11,11 @@ parser = toy.parser()
 
 parser.add_option("--sfit", dest = "sFit", default = False,
                   action = 'store_true', help = "Generate with cFit, fit with sFit")
-parser.add_option("--correct-weights", dest = "correct_weights", default = False,
-                  action = 'store_true', help = "Correct weights using 1 / (sum of weights^2)")
-
+parser.add_option("--correct-weights", dest = "correct_weights", default = '',
+                  action = 'store', help = "Correct weights using 1 / (sum of weights^2) or corrected covariance matrix")
 (options, args) = toy.configure()
+
+assert(options.correct_weights in ['', 'weights', 'matrix'])
 
 from ROOT import gROOT
 #gROOT.SetBatch(True)
@@ -57,7 +58,7 @@ from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as 
 
 ## Signal and background time resolutions.
 tres_args = dict(time = time_obs, sigmat = st, Cache = True,
-                 Parameterise = 'RMS', TimeResSFParam = 'quadratic_no_offset', timeResMu = mu,
+                 Parameterise = 'RMS', TimeResSFParam = 'linear_no_offset', timeResMu = mu,
                  ScaleFactors = [(2, 2.1), (1, 1.26)], Fractions = [(2, 0.2)])
 sig_tres = TimeResolution(Name = 'sig_tres', **tres_args)
 
@@ -150,7 +151,10 @@ fitOpts = dict(  Optimize  = 2
                , Timer     = True
                , Strategy  = 1
                , Save      = True
+               , Minos     = False
+               , Offset    = True
                , Verbose   = False
+               , SumW2Error = bool(options.correct_weights == 'matrix')
                , Minimizer = 'Minuit2')
 
 toy.set_fit_opts(**fitOpts)
@@ -165,7 +169,7 @@ if options.sFit:
     ## SWeights
     from P2VV.ToyMCUtils import SWeightTransform
     mass_pdf = buildPdf(Components = (psi_prompt, bkg_prompt), Observables = (mpsi,), Name = 'mass_pdf')
-    toy.set_transform(SWeightTransform(mass_pdf, 'psi_prompt', fitOpts, correct_weights = options.correct_weights))
+    toy.set_transform(SWeightTransform(mass_pdf, 'psi_prompt', fitOpts, correct_weights = bool(options.correct_weights == 'weights')))
 else:
     # Components for cFit
     components = [psi_prompt, psi_ll, bkg_ll, bkg_prompt]
