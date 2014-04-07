@@ -131,11 +131,11 @@ class RooObject(object) :
 
     # WARNING: the object 'o' given to _addObject should NEVER be used again
     # instead, use the item returned by _addObject
-    def _addObject(self, o):
+    def _addObject(self, o, **kwargs):
         if o.GetName() not in self.ws(): 
             # print 'P2VV: WARNING: importing %s into workspace.... ' % o.GetName() 
             # assert o.GetName() != 'sig_t_angles'
-            self.ws().put(o)
+            self.ws().put(o, **kwargs)
         o = self.ws()[o.GetName()]
         if o.GetName() not in self.ws()._objects:
             self.ws()._objects[o.GetName()] = o
@@ -1208,7 +1208,7 @@ class SimultaneousPdf( Pdf ) :
             simul = RooSimultaneous(Name, Name, __dref__(kwargs.pop('SplitCategory')))
             for s, pdf in kwargs.pop('States').iteritems():
                 simul.addPdf(pdf, s)
-            self._addObject(simul)
+            self._addObject(simul, RecycleConflictNodes = True)
         elif 'SplitParameters' in kwargs :
             args['Master']     = kwargs.pop('MasterPdf')
             args['SplitCats']  = [ kwargs.pop('SplitCategory').GetName() ] if 'SplitCategory' in kwargs\
