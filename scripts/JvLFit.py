@@ -17,7 +17,7 @@ makeKKMassPlots     = False
 plotAnglesNoEff     = False
 corrSFitErr         = ( 'sumWeight', [ 'runPeriod', 'KKMassCat' ] )
 randomParVals       = ( ) #( 0.2, 12345 )
-dataPath            = '/project/bfys/raaij/p2vv/data/' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
+dataPath            = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
 
 plotsFile     = 'temp.ps'   #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.ps'
 plotsROOTFile = 'temp.root' #'/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/20112012Reco14_angEffSimple_timeLin.root'
@@ -30,9 +30,9 @@ if generateData :
 elif pdfConfig['sFit'] :
     dataSetName = 'JpsiKK_sigSWeight'
     if pdfConfig['runPeriods'] == [ 2011 ] :
-        dataSetFile = dataPath + 'P2VVDataSets2011Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140309.root'
+        dataSetFile = dataPath + 'P2VVDataSets2011Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
     elif pdfConfig['runPeriods'] == [ 2012 ] :
-        dataSetFile = dataPath + 'P2VVDataSets2012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140309.root'
+        dataSetFile = dataPath + 'P2VVDataSets2012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
     else :
         dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140309.root'
 else :
@@ -77,6 +77,7 @@ pdfConfig['timeEffType']           = 'paper2012' # 'fit_uniformUB' # 'paper2012'
 pdfConfig['timeEffConstraintType'] = 'poisson'
 pdfConfig['timeEffParameters']     = { } # dict(RandomBinOrder = False) # dict( Parameterization = 'Spline', Fit = False ) # dict( Fit = False, RandomBinOrder = False )
 pdfConfig['constrainBeta']         = ''  # '' / 'constrain' / 'fixed' / 'noBeta'
+timeResSystType                    = ''  # 'mean_param' / 'quadratic_no_offset' / 'linear'
 
 timeEffFile2011 = dataPath + 'timeAcceptanceFit_2011.root' # 'Bs_HltPropertimeAcceptance_Data_2011_40bins_TOS.root'
 timeEffFile2012 = dataPath + 'timeAcceptanceFit_2012.root' # 'Bs_HltPropertimeAcceptance_Data_2012_40bins_TOS.root'
