@@ -72,10 +72,11 @@ constLambdaCP     = ''  # 'lamb'
 equalAbsLambdaCPs = False
 
 # PDF options
-pdfConfig['timeResType']       = 'event3fb' # 'eventNoMean'
-pdfConfig['timeEffType']       = 'paper2012' # 'fit_uniformUB' # 'paper2012' # 'HLT1Unbiased'
-pdfConfig['timeEffParameters'] = { } # dict(RandomBinOrder = False) # dict( Parameterization = 'Spline', Fit = False ) # dict( Fit = False, RandomBinOrder = False )
-pdfConfig['constrainBeta']     = ''  # '' / 'constrain' / 'fixed' / 'noBeta'
+pdfConfig['timeResType']           = 'event3fb' # 'eventNoMean'
+pdfConfig['timeEffType']           = 'paper2012' # 'fit_uniformUB' # 'paper2012' # 'HLT1Unbiased'
+pdfConfig['timeEffConstraintType'] = 'poisson'
+pdfConfig['timeEffParameters']     = { } # dict(RandomBinOrder = False) # dict( Parameterization = 'Spline', Fit = False ) # dict( Fit = False, RandomBinOrder = False )
+pdfConfig['constrainBeta']         = ''  # '' / 'constrain' / 'fixed' / 'noBeta'
 
 timeEffFile2011 = dataPath + 'timeAcceptanceFit_2011.root' # 'Bs_HltPropertimeAcceptance_Data_2011_40bins_TOS.root'
 timeEffFile2012 = dataPath + 'timeAcceptanceFit_2012.root' # 'Bs_HltPropertimeAcceptance_Data_2012_40bins_TOS.root'
@@ -103,6 +104,7 @@ elif pdfConfig['runPeriods'] == [ 2011, 2012 ] :
     #        = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
 
 pdfConfig['anglesEffType'] = 'weights' # 'basis012' # 'basisSig6'
+pdfConfig['constAngEffCoefs'] = True
 pdfConfig['angEffMomsFiles'] = dataPath + 'angEffNominalRew_moms.par' # 'angEffNominalRew_5thOrder.par' # 'angEffNominalRew_moms.par' # 'angEffNominalNoRew_moms.par' # 'Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'
 #angEffMomsFiles = SimulCatSettings('angEffMomsFiles')
 #angEffMomsFiles.addSettings( [ 'KKMassCat' ], [ [ 'bin0', 'bin1', 'bin2' ] ]
@@ -678,6 +680,8 @@ if doFit :
 
     if 'CPVDecay' in pdfConfig['lambdaCPParam'] :
         from P2VV.Imports import parNames, parValuesCPVDecay as parValues
+    elif 'lamb' in constLambdaCP.lower() :
+        from P2VV.Imports import parNames, parValuesFixLamb as parValues
     else :
         from P2VV.Imports import parNames, parValues
     print 'JvLFit: parameters:'

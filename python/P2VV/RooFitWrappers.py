@@ -1013,6 +1013,7 @@ class Pdf(RooObject):
         self._globalObservables = observables
 
     def _add_my_co_ec_go__( self, kwargs ) :
+        print kwargs
         condObs  = self.ConditionalObservables()
         if condObs :
             assert 'ConditionalObservables' not in kwargs or condObs == set(kwargs['ConditionalObservables']) , 'Inconsistent Conditional Observables'
@@ -1029,7 +1030,7 @@ class Pdf(RooObject):
             print 'INFO: adding GlobalObservables: %s' % [ i.GetName() for i in globalObs ]
             kwargs['GlobalObservables'] = globalObs
         for d in set(('ConditionalObservables','ExternalConstraints','GlobalObservables','Minos')).intersection( kwargs ) :
-            kwargs[d] = RooArgSet( kwargs.pop(d) )
+            if d != 'Minos' or type(kwargs[d]) != bool : kwargs[d] = RooArgSet( kwargs.pop(d) )
         return kwargs
 
     @wraps(RooAbsPdf.createNLL)
@@ -1818,10 +1819,12 @@ class CombEffConstraint(Pdf):
             __check_req_kw__( 'Parameters', kwargs )
             __check_req_kw__( 'SumW', kwargs )
             __check_req_kw__( 'SumWSq', kwargs )
+            strat   = kwargs.pop( 'Strategy', 0 )
             numBins = kwargs.pop('NumBins')
             pars    = kwargs.pop('Parameters')
             sumW    = kwargs.pop('SumW')
             sumWSq  = kwargs.pop('SumWSq')
+            assert strat in range(3)
             assert len(pars) == 5
             assert len(sumW) == 6
             assert len(sumWSq) == 6
@@ -1844,6 +1847,7 @@ class CombEffConstraint(Pdf):
                 return vec
             args.append( __makeSumWVec(sumW)   )
             args.append( __makeSumWVec(sumWSq) )
+            args.append(strat)
 
             from ROOT import RooCombEffConstraint
             self._addObject( RooCombEffConstraint( *tuple(args) ) )
