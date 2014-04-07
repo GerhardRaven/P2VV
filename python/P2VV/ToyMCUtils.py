@@ -208,6 +208,7 @@ class FitToy(Toy):
             while j < 4: 
                 fit_result = pdf.fitTo(data, NumCPU = self.options().ncpu, **(self.fit_opts()))
                 if fit_result.status() == 0:
+                    fit_result.Print()
                     break
                 j += 1
             if fit_result.status() != 0:
