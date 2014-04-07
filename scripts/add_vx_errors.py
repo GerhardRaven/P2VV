@@ -7,6 +7,8 @@ from math import sqrt
 parser = optparse.OptionParser(usage = 'usage: %prog <2011|2012>')
 parser.add_option("--dls", dest = "dls", default = False,
                   action = 'store_true', help = 'Add DLS')
+parser.add_option("-p", "--prescaled", dest = "prescaled", default = False,
+                  action = 'store_true', help = 'Use prescaled sample')
 
 (options, args) = parser.parse_args()
 
@@ -32,9 +34,9 @@ t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax 
 
 excl_biased = Category('hlt1_excl_biased_dec', Observable = True,
                        States = { 'excl_biased' : 1, 'unbiased' : 0 } )
-prescaled = False
+nPV = RealVar('nPV', Title = 'Number of PVs', Observable = True, MinMax = (0, 10))
 
-if prescaled:
+if options.prescaled:
     input_file = '/glusterfs/bfys/users/raaij/NTuples/2011/Bs2JpsiPhiPrescaled_ntupleAB_20130531.root'
     cut = 'sel == 1 && triggerDecisionUnbiasedPrescaled == 1 && '
 else:
@@ -77,7 +79,7 @@ fitOpts = dict(NumCPU = 4, Optimize = 2, Save = True, Timer = True, Minimizer = 
 mass_result = mass_pdf.fitTo(data, **fitOpts)
 
 # categories for splitting the PDF
-if not prescaled:
+if not options.prescaled:
     split_cats = [[excl_biased]]
     # get mass parameters that are split
     split_params = [[par for par in mass_pdf.Parameters() if par.getAttribute('Yield')]]

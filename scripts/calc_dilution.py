@@ -9,20 +9,17 @@ parser = optparse.OptionParser(usage = '%prog data_type')
 (options, args) = parser.parse_args()
 
 prefix = '/stuff/PhD' if os.path.exists('/stuff') else '/project/bfys/raaij'
-input_data = {'2011' : {'data' : os.path.join(prefix, 'p2vv/data/P2VVDataSets2011Reco12_4KKMassBins_2TagCats.root'),
+input_data = {'2011' : {'data' : os.path.join(prefix, 'p2vv/data/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140309.root'),
                         'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Prescaled_cache.root'),
-                        'result_dir' : {'simple' : '1bin_15500.00fs_simple/2027465761870101697/results',
-                                        'simul'  : '9bins_14.10fs_simul/2027465761870101697/results'},
+                        'result_dir' : '1bin_15500.00fs_simple/2027465761870101697/results',
                         'dataset' : 'JpsiKK_sigSWeight'},
-              '2011_Reco14' : {'data' : os.path.join(prefix, 'p2vv/data/P2VVDataSets2011Reco14_4KKMassBins_2TagCats.root'),
+              '2011_Reco14' : {'data' : os.path.join(prefix, 'p2vv/data/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140309.root'),
                                'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Reco14_Prescaled_cache.root'),
-                               'result_dir' : {'simple' : '1bin_15500.00fs_simple/2027465761870101697/results',
-                                               'simul'  : '9bins_14.10fs_simul/2027465761870101697/results'},
+                               'result_dir' : '1bin_15500.00fs_simple/2027465761870101697/results',
                                'dataset' : 'JpsiKK_sigSWeight'},
-              '2012' : {'data' : os.path.join(prefix, 'p2vv/data/P2VVDataSets2012Reco14_4KKMassBins_2TagCats.root'),
+              '2012' : {'data' : os.path.join(prefix, 'p2vv/data/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140309.root'),
                                'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2012_Prescaled_cache.root'),
-                               'result_dir' : {'simple' : '1bin_15500.00fs_simple/2027465761870101697/results',
-                                               'simul'  : '9bins_14.10fs_simul/2027465761870101697/results'},
+                               'result_dir' : '1bin_15500.00fs_simple/2027465761870101697/results',
                                'dataset' : 'JpsiKK_sigSWeight'}              
               }
 
@@ -74,8 +71,7 @@ means = array('d', means)
 
 # Dilution of double Gauss with scalefactors calibrated.
 cache_file = TFile.Open(input_data['cache'])
-simple_result_dir = cache_file.Get(input_data['result_dir']['simple'])
-simul_result_dir = cache_file.Get(input_data['result_dir']['simul'])
+simple_result_dir = cache_file.Get(input_data['result_dir'])
 
 from P2VV.Dilution import DilutionCSFC, DilutionCSFS, DilutionSG, DilutionSFS, DilutionSFC
 dilutions = {}

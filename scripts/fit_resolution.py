@@ -25,7 +25,7 @@ parser.add_option("--mean-parameterisation", dest = "mu_param", default = '', ty
                   action = 'store', help = 'Type parameterise the mean of the Gaussians as a function of sigmat')
 parser.add_option('-s', "--simultaneous", dest = "simultaneous", default = False,
                   action = 'store_true', help = 'Use sigmat offset')
-parser.add_option("--plot", dest = "make_plots", default = False,
+parser.add_option("--plot", dest = "plot", default = False,
                   action = 'store_true', help = 'Make plots')
 parser.add_option("--no-fit", dest = "fit", default = True,
                   action = 'store_false', help = 'Do not do the time fit')
@@ -576,7 +576,7 @@ if options.wpv and options.wpv_type == 'Mixing':
         masses = {'jpsi' : mpsi}
         weights = 'jpsi'
         extra_args = {}
-    wpv_builder = WrongPV.ShapeBuilder(t, masses, UseKeysPdf = True, Weights = weights, Draw = True,
+    wpv_builder = WrongPV.ShapeBuilder(t, masses, UseKeysPdf = True, Weights = weights, Draw = options.plot,
                                        InputFile = input_data[args[0]]['wpv'], Workspace = input_data[args[0]]['workspace'],
                                        Reweigh = dict(Data = reweigh_data, DataVar = nPV, Binning = PV_bounds),
                                        MassResult = mass_result, **extra_args)
@@ -630,7 +630,7 @@ else:
     if options.simultaneous:
         fit_data_full = sig_sdata
 
-if options.make_plots:
+if options.plot:
     cats = RooArgSet(st)
     if options.simultaneous:
         cats.add(time_pdf.indexCat())
@@ -895,7 +895,7 @@ from ROOT import SetOwnership
 from ROOT import TCanvas
 
 for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
-    if not options.make_plots or not time_result:
+    if not options.plot or not time_result:
         continue
     if options.simultaneous:
         split_cat = time_pdf.indexCat()
@@ -964,7 +964,7 @@ if options.cache:
     if options.fit and not options.reduce:
         cache.write_results(dict([(k, v) for k, v in results.iteritems() if 'time' in k]))
 
-    if options.make_plots and not options.reduce:
+    if options.plot and not options.reduce:
         ## Write plots
         cache.write_plots(plots)
 
