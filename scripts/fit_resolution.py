@@ -74,6 +74,8 @@ parser.add_option("--make-binning", action="callback", callback=mb_callback, typ
                   'observable; comma separated list')
 parser.add_option("--excl-biased", action="store_true", dest = "excl_biased", default = False,
                   help = 'Use excl biased events, only for signal MC')
+parser.add_option("--cleantail", action="store_true", dest = "cleantail", default = False,
+                  help = 'Always apply cleantail cut.')
 
 (options, args) = parser.parse_args()
 
@@ -274,7 +276,7 @@ else:
     hlt1_cut = 'hlt1_unbiased == 1'
 cut = 'sel == 1 && ' + hlt1_cut + ' && hlt2_unbiased == 1 && '
 cut += ' && '.join(['%s < 4' % e for e in ['muplus_track_chi2ndof', 'muminus_track_chi2ndof', 'Kplus_track_chi2ndof', 'Kminus_track_chi2ndof']])
-if not options.wpv or (options.wpv and (options.wpv_type in ["Gauss", 'Rest'])):
+if options.cleantail or not options.wpv or (options.wpv and (options.wpv_type in ["Gauss", 'Rest'])):
     cut += ' && sel_cleantail == 1'
 if signal_MC:
     cut += ' && abs(trueid) == 531'
