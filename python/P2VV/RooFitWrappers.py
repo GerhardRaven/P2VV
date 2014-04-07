@@ -1423,7 +1423,7 @@ class TPDecay(Pdf):
     def __init__(self, Name, **kwargs):
         from ROOT import RooTPDecay
         from ROOT import RooArgList
-        tps = RooArgList( kwargs.pop('TurningPoints'))
+        tps = RooArgList(*kwargs.pop('TurningPoints'))
         t = kwargs.pop('Time')
         tau = kwargs.pop('Tau')
         model = kwargs.pop('ResolutionModel')
@@ -2250,6 +2250,7 @@ class CubicSplineGaussModel(ResolutionModel) :
             for t, fun in types.iteritems():
                 if isinstance(res_model._target_(), t):
                     model, this_type, name = fun(name, res_model, efficiency)
+                    break
         else:
             model = 'RooGaussEfficiencyModel::{0}({1},{2},{3})'.format(name, params[0].GetName(), efficiency.GetName(), ','.join([p.GetName() for p in params[1:]]))
             this_type = 'RooGaussEfficiencyModel'
