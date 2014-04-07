@@ -78,6 +78,9 @@
 #pragma link C++ class std::map<std::string, std::pair<RooRealProxy*, bool> >;
 #pragma link C++ class std::map<RooCategoryProxy*, std::map<std::string, std::pair<RooRealProxy*, bool> > >;
 
+#pragma link C++ class std::map<std::string, RooDataSet*>;
+#pragma link C++ class std::pair<std::string, RooDataSet*>;
+
 #pragma link C++ class std::map<Int_t, MultiHistEntry*>;
 #pragma link C++ class std::pair<Int_t, MultiHistEntry*>;
 #pragma link C++ class std::map<int, MultiHistEntry*>::iterator;
