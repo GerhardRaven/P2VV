@@ -42,6 +42,7 @@ public:
   Double_t maxVal(Int_t code) const;
 
   std::list<Double_t>* binBoundaries(RooAbsRealLValue& obs, Double_t xlo, Double_t xhi) const;
+  std::list<Double_t>* plotSamplingHint(RooAbsRealLValue& obs, Double_t xlo, Double_t xhi) const;
 
   // for use as RooAbsGaussModelEfficiency...
   std::complex<double> productAnalyticalIntegral(Double_t umin, Double_t umax
