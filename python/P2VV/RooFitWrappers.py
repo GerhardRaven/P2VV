@@ -1822,10 +1822,12 @@ class CombEffConstraint(Pdf):
             __check_req_kw__( 'Parameters', kwargs )
             __check_req_kw__( 'SumW', kwargs )
             __check_req_kw__( 'SumWSq', kwargs )
+            strat   = kwargs.pop( 'Strategy', 0 )
             numBins = kwargs.pop('NumBins')
             pars    = kwargs.pop('Parameters')
             sumW    = kwargs.pop('SumW')
             sumWSq  = kwargs.pop('SumWSq')
+            assert strat in range(3)
             assert len(pars) == 5
             assert len(sumW) == 6
             assert len(sumWSq) == 6
@@ -1848,6 +1850,7 @@ class CombEffConstraint(Pdf):
                 return vec
             args.append( __makeSumWVec(sumW)   )
             args.append( __makeSumWVec(sumWSq) )
+            args.append(strat)
 
             from ROOT import RooCombEffConstraint
             self._addObject( RooCombEffConstraint( *tuple(args) ) )

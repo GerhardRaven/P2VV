@@ -19,12 +19,14 @@ parser.add_argument( '--dataPath', '-d', default = '/project/bfys/jleerdam/data/
 parser.add_argument( '--workPath', '-w', default = '/project/bfys/jleerdam/softDevel/P2VV2/test' )
 parser.add_argument( '--dataSetFile', '-f', default = 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140309.root' )
 parser.add_argument( '--accDataSetFile', '-g', default =  'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_20140309.root' )
+parser.add_argument( '--timeAccConstr', '-j', default = 'poisson' )
 parser.add_argument( '--dataSetName', '-n', default = 'JpsiKK_sigSWeight' )
 parser.add_argument( '--parFileIn', '-i' )
 parser.add_argument( '--parFileOut', '-o' )
 parser.add_argument( '--timeAccFile2011', '-x', default = 'timeAcceptanceFit_2011.root' )
 parser.add_argument( '--timeAccFile2012', '-y', default = 'timeAcceptanceFit_2012.root' )
 parser.add_argument( '--angAccFile', '-z', default = 'angEffNominalRew_moms.par' )
+parser.add_argument( '--constAngAcc', '-q', default = True )
 
 args = parser.parse_args()
 assert args.model in [ 'phi', 'lamb_phi', 'polarDep' ]
@@ -42,9 +44,11 @@ if dataPath and dataPath[-1] != '/' : dataPath += '/'
 if workPath and workPath[-1] != '/' : workPath += '/'
 dataSetFile = dataPath + args.dataSetFile
 accDataSetFile = dataPath + args.accDataSetFile
+assert args.timeAccConstr in [ 'poisson', 'poisson_minimal', 'multinomial', 'average' ]
 parFileIn = args.parFileIn
 if parFileIn == None :
-    parFileIn = workPath + '20112012Reco14DataFitValues_6KKMassBins%s.par' % ( '_CPVDecay' if args.model == 'polarDep' else '' )
+    parFileIn = workPath + '20112012Reco14DataFitValues_6KKMassBins%s.par'\
+                           % ( '_CPVDecay' if args.model == 'polarDep' else '_fixedLamb' if args.model == 'phi' else '' )
 elif parFileIn :
     parFileIn = workPath + parFileIn
 parFileOut = args.parFileOut
@@ -57,6 +61,7 @@ elif parFileOut :
 timeAccFile2011 = dataPath + args.timeAccFile2011
 timeAccFile2012 = dataPath + args.timeAccFile2012
 angAccFile = dataPath + args.angAccFile
+constAngAcc = False if not args.constAngAcc or str( args.constAngAcc ).lower() in [ 'false', '0' ] else True
 
 # print script settings
 print 'job parameters:'
@@ -75,12 +80,14 @@ print '  data path: %s' % dataPath
 print '  work path: %s' % workPath
 print '  dataset file: %s' % dataSetFile
 print '  acceptance dataset file: %s' % accDataSetFile
+print '  time acceptance constraint: %s' % args.timeAccConstr
 print '  dataset name: %s' % args.dataSetName
 print '  input parameter file: %s' % parFileIn
 print '  output parameter file: %s' % parFileOut
 print '  time acceptance file 2011: %s' % timeAccFile2011
 print '  time acceptance file 2012: %s' % timeAccFile2012
 print '  angular acceptance file: %s' % angAccFile
+print '  constant angular acceptance parameters: %s' % ( 'true' if constAngAcc else 'false' )
 
 # clear command-line options
 import sys
@@ -98,9 +105,13 @@ if pdfConfig['lambdaCPParam'] == 'observables_CPVDecay' :
     pdfConfig['splitParams']['KKMassCat'] = [ 'av' + par if par == 'f_S' else par for par in pdfConfig['splitParams']['KKMassCat'] ]
 
 pdfConfig['timeEffType'] = 'paper2012' if fixLowAcc else 'fit_uniformUB'
+#timeAccHistHLT1UB2011 = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+timeAccHistHLT1UB2011 = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
 pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file'] = timeAccFile2011
 pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] )['file'] = timeAccFile2012
+pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['hlt1UB'] = timeAccHistHLT1UB2011
 if pdfConfig['timeEffType'].startswith('fit') :
+    pdfConfig['timeEffConstraintType'] = args.timeAccConstr
     from P2VV.Parameterizations.FullPDFs import SimulCatSettings
     pdfConfig['timeEffData']['file'] = accDataSetFile
     pdfConfig['externalConstr']['acceptance'] = SimulCatSettings('acceptanceConstr')
@@ -124,6 +135,7 @@ if fixTagging :
     pdfConfig['externalConstr']['wTagP1SS'] = ( 0.95813206, 0. )#( 1.,     0.00001 )
 
 pdfConfig['anglesEffType'] = 'weights'
+pdfConfig['constAngEffCoefs'] = constAngAcc
 pdfConfig['angEffMomsFiles'] = angAccFile
 
 

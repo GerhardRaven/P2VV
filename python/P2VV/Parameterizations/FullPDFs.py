@@ -127,6 +127,8 @@ class PdfConfiguration( dict ) :
         return fitStatus
 
     def writeParametersToFile( self, filePath = 'parameters', **kwargs ) :
+        verb = kwargs.pop( 'Verbose', True )
+
         # get arguments
         fileFormat = kwargs.pop( 'Format', '' )
         assert fileFormat in [ '', 'common' ]\
@@ -199,8 +201,9 @@ class PdfConfiguration( dict ) :
         parFile.write(cont)
         parFile.close()
 
-        print 'P2VV - INFO: PdfConfiguration.writeParametersToFile(): %d parameter%s written to file \"%s\"'\
-                % ( numPars, '' if numPars == 1 else 's', filePath )
+        if verb :
+            print 'P2VV - INFO: PdfConfiguration.writeParametersToFile(): %d parameter%s written to file \"%s\"'\
+                  % ( numPars, '' if numPars == 1 else 's', filePath )
 
 
 # B_s^0 -> J/psi phi analysis configuration
@@ -249,19 +252,19 @@ class Bs2Jpsiphi_PdfConfiguration( PdfConfiguration ) :
         self['timeResType']        = ''               # '' / 'event' / 'eventNoMean' / 'eventConstMean' / '3Gauss' / 'event3fb'
         self['constrainTResScale'] = ''               # '' / 'constrain' / 'fixed'
         self['timeEffType']        = 'paper2012'      # 'HLT1Unbiased' / 'HLT1ExclBiased' / 'paper2012' / 'fit'
-        self['timeEffConstraintType'] = 'poisson'     # 'poisson' / 'multinomial' / 'average'
+        self['timeEffConstraintType'] = 'poisson'     # 'poisson' / 'poisson_minimal' / 'multinomial' / 'average'
         self['constrainDeltaM']    = ''               # '' / 'constrain' / 'fixed'
 
         self['timeEffHistFiles']  = { }
         self['timeEffData']       = dict( file = 'timeEffData.root', name = 'JpsiKK_sigSWeight' )
         self['timeEffParameters'] = { }
 
-        self['transAngles']     = False        # use transversity angles?
-        self['anglesEffType']   = 'weights'    # '' / 'weights' / 'basis012' / 'basis012Plus' / 'basis012Thetal' / 'basis0123' / 'basis01234' / 'basisSig3' / 'basisSig4'
-        self['angEffMomsFiles'] = ''
-        self['angularRanges']   = dict( cpsi = [ ], ctheta = [ ], phi = [ ] )
+        self['transAngles']      = False        # use transversity angles?
+        self['anglesEffType']    = 'weights'    # '' / 'weights' / 'basis012' / 'basis012Plus' / 'basis012Thetal' / 'basis0123' / 'basis01234' / 'basisSig3' / 'basisSig4'
+        self['constAngEffCoefs'] = True         # make angular efficiency coefficients ConstVars?
+        self['angEffMomsFiles']  = ''
+        self['angularRanges']    = dict( cpsi = [ ], ctheta = [ ], phi = [ ] )
 
-        self['sigTaggingType']   = 'tagUntag'    # 'histPdf' / 'tagUntag' / 'tagCats' / 'tagUntagRelative' / 'tagCatsRelative'
         self['tagPdfType']       = ''
         self['SSTagging']        = True           # use same-side Kaon tagging?
         self['condTagging']      = True           # make tagging categories and B/Bbar tags conditional observables?
@@ -602,7 +605,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         for par in [ 'sFit', 'KKMassBinBounds', 'obsDict', 'CSPValues', 'condTagging', 'contEstWTag', 'SSTagging', 'transAngles'
                     , 'numEvents', 'sigFrac', 'paramKKMass', 'amplitudeParam', 'ASParam', 'signalData', 'fitOptions', 'parNamePrefix'
                     , 'tagPdfType', 'timeEffType', 'timeEffHistFiles', 'timeEffData', 'timeEffParameters', 'anglesEffType'
-                    , 'angEffMomsFiles', 'readFromWS', 'splitParams', 'externalConstr', 'runPeriods', 'timeEffConstraintType' ] :
+                    , 'constAngEffCoefs', 'angEffMomsFiles', 'readFromWS', 'splitParams', 'externalConstr', 'runPeriods'
+                    , 'timeEffConstraintType' ] :
             self[par] = getKWArg( self, { }, par )
 
         from P2VV.Parameterizations.GeneralUtils import setParNamePrefix, getParNamePrefix
@@ -1010,7 +1014,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
                                                     ]
                                     )
                                )
-        if 'acceptance' in externalConstr and timeEffConstraintType in [ 'poisson', 'multinomial' ] :
+        if 'acceptance' in externalConstr and timeEffConstraintType in [ 'poisson', 'poisson_minimal', 'multinomial' ] :
             from P2VV.Utilities.DataHandling import readData
             data = readData( filePath = timeEffData['file'], dataSetName = timeEffData['name'],  NTuple = False, ImportIntoWS = False )
             constraints |= self.__eff_constraints(externalConstr, simulPdf, data, observables, timeEffConstraintType)
@@ -1063,16 +1067,18 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         # Time res model constraints include those form the acceptance
         constraints = set()
         acc_settings = externalConstr.pop('acceptance', None)
-        buildFunc = 'build_poisson_constraints' if type == 'poisson' else 'build_multinomial_constraints'
+        buildFunc = 'build_poisson_constraints' if type.startswith('poisson') else 'build_multinomial_constraints'
+        buildArgs = [data, observables]
+        if type.endswith('minimal') : buildArgs.append(2)
         if acc_settings and simulPdf:
             for (key, model) in self['timeResModels'].iteritems():
                 if key == 'prototype' or not hasattr(model, buildFunc):
                     continue
-                constraints |= getattr(model, buildFunc)(data, observables)
+                constraints |= getattr(model, buildFunc)(*tuple(buildArgs))
         elif acc_settings:
             acceptance = timeResModels['prototype']
             if hasattr(acceptance, buildFunc):
-                constraints |= getattr(acceptance, buildFunc)(data, observables)
+                constraints |= getattr(acceptance, buildFunc)(*tuple(buildArgs))
         return constraints
     
     def __av_eff_constraints(self, externalConstr, simulPdf):
@@ -1159,7 +1165,6 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
     tagCatsOS          = getKWArg( self, kwargs, 'tagCatsOS' )
     tagCatsSS          = getKWArg( self, kwargs, 'tagCatsSS' )
     transAngles        = getKWArg( self, kwargs, 'transAngles' )
-    sigTaggingType     = getKWArg( self, kwargs, 'sigTaggingType' )
     ambiguityPars      = getKWArg( self, kwargs, 'ambiguityPars' )
     CSPValues          = getKWArg( self, kwargs, 'CSPValues' )
     SSTagging          = getKWArg( self, kwargs, 'SSTagging' )
@@ -1490,146 +1495,108 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
     from P2VV.Parameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients as TimeBasisCoefs
     timeBasisCoefs = TimeBasisCoefs( self['angleFuncs'].functions, self['amplitudes'], self['lambdaCP'], [ 'A0', 'Apar', 'Aperp', 'AS' ] )
 
-    # tagging parameters
-    if sigTaggingType == 'histPdf' :
-        raise RuntimeError('P2VV - ERROR: buildBs2JpsiphiSignalPdf(): A histogram tagging PDF can only be used when tagging observables are conditional')
+    # tagging parameters (assume products of asymmetries are small and B-Bbar asymmetries are equal for all tagged categories)
+    tagCatsDictOS = tagCatsOS.tagCatsDict()
+    if SSTagging : tagCatsDictSS = self['tagCatsSS'].tagCatsDict()
+
+    if observables['tagCatOS'].numTypes() > 2 or ( SSTagging and observables['tagCatSS'].numTypes() > 2 ) :
+        print 'P2VV - INFO: buildBs2JpsiphiSignalPdf(): tagging in signal PDF:\n'\
+            + '    * assuming B-Bbar asymmetries are equal for all tagged categories'
+
+    from math import sqrt
+    asymVal = 0. #asymVal = -self['lambdaCP']['C'].getVal()
+    asymErr = 0.1
+    from P2VV.RooFitWrappers import RealVar
+    avgCEvenSum = RealVar( namePF + 'avgCEvenSum', Title = 'Sum of CP average even coefficients'
+                          , Value = 1., MinMax = (  0., 2. ), Constant = True )
+    avgCOddSum  = RealVar( namePF + 'avgCOddSum', Title = 'Sum of CP average odd coefficients'
+                          , Value = asymVal, Error = asymErr, MinMax = ( -2., 2. ), Constant = True )
+    avgCEvenOS  = RealVar( namePF + 'avgCEvenOSTagged', Title = 'CP average even coefficients OS tagged categories'
+                          , Value = 1., MinMax = (  0., 2. ), Constant = True )
+    avgCOddOS   = RealVar( namePF + 'avgCOddOSTagged' , Title = 'CP average odd coefficients OS tagged categories'
+                          , Value = asymVal, Error = asymErr, MinMax = ( -2., 2. ), Constant = True )
+    if not SSTagging :
+        # only opposite side tagging: replace tagging efficiency asymmetry parameters by asymmetry coefficients
+        tagCatsDictOS[ 'AvgCEvenSum' ] = avgCEvenSum
+        tagCatsDictOS[ 'AvgCOddSum' ]  = avgCOddSum
+        for catOS in range( 1, tagCatsDictOS['NumTagCats'] ) :
+            tagCatsDictOS.pop( 'ATagEff%d' % catOS )
+            tagCatsDictOS[ 'AvgCEven%d' % catOS ] = avgCEvenOS
+            tagCatsDictOS[ 'AvgCOdd%d'  % catOS ] = avgCOddOS
+
+        tagCatsDict = tagCatsDictOS
 
     else :
-        # get tagging category parameters dictionary/dictionaries
-        tagCatsDictOS = tagCatsOS.tagCatsDict()
-        if SSTagging : tagCatsDictSS = self['tagCatsSS'].tagCatsDict()
+        # both same side tagging and opposite side tagging: build coefficients for SS tagged categories
+        from P2VV.RooFitWrappers import RealVar
+        avgCEvenSS = RealVar( namePF + 'avgCEvenSSTagged', Title = 'CP average even coefficients SS tagged categories'
+                             , Value = 1., MinMax = (  0., 2. ), Constant = True )
+        avgCOddSS  = RealVar( namePF + 'avgCOddSSTagged', Title = 'CP average odd coefficients SS tagged categories'
+                             , Value = asymVal, Error = asymErr, MinMax = ( -2., 2. ), Constant = True )
+        avgCEven   = RealVar( namePF + 'avgCEvenTagged', Title = 'CP average even coefficients OS+SS tagged categories'
+                             , Value = 1., MinMax = (  0., 2. ), Constant = True )
+        avgCOdd    = RealVar( namePF + 'avgCOddTagged', Title = 'CP average odd coefficients OS+SS tagged categories'
+                             , Value = asymVal, Error = asymErr, MinMax = ( -2., 2. ), Constant = True )
 
-        if sigTaggingType.startswith('tagUntag') :
-            # assume products of asymmetries are small and B-Bbar asymmetries are equal for all tagged categories
-            if observables['tagCatOS'].numTypes() > 2 or ( SSTagging and observables['tagCatSS'].numTypes() > 2 ) :
-                print 'P2VV - INFO: buildBs2JpsiphiSignalPdf(): tagging in signal PDF:\n'\
-                    + '    * assuming B-Bbar asymmetries are equal for all tagged categories'
+        # build dictionary with both opposite side and same side tagging categories parameters
+        tagCatsDict = dict(  NumTagCats0  = tagCatsDictOS['NumTagCats']
+                           , NumTagCats1  = tagCatsDictSS['NumTagCats']
+                           , AvgCEvenSum  = avgCEvenSum
+                           , AvgCOddSum   = avgCOddSum
+                           , Conditionals = tagCatsDictOS['Conditionals'] | tagCatsDictSS['Conditionals']
+                           , Constraints  = tagCatsDictOS['Constraints']  | tagCatsDictSS['Constraints']
+                          )
 
-            # provide the same asymmetry for all tagged categories
-            from math import sqrt
-            asymVal = 0. #asymVal = -self['lambdaCP']['C'].getVal()
-            asymErr = 0.1
-            from P2VV.RooFitWrappers import RealVar
-            avgCEvenSum = RealVar( namePF + 'avgCEvenSum', Title = 'Sum of CP average even coefficients'
-                                  , Value = 1., MinMax = (  0., 2. ), Constant = True )
-            avgCOddSum  = RealVar( namePF + 'avgCOddSum', Title = 'Sum of CP average odd coefficients'
-                                  , Value = asymVal, Error = asymErr, MinMax = ( -2., 2. ), Constant = True )
-            avgCEvenOS  = RealVar( namePF + 'avgCEvenOSTagged', Title = 'CP average even coefficients OS tagged categories'
-                                  , Value = 1., MinMax = (  0., 2. ), Constant = True )
-            avgCOddOS   = RealVar( namePF + 'avgCOddOSTagged' , Title = 'CP average odd coefficients OS tagged categories'
-                                  , Value = asymVal, Error = asymErr, MinMax = ( -2., 2. ), Constant = True )
-            if not SSTagging :
-                # only opposite side tagging: replace tagging efficiency asymmetry parameters by asymmetry coefficients
-                tagCatsDictOS[ 'AvgCEvenSum' ] = avgCEvenSum
-                tagCatsDictOS[ 'AvgCOddSum' ]  = avgCOddSum
-                for catOS in range( 1, tagCatsDictOS['NumTagCats'] ) :
-                    tagCatsDictOS.pop( 'ATagEff%d' % catOS )
-                    tagCatsDictOS[ 'AvgCEven%d' % catOS ] = avgCEvenOS
-                    tagCatsDictOS[ 'AvgCOdd%d'  % catOS ] = avgCOddOS
+        for catOS in range( tagCatsDictOS['NumTagCats'] ) :
+            if catOS > 0 :
+                tagCatsDict[ 'tagCatCoef0_%d'  % catOS ] = tagCatsDictOS[ 'tagCatCoef%d' % catOS ]
+                tagCatsDict[ 'AvgCEven%d-0'    % catOS ] = avgCEvenOS
+                tagCatsDict[ 'AvgCOdd%d-0'     % catOS ] = avgCOddOS
+                tagCatsDict[ 'tagDilution0_%s' % catOS ] = tagCatsDictOS[ 'tagDilution%d' % catOS ]
+                tagCatsDict[ 'ADilWTag0_%s'    % catOS ] = tagCatsDictOS[ 'ADilWTag%d'    % catOS ]
 
-                tagCatsDict = tagCatsDictOS
-
-            else :
-                # both same side tagging and opposite side tagging: build coefficients for SS tagged categories
-                from P2VV.RooFitWrappers import RealVar
-                avgCEvenSS = RealVar( namePF + 'avgCEvenSSTagged', Title = 'CP average even coefficients SS tagged categories'
-                                     , Value = 1., MinMax = (  0., 2. ), Constant = True )
-                avgCOddSS  = RealVar( namePF + 'avgCOddSSTagged', Title = 'CP average odd coefficients SS tagged categories'
-                                     , Value = asymVal, Error = asymErr, MinMax = ( -2., 2. ), Constant = True )
-                avgCEven   = RealVar( namePF + 'avgCEvenTagged', Title = 'CP average even coefficients OS+SS tagged categories'
-                                     , Value = 1., MinMax = (  0., 2. ), Constant = True )
-                avgCOdd    = RealVar( namePF + 'avgCOddTagged', Title = 'CP average odd coefficients OS+SS tagged categories'
-                                     , Value = asymVal, Error = asymErr, MinMax = ( -2., 2. ), Constant = True )
-
-                # build dictionary with both opposite side and same side tagging categories parameters
-                tagCatsDict = dict(  NumTagCats0  = tagCatsDictOS['NumTagCats']
-                                   , NumTagCats1  = tagCatsDictSS['NumTagCats']
-                                   , AvgCEvenSum  = avgCEvenSum
-                                   , AvgCOddSum   = avgCOddSum
-                                   , Conditionals = tagCatsDictOS['Conditionals'] | tagCatsDictSS['Conditionals']
-                                   , Constraints  = tagCatsDictOS['Constraints']  | tagCatsDictSS['Constraints']
-                                  )
-
-                for catOS in range( tagCatsDictOS['NumTagCats'] ) :
-                    if catOS > 0 :
-                        tagCatsDict[ 'tagCatCoef0_%d'  % catOS ] = tagCatsDictOS[ 'tagCatCoef%d' % catOS ]
-                        tagCatsDict[ 'AvgCEven%d-0'    % catOS ] = avgCEvenOS
-                        tagCatsDict[ 'AvgCOdd%d-0'     % catOS ] = avgCOddOS
-                        tagCatsDict[ 'tagDilution0_%s' % catOS ] = tagCatsDictOS[ 'tagDilution%d' % catOS ]
-                        tagCatsDict[ 'ADilWTag0_%s'    % catOS ] = tagCatsDictOS[ 'ADilWTag%d'    % catOS ]
-
-                    for catSS in range( 1, tagCatsDictSS['NumTagCats'] ) :
-                        if catOS == 0 :
-                            tagCatsDict[ 'tagCatCoef1_%d'  % catSS ] = tagCatsDictSS[ 'tagCatCoef%d' % catSS ]
-                            tagCatsDict[ 'AvgCEven0-%s'    % catSS ] = avgCEvenSS
-                            tagCatsDict[ 'AvgCOdd0-%s'     % catSS ] = avgCOddSS
-                            tagCatsDict[ 'tagDilution1_%s' % catSS ] = tagCatsDictSS[ 'tagDilution%d' % catSS ]
-                            tagCatsDict[ 'ADilWTag1_%s'    % catSS ] = tagCatsDictSS[ 'ADilWTag%d'    % catSS ]
-                        else :
-                            tagCatsDict[ 'AvgCEven%s-%s' % ( catOS, catSS ) ] = avgCEven
-                            tagCatsDict[ 'AvgCOdd%s-%s'  % ( catOS, catSS ) ] = avgCOdd
-
-        else :
-            # use independent asymmetry for each category
-            if not SSTagging :
-                # only opposite side tagging
-                tagCatsDict = tagCatsDictOS
-
-            else :
-                # both opposite side and same side tagging
-                tagCatsDict = dict(  NumTagCats0  = tagCatsDictOS['NumTagCats']
-                                   , NumTagCats1  = tagCatsDictSS['NumTagCats']
-                                   , Conditionals = tagCatsDictOS['Conditionals'] + tagCatsDictSS['Conditionals']
-                                   , Constraints  = tagCatsDictOS['Constraints']  + tagCatsDictSS['Constraints']
-                                  )
-
-                for catOS in range( 1, tagCatsDictOS['NumTagCats'] ) :
-                    tagCatsDict[ 'tagCatCoef0_%d'  % catOS ] = tagCatsDictOS[ 'tagCatCoef%d'  % catOS ]
-                    tagCatsDict[ 'ATagEff0_%d'     % catOS ] = tagCatsDictOS[ 'ATagEff%d'     % catOS ]
-                    tagCatsDict[ 'tagDilution0_%s' % catOS ] = tagCatsDictOS[ 'tagDilution%d' % catOS ]
-                    tagCatsDict[ 'ADilWTag0_%s'    % catOS ] = tagCatsDictOS[ 'ADilWTag%d'    % catOS ]
-
-                for catSS in range( 1, tagCatsDictSS['NumTagCats'] ) :
-                    tagCatsDict[ 'tagCatCoef1_%d'  % catSS ] = tagCatsDictSS[ 'tagCatCoef%d'  % catSS ]
-                    tagCatsDict[ 'ATagEff1_%d'     % catSS ] = tagCatsDictSS[ 'ATagEff%d'     % catSS ]
+            for catSS in range( 1, tagCatsDictSS['NumTagCats'] ) :
+                if catOS == 0 :
+                    tagCatsDict[ 'tagCatCoef1_%d'  % catSS ] = tagCatsDictSS[ 'tagCatCoef%d' % catSS ]
+                    tagCatsDict[ 'AvgCEven0-%s'    % catSS ] = avgCEvenSS
+                    tagCatsDict[ 'AvgCOdd0-%s'     % catSS ] = avgCOddSS
                     tagCatsDict[ 'tagDilution1_%s' % catSS ] = tagCatsDictSS[ 'tagDilution%d' % catSS ]
                     tagCatsDict[ 'ADilWTag1_%s'    % catSS ] = tagCatsDictSS[ 'ADilWTag%d'    % catSS ]
+                else :
+                    tagCatsDict[ 'AvgCEven%s-%s' % ( catOS, catSS ) ] = avgCEven
+                    tagCatsDict[ 'AvgCOdd%s-%s'  % ( catOS, catSS ) ] = avgCOdd
 
-            # add production asymmetry and normalization asymmetry to tagging categories dictionary
-            tagCatsDict['AProd'] = 0.
-            tagCatsDict['ANorm'] = 0. #-self['lambdaCP']['C'].getVal()
+    from P2VV.Parameterizations.FlavourTagging import CatDilutionsCoefAsyms_TaggingParams as TaggingParams
+    self['taggingParams'] = TaggingParams( **tagCatsDict )
 
-        from P2VV.Parameterizations.FlavourTagging import CatDilutionsCoefAsyms_TaggingParams as TaggingParams
-        self['taggingParams'] = TaggingParams( **tagCatsDict )
+    if condTagging :
+        # don't float tagging category coefficients if PDF is conditional on tagging observables
+        for coefList in self['taggingParams']['singleTagCatCoefs'] :
+            for coef in coefList :
+                if coef and coef.isFundamental() : coef.setConstant(True)
 
-        if condTagging :
-            # don't float tagging category coefficients if PDF is conditional on tagging observables
-            for coefList in self['taggingParams']['singleTagCatCoefs'] :
-                for coef in coefList :
-                    if coef and coef.isFundamental() : coef.setConstant(True)
-
-        if not SSTagging :
-            args = dict(  tagCat      = observables['tagCatOS']
-                        , iTag        = observables['iTagOS']
-                        , dilutions   = self['taggingParams']['dilutions']
-                        , ADilWTags   = self['taggingParams']['ADilWTags']
-                        , avgCEvens   = self['taggingParams']['avgCEvens']
-                        , avgCOdds    = self['taggingParams']['avgCOdds']
-                        , tagCatCoefs = self['taggingParams']['tagCatCoefs']
-                       )
-        else :
-            args = dict(  tagCat0     = observables['tagCatOS']
-                        , tagCat1     = observables['tagCatSS']
-                        , iTag0       = observables['iTagOS']
-                        , iTag1       = observables['iTagSS']
-                        , dilutions0  = self['taggingParams']['dilutions'][0]
-                        , dilutions1  = self['taggingParams']['dilutions'][1]
-                        , ADilWTags0  = self['taggingParams']['ADilWTags'][0]
-                        , ADilWTags1  = self['taggingParams']['ADilWTags'][1]
-                        , avgCEvens   = self['taggingParams']['avgCEvens']
-                        , avgCOdds    = self['taggingParams']['avgCOdds']
-                        , tagCatCoefs = self['taggingParams']['tagCatCoefs']
-                       )
+    if not SSTagging :
+        args = dict(  tagCat      = observables['tagCatOS']
+                    , iTag        = observables['iTagOS']
+                    , dilutions   = self['taggingParams']['dilutions']
+                    , ADilWTags   = self['taggingParams']['ADilWTags']
+                    , avgCEvens   = self['taggingParams']['avgCEvens']
+                    , avgCOdds    = self['taggingParams']['avgCOdds']
+                    , tagCatCoefs = self['taggingParams']['tagCatCoefs']
+                   )
+    else :
+        args = dict(  tagCat0     = observables['tagCatOS']
+                    , tagCat1     = observables['tagCatSS']
+                    , iTag0       = observables['iTagOS']
+                    , iTag1       = observables['iTagSS']
+                    , dilutions0  = self['taggingParams']['dilutions'][0]
+                    , dilutions1  = self['taggingParams']['dilutions'][1]
+                    , ADilWTags0  = self['taggingParams']['ADilWTags'][0]
+                    , ADilWTags1  = self['taggingParams']['ADilWTags'][1]
+                    , avgCEvens   = self['taggingParams']['avgCEvens']
+                    , avgCOdds    = self['taggingParams']['avgCOdds']
+                    , tagCatCoefs = self['taggingParams']['tagCatCoefs']
+                   )
 
     args.update(  time                   = observables['time']
                 , tau                    = self['lifetimeParams']['MeanLifetime']
@@ -2155,6 +2122,7 @@ def multiplyByAngularAcceptance( pdf, self, **kwargs ) :
     angleFuncs     = getKWArg( self, kwargs, 'angleFuncs' )
     parNamePrefix  = getKWArg( self, kwargs, 'parNamePrefix', '' )
     coefNamePF     = getKWArg( self, kwargs, 'coefNamePF', '' )
+    constCoefs     = getKWArg( self, kwargs, 'constAngEffCoefs', True )
 
     print 'P2VV - INFO: multiplyByAngularAcceptance(): multiplying PDF "%s" with angular efficiency moments from file "%s"'\
           % ( pdf.GetName(), angEffMomsFile )
@@ -2165,8 +2133,8 @@ def multiplyByAngularAcceptance( pdf, self, **kwargs ) :
     moments.appendPYList( angleFuncs.angles, angularMomentIndices( anglesEffType, angleFuncs ) )
     moments.read(angEffMomsFile)
     moments.Print()
-    moments.multiplyPDFWithEff( pdf, CoefName = parNamePrefix + ( '_' if parNamePrefix else '' ) + 'effC'\
-                                                + ( '_' if coefNamePF else '' ) + coefNamePF )
+    moments.multiplyPDFWithEff( pdf, ConstCoefs = constCoefs, CoefName = parNamePrefix + ( '_' if parNamePrefix else '' ) + 'effC'\
+                                                                         + ( '_' if coefNamePF else '' ) + coefNamePF )
 
     return pdf
 
