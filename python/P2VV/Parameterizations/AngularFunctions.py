@@ -60,6 +60,22 @@ class JpsiphiTransversityAngles( AngleDefinitions ) :
         AngleDefinitions.__init__(self, **d )
 
 
+class JpsiKstHelicityAngles( AngleDefinitions ) :
+    def __init__( self, **kwargs ) :
+        from math import pi
+        d = {  'cpsi'   : self._parseArg( 'cpsi',   kwargs, SingleArgKey = 'Name', Name = 'helcosthetaK'
+                                         , Title = 'cos(#theta_{K})',   MinMax = ( -1,  1 ),  Observable = True )
+             , 'ctheta' : self._parseArg( 'ctheta', kwargs, SingleArgKey = 'Name', Name = 'helcosthetaL'
+                                         , Title = 'cos(#theta_{#mu})', MinMax = ( -1,  1 ),  Observable = True )
+             , 'phi'    : self._parseArg( 'phi',    kwargs, SingleArgKey = 'Name', Name = 'helphi'
+                                         , Title = '#phi_{h}',          MinMax = ( -pi, pi ), Observable = True, Unit = 'rad' )
+            }
+        coef = kwargs.pop( 'DummyCoef', False )
+        self._check_extraneous_kw(kwargs)
+        d['functions'] = JpsiKstTransversityAmplitudesHelicityAngles( Angles = d, DummyCoef = coef )
+        AngleDefinitions.__init__(self, **d )
+
+
 class JpsiphiTransversityAmplitudesHelicityAngles( AngularFunctions ) :
     def __init__( self, **kwargs ) :
         AngularFunctions.__init__(self)
