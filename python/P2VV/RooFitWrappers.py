@@ -1427,22 +1427,46 @@ class TPDecay(Pdf):
     def __init__(self, Name, **kwargs):
         from ROOT import RooTPDecay
         from ROOT import RooArgList
-        tps = RooArgList(*kwargs.pop('TurningPoints'))
         t = kwargs.pop('Time')
         tau = kwargs.pop('Tau')
         model = kwargs.pop('ResolutionModel')
+        gen = kwargs.pop('TPGen')
+        tps = gen.turning_points()
+        norm_range = ','.join(tps[i].GetName() + tps[i + 1].GetName() for i in range(0, len(tps), 2))
+        from ROOT import RooDecay
+        tp_decay = RooTPDecay(Name, Name, __dref__(t), __dref__(tau), __dref__(model),
+                              RooDecay.SingleSided, norm_range)
+        tp_decay = self._addObject(tp_decay)
+        self._init(Name, 'RooTPDecay')
+        for (k,v) in kwargs.iteritems() :
+            self.__setitem__(k,v)
+
+    def _make_pdf(self):
+        pass
+
+class TPGen(Pdf):
+    def __init__(self, Name, **kwargs):
+        from ROOT import RooTPGen
+        from ROOT import RooArgList
+        self.__tps = RooArgList(*kwargs.pop('TurningPoints'))
         nPVs = kwargs.pop('nPVs')
         data = kwargs.pop('Data')
         PV_table = data.table(__dref__(nPVs))
         pvz = kwargs.pop('PVZ')
         pvz_pdf = kwargs.pop('PVZPdf')
 
-        tp_decay = RooTPDecay(Name, Name, __dref__(t), __dref__(tau), tps, __dref__(model),
-                              PV_table, __dref__(pvz), __dref__(pvz_pdf))
-        tp_decay = self._addObject(tp_decay)
-        self._init(Name, 'RooTPDecay')
+        tp_gen = RooTPGen(Name, Name, self.__tps, PV_table, __dref__(pvz),
+                              __dref__(pvz_pdf))
+        tp_gen = self._addObject(tp_gen)
+        self._init(Name, 'RooTPGen')
         for (k,v) in kwargs.iteritems() :
             self.__setitem__(k,v)
+
+    def turning_points(self):
+        return [tp for tp in self.__tps]
+            
+    def _make_pdf(self):
+        pass
 
 class BDecay( Pdf ) :
     def __init__(self, Name, **kwargs):
@@ -2067,7 +2091,7 @@ class BinnedFun(RooObject):
         self._declare( spec )
 
     def __build_from_hist(self,name,observable,hist) :
-        cvar = lambda i : ConstVar(Name = '%s_bin_%d' % (name, i), Value = hist.GetBinContent(1 + i))
+        cvar = lambda i : RealVar(Name = '%s_bin_%d' % (name, i), Value = hist.GetBinContent(1 + i), Constant = True)
         self.__coefficients[name] = [cvar(i) for i in range(hist.GetNbinsX())]
         return self.__build_from_coef(name, observable, self.__create_binning(name, observable, hist),
                                       self.__coefficients[name])

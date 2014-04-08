@@ -31,9 +31,11 @@
         <class name = "RooMultiEffResModel" />
         <class name = "RooComplementCoef" />
         <class name = "RooEffConvGenContext" />
+        <class name = "RooTPConvGenContext" />
         <class name = "RooBoxPdf" />
         <class name = "RooExplicitNormPdf" />
         <class name = "RooTPDecay" />
+        <class name = "RooTPGen" />
         <class name = "RooAmoroso" />
         <class name = "RooMassDependence" />
         <class name = "RooCubicSplineKnot::BoundaryConditions" />
