@@ -11,7 +11,7 @@ parser.add_argument( '--blind', '-b', default = True )
 parser.add_argument( '--fixLowAcc', '-l', default = True )
 parser.add_argument( '--fixUpAcc', '-u', default = False )
 parser.add_argument( '--fixTagging', '-a', default = False )
-parser.add_argument( '--fixTagAsym', '-k', default = None )
+parser.add_argument( '--fixTagAsym', '-k', default = True )
 parser.add_argument( '--numCPU', '-c', type = int, default = 2 )
 parser.add_argument( '--runHesse', '-e', default = True )
 parser.add_argument( '--runMinos', '-s', default = '' )
@@ -35,8 +35,7 @@ blind = False if not args.blind or str( args.blind ).lower() in [ 'false', '0' ]
 fixLowAcc = False if not args.fixLowAcc or str( args.fixLowAcc ).lower() in [ 'false', '0' ] else True
 fixUpAcc = False if not args.fixUpAcc or str( args.fixUpAcc ).lower() in [ 'false', '0' ] else True
 fixTagging = False if not args.fixTagging or str( args.fixTagging ).lower() in [ 'false', '0' ] else True
-fixTagAsym = fixTagging if args.fixTagAsym == None else False if not args.fixTagAsym or str( args.fixTagAsym ).lower() in [ 'false', '0' ]\
-             else True
+fixTagAsym = False if not args.fixTagAsym or str( args.fixTagAsym ).lower() in [ 'false', '0' ] else True
 assert type(args.numCPU) == int and args.numCPU > 0 and args.numCPU < 20
 runHesse = False if not args.runHesse or str( args.runHesse ).lower() in [ 'false', '0' ] else True
 minosPars = args.minosPars.split(',') if args.minosPars and str(args.minosPars) != 'None' else [ ]
