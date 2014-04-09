@@ -11,6 +11,7 @@ parser.add_argument( '--blind', '-b', default = True )
 parser.add_argument( '--fixLowAcc', '-l', default = True )
 parser.add_argument( '--fixUpAcc', '-u', default = False )
 parser.add_argument( '--fixTagging', '-a', default = False )
+parser.add_argument( '--fixTagAsym', '-k', default = None )
 parser.add_argument( '--numCPU', '-c', type = int, default = 2 )
 parser.add_argument( '--runHesse', '-e', default = True )
 parser.add_argument( '--runMinos', '-s', default = '' )
@@ -34,6 +35,8 @@ blind = False if not args.blind or str( args.blind ).lower() in [ 'false', '0' ]
 fixLowAcc = False if not args.fixLowAcc or str( args.fixLowAcc ).lower() in [ 'false', '0' ] else True
 fixUpAcc = False if not args.fixUpAcc or str( args.fixUpAcc ).lower() in [ 'false', '0' ] else True
 fixTagging = False if not args.fixTagging or str( args.fixTagging ).lower() in [ 'false', '0' ] else True
+fixTagAsym = fixTagging if args.fixTagAsym == None else False if not args.fixTagAsym or str( args.fixTagAsym ).lower() in [ 'false', '0' ]\
+             else True
 assert type(args.numCPU) == int and args.numCPU > 0 and args.numCPU < 20
 runHesse = False if not args.runHesse or str( args.runHesse ).lower() in [ 'false', '0' ] else True
 minosPars = args.minosPars.split(',') if args.minosPars and str(args.minosPars) != 'None' else [ ]
@@ -72,6 +75,7 @@ print '  blind analysis: %s' % ( 'true' if blind else 'false' )
 print '  fix lower decay-time acceptance: %s' % ( 'true' if fixLowAcc else 'false' )
 print '  fix upper decay-time acceptance: %s' % ( 'true' if fixUpAcc  else 'false' )
 print '  fix tagging calibration: %s' % ( 'true' if fixTagging else 'false' )
+print '  fix tagging calibration asymmetries: %s' % ( 'true' if fixTagAsym else 'false' )
 print '  number of cores: %d' % args.numCPU
 print '  run Hesse: %s' % ( 'true' if runHesse else 'false' )
 print '  run Minos: %s' % ( 'true' if runMinos else 'false' )
@@ -133,6 +137,11 @@ if fixTagging :
     pdfConfig['externalConstr']['wTagP1OS'] = ( 1.0118512,  0. )#( 1.,     0.00001 )
     pdfConfig['externalConstr']['wTagP0SS'] = ( 0.44585594, 0. )#( 0.445,  0.00001 )
     pdfConfig['externalConstr']['wTagP1SS'] = ( 0.95813206, 0. )#( 1.,     0.00001 )
+if not fixTagAsym :
+    pdfConfig['externalConstr']['wTagDelP0OS'] = (  0.0140, 0.0012 )
+    pdfConfig['externalConstr']['wTagDelP1OS'] = (  0.066,  0.012  )
+    pdfConfig['externalConstr']['wTagDelP0SS'] = ( -0.016,  0.0014 )
+    pdfConfig['externalConstr']['wTagDelP1SS'] = (  0.007,  0.022  )
 
 pdfConfig['anglesEffType'] = 'weights'
 pdfConfig['constAngEffCoefs'] = constAngAcc
