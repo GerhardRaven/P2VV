@@ -14,6 +14,7 @@ class parameterGen(object) :
         if self._nPars < 1 : return
 
         # read parameter file
+        self._filePars = [ ]
         self.readParameters(ParFile)
 
         # set parameter names
@@ -59,6 +60,7 @@ class parameterGen(object) :
         self._diagVals = [       diagVals[it]   for it in range(self._nPars) ]
         self._diagErrs = [ sqrt( diagVars[it] ) for it in range(self._nPars) ]
         self._genDiagVals = TVectorD(self._nPars)
+        self._genVals = [ ]
         self._invTrans = invTrans
         self._ranges = ranges
         self._nGen = 0
@@ -73,27 +75,43 @@ class parameterGen(object) :
         self._parSetID = StartID
         self._randGen = TRandom3(StartID)
 
-    def setParSetID( self, id ) :
+    def setParSetID( self, ID ) :
         if self._nPars < 1 : return
-        self._parSetID = id
-        self._randGen.SetSeed(id)
+        self._parSetID = ID
+        self._randGen.SetSeed(ID)
 
     def parSetID(self) :
         if self._nPars < 1 : return None
         return self._parSetID
 
-    def readParameters( self, file ) :
-        self._filePars = None
-        if file :
+    def readParameters( self, File ) :
+        if File :
             from P2VV.Parameterizations.FullPDFs import PdfConfiguration
-            self._filePars = PdfConfiguration()
-            self._filePars.readParametersFromFile( filePath = file )
+            self._filePars.append( PdfConfiguration() )
+            self._filePars[-1].readParametersFromFile( filePath = File )
+            return len(self._filePars) - 1
 
-    def writeParameters( self, file ) :
-        if self._filePars == None :
+    def writeParameters( self, File, TransFuncs = { }, Index = -1 ) :
+        if self._nPars < 1 or not self._genVals or not self._filePars or Index >= len(self._filePars) or Index < -len(self._filePars) :
             print 'P2VV - ERROR: parameterGen.writeParameters(): no parameters to write to file'
             return
-        self._filePars.writeParametersToFile( filePath = file, Verbose = False )
+
+        # set parameters for output file
+        funcs = TransFuncs if TransFuncs else dict( [ ( name, val ) for name, val in zip( self._parNames, self._genVals ) ] )
+        pars = self._filePars[Index].parameters()
+        parsFound = True
+        for name, func in funcs.iteritems() :
+            if name not in pars :
+                parsFound = False
+                continue
+            pars[name] = tuple( [ func(self._genVals) if callable(func) else func ] + [ v for v in pars[name][ 1 : -1 ] ] + [ False ] )
+
+        if not parsFound and self._parsFoundWarn :
+            print 'P2VV - WARNING: parameterGen.generateParSet(): not all generated parameters found in parameter set for output file'
+            self._parsFoundWarn = False
+
+        # write parameter file
+        return self._filePars[Index].writeParametersToFile( filePath = File, Verbose = False )
 
     def generateParSet(self) :
         if self._nPars < 1 : return [ ]
@@ -107,35 +125,26 @@ class parameterGen(object) :
             genVals = self._invTrans * self._genDiagVals
 
             # get generated values and check if they are in range
-            genValsRet = [ ]
+            self._genVals = [ ]
             for parIt in range(self._nPars) :
                 val = genVals[parIt]
                 if self._ranges and ( val < self._ranges[parIt][0] or val > self._ranges[parIt][1] ) : break
-                genValsRet.append(val)
-            if len(genValsRet) == self._nPars : break
+                self._genVals.append(val)
+            if len(self._genVals) == self._nPars : break
             self._nOutRange += 1
 
         # update generation statistics
         self._nGen += 1
         self._parSetID += 1
-        for parIt, val in enumerate(genValsRet) :
+        for parIt, val in enumerate(self._genVals) :
             self._sumVals[parIt]   += val
             self._sumSqVals[parIt] += val**2
 
-        if self._filePars != None :
-            # set parameters for output file
-            pars = self._filePars.parameters()
-            parsFound = True
-            for name, val in zip( self._parNames, genValsRet ) :
-                if name in pars :
-                    pars[name] = tuple( [ val ] + [ v for v in pars[name][ 1 : -1 ] ] + [ False ] )
-                else :
-                    parsFound = False
-            if not parsFound and self._parsFoundWarn :
-                print 'P2VV - WARNING: parameterGen.generateParSet(): not all generated parameters found in parameter set for output file'
-                self._parsFoundWarn = False
+        return self._genVals
 
-        return genValsRet
+    def genVals(self) :
+        if self._nPars < 1 : return [ ]
+        return self._genVals
 
     def nGen(self) :
         if self._nPars < 1 : return 0
@@ -175,7 +184,8 @@ class fitResultsAnalysis(object) :
         self._refPars = PdfConfiguration()
         self._anaPars = PdfConfiguration()
         self._refParVals = [ None ] * len(self._parNames)
-        self._anaParVals = [ ]
+        self._anaParVals = { }
+        self._parHists = { }
         self.readRefFile(RefFile)
         self.readAnaFiles(AnaFiles)
 
@@ -190,7 +200,7 @@ class fitResultsAnalysis(object) :
                 self._refParVals[parIt] = ( parVals[name][0], parVals[name][1] )
 
     def readAnaFiles( self, files ) :
-        self._anaParVals = [ ]
+        self._anaParVals = dict( [ ( name, [ ] ) for name in self._parNames ] )
         if files :
             fileStats = { }
             for file in files :
@@ -202,12 +212,11 @@ class fitResultsAnalysis(object) :
                 else :
                     fileStats[ fitStatus[0] ] += 1
 
-                self._anaParVals.append( [ ] )
                 parVals = self._anaPars.parameters()
-                for name in self._parNames :
+                for name, vals in self._anaParVals.iteritems() :
                     assert name in parVals\
                            , 'P2VV - ERROR: fitResultsAnalysis.readAnaFiles(): parameter "%s" not found in file "%s"' % ( name, file )
-                    self._anaParVals[-1].append( parVals[name][0] )
+                    vals.append( parVals[name][0] )
 
             self._nFiles = sum( stats for stats in fileStats.itervalues() )
             print 'P2VV - INFO: fitResultsAnalysis.readAnaFiles(): read %d parameter files for analysis (fit status: %s)'\
@@ -218,29 +227,46 @@ class fitResultsAnalysis(object) :
             print 'P2VV - WARNING: fitResultsAnalysis.processResults(): no parameter values available for analysis'
             return
 
-        self._parSums = [ [ 0., 0., 0., 0. ] for par in self._parNames ]
-        self._nParVals = [ [ 0., 0., 0. ] for par in self._parNames ]
-        for vals in self._anaParVals :
-            for valIt, val in enumerate(vals) :
-                self._parSums[valIt][0] += val
-                self._parSums[valIt][1] += val**2
-                self._nParVals[valIt][0] += 1
-                if self._refParVals[valIt] != None :
-                    valDiff = val - self._refParVals[valIt][0]
-                    self._parSums[valIt][ 3 if valDiff < 0. else 2 ] += valDiff**2
-                    self._nParVals[valIt][ 2 if valDiff < 0. else 1 ] += 1
+        self._parSums = [ [ sum( self._anaParVals[name] ), 0., 0., 0. ] for name in self._parNames ]
+        self._nParVals = [ [ len( self._anaParVals[name] ), 0., 0. ] for name in self._parNames ]
+        for parIt, name in enumerate(self._parNames) :
+            if name in self._parHists and self._parHists[name] :
+                self._parHists[name].Delete()
+            if histsFile :
+                histBins = int( float(self._nFiles) / 100. ) if self._nFiles > 1000 else 10
+                histMin = min( self._anaParVals[name] )
+                histMax = max( self._anaParVals[name] )
+                histRange = histMax - histMin
+                if histRange > 0. :
+                    histMin = histMin - 0.01 * histRange
+                    histMax = histMax + 0.01 * histRange
+                from P2VV.Load import LHCbStyle
+                from ROOT import TH1D, kFullDotLarge
+                self._parHists[name] = TH1D( name, name, histBins, histMin, histMax )
+                self._parHists[name].SetXTitle(name)
+                self._parHists[name].SetYTitle('Entries / %.2g' % self._parHists[name].GetBinWidth(1) )
+                self._parHists[name].SetMarkerStyle(kFullDotLarge)
+                self._parHists[name].SetMarkerSize(0.6)
+            for val in self._anaParVals[name] :
+                self._parSums[parIt][1] += val**2
+                if self._refParVals[parIt] != None :
+                    valDiff = val - self._refParVals[parIt][0]
+                    self._parSums[parIt][ 3 if valDiff < 0. else 2 ] += valDiff**2
+                    self._nParVals[parIt][ 2 if valDiff < 0. else 1 ] += 1
+                if histsFile :
+                    self._parHists[name].Fill(val)
         for valCounts in self._nParVals :
             assert valCounts[0] == self._nFiles and ( valCounts[1] + valCounts[2] == self._nFiles or self._refParVals[0] == None )
 
         from math import sqrt, log10, ceil
         nameLen = min( 30, max( len(name) for name in self._parNames ) )
-        sepStr = '  ' + '-' * ( nameLen + ( 97 if self._refParVals[0] != None else 31 ) )
+        sepStr = '  ' + '-' * ( nameLen + ( 105 if self._refParVals[0] != None else 31 ) )
         print 'P2VV - INFO: fitResultsAnalysis.processResults(): parameter statistics for %d files:' % self._nFiles
         print sepStr
-        print ( '  {0:<%ds}   {1:<8s}   {2:<11s}' % nameLen ).format( 'name', 'mean', 'std. dev.' ),
+        print ( '  {0:<%ds}   {1:<8s}   {2:<11s}' % nameLen ).format( 'name', 'mean', 'std dev' ),
         if self._refParVals[0] != None :
-            print '   {0:<8s}   {1:<7s}   {2:<11s}   {3:<10s}   {4:<11s}   {5:<11s}'\
-                  .format( 'value', 'uncert.', 'mean dev.', 'dev. (sig)', '+dev. (sig)', '-dev. (sig)' )
+            print '   {0:<8s}   {1:<7s}   {2:<11s}   {3:<19s}   {4:<8s}   {5:<8s}'\
+                  .format( 'value', 'uncert', 'mean dev', 'dev rel / abs', '+dev rel', '-dev rel' )
         else :
             print
         print sepStr
@@ -255,8 +281,19 @@ class fitResultsAnalysis(object) :
                 dev = sqrt( ( parSums[2] + parSums[3] ) / float( nParVals[0] ) ) / refVal[1]
                 devPlus = sqrt( parSums[2] / float( nParVals[1] ) ) / refVal[1]
                 devMin  = sqrt( parSums[3] / float( nParVals[2] ) ) / refVal[1]
-                print ( '   {0:<+8.%df}   {1:<7.%df}   {2:<+11.%df}   {3:<10.3f}   {4:<11.3f}   {5:<11.3f}' % ( prec, prec, precDev ) )\
-                      .format( refVal[0], refVal[1], meanVal - refVal[0], dev, devPlus, devMin )
+                print ( '   {0:<+8.%df}   {1:<7.%df}   {2:<+11.%df}   {3:<5.3f} / {4:<11.%df}   {5:<8.3f}   {6:<8.3f}'\
+                        % ( prec, prec, precDev, precDev ) )\
+                        .format( refVal[0], refVal[1], meanVal - refVal[0], dev, dev * refVal[1], devPlus, devMin )
             else :
                 print
         print sepStr
+
+        if histsFile :
+            from ROOT import TCanvas
+            dCanv = TCanvas('dummy')
+            dCanv.Print( histsFile + '[' )
+            for name in self._parNames :
+                canv = TCanvas(name)
+                self._parHists[name].Draw('E1')
+                canv.Print(histsFile)
+            dCanv.Print( histsFile + ']' )
