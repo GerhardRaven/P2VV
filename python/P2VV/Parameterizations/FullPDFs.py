@@ -429,12 +429,12 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
 
         self['externalConstr'] = dict(  wTagP0OS       = (  0.3791, 0.0044 )
                                       , wTagP1OS       = (  1.000,  0.035  )
-                                      , wTagDelP0OS    = (  0.0140, 0.     )
-                                      , wTagDelP1OS    = (  0.066,  0.     )
+                                      , wTagDelP0OS    = (  0.0140, 0.0012 )
+                                      , wTagDelP1OS    = (  0.066,  0.012  )
                                       , wTagP0SS       = (  0.445,  0.005  )
                                       , wTagP1SS       = (  1.00,   0.09   )
-                                      , wTagDelP0SS    = ( -0.016,  0.     )
-                                      , wTagDelP1SS    = (  0.007,  0.     )
+                                      , wTagDelP0SS    = ( -0.0158, 0.0014 )
+                                      , wTagDelP1SS    = (  0.008,  0.022  )
                                       #, dM             = (  17.768, 0.024  )
                                      )
         from collections import defaultdict

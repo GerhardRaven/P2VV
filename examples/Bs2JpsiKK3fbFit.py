@@ -11,7 +11,7 @@ parser.add_argument( '--blind', '-b', default = True )
 parser.add_argument( '--fixLowAcc', '-l', default = True )
 parser.add_argument( '--fixUpAcc', '-u', default = False )
 parser.add_argument( '--fixTagging', '-a', default = False )
-parser.add_argument( '--fixTagAsym', '-k', default = True )
+parser.add_argument( '--fixTagAsym', '-k', default = False )
 parser.add_argument( '--numCPU', '-c', type = int, default = 2 )
 parser.add_argument( '--runHesse', '-e', default = True )
 parser.add_argument( '--runMinos', '-s', default = '' )
@@ -136,11 +136,11 @@ if fixTagging :
     pdfConfig['externalConstr']['wTagP1OS'] = ( 1.0118512,  0. )#( 1.,     0.00001 )
     pdfConfig['externalConstr']['wTagP0SS'] = ( 0.44585594, 0. )#( 0.445,  0.00001 )
     pdfConfig['externalConstr']['wTagP1SS'] = ( 0.95813206, 0. )#( 1.,     0.00001 )
-if not fixTagAsym :
-    pdfConfig['externalConstr']['wTagDelP0OS'] = (  0.0140, 0.0012 )
-    pdfConfig['externalConstr']['wTagDelP1OS'] = (  0.066,  0.012  )
-    pdfConfig['externalConstr']['wTagDelP0SS'] = ( -0.016,  0.0014 )
-    pdfConfig['externalConstr']['wTagDelP1SS'] = (  0.007,  0.022  )
+if fixTagAsym :
+    pdfConfig['externalConstr']['wTagDelP0OS'] = (  0.0140, 0.00001 )
+    pdfConfig['externalConstr']['wTagDelP1OS'] = (  0.066,  0.00001 )
+    pdfConfig['externalConstr']['wTagDelP0SS'] = ( -0.0158, 0.00001 )
+    pdfConfig['externalConstr']['wTagDelP1SS'] = (  0.008,  0.00001 )
 
 pdfConfig['anglesEffType'] = 'weights'
 pdfConfig['constAngEffCoefs'] = constAngAcc
