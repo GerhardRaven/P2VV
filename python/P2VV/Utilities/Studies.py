@@ -227,7 +227,7 @@ class fitResultsAnalysis(object) :
             print 'P2VV - WARNING: fitResultsAnalysis.processResults(): no parameter values available for analysis'
             return
 
-        self._parSums = [ [ sum( self._anaParVals[name] ), 0., 0., 0. ] for name in self._parNames ]
+        self._parSums = [ [ sum( self._anaParVals[name] ), 0., 0., 0., 0., 0. ] for name in self._parNames ]
         self._nParVals = [ [ len( self._anaParVals[name] ), 0., 0. ] for name in self._parNames ]
         for parIt, name in enumerate(self._parNames) :
             if name in self._parHists and self._parHists[name] :
@@ -252,6 +252,7 @@ class fitResultsAnalysis(object) :
                 if self._refParVals[parIt] != None :
                     valDiff = val - self._refParVals[parIt][0]
                     self._parSums[parIt][ 3 if valDiff < 0. else 2 ] += valDiff**2
+                    self._parSums[parIt][ 5 if valDiff < 0. else 4 ] += valDiff**4
                     self._nParVals[parIt][ 2 if valDiff < 0. else 1 ] += 1
                 if histsFile :
                     self._parHists[name].Fill(val)
@@ -260,13 +261,13 @@ class fitResultsAnalysis(object) :
 
         from math import sqrt, log10, ceil
         nameLen = min( 30, max( len(name) for name in self._parNames ) )
-        sepStr = '  ' + '-' * ( nameLen + ( 105 if self._refParVals[0] != None else 31 ) )
+        sepStr = ' ' + '-' * ( nameLen + ( 128 if self._refParVals[0] != None else 32 ) )
         print 'P2VV - INFO: fitResultsAnalysis.processResults(): parameter statistics for %d files:' % self._nFiles
         print sepStr
         print ( '  {0:<%ds}   {1:<8s}   {2:<11s}' % nameLen ).format( 'name', 'mean', 'std dev' ),
         if self._refParVals[0] != None :
-            print '   {0:<8s}   {1:<7s}   {2:<11s}   {3:<19s}   {4:<8s}   {5:<8s}'\
-                  .format( 'value', 'uncert', 'mean dev', 'dev rel / abs', '+dev rel', '-dev rel' )
+            print '   {0:<8s}   {1:<7s}   {2:<11s}   {3:<19s}   {4:<19s}   {5:<8s}   {6:<8s}'\
+                  .format( 'value', 'uncert', 'mean dev', 'dev rel / abs', 'err rel / abs', '+dev rel', '-dev rel' )
         else :
             print
         print sepStr
@@ -278,12 +279,15 @@ class fitResultsAnalysis(object) :
             prec = max( 0, 2 - int( ceil( log10( refVal[1] ) ) ) ) if refVal != None else precDev
             print ( '  {0:<%ds}   {1:<+8.%df}   {2:<11.%df}' % ( nameLen, prec, precDev ) ).format( name, meanVal, stdDev ),
             if refVal != None :
-                dev = sqrt( ( parSums[2] + parSums[3] ) / float( nParVals[0] ) ) / refVal[1]
+                diffVar = ( parSums[2] + parSums[3] ) / float( nParVals[0] )
+                diffVarVar = ( parSums[4] + parSums[5] ) / float( nParVals[0] )
+                dev = sqrt(diffVar) / refVal[1]
+                devErr = 0.5 / sqrt(diffVar) / refVal[1] * sqrt( ( diffVarVar - diffVar**2 ) / float( nParVals[0] ) )
                 devPlus = sqrt( parSums[2] / float( nParVals[1] ) ) / refVal[1]
                 devMin  = sqrt( parSums[3] / float( nParVals[2] ) ) / refVal[1]
-                print ( '   {0:<+8.%df}   {1:<7.%df}   {2:<+11.%df}   {3:<5.3f} / {4:<11.%df}   {5:<8.3f}   {6:<8.3f}'\
-                        % ( prec, prec, precDev, precDev ) )\
-                        .format( refVal[0], refVal[1], meanVal - refVal[0], dev, dev * refVal[1], devPlus, devMin )
+                print ( '   {0:<+8.%df}   {1:<7.%df}   {2:<+11.%df}   {3:<5.3f} / {4:<11.%df}   {5:<5.3f} / {6:<11.%df}   {7:<8.3f}   {8:<8.3f}'\
+                    % ( prec, prec, precDev, precDev, precDev ) )\
+                    .format( refVal[0], refVal[1], meanVal - refVal[0], dev, dev * refVal[1], devErr, devErr * refVal[1], devPlus, devMin )
             else :
                 print
         print sepStr
