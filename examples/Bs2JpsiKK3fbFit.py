@@ -137,10 +137,10 @@ if fixTagging :
     pdfConfig['externalConstr']['wTagP0SS'] = ( 0.44585594, 0. )#( 0.445,  0.00001 )
     pdfConfig['externalConstr']['wTagP1SS'] = ( 0.95813206, 0. )#( 1.,     0.00001 )
 if fixTagAsym :
-    pdfConfig['externalConstr']['wTagDelP0OS'] = (  0.0140, 0.00001 )
-    pdfConfig['externalConstr']['wTagDelP1OS'] = (  0.066,  0.00001 )
-    pdfConfig['externalConstr']['wTagDelP0SS'] = ( -0.0158, 0.00001 )
-    pdfConfig['externalConstr']['wTagDelP1SS'] = (  0.008,  0.00001 )
+    pdfConfig['externalConstr']['wTagDelP0OS'] = (  0.014023729,  0. )#(  0.0140, 0.00001 )
+    pdfConfig['externalConstr']['wTagDelP1OS'] = (  0.065743477,  0. )#(  0.066,  0.00001 )
+    pdfConfig['externalConstr']['wTagDelP0SS'] = ( -0.015786075,  0. )#( -0.0158, 0.00001 )
+    pdfConfig['externalConstr']['wTagDelP1SS'] = (  0.0081990069, 0. )#(  0.008,  0.00001 )
 
 pdfConfig['anglesEffType'] = 'weights'
 pdfConfig['constAngEffCoefs'] = constAngAcc
