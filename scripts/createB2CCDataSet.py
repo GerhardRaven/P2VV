@@ -10,9 +10,10 @@ nTupleName       = 'DecayTree'
 dataSetsFilePath = 'temp.root' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_6KKMassBins_2TagCats.root'
 appendToFile     = False
 savedObjects     = [ 'sigSWeight' ]
-plotsFilePath    = 'temp.ps' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_6KKMassBins_2TagCats.ps'
+plotsFilePath    = 'temp_plots' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_6KKMassBins_2TagCats_plots'
 parFileIn        = 'eventYields6KKBins_HLT2.par' #'eventYields6KKBins.par' #'eventYields6KKBinsNoMC.par' #'eventYields6KKBins.par'
 parFileOut       = ''
+plotLabelText    = 'LHCb'
 
 simulation       = False
 weightName       = 'pbkgWeight' # 'wMC' # 'pbkgWeight'
@@ -225,6 +226,7 @@ elif addTaggingObs and addTaggingObs[1] > 2 :
 else :
     tagCatsSS = [ ]
 
+plotsFilePath = plotsFilePath.split('.')[0]
 
 ###########################################################################################################################################
 ## read data ##
@@ -292,6 +294,8 @@ dataTreeFile = TFile.Open(nTupleFilePath)
 assert dataTreeFile, 'P2VV - ERROR: createB2CCDataSet: could not open file "%s"' % nTupleFilePath
 dataTree = dataTreeFile.Get(nTupleName)
 assert dataTree, 'P2VV - ERROR: createB2CCDataSet: could not locate tree "%s" in file "%s"' % ( nTupleName, nTupleFilePath )
+from ROOT import gROOT
+gROOT.cd('PyROOT:/')
 
 # create data set from n-tuple
 dataSets = dict( pre = ( dataTree.buildDataSet( Observables = obsSetPreDS, Name = 'JpsiKK', Title = 'JpsiKK', Cuts = ntupleCuts
@@ -644,7 +648,6 @@ if not simulation :
 ## make J/psiKK mass plots ##
 #############################
 
-plotsFilePath = plotsFilePath.split('.')
 if not simulation and plotsFilePath :
     print 120 * '='
     print 'P2VV - INFO: createB2CCDataSet: plotting J/psiKK invariant mass distribution'
@@ -654,18 +657,16 @@ if not simulation and plotsFilePath :
     from ROOT import TCanvas, kBlue, kRed, kGreen, kFullDotLarge, TPaveText, TLatex
     from P2VV.Utilities.Plotting import _P2VVPlotStash
 
-    LHCbLabel = TPaveText( 0.24, 0.81, 0.37, 0.89, 'BRNDC' )
-    LHCbLabel.AddText('LHCb')
-    LHCbLabel.SetFillColor(0)
-    LHCbLabel.SetTextAlign(12)
-    LHCbLabel.SetTextSize(0.072)
-    LHCbLabel.SetBorderSize(0)
-    _P2VVPlotStash.append(LHCbLabel)
+    if plotLabelText :
+        plotLabel = TLatex()
+        plotLabel.SetTextAlign(32)
+        plotLabel.SetTextSize(0.072)
+        _P2VVPlotStash.append(plotLabel)
 
     binLabel = TLatex()
     binLabel.SetTextAlign(12)
     binLabel.SetTextSize(0.05)
-    _P2VVPlotStash.append(LHCbLabel)
+    _P2VVPlotStash.append(binLabel)
 
     if SWeightsType.startswith('simultaneous') :
         # create projection data set
@@ -684,6 +685,7 @@ if not simulation and plotsFilePath :
         projWData = dict()
 
     # plot J/psiKK mass distributions
+    massPlots = [ ]
     massCanvs = [  TCanvas( 'massCanvLog',     'B mass logarithmic scale'  )
                  , TCanvas( 'massCanvSig',     'B mass signal range'       )
                  , TCanvas( 'massCanvLeft',    'B mass left side band'     )
@@ -701,10 +703,10 @@ if not simulation and plotsFilePath :
                                 , obsDict['mass'][1] + ' mass fit - peaking background'
                                ]
                              , [  obsDict['mass'][0]
-                                , obsDict['mass'][0] + ' fit - signal'
-                                , obsDict['mass'][0] + ' fit - left side band'
-                                , obsDict['mass'][0] + ' fit - right side band'
-                                , obsDict['mass'][0] + ' fit - peaking background'
+                                , obsDict['mass'][0] + '_signal'
+                                , obsDict['mass'][0] + '_left'
+                                , obsDict['mass'][0] + '_right'
+                                , obsDict['mass'][0] + '_peakBkg'
                                ]
                              , [ True, False, False, False, False ]
                              , [ massLogPlotRange, ( None, None ), ( None, None ), ( None, None ), ( None, None ) ]
@@ -720,21 +722,22 @@ if not simulation and plotsFilePath :
         pad.SetTopMargin(0.05)
 
         binWidth = ( observables['mass'].getMax(frameRange) - observables['mass'].getMin(frameRange) ) / float(nBins)
-        plot(  pad, observables['mass'], dataSets['pre'][0], sWeightMassPdf, logy = logy, yScale = scale
-             , xTitle = 'm(J/#psi K^{+}K^{-}) [MeV/c^{2}]', yTitle = 'Candidates / (%.1f MeV/c^{2})' % binWidth
-             , xTitleOffset = 1.10, yTitleOffset = yTitleOffset
-             #, plotResidHist = 'E3', normalize = True, symmetrize = True
-             , plotResidHist = 'BX', normalize = True, symmetrize = True
-             , frameOpts  = dict( Range = frameRange, Bins = nBins, Title = plotTitle, Name = plotName )
-             , dataOpts   = dict( MarkerStyle = kFullDotLarge, MarkerSize = markSize, LineWidth = markLineWidth )
-             , pdfOpts    = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = 3, Precision = 1.e-4 )
-             , components = {  'sig*'  : dict( LineColor = kRed,       LineStyle = 7, LineWidth = 3 )
-                             , 'cbkg*' : dict( LineColor = kGreen + 3, LineStyle = 9, LineWidth = 3 )
-                            }
-            )
+        massPlots.append( plot(  pad, observables['mass'], dataSets['pre'][0], sWeightMassPdf, logy = logy, yScale = scale
+                               , xTitle = 'm(J/#psi K^{+}K^{-}) [MeV/c^{2}]', yTitle = 'Candidates / (%.1f MeV/c^{2})' % binWidth
+                               , xTitleOffset = 1.10, yTitleOffset = yTitleOffset
+                               #, plotResidHist = 'E3', normalize = True, symmetrize = True
+                               , plotResidHist = 'BX', normalize = True, symmetrize = True
+                               , frameOpts  = dict( Range = frameRange, Bins = nBins, Title = plotTitle, Name = plotName )
+                               , dataOpts   = dict( MarkerStyle = kFullDotLarge, MarkerSize = markSize, LineWidth = markLineWidth )
+                               , pdfOpts    = dict( list( projWData.items() ), LineColor = kBlue, LineWidth = 3, Precision = 1.e-4 )
+                               , components = {  'sig*'  : dict( LineColor = kRed,       LineStyle = 7, LineWidth = 3 )
+                                               , 'cbkg*' : dict( LineColor = kGreen + 3, LineStyle = 9, LineWidth = 3 )
+                                              }
+                              )
+        )
         if index < 2 :
             pad.cd()
-            LHCbLabel.Draw()
+            if plotLabelText : plotLabel.DrawLatexNDC( 0.81, 0.89, plotLabelText )
 
     if SWeightsType.startswith('simultaneous') and len(KKMassBinBounds) > 2 :
         # get simultaneous PDFs
@@ -785,7 +788,16 @@ if not simulation and plotsFilePath :
             binLabel.DrawLatex( 0.18, 0.91, bin[0][2].strip('{}') )
 
     for it, canv in enumerate(massCanvs) :
-        canv.Print( plotsFilePath[0] + '_mass.' + plotsFilePath[1] + ( '(' if it == 0 else ')' if it == len(massCanvs) - 1 else '' ) )
+        canv.Print( plotsFilePath + '_mass.ps' + ( '(' if it == 0 else ')' if it == len(massCanvs) - 1 else '' ) )
+
+    # write mass plots to ROOT file
+    from ROOT import TFile, TObject
+    plotsFile = TFile.Open( plotsFilePath + '.root', 'RECREATE' )
+    for massPlot in massPlots :
+        plotsFile.Append( massPlot[0] )
+        plotsFile.Append( massPlot[1] )
+    plotsFile.Write( plotsFilePath + '.root', TObject.kOverwrite )
+    plotsFile.Close()
 
 
 ###########################################################################################################################################
@@ -905,7 +917,6 @@ dataSets['main'] = ( mainDS, mainDSList )
 dataSets.pop('pre')
 dataSets.pop('preS')
 dataTreeFile.Close()
-from ROOT import gROOT
 gROOT.cd('PyROOT:/')
 
 print 'P2VV - INFO: createB2CCDataSet: produced data set:\n' + ' ' * 13,
@@ -1038,7 +1049,7 @@ if not simulation and plotsFilePath :
     sigZeroLine.Draw()
 
     for it, canv in enumerate(sWeightCanvs) :
-        canv.Print( plotsFilePath[0] + '_sWeights.' + plotsFilePath[1] + ('(' if it == 0 else ')' if it == len(sWeightCanvs) - 1 else '') )
+        canv.Print( plotsFilePath + '_sWeights.ps' + ('(' if it == 0 else ')' if it == len(sWeightCanvs) - 1 else '') )
 
 
 ###########################################################################################################################################
