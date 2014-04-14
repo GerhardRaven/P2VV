@@ -12,7 +12,7 @@ parser.add_option("--refit", dest = "refit", default = False,
 parser.add_option("-d", '--dataset-name', dest = "ds_name", default = 'sdata',
                   action = 'store', type = 'string', help = 'Name of dataset in file.')
 parser.add_option('--momentum-calib', dest = "momentum_calib", default = False,
-                  action = 'store_true', type = 'string', help = 'Get the mean of the ')
+                  action = 'store_true', help = 'Get the mean of the distribution in bins of t_true')
 
 (options, args) = parser.parse_args()
 
@@ -38,7 +38,7 @@ from ROOT import RooArgSet
 t_true = RooRealVar('truetime', 'truetime', 0, 14)
 t_diff_st = RooRealVar('time_diff_sigmat' if not options.refit else 'time_diff_sigmat_refit',
                        'time / sigmat', -30, 40)
-st = RooRealVar('sigmat' if not options.refit else 'sigmat_refit', '#sigma(t)', 0.0001, 0.12)
+st = RooRealVar('sigmat' if not options.refit else 'sigmat_refit', '#sigma_{t}', 0.0001, 0.12)
 
 from ROOT import TFile
 f = TFile(args[0])
@@ -52,8 +52,8 @@ formula = '@2 + @3 * (@0 - @1) + @4 * (@0 - @1) * (@0 - @1)'
 if options.momentum_calib:
     mean = RooRealVar('mean', 'mean', 0., -0.1, 0.1)
 else:
-    args = [st, st_mean, mean_offset, mean_slope, mean_quad]
-    mean = RooFormulaVar("mean_quad", "mean_quad", formula, RooArgList(*args))
+    params = [st, st_mean, mean_offset, mean_slope, mean_quad]
+    mean = RooFormulaVar("mean_quad", "mean_quad", formula, RooArgList(*params))
 
 # Parameterisation
 av_sigma = RooRealVar("av_sigma", "av_sigma", 1.24292, 1, 50)
@@ -96,6 +96,16 @@ obj = RooObject(workspace = 'w')
 w = obj.ws()
 w.put(model)
 w.put(sdata)
+
+from ROOT import TPaveText
+year_label = TPaveText(0.71, 0.72, 0.89, 0.85, "NDC")
+year_label.SetFillColor(0)
+pos = args[0].find('201')
+year_label.AddText(args[0][pos : pos + 4])
+year_label.SetBorderSize(0)
+
+fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 1,
+               Offset = True, Strategy = 1)
 
 if options.momentum_calib:
     from array import array
@@ -144,18 +154,27 @@ if options.momentum_calib:
     from ROOT import TCanvas
     canvas = TCanvas('canvas', 'canvas', 600, 400)
     g.Draw('AP')
-
+    g.GetXaxis().SetTitle("t_{true}")
+    g.GetYaxis().SetTitle("#bar{(t - t_{true}) / #sigma_{t}}")
+    
     from ROOT import kBlue
     l.SetLineColor(kBlue)
     l.Draw('same')
 else:
     from ROOT import kGreen, kDashed
     from P2VV.Utilities.Plotting import plot
-    from P2VV.Load import LHCbStyle
+    from ROOT import TCanvas
+
+    for i in range(3):
+        result = model.fitTo(sdata, SumW2Error = False, **fitOpts)
+        if result.status() == 0 and abs(result.minNll()) < 5e5:
+            break
+
     canvas = TCanvas("canvas", "canvas", 600, 400)
     plot(canvas, t_diff_st, pdf = model, data = sdata, logy = True,
          frameOpts = dict(Range = (-20, 20)),     
          yTitle = 'Candidates / (0.5)', dataOpts = dict(Binning = 80),
-         xTitle = '(t_{rec} - t_{true}) / #sigma_{t}',
+         xTitle = '(t - t_{true}) / #sigma_{t}',
          pdfOpts = dict(ProjWData = (RooArgSet(st), sdata, True)),
          components = {'gexps' : dict(LineColor = kGreen, LineStyle = kDashed)})
+    year_label.Draw()
