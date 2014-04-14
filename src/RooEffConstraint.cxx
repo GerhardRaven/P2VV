@@ -82,7 +82,6 @@ Bool_t RooEffConstraint::forceAnalyticalInt(const RooAbsArg& /*dep*/) const
 Int_t RooEffConstraint::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars,
                                                 const char* /*rangeName*/) const 
 {
-   cout << "RooEffConstraint::getAnalyticalIntegral called." << endl;
    analVars.add(allVars);
    return 1;
 }

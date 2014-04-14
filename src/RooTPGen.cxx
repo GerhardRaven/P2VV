@@ -191,7 +191,9 @@ void RooTPGen::generateEvent(Int_t code)
          // Smear the turning point distance
          _gauss->generateEvent(_gCode);
          double d = fabs(_d.getVal());
-         double tp_min = (PVz[j] - (z + d)) / c_light, tp_max = (PVz[j] - (z - d)) / c_light;
+         // Assume the mean momentum for all candidates. d in mm, tau in ps
+         double tp_min = 5.3667 / (78.94 * c_light) * (PVz[j] - (z + d));
+         double tp_max = 5.3667 / (78.94 * c_light) * (PVz[j] - (z - d));
          if (_debug) cout << "tps = " << tp_min << " " << tp_max << endl;
          tps.push_back(make_pair(tp_min, tp_max));
       }

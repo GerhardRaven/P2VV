@@ -31,6 +31,7 @@ protected:
 private:
 
    RooArgList _tps;
+   const char* _normRange;
 
    ClassDef(RooTPConvGenContext,0) // Context for generating a dataset from a PDF
 };

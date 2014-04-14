@@ -34,6 +34,7 @@
 #include "RooGenContext.h"
 #include "RooResolutionModel.h"
 #include "RooParamBinning.h"
+#include "RooConvGenContext.h"
 
 // Local
 #include "P2VV/RooTPConvGenContext.h"
@@ -47,7 +48,7 @@ RooTPDecay::RooTPDecay(const char *name, const char *title,
                        DecayType type, const char* normRange)
    : RooDecay(name, title, t, tau, model, type)
 {
-   // setNormRange(normRange);
+   setNormRange(normRange);
 
    TObjArray* oa = TString(normRange).Tokenize(",");
    for (int i = 0; i < oa->GetEntries(); ++i) {
@@ -123,5 +124,6 @@ RooAbsGenContext* RooTPDecay::genContext(const RooArgSet &vars, const RooDataSet
    if (context) return context;
   
    // Any other resolution model: use specialized generator context
-   return new RooTPConvGenContext(*this, vars, _tps, prototype, auxProto, verbose);
+   // return new RooTPConvGenContext(*this, vars, _tps, prototype, auxProto, verbose);
+   return new RooConvGenContext(*this, vars, prototype, auxProto, verbose);
 }

@@ -61,6 +61,7 @@ RooTPConvGenContext::RooTPConvGenContext(const RooAbsAnaConvPdf &model, const Ro
       }
       _tps.add(*tp_data);
    }
+   _normRange = model.normRange();
 }
 
 //_____________________________________________________________________________
@@ -82,8 +83,8 @@ void RooTPConvGenContext::generateEvent(RooArgSet &theEvent, Int_t remaining)
          if (tval > tp_min->getVal() && tval < tp_max->getVal()) {
             theEvent = *_modelVars ;
             theEvent = *_pdfVars ;
-            theEvent = _tps ;
             _cvOut->setVal(tval) ;
+            theEvent.Print("v");
             return;
          }
       }

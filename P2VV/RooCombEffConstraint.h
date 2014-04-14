@@ -36,8 +36,8 @@ public:
   RooCombEffConstraint(const char *name, const char *title, Int_t numBins,
       const RooArgList& nu, const RooArgList& eps1A, const RooArgList& eps1B,
       const RooArgList& eps2A, const RooArgList& eps2B,
-      const vector< vector<Double_t> >& sumW,
-      const vector< vector<Double_t> >& sumWSq, Int_t strategy = 0);
+      const std::vector< std::vector<Double_t> >& sumW,
+      const std::vector< std::vector<Double_t> >& sumWSq, Int_t strategy = 0);
 
   RooCombEffConstraint(const RooCombEffConstraint& other, const char* name=0);
 

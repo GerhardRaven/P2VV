@@ -11,6 +11,8 @@ parser.add_option("-e", "--nevents", dest = "n_events", default = 10000,
                   type = int, action = 'store', help = '# events per toy')
 parser.add_option("--ntps", dest = "n_tps", default = 6,
                   type = int, action = 'store', help = 'max # tps')
+parser.add_option("-d", dest = "debug", default = False,
+                  action = 'store_true', help = 'enable debug')
 
 (options, args) = parser.parse_args()
 if len(args) != 1:
@@ -68,10 +70,10 @@ pv_data = pv_file.Get("pv_data")
 
 tp_gen = TPGen('tp_gen', TurningPoints = tps, PVZ = pvz, PVZPdf = pvz_pdf,
                 nPVs = pv_data.get().find('nPVs'), Data = pv_data)
-tp_gen.setDistance(0.2)
-tp_gen.setSmearing(0.1)
-## tp_gen.setDebug(True)
-tp_decay = TPDecay('tp_decay', TPGen = tp_gen, Time = t, Tau = tau, ResolutionModel = tres)
+tp_gen.setDistance(2)
+tp_gen.setSmearing(3)
+tp_gen.setDebug(options.debug)
+## tp_decay = TPDecay('tp_decay', TPGen = tp_gen, Time = t, Tau = tau, ResolutionModel = tres)
 
 from ROOT import RooDataSet, RooPullVar
 tau_result = RealVar("tau_result", MinMax = (0.1, 4))
@@ -119,11 +121,16 @@ def print_data(i):
 for i in range(options.n_toys):
     tp_data = tp_gen.generate(tps, options.n_events)
     ## RooMsgService.instance().addStream(RooFit.DEBUG, RooFit.Topic(RooFit.Generation))
-    data = tp_decay.generate([t], NumEvents = options.n_events, ProtoData = tp_data)
+    data = sig_t.generate([t], NumEvents = options.n_events, ProtoData = tp_data)
     t_data = data.get().find(t.GetName())
 
     if not swimming:
         hist = swimming_histos(bins, t, sig_t, data, [signal])[signal]
+        from ROOT import TCanvas
+        canvas = TCanvas('canvas', 'canvas', 600, 400)
+        canvas.SetLogx(True)
+        hist.Draw()
+        assert(False)
         coefs = acc_fun.coefficients()[acc_fun.GetName()]
         for i, c in enumerate(coefs):
             c.setVal(hist.GetBinContent(i + 1))
@@ -148,9 +155,16 @@ from ROOT import RooGaussian
 gauss = Pdf(Name = 'gauss', Type = RooGaussian, Parameters = (tau_pull, mean, sigma))
 result = gauss.fitTo(result_data, **fitOpts)
 
+from ROOT import TPostScript
+ps = TPostScript("test.eps", 113)
+ps.FontEmbed()
 from ROOT import TCanvas
 canvas = TCanvas('canvas', 'canvas', 600, 400)
-frame = tau_pull.frame(Range = (-10, 10))
+frame = tau_pull.frame(Range = (-5, 5))
+frame.GetXaxis().SetTitle('#tau pull')
+frame.GetYaxis().SetTitle('M Experiments')
 result_data.plotOn(frame)
 gauss.plotOn(frame)
 frame.Draw()
+canvas.Update()
+ps.Close()

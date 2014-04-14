@@ -1,14 +1,14 @@
 def swimming_histos(bins, t, time_pdf, data, components, debug = False):
     from ROOT import RooArgSet
     iset = RooArgSet(t)
-    lifetime_weights = [1. for i in range(len(bins) - 1)]
-    ## for i in range(1, len(bins)):
-    ##     t_min = bins[i - 1]
-    ##     t_max = bins[i]
-    ##     range_name = 'range_%d' % i
-    ##     t.setRange(range_name, (t_min, t_max))
-    ##     integral = time_pdf.createIntegral(iset, NormSet = iset, Range = range_name)
-    ##     lifetime_weights.append(integral.getVal())
+    lifetime_weights = []
+    for i in range(1, len(bins)):
+        t_min = bins[i - 1]
+        t_max = bins[i]
+        range_name = 'range_%d' % i
+        t.setRange(range_name, (t_min, t_max))
+        integral = time_pdf.createIntegral(iset, NormSet = iset, Range = range_name)
+        lifetime_weights.append(integral.getVal())
 
     from ROOT import TH1D
     efficiencies = {}
@@ -111,7 +111,7 @@ def swimming_histos(bins, t, time_pdf, data, components, debug = False):
         d = denom[c]
         h.Divide(d)
         h.SetTitle(c.GetName())
-        h.GetYaxis().SetRangeUser(0.9, 1.0)
+        h.GetYaxis().SetRangeUser(0., 1.0)
         h.GetYaxis().SetTitle("#varepsilon")
         h.GetXaxis().SetTitle("t [ps]")
         h.SetLineWidth(3)
