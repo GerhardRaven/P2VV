@@ -142,10 +142,10 @@ elif options.wpv and options.wpv_type == 'Gauss':
     t_minmax = (-1.5, 14)
 else:
     t_minmax = (-5, 14)
-t  = RealVar('time' if not options.use_refit else 'time_refit', Title = 'decay time', Unit='ps', Observable = True, MinMax = t_minmax)
+t  = RealVar('time' if not options.use_refit else 'time_refit', Title = 't', Unit='ps', Observable = True, MinMax = t_minmax)
 m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5200, 5550))
 mpsi = RealVar('mdau1', Title = 'J/psi mass', Unit = 'MeV', Observable = True, MinMax = (3025, 3165))
-st = RealVar('sigmat' if not options.use_refit else 'sigmat_refit',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.0001, 0.12))
+st = RealVar('sigmat' if not options.use_refit else 'sigmat_refit',Title = '#sigma_{t}', Unit = 'ps', Observable = True, MinMax = (0.0001, 0.12))
 
 # add 20 bins for caching the normalization integral
 st.setBins(50, 'cache')
@@ -546,7 +546,7 @@ gc.collect()
 # Define default components
 if signal_MC and options.wpv_type == "Rest":
     from P2VV.Parameterizations.TimeResolution import Rest_TimeResolution
-    rest_tres = Rest_TimeResolution(Name = 'rest_tres', CoreModel = sig_tres)
+    rest_tres = Rest_TimeResolution(Name = 'rest_tres', CoreModel = sig_tres, OwnMu = False)
 
     rest_t = Prompt_Peak(time_obs, resolutionModel = rest_tres.model(), Name = 'rest_t')
 
@@ -869,7 +869,7 @@ if options.wpv and options.wpv_type == 'Mixing':
                              [0.2 + i * 0.1 for i in range(58)])
     zoom_bounds = array('d', [-0.2 + i * 0.005 for i in range(81)])
 elif signal_MC:
-    bounds = array('d', [-1.5 + i * 0.1 for i in range(12)] + [-0.3 + i * 0.05 for i in range(12)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(6)])
+    bounds = array('d', [-1.5 + i * 0.1 for i in range(10)] + [-0.5 + i * 0.02 for i in range(50)] + [0.5 + i * 0.1 for i in range(55)] + [6 + i * 0.4 for i in range(6)])
     zoom_bounds = array('d', [-0.2 + i * 0.005 for i in range(81)])
 else:
     bounds = array('d', [-1.5 + i * 0.1 for i in range(12)] + [-0.3 + i * 0.01 for i in range(60)] + [0.3 + i * 0.1 for i in range(57)] + [6 + i * 0.4 for i in range(6)])
@@ -893,6 +893,11 @@ __canvases = []
 
 from ROOT import SetOwnership
 from ROOT import TCanvas
+from ROOT import TPaveText
+year_label = TPaveText(0.71, 0.72, 0.89, 0.85, "NDC")
+year_label.SetFillColor(0)
+year_label.AddText(args[0].split('_')[0][-4:])
+year_label.SetBorderSize(0)
 
 for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
     if not options.plot or not time_result:
@@ -917,7 +922,7 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
                       , frameOpts = dict(Range = r, Title = "")
                       , dataOpts = dict(MarkerSize = 0.8, Binning = bins, MarkerColor = kBlack, Cut = cut)
                       , pdfOpts  = dict(LineWidth = 4, **pdfOpts)
-                      , xTitle = 'decay time [ps]'
+                      , xTitle = 't [ps]' if not signal_MC else 't - t_{true} [ps]'
                       , yTitle = 'Candidates / % 4.3f' % bins.averageBinWidth()
                       , yTitleOffset = 1 / 0.7
                       , logy = pl
@@ -930,7 +935,8 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
             for frame in ps:
                 plot_name = '_'.join((t.GetName(), bins.GetName(), ct.GetName(), frame.GetName()))
                 frame.SetName(plot_name)
-            
+            canvas.cd(1)
+            year_label.Draw()            
             plots[sub_dir].append(ps)
     else:
         cname = 'time_canvas_%s_%d' % (args[0], i)
@@ -943,16 +949,16 @@ for i, (bins, pl) in enumerate(zip(binnings, plotLog)):
                   , frameOpts = dict(Range = r, Title = "")
                   , dataOpts = dict(MarkerSize = 0.8, Binning = bins, MarkerColor = kBlack)
                   , pdfOpts  = dict(LineWidth = 4, **pdfOpts)
-                  , xTitle = 'decay time [ps]'
+                  , xTitle = 't [ps]' if not signal_MC else 't - t_{true} [ps]'
                   , yTitle = 'Candidates / (%4.3f ps)' % bins.averageBinWidth()
                   , yTitleOffset = 1 / 0.7
                   , logy = pl
                   , plotResidHist = 'BX')
-        
         for frame in ps:
             plot_name = '_'.join((t.GetName(), bins.GetName(), frame.GetName()))
             frame.SetName(plot_name)
-        
+        canvas.cd(1)
+        year_label.Draw()
         plots[''].append(ps)
 
 from P2VV.Utilities import Resolution as ResolutionUtils
@@ -1043,8 +1049,8 @@ if False:
                   , frameOpts = dict(Range = (bounds[0], bounds[-1]), Title = "")
                   , dataOpts = dict(MarkerSize = 0.8, Binning = binning, MarkerColor = kBlack)
                   , pdfOpts  = dict(LineWidth = 4, **pdfOpts)
-                  , xTitle = 'decay time [ps]'
-                  , yTitle = '# Candidates'
+                  , xTitle = 't [ps]'
+                  , yTitle = 'Candidates / (%4.3f ps)' % bins.averageBinWidth()
                   , yTitleOffset = 1 / 0.7
                   , logy = False
                   , plotResidHist = 'BX')

@@ -360,18 +360,22 @@ class Rest_TimeResolution( TimeResolution ):
     def __init__(self, **kwargs):
         self._core_model = kwargs.pop('CoreModel', None)
         Name = kwargs.pop('Name', 'timeResModelRest')
+        ownMu = kwargs.pop('OwnMu', False)
         namePF = self.getNamePrefix(kwargs)
 
         if self._core_model:
             self._sigmat = self._core_model._sigmat
             self._time = self._core_model._time
-            self._timeResMu = self._core_model._timeResMu
+            if ownMu:
+                self._timeResMu = self._parseArg( 'timeResRestMu', kwargs, Value = -0.0027, MinMax = ( -2, 2 ) )
+            else:
+                self._timeResMu = self._core_model._timeResMu
             self._timeResMuSF = self._core_model._timeResMuSF
             self.__cache = self._core_model._cache
         else:
-            self._parseArg('sigmat', kwargs, Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.0001, 0.12) )
+            self._parseArg('sigmat', kwargs, Title = '#sigma_{t}', Unit = 'ps', Observable = True, MinMax = (0.0001, 0.12) )
             self._time = self._parseArg('time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ))
-            self._timeResMu = self._parseArg( 'timeResMu', kwargs, Value = -0.0027, MinMax = ( -2, 2 ) )
+            self._timeResMu = self._parseArg( 'timeResRestMu', kwargs, Value = -0.0027, MinMax = ( -2, 2 ) )
             self._timeResMuSF = self._parseArg( 'timeResMuSF', kwargs, Value = 1.0, Constant = True )
             self.__cache = kwargs.pop('Cache', True)
         
