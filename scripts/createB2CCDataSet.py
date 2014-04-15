@@ -3,7 +3,7 @@
 #####################
 
 #nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs2JpsiPhi_2011_2012_s20_dv33r6p1_20140213_tupleB_selTrig_TOS.root'
-nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_hope_the_last_one_add_20140309.root'
+nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_hope_the_last_one_add_20140415.root'
 #nTupleFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_MC2011_Sim08a_ntupleB_20130909_add.root'
 #nTupleFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_MC2012_ntupleB_20130904_add.root'
 nTupleName       = 'DecayTree'
@@ -68,6 +68,7 @@ fitOpts = dict(  NumCPU    = 8
 #               , Minos     = True
 #               , Hesse     = False
                , Minimizer = 'Minuit2'
+               , Strategy  = 1
                , Offset    = True
               )
 
@@ -79,7 +80,7 @@ KKMMax  = KKMassBinBounds[-1]
 
 obsKeys = [#  'sWeights_ipatia'
              'wMC'
-           , 'firstData', 'hlt2_prescale', 'polarity'
+           #, 'hlt2_prescale', 'polarity', 'nPVCat', 'BpTCat'
            , 'runPeriod'
            , 'mass', 'KKMass', 'mumuMass'
            , 'time', 'timeRes'
@@ -108,6 +109,8 @@ obsDict = dict(  runPeriod = ( 'runPeriod',            'run period', dict( [ ( '
                , firstData = ( 'firstData',            'first data',      { 'first' : +1, 'later' : 0 }                     )
                , hlt2_prescale = ( 'hlt2_prescale',    'HLT2 prescale',   { 'presc' : +1, 'noPresc' : 0, 'notDef1' : -1, 'notDef2' : -2 } )
                , polarity  = ( 'polarity',             'magnet polarity', { 'up' : +1, 'down' : -1, 'noPol' : 0 }           )
+               , nPVCat    = ( 'nPVCat',               'num. PVs',        dict( [ ( 'c%d' % cat, cat ) for cat in range(11) ] )  )
+               , BpTCat    = ( 'BpTCat',               'B p_T cat',       dict( [ ( 'c%d' % cat, cat ) for cat in range(5) ] )   )
                , mass      = ( 'mass',                 'm(J/#psi K^{+}K^{-})',    'MeV/c^{2}', 5368.,  5200.,   5550.       )
                , mumuMass  = ( 'mdau1',                'm(#mu^{+}#mu^{-})',       'MeV/c^{2}', 3096.,  3030.,   3150.       )
                , KKMass    = ( 'mdau2',                'm(K^{+}K^{-})',           'MeV/c^{2}', 1020.,  KKMMin,  KKMMax      )
@@ -232,6 +235,7 @@ plotsFilePath = plotsFilePath.split('.')[0]
 ## read data ##
 ###############
 
+from math import sqrt
 from P2VV.Load import RooFitOutput, LHCbStyle
 
 # create list of required observables
@@ -504,7 +508,6 @@ if not simulation :
         splitCatState = splitCatIter.Next()
         massPdfPars   = sWeightMassPdf.getVariables()
         from P2VV.Utilities.General import getSplitPar
-        from math import sqrt
         while splitCatState :
             splitCat.setIndex( splitCatState.getVal() )
             KKMassState = -1
@@ -709,7 +712,7 @@ if not simulation and plotsFilePath :
                                 , obsDict['mass'][0] + '_peakBkg'
                                ]
                              , [ True, False, False, False, False ]
-                             , [ massLogPlotRange, ( None, None ), ( None, None ), ( None, None ), ( None, None ) ]
+                             , [ massLogPlotRange, ( 0., None ), ( 0., None ), ( 0., None ), ( 0., None ) ]
                              #, [ False, False, False, False, False ]
                              #, [ ( None, None ), ( None, None ), ( None, None ), ( None, None ), ( None, None ) ]
                              , [ 1.00, 1.30, 1.15, 1.15, 1.15 ]
@@ -737,7 +740,7 @@ if not simulation and plotsFilePath :
         )
         if index < 2 :
             pad.cd()
-            if plotLabelText : plotLabel.DrawLatexNDC( 0.81, 0.89, plotLabelText )
+            if plotLabelText : plotLabel.DrawLatexNDC( 0.87, 0.88, plotLabelText )
 
     if SWeightsType.startswith('simultaneous') and len(KKMassBinBounds) > 2 :
         # get simultaneous PDFs
