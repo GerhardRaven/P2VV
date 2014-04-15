@@ -24,6 +24,7 @@ parser.add_argument( '--timeAccConstr', '-j', default = 'poisson' )
 parser.add_argument( '--dataSetName', '-n', default = 'JpsiKK_sigSWeight' )
 parser.add_argument( '--parFileIn', '-i' )
 parser.add_argument( '--parFileOut', '-o' )
+parser.add_argument( '--resultFileOut', '-r' )
 parser.add_argument( '--timeAccFile2011', '-x', default = 'timeAcceptanceFit_2011.root' )
 parser.add_argument( '--timeAccFile2012', '-y', default = 'timeAcceptanceFit_2012.root' )
 parser.add_argument( '--angAccFile', '-z', default = 'angEffNominalRew_moms.par' )
@@ -48,18 +49,25 @@ dataSetFile = dataPath + args.dataSetFile
 accDataSetFile = dataPath + args.accDataSetFile
 assert args.timeAccConstr in [ 'poisson', 'poisson_minimal', 'multinomial', 'average' ]
 parFileIn = args.parFileIn
-if parFileIn == None :
+if parFileIn == None or parFileIn == 'None' :
     parFileIn = workPath + '20112012Reco14DataFitValues_6KKMassBins%s.par'\
                            % ( '_CPVDecay' if args.model == 'polarDep' else '_fixedLamb' if args.model == 'phi' else '' )
 elif parFileIn :
     parFileIn = workPath + parFileIn
 parFileOut = args.parFileOut
-if parFileOut == None :
+if parFileOut == None or parFileOut == 'None' :
     parFileOut = workPath + '%s%s_%sLow_%sUp_%sTag.par'\
                  % ( args.jobName + ( '_' if args.jobName else '' ), args.model, 'fix' if fixLowAcc else 'float'
                     , 'fix' if fixUpAcc else 'float', 'fix' if fixTagging else 'float' )
 elif parFileOut :
     parFileOut = workPath + parFileOut
+resultFileOut = args.resultFileOut
+if resultFileOut == None or resultFileOut == 'None' :
+    resultFileOut = workPath + '%s%s_%sLow_%sUp_%sTag.par'\
+                 % ( args.jobName + ( '_' if args.jobName else '' ), args.model, 'fix' if fixLowAcc else 'float'
+                    , 'fix' if fixUpAcc else 'float', 'fix' if fixTagging else 'float' )
+elif resultFileOut :
+    resultFileOut = workPath + resultFileOut
 timeAccFile2011 = dataPath + args.timeAccFile2011
 timeAccFile2012 = dataPath + args.timeAccFile2012
 angAccFile = dataPath + args.angAccFile
@@ -87,6 +95,7 @@ print '  time acceptance constraint: %s' % args.timeAccConstr
 print '  dataset name: %s' % args.dataSetName
 print '  input parameter file: %s' % parFileIn
 print '  output parameter file: %s' % parFileOut
+print '  output fit result file: %s' % resultFileOut
 print '  time acceptance file 2011: %s' % timeAccFile2011
 print '  time acceptance file 2012: %s' % timeAccFile2012
 print '  angular acceptance file: %s' % angAccFile
@@ -243,3 +252,11 @@ if parFileOut :
     pdfConfig.writeParametersToFile(  filePath = parFileOut
                                     , FitStatus = ( fitResult.status(), fitResult.minNll(), fitResult.edm() )
                                    )
+
+if resultFileOut :
+    # write fit result to file
+    from ROOT import TFile, TObject
+    resultFile = TFile.Open( resultFileOut, 'RECREATE' )
+    resultFile.Append(fitResult)
+    resultFile.Write( resultFileOut, TObject.kOverwrite )
+    resultFile.Close()
