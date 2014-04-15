@@ -115,3 +115,41 @@ def get_preturn_methods(classes):
                 bool(gInterpreter.TypeInfo_Property(tinfo) & TDictionary.kIsConstPointer))
                 and not name in ignore):
                 p_returns[cl].add(name)
+
+def __wrap_font_embed(fun):
+    import os
+    from functools import wraps
+    @wraps(fun)
+    def _fun(self, *args, **kwargs):
+        embed = kwargs.get('EmbedFonts', False)
+        font_path = []
+        if 'FontPath' in kwargs:
+            font_path.append(kwargs['FontPath'])
+        elif 'FontPaths' in kwargs:
+            font_path.extend(kwargs['FontPaths'])
+        from ROOT import gEnv
+        root_font_path = gEnv.GetValue('Root.TTFontPath', 'unset')
+        if root_font_path != 'unset':
+            font_path.append(root_font_path)
+        font_path = ':'.join(font_path)
+        if len(args) >= 1 and type(args[0] == str) and args[0].endswith('.pdf'):
+            pdf = os.path.realpath(args[0])
+        r = fun(self, *args)
+        if pdf and embed:
+            import tempfile
+            tmp = tempfile.NamedTemporaryFile()
+            tmp_name = os.path.realpath(tmp.name)
+            tmp.close()
+            cmd = ['gs', '-sFONTPATH=%s' % font_path, '-o', tmp_name, '-sDEVICE=pdfwrite',
+                   '-dPDFSETTINGS=/prepress', pdf]
+            import subprocess
+            p = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
+            o, e = p.communicate()
+            os.remove(pdf)
+            import shutil
+            shutil.move(tmp_name, pdf)
+        return r
+    return _fun
+
+from ROOT import TPad
+TPad.Print = __wrap_font_embed(TPad.Print)

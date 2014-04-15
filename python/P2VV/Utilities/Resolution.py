@@ -197,6 +197,7 @@ input_data = {'2011_Reco14' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiP
                                            'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_MC2011_Sim08a_incl_Jpsi_Prescaled.root')}
               }
 
+plot_dir = os.path.join(prefix, 'p2vv/plots')
 ## {'2011' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2011_ntupleB_20130722.root'),
 ##                         'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_Mixing_2011_DataSet.root'),
 ##                         'workspace' : 'Bs2JpsiPhiPrescaled_2011_workspace',
