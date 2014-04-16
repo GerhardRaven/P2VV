@@ -63,7 +63,7 @@ elif parFileOut :
     parFileOut = workPath + parFileOut
 resultFileOut = args.resultFileOut
 if resultFileOut == None or resultFileOut == 'None' :
-    resultFileOut = workPath + '%s%s_%sLow_%sUp_%sTag.par'\
+    resultFileOut = workPath + '%s%s_%sLow_%sUp_%sTag.root'\
                  % ( args.jobName + ( '_' if args.jobName else '' ), args.model, 'fix' if fixLowAcc else 'float'
                     , 'fix' if fixUpAcc else 'float', 'fix' if fixTagging else 'float' )
 elif resultFileOut :
