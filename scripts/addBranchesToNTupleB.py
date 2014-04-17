@@ -1,6 +1,6 @@
 #nTupleFilePathIn  = '/data/bfys/jleerdam/Bs2Jpsiphi/Bs2JpsiPhi_2012_s20r0p1_dv33r6p1_20131217_tupleB.root'
 nTupleFilePathIn  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_hope_the_last_one_presc_20140415.root'
-nTupleFilePathOut = 'temp.root'
+nTupleFilePathOut = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_hope_the_last_one_add_20140415.root'
 
 nTupleName = 'DecayTree'
 runPeriod = None # 2012
