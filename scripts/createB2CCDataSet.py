@@ -16,7 +16,7 @@ parFileOut       = ''
 plotLabelText    = 'LHCb'
 
 simulation       = False
-weightName       = 'pbkgWeight' # 'wMC' # 'pbkgWeight'
+weightName       = '' #'pbkgWeight' # 'wMC' # 'pbkgWeight'
 runPeriods       = [ 2011, 2012 ]
 triggerSel       = 'timeEffFit_tos' # 'paper2012_tos'
 dataCuts         = 'nominal2011'
@@ -239,7 +239,7 @@ from math import sqrt
 from P2VV.Load import RooFitOutput, LHCbStyle
 
 # create list of required observables
-reqObsList = [ 'index', 'mass', 'KKMass', 'tagDecOS', 'tagDecSS', 'wTagOS', 'wTagSS', 'hlt1ExclB', 'hlt2B' ]
+reqObsList = [ 'index', 'mass', 'KKMass', 'tagDecOS', 'tagDecSS', 'wTagOS', 'wTagSS', 'hlt1ExclB', 'hlt2B', 'sel' ]
 reqObsList += [ weightName ] if weightName else [ ]
 reqObsList += ['runPeriod'] if runPeriods else [ ]
 reqObsList += [ '%s_P%s' % ( part, comp ) for part in [ 'Kplus', 'Kminus', 'muplus', 'muminus' ] for comp in ( 'X', 'Y', 'Z' ) ]\
@@ -280,6 +280,7 @@ observables['mass'].setRanges(massRanges)
 # build cuts string
 from P2VV.Imports import cutSelStrings
 ntupleCuts = cutSelStrings[dataCuts]
+ntupleCuts = ntupleCuts.replace('sel == 1', 'sel_daughter1 && sel_qualitycut && sel_clonecut')
 if dataSample == 'Summer2011' :
     ntupleCuts = 'runNumber >= 87219 && runNumber <= 94386' + ( ' && ' if ntupleCuts else '' ) + ntupleCuts
 elif dataSample and type(dataSample) == str : ntupleCuts += ( ' && ' if ntupleCuts else '' ) + dataSample
@@ -466,6 +467,10 @@ if not simulation :
         if 'FreeCBkg' in SWeightsType :
             for parName in bkgParNames : splitCats[ observables['hlt2B'].GetName() ].add(parName)
 
+        # Split the yields for the multiple candidate sample
+        # splitCats[ observables['sel'].GetName() ] = set(yieldNames)
+        # splitCats[ observables['runPeriod'].GetName() ] = set(yieldNames)
+
         for cat in constSplitCats :
             # split specified constant shape parameters
             catName = observables[cat].GetName()
@@ -590,7 +595,12 @@ if not simulation :
                 par.setError( parValues[par.GetName()][1] )
 
             massNLL = sWeightMassPdf.createNLL( dataSets['pre'][0] )
-            simMassFitResult = sWeightMassPdf.fitTo( dataSets['pre'][0], Save = True, SumW2Error = False, **fitOpts )
+            for i in range(5):
+                simMassFitResult = sWeightMassPdf.fitTo( dataSets['pre'][0], Save = True, SumW2Error = False, **fitOpts )
+                if simMassFitResult.status() == 0 and abs(simMassFitResult.minNll()) < 5e5:
+                    break
+            assert(simMassFitResult.status() == 0)
+
             simMassFitResult.PrintSpecial( text = True, LaTeX = True, normal = True, ParNames = parNames )
             massNLLValNom = massNLL.getVal()
             for par in fixedMassPars :
@@ -616,7 +626,10 @@ if not simulation :
         #from P2VV.Utilities.DataHandling import correctWeights
         #fitData = correctWeights( dataSets['pre'][0], [ 'runPeriod', 'hlt2_biased', 'KKMassCat' ] )
         fitData = dataSets['pre'][0]
-        simMassFitResult = sWeightMassPdf.fitTo( fitData, Save = True, SumW2Error = False, **fitOpts )
+        for i in range(5):
+            simMassFitResult = sWeightMassPdf.fitTo( fitData, Save = True, SumW2Error = False, **fitOpts )
+            if simMassFitResult.status() == 0 and abs(simMassFitResult.minNll()) < 5e5:
+                break
         #del fitData
 
         if parFileOut :
@@ -678,15 +691,14 @@ if not simulation and plotsFilePath :
             projWDataSet = [ indexCat ]
         else :
             projWDataSet = [ cat for cat in indexCat.inputCatList() ]
-
+        
         projWData = dict( ProjWData = ( dataSets['pre'][0].reduce( ArgSet = projWDataSet ), False ) )
         print 'P2VV - INFO: createB2CCDataSet: projection data set for J/psiKK mass plots:'
         projWData['ProjWData'][0].Print()
-
     else :
         # don't use projection data set
         projWData = dict()
-
+        
     # plot J/psiKK mass distributions
     massPlots = [ ]
     massCanvs = [  TCanvas( 'massCanvLog',     'B mass logarithmic scale'  )
@@ -695,6 +707,7 @@ if not simulation and plotsFilePath :
                  , TCanvas( 'massCanvRight',   'B mass right side band'    )
                  , TCanvas( 'massCanvPeakBkg', 'B mass peaking background' )
                 ]
+    
     for index, ( pad, frameRange, nBins, plotTitle, plotName, logy, scale, yTitleOffset, markSize, markLineWidth )\
           in enumerate ( zip(  massCanvs
                              , [ '', 'Signal', 'LeftSideBand', 'RightSideBand', 'PeakBkg' ]
@@ -723,7 +736,7 @@ if not simulation and plotsFilePath :
         pad.SetRightMargin(0.05)
         pad.SetBottomMargin(0.18)
         pad.SetTopMargin(0.05)
-
+        
         binWidth = ( observables['mass'].getMax(frameRange) - observables['mass'].getMin(frameRange) ) / float(nBins)
         massPlots.append( plot(  pad, observables['mass'], dataSets['pre'][0], sWeightMassPdf, logy = logy, yScale = scale
                                , xTitle = 'm(J/#psi K^{+}K^{-}) [MeV/c^{2}]', yTitle = 'Candidates / (%.1f MeV/c^{2})' % binWidth
@@ -742,6 +755,8 @@ if not simulation and plotsFilePath :
             pad.cd()
             if plotLabelText : plotLabel.DrawLatexNDC( 0.87, 0.88, plotLabelText )
 
+    assert(False)
+            
     if SWeightsType.startswith('simultaneous') and len(KKMassBinBounds) > 2 :
         # get simultaneous PDFs
         indexCatIter  = indexCat.typeIterator()
@@ -756,10 +771,10 @@ if not simulation and plotsFilePath :
             else :
                 for cat in indexCat.inputCatList() :
                     bins[-1].append( ( cat.GetName(), cat.getIndex(), cat.getLabel() ) )
-
+            
             pdfs.append( sWeightMassPdf.getPdf( indexCatState.GetName() ) )
             indexCatState = indexCatIter.Next()
-
+        
         # plot distributions in simultaneous bins
         for ( bin, pdf ) in zip(  bins, pdfs ) :
             massCanvs.append( TCanvas( 'massCanvSigBins%d' % bin[0][1], 'B mass signal range bins' ) )
@@ -767,12 +782,12 @@ if not simulation and plotsFilePath :
             dataCutStr = dict( Cut = ' && '.join( '%s==%d' % ( c[0], c[1] ) for c in bin[ 1 : ] ) )
             norm = dataSets['pre'][0].sumEntries( ' && '.join( '%s==%d' % ( c[0], c[1] ) for c in bin[ 1 : ] ) )\
                    / dataSets['pre'][0].sumEntries()
-
+            
             pad.SetLeftMargin(0.18)
             pad.SetRightMargin(0.05)
             pad.SetBottomMargin(0.18)
             pad.SetTopMargin(0.05)
-
+            
             binWidth = ( observables['mass'].getMax('Signal') - observables['mass'].getMin('Signal') ) / float(numMassBins[1])
             plot(  massCanvs[-1], observables['mass'], dataSets['pre'][0], pdf
                  , xTitle = 'm(J/#psi K^{+}K^{-}) [MeV/c^{2}]', yTitle = 'Candidates / (%.1f MeV/c^{2})' % binWidth
@@ -786,10 +801,10 @@ if not simulation and plotsFilePath :
                                  , 'cbkg*' : dict( LineColor = kGreen + 3, LineStyle = 9, LineWidth = 3 )
                                 }
                 )
-
+            
             massCanvs[-1].cd()
             binLabel.DrawLatex( 0.18, 0.91, bin[0][2].strip('{}') )
-
+        
     for it, canv in enumerate(massCanvs) :
         canv.Print( plotsFilePath + '_mass.ps' + ( '(' if it == 0 else ')' if it == len(massCanvs) - 1 else '' ) )
 
@@ -1111,3 +1126,29 @@ for dataKey, data in dataSets.iteritems() :
 from ROOT import TObject
 dataSetsFile.Write( dataSetsFilePath, TObject.kOverwrite )
 dataSetsFile.Close()
+
+if False:
+    msplitCats = {}
+    msplitCats[ observables['sel'].GetName() ] = set(yieldNames)
+    msplitCats[ observables['runPeriod'].GetName() ] = set(yieldNames)
+
+    from collections import defaultdict
+    msplitParsDict = defaultdict(set)
+    pdfVars = massPdf.getVariables()
+    for cat, params in msplitCats.iteritems() :
+        for par in params :
+            msplitParsDict[ ws[par] ].add( ws[cat] )
+
+    msplitPars = createSplitParsList(msplitParsDict)
+    from P2VV.RooFitWrappers import SimultaneousPdf
+    msWeightMassPdf = SimultaneousPdf(massPdf.GetName() + '_msimul', MasterPdf = massPdf,
+                                      SplitCategories = [ pars[1] for pars in msplitPars ],
+                                      SplitParameters = [ pars[0] for pars in msplitPars ])
+
+    from itertools import product
+    for varn, rps, sels in product(['N_sigMass', 'N_cbkgMass'], observables['runPeriod'], [observables['sel'].lookupType('notSel')]):
+        varname = varn + '_{' + rps.GetName() + ';' + sels.GetName() + '}'
+        par = msWeightMassPdf.getParameters(dataSets['pre'][0].get()).find(varname)
+        par.setVal(0.01 * par.getVal())
+
+    m_result = msWeightMassPdf.fitTo( dataSets['pre'][0], Save = True, SumW2Error = False, **fitOpts )

@@ -26,6 +26,7 @@
 #pragma link C++ class RooMultiEffResModel+;
 #pragma link C++ class RooComplementCoef+;
 #pragma link C++ class RooEffConvGenContext+;
+#pragma link C++ class RooTPConvGenContext+;
 #pragma link C++ class RooCubicSplineKnot::BoundaryConditions+;
 #pragma link C++ class RooCubicSplineKnot+;
 #pragma link C++ class RooCubicSplineFun+;
@@ -34,6 +35,7 @@
 #pragma link C++ class RooExplicitNormPdf+;
 #pragma link C++ class RooAmoroso+;
 #pragma link C++ class RooTPDecay+;
+#pragma link C++ class RooTPGen+;
 #pragma link C++ class RooMassDependence+;
 #pragma link C++ class RooEffResAddModel+;
 #pragma link C++ class RooCategoryVar+;
@@ -53,6 +55,7 @@
 #pragma link C++ function copyFloatInTree;
 #pragma link C++ function addCategoryToTree;
 #pragma link C++ function addVertexErrors;
+#pragma link C++ function addJpsiDLS;
 #pragma link C++ function hessian;
 #pragma link C++ function hessian_with_errors;
 #pragma link C++ function gradient;
@@ -72,12 +75,15 @@
 #pragma link C++ class std::map<RooRealProxy*, bool>;
 #pragma link C++ class std::map<RooAbsReal*, bool>;
 #pragma link C++ class std::pair<RooAbsReal*, bool>;
-#pragma link C++ class std::pair<RooRealProxy*, bool>;
+//#pragma link C++ class std::pair<RooRealProxy*, bool>;
 #pragma link C++ class std::pair<double, TString>;
 #pragma link C++ class std::pair<RooCategoryProxy*, std::string>;
 #pragma link C++ class std::pair<std::string, std::pair<RooRealProxy*,bool> >;
 #pragma link C++ class std::map<std::string, std::pair<RooRealProxy*, bool> >;
 #pragma link C++ class std::map<RooCategoryProxy*, std::map<std::string, std::pair<RooRealProxy*, bool> > >;
+
+#pragma link C++ class std::map<std::string, RooDataSet*>;
+#pragma link C++ class std::pair<std::string, RooDataSet*>;
 
 #pragma link C++ class std::map<Int_t, MultiHistEntry*>;
 #pragma link C++ class std::pair<Int_t, MultiHistEntry*>;

@@ -96,10 +96,14 @@ input_file = os.path.join(base_location, 'data/start_values.root')
 
 ## hists = {hlt1_excl_biased_dec : {'excl_biased' : {'histogram' : 'hlt1_shape', 'average' : (6.285e-01, 1.633e-02)},
 ##                                  'unbiased' : { 'bins' : t.getRange(), 'heights' : [0.5]}}}
+## hists = {hlt1_excl_biased_dec : {'exclB' : {'histogram' : 'hlt1_shape'},
+##                                  'notExclB' : { 'bins' : t.getRange(), 'heights' : [0.7]}},
+##          hlt2_biased : { 'B' : {'histogram' : 'hlt2_shape'}},
+##          hlt2_unbiased : { 'UB' : {'histogram' : 'hlt2_shape'}}}
 hists = {hlt1_excl_biased_dec : {'exclB' : {'histogram' : 'hlt1_shape'},
                                  'notExclB' : { 'bins' : t.getRange(), 'heights' : [0.7]}},
          hlt2_biased : { 'B' : {'histogram' : 'hlt2_shape'}},
-         hlt2_unbiased : { 'UB' : {'histogram' : 'hlt2_shape'}}}
+         hlt2_unbiased : { 'UB' : {'bins' : t.getRange(), 'heights' : [0.7]}}}
 
 from P2VV.Parameterizations.TimePDFs import Single_Exponent_Time
 pdf_wrapper = Single_Exponent_Time(Name = 'pdf', time = t, resolutionModel = tres.model())
@@ -156,7 +160,7 @@ for s, model in split_models.iteritems():
     
 ## Fit options
 fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Optimize = 2,
-               Strategy = 2, Minimizer = 'Minuit2')
+               Strategy = 2, Offset = True, Minimizer = 'Minuit2')
 
 valid_definition = [[(hlt1_excl_biased_dec, 'exclB'), (hlt1_excl_biased_dec, 'notExclB')], [(hlt2_biased, 'B'), (hlt2_unbiased, 'UB')]]
 valid = valid_combinations(valid_definition)

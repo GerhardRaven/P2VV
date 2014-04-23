@@ -80,8 +80,12 @@ RooBinnedFun::RooBinnedFun(const char* name, const char* title,
   const RooAbsBinning* binning = x.getBinningPtr(binningName);
   assert( binning!=0);
   if ( coefList.getSize()+1!=binning->numBoundaries())  {
-        cout << TString::Format( "you have specified %d coefficients for %d boundaries. The differentce should 1!",coefList.getSize(),binning->numBoundaries()) << endl;
-        throw TString::Format( "you have specified %d coefficients for %d boundaries. The differentce should 1!",coefList.getSize(),binning->numBoundaries());
+        cout << TString::Format("you have specified %d coefficients for %d boundaries."
+                                " The differentce should 1!",
+                                coefList.getSize(),binning->numBoundaries()) << endl;
+        throw TString::Format("you have specified %d coefficients for %d boundaries."
+                              " The differentce should 1!",
+                              coefList.getSize(),binning->numBoundaries());
   }
   _coefList.add(coefList);
   Double_t* boundaries = binning->array();
@@ -219,6 +223,7 @@ Double_t RooBinnedFun::maxVal(Int_t code) const
     return res;
 }
 
+//_____________________________________________________________________________
 std::list<Double_t>* RooBinnedFun::binBoundaries(RooAbsRealLValue& obs,
     Double_t xlo, Double_t xhi) const
 {
@@ -230,4 +235,34 @@ std::list<Double_t>* RooBinnedFun::binBoundaries(RooAbsRealLValue& obs,
       if (_u[i]>=xlo && _u[i]<=xhi) bounds->push_back(_u[i]);
    }
    return bounds;
+}
+
+//_____________________________________________________________________________
+list<Double_t>* RooBinnedFun::plotSamplingHint(RooAbsRealLValue& obs,
+                                               Double_t xlo, Double_t xhi) const
+{
+   // Return sampling hint for making curves of (projections) of this function
+   // as the recursive division strategy of RooCurve cannot deal efficiently
+   // with the vertical lines that occur in a non-interpolated histogram
+
+   // Check that we have observable, if not no binning is returned
+   if ( _x.arg().GetName() != obs.GetName()) return 0;
+
+   list<Double_t>* hint = new list<Double_t>;
+
+   // Widen range slighty
+   xlo = xlo - 0.01 * (xhi - xlo);
+   xhi = xhi + 0.01 * (xhi - xlo);
+
+   Double_t delta = (xhi-xlo)*1e-8;
+ 
+   // Construct array with pairs of points positioned epsilon to the left and
+   // right of the bin boundaries
+   for (size_t i = 0; i < _u.size(); ++i) {
+      if (_u[i] >= xlo && _u[i] <= xhi) {
+         hint->push_back(_u[i] - delta);
+         hint->push_back(_u[i] + delta);
+      }
+   }
+   return hint;
 }

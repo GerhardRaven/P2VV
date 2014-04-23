@@ -3,6 +3,7 @@
 ##                                                                                                                                       ##
 ## authors:                                                                                                                              ##
 ##   GR,  Gerhard Raven,      Nikhef & VU, Gerhard.Raven@nikhef.nl                                                                       ##
+##   RA,  Roel Aaij           Nikhef, roel.aaij@nikhef.nl                                                                                ##
 ##                                                                                                                                       ##
 ###########################################################################################################################################
 
@@ -73,8 +74,10 @@ class Gaussian_TimeResolution ( TimeResolution ) :
         pee = kwargs.pop('PerEventError', False)
         sf_param = kwargs.pop('TimeResSFParam', '')
         self.__split_mean = kwargs.pop('SplitMean', False)
+        self.__sf_placeholder = self._parseArg('sf_placeholder', kwargs, Value = 0,
+                                               MinMax = (-1e6, 1e6), Constant = True) 
         
-        assert(sf_param in ['', 'linear', 'quadratic'])
+        assert(sf_param in ['', 'linear', 'linear_no_offset', 'quadratic', 'quadratic_no_offset'])
 
         extraArgs = {}
         self._parseArg( 'time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
@@ -86,9 +89,11 @@ class Gaussian_TimeResolution ( TimeResolution ) :
             if sf_param:
                 self._offset = self._parseArg( 'offset', kwargs, Value = 0.01, Error = 0.001, MinMax = ( 0.000001, 1 ) )
             if sf_param == 'linear':
-                linear_var = self._parseArg( 'timeResSigmaSF_linear', kwargs, ObjectType = 'LinearVar', ObsVar = self._sigmat
-                                            , Slope = self._timeResSigmaSF, Offset = self._offset )
-                params = [self._time, self._timeResMu, linear_var]
+                formula = '@2 + @3 * (@0 - @1)'
+                args = [self._sigmat, self.__sf_placeholder, self._offset, self._timeResSigmaSF]
+                self._st_linear = self._parseArg('timeResSigma_linear', kwargs, Formula = formula,
+                                                 ObjectType = 'FormulaVar', Arguments = args)
+                params = [self._time, self._timeResMu, self._st_linear]
             elif sf_param == 'quadratic':
                 self._quad = self._parseArg( 'quad', kwargs, Value = -0.01, Error = 0.003, MinMax = ( -0.1, 0.1 ) )
                 self._offset.setVal(-0.005)
@@ -120,6 +125,9 @@ class Gaussian_TimeResolution ( TimeResolution ) :
                                )
         self._check_extraneous_kw( kwargs )
 
+    def sfPlaceHolder(self):
+        return self.__sf_placeholder
+
     def splitVars(self):
         sv = [self._timeResSigmaSF]
         if self.__split_mean:
@@ -143,19 +151,21 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         self.__split_mean = kwargs.pop('SplitMean', False)
         self.__simultaneous = kwargs.pop('Simultaneous', False)
         self.__mu_param = kwargs.pop('MeanParameterisation', '')
-        
+        self._splitVars = []
         sf_param = kwargs.pop('TimeResSFParam', False)
         from P2VV.RooFitWrappers import RealVar
         self.__sf_placeholder = self._parseArg('sf_placeholder', kwargs, Value = 0,
-                                               MinMax = (-1e6, 1e6), Constant = True) 
-        if 'sigmat' in self.__mu_param:
+                                               MinMax = (-1e6, 1e6), Constant = True)
+        self.__split_placeholders = kwargs.pop('SplitPlaceholders', False)
+        if 'sigmat' in self.__mu_param or self.__split_placeholders:
             self.__mu_placeholder = self._parseArg('mu_placeholder', kwargs, Value = 0,
                                                    MinMax = (-1e6, 1e6), Constant = True)
         else:
             self.__mu_placeholder = self.__sf_placeholder
         
         assert(len(sigmasSFs) - 1 == len(fracs))
-
+        assert(not (self.__simultaneous and self.__sf_param))
+        
         ## If this is to be fitted in a non-simultaneous fit, the mean sigmat
         ## value should be passed in to get the parameterisation correct.
         assert(not (self.__split_mean and self.__mu_param))
@@ -171,13 +181,13 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
             else:
                 formula = '@0 + @1 * @2'
                 args = [self._mu_offset, self._mu_slope, self.__mu_placeholder]
-                self._timeResMu = self._parseArg('timeResMu_linear', kwargs, Formula = formula,
+            self._timeResMu = self._parseArg('timeResMu_linear', kwargs, Formula = formula,
                                              ObjectType = 'FormulaVar', Arguments = args)
         elif 'quadratic' in self.__mu_param:
             self._mu = self._timeResMu
             self._mu_offset = self._parseArg( 'timeResMu_offset', kwargs, Value = -0.001723, MinMax = (-2, 2))
-            self._mu_slope = self._parseArg( 'timeResMu_slope', kwargs, Value = -0.00431, MinMax = (-2, 2))
-            self._mu_quad = self._parseArg( 'timeResMu_quad', kwargs, Value = -0.00380, MinMax = (-50, 50))
+            self._mu_slope = self._parseArg( 'timeResMu_slope', kwargs, Value = -0.2, MinMax = (-2, 2))
+            self._mu_quad = self._parseArg( 'timeResMu_quad', kwargs, Value = -7, MinMax = (-50, 50))
             if not self.__simultaneous or 'sigmat' in self.__mu_param:
                 formula = '@2 + @3 * (@0 - @1) + @4 * (@0 - @1) * (@0 - @1)'
                 args = [self._sigmat, self.__mu_placeholder, self._mu_offset, self._mu_slope, self._mu_quad]
@@ -187,36 +197,62 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
             self._timeResMu = self._parseArg('timeResMu_quadratic', kwargs, Formula = formula,
                                              ObjectType = 'FormulaVar', Arguments = args)
         self._cache = kwargs.pop('Cache', True)
-        pee = kwargs.pop('PerEventError', False)
-        if not hasattr(pee, '__iter__'):
-            pee = [pee for i in range(len(sigmasSFs))]
         param = kwargs.pop('Parameterise', False)
         assert(param in [False, 'RMS', 'Comb'])
         self._timeResSigmasSFs = [ self._parseArg( 'timeResSigmaSF_%s' % num, kwargs, Value = val, MinMax = (0.001, 20) )\
                                   for num, val in sigmasSFs ]
-        self._timeResFracs     = [ self._parseArg( 'timeResFrac%s' % num, kwargs, Value = val, MinMax = (0.0001, 0.99))\
+        self._timeResFracs     = [ self._parseArg( 'timeResFrac%s' % num, kwargs, Value = val, MinMax = (0.1, 0.999))\
                                   for num, val in fracs ]
 
         from ROOT import RooNumber
         RooInf = RooNumber.infinity()
-        if param == 'RMS': 
+        if param == 'RMS':
             if sf_param:
-                self._parseArg( 'sf_mean_offset', kwargs, Value = 1.5, MinMax = (-20, 20) )
-                self._parseArg( 'sf_mean_slope', kwargs, Value = -0.1, MinMax = (-20, 20) )
-                self._parseArg('sf_sigma_offset', kwargs, Value = 0.4, MinMax = (-20, 20) )
-                self._parseArg('sf_sigma_slope', kwargs, Value = -0.05, MinMax = (-20, 20) )
-                if self.__simultaneous:
-                    formula = '@0 + @1 * @2'
-                    args = {'mean'  : [self._sf_mean_offset, self._sf_mean_slope, self.__sf_placeholder],
-                            'sigma' : [self._sf_sigma_offset, self._sf_sigma_slope, self.__sf_placeholder]}
-                else:
-                    formula = '@2 + @3 * (@0 - @1)'
-                    args = {'mean'  : [self._sigmat, self.__sf_placeholder, self._sf_mean_offset, self._sf_mean_slope],
-                            'sigma' : [self._sigmat, self.__sf_placeholder, self._sf_sigma_offset, self._sf_sigma_slope]}
+                self._parseArg('sf_mean_offset', kwargs, Value = 0.05, MinMax = (-0.1, 2.) )
+                self._parseArg('sf_mean_slope', kwargs, Value = 1.29, MinMax = (0., 10) )
+                self._parseArg('sf_sigma_offset', kwargs, Value = 0.01, MinMax = (-0.1, 2.) )
+                self._parseArg('sf_sigma_slope', kwargs, Value = 0.277, MinMax = (0., 10) )
+            if sf_param.startswith('quadratic'):
+                self._parseArg('sf_mean_quad', kwargs, Value = -4, MinMax = (-20, 20))
+                self._parseArg('sf_sigma_quad', kwargs, Value = 8, MinMax = (-20, 20))
+            if sf_param == 'linear':
+                formula = '@2 + @3 * (@0 - @1)'
+                args = {'mean'  : [self._sigmat, self.__sf_placeholder, self._sf_mean_offset, self._sf_mean_slope],
+                        'sigma' : [self._sigmat, self.__sf_placeholder, self._sf_sigma_offset, self._sf_sigma_slope]}
                 self._sf_mean = self._parseArg('timeResSFMean_linear', kwargs,
                                                 Formula = formula, ObjectType = 'FormulaVar',
                                                 Arguments = args['mean'])
                 self._sf_sigma = self._parseArg('timeResSFSigma_linear', kwargs,
+                                                Formula = formula, ObjectType = 'FormulaVar',
+                                                Arguments = args['sigma'])
+            elif sf_param == 'linear_no_offset':
+                formula = '@1 * @0'
+                args = {'mean'  : [self._sigmat, self._sf_mean_slope],
+                        'sigma' : [self._sigmat, self._sf_sigma_slope]}
+                self._sf_mean = self._parseArg('timeResSFMean_linear', kwargs,
+                                                Formula = formula, ObjectType = 'FormulaVar',
+                                                Arguments = args['mean'])
+                self._sf_sigma = self._parseArg('timeResSFSigma_linear', kwargs,
+                                                Formula = formula, ObjectType = 'FormulaVar',
+                                                Arguments = args['sigma'])
+            elif sf_param == ('quadratic'):
+                formula = '@2 + @3 * (@0 - @1) + @4 * (@0 - @1) * (@0 - @1)'
+                args = {'mean'  : [self._sigmat, self.__sf_placeholder, self._sf_mean_offset, self._sf_mean_slope, self._sf_mean_quad],
+                            'sigma' : [self._sigmat, self.__sf_placeholder, self._sf_sigma_offset, self._sf_sigma_slope, self._sf_sigma_quad]}
+                self._sf_mean = self._parseArg('timeResSFMean_quad', kwargs,
+                                                Formula = formula, ObjectType = 'FormulaVar',
+                                                Arguments = args['mean'])
+                self._sf_sigma = self._parseArg('timeResSFSigma_quad', kwargs,
+                                                Formula = formula, ObjectType = 'FormulaVar',
+                                                Arguments = args['sigma'])
+            elif sf_param == ('quadratic_no_offset'):
+                formula = '(@2 + @3 * (@0 - @1)) * @0'
+                args = {'mean'  : [self._sigmat, self.__sf_placeholder, self._sf_mean_slope, self._sf_mean_quad],
+                        'sigma' : [self._sigmat, self.__sf_placeholder, self._sf_sigma_slope, self._sf_sigma_quad]}
+                self._sf_mean = self._parseArg('timeResSFMean_quad', kwargs,
+                                                Formula = formula, ObjectType = 'FormulaVar',
+                                                Arguments = args['mean'])
+                self._sf_sigma = self._parseArg('timeResSFSigma_quad', kwargs,
                                                 Formula = formula, ObjectType = 'FormulaVar',
                                                 Arguments = args['sigma'])
             else:
@@ -224,94 +260,93 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
                 self._sf_mean = self._parseArg('timeResSFMean', kwargs
                                                , Value = ((1. - fracs[-1][1]) * sigmasSFs[-1][1]
                                                            + fracs[-1][1] * sigmasSFs[-2][1])
-                                               , MinMax = (0.001, 5))
+                                               , MinMax = (0.001, 0.2 if self.__simultaneous else 5))
                 self._sf_sigma = self._parseArg('timeResSFSigma', kwargs, Value = sqrt((1 - fracs[-1][1]) * sigmasSFs[-1][1] * sigmasSFs[-1][1]
                                                                                         + fracs[-1][1] * sigmasSFs[-2][1] * sigmasSFs[-2][1]
                                                                                         - self._sf_mean.getVal() ** 2),
-                                                 MinMax = (0.001, 5))
+                                                 MinMax = (0.001, 0.05 if self.__simultaneous else 5))
+                if self.__simultaneous:
+                    self._splitVars += [self._sf_mean, self._sf_sigma]
             self._timeResSigmasSFs[-1] = self._parseArg(Name + '_SF1', kwargs, Formula = '- sqrt(@0 / (1 - @0)) * @1 + @2',
                                                         Arguments = (self._timeResFracs[-1], self._sf_sigma, self._sf_mean),
                                                         ObjectType = 'FormulaVar')
             self._timeResSigmasSFs[-2] = self._parseArg(Name + '_SF2', kwargs, Formula = 'sqrt((1 - @0) / @0) * @1 + @2',
                                                         Arguments = (self._timeResFracs[-1], self._sf_sigma, self._sf_mean),
                                                         ObjectType = 'FormulaVar')
-            if sf_param:
-                self._realVars = []
-            else:
-                self._realVars = [self._sf_mean, self._sf_sigma]
-                if split_fracs:
-                    self._realVars += self._timeResFracs
-        elif param == 'Comb':
-            if sf_param:
-                self._parseArg( 'sf_mean_slope', kwargs, Value = -3.41081, MinMax = (-20, 20) )
-                self._parseArg( 'sf_mean_offset', kwargs, Value = 1.43297, MinMax = (-20, 20) )
-                self._parseArg( 'sf2_slope', kwargs, Value = -1, MinMax = (-20, 20) )
-                self._parseArg( 'sf2_offset', kwargs, Value = 0, MinMax = (-20, 20) )
-                if self.__simultaneous:
-                    formula = '@0 + @1 * @2'
-                    args = {'mean'  : [self._sf_mean_offset, self._sf_mean_slope, self.__sf_placeholder],
-                            'sigma' : [self._sf_sigma_offset, self._sf_sigma_slope, self.__sf_placeholder]}
-                else:
-                    formula = '@2 + @3 * (@0 - @1)'
-                    args = {'mean'  : [self._sigmat, self.__sf_placeholder, self._sf_mean_offset, self._sf_mean_slope],
-                            'sf2' : [self._sigmat, self.__sf_placeholder, self._sf2_offset, self._sf2_slope]}
-                self._sf2_original = self._timeResSigmasSFs[-2]
-                self._timeResSigmasSFs[-2] = self._parseArg( self._sf2_original.GetName() + '_linear', kwargs,
-                                                             Formula = formula, ObjectType = 'FormulaVar',
-                                                             Arguments = args['sf2'])
-                self._sf_mean = self._parseArg( 'timeResSFMean_linear', kwargs,
-                                                Formula = formula, ObjectType = 'FormulaVar', 
-                                                Arguments = [ self._sf_mean_offset, self._sf_mean_slope, self.__sf_placeholder] )
-            else:
-                self._sf_mean = self._parseArg('timeResSFMean', kwargs
-                                               , Value = ((1. - fracs[-1][1]) * sigmasSFs[-1][1] + fracs[-1][1] * sigmasSFs[-2][1])
-                                               , MinMax = (0.5, 2))
-            self._timeResSigmasSFs[-1] = self._parseArg(Name + '_SFMean', kwargs, Formula = '(1 / (1 - @0)) * (@1 - @0 * @2)',
-                                                        Arguments = ( self._timeResFracs[-1], self._sf_mean, self._timeResSigmasSFs[-2]),
-                                                        ObjectType = 'FormulaVar')
-            if sf_param:
-                self._realVars = []
-            else:
-                self._realVars = [self._sf_mean, self._timeResSigmasSFs[:-1]]
-                if split_fracs:
-                    self._realVars += self._timeResFracs
         else:
-            self._realVars = [sf for sf in self._timeResSigmasSFs]
-            if split_fracs:
-                self._realVars += self._timeResFracs
+            if sf_param:
+                self._parseArg('sf_one_offset', kwargs, Value = 0.4, MinMax = (-10, 10))
+                self._parseArg('sf_one_slope', kwargs, Value = 1., MinMax = (0.1, 20))
+                self._parseArg('sf_two_offset', kwargs, Value = 0.4, MinMax = (-10, 10))
+                self._parseArg('sf_two_slope', kwargs, Value = 1., MinMax = (0.1, 10))
+            if sf_param == 'linear':
+                formula = '@2 + @3 * (@0 - @1)'
+                args = {'one' : [self._sigmat, self.__sf_placeholder, self._sf_one_offset, self._sf_one_slope],
+                        'two' : [self._sigmat, self.__sf_placeholder, self._sf_two_offset, self._sf_two_slope]}
+                self._sf_one = self._parseArg('sf_one_linear', kwargs,
+                                                Formula = formula, ObjectType = 'FormulaVar',
+                                                Arguments = args['one'])
+                self._sf_two = self._parseArg('sf_two_linear', kwargs,
+                                                Formula = formula, ObjectType = 'FormulaVar',
+                                                Arguments = args['two'])
+                self._timeResSigmasSFs[-1] = self._sf_one
+                self._timeResSigmasSFs[-2] = self._sf_two
+            elif sf_param == 'linear_no_offset':
+                formula = '@1 * @0'
+                args = {'one' : [self._sigmat, self._sf_one_slope],
+                        'two' : [self._sigmat, self._sf_two_slope]}
+                self._sf_one = self._parseArg('sf_one_linear', kwargs,
+                                                Formula = formula, ObjectType = 'FormulaVar',
+                                                Arguments = args['one'])
+                self._sf_two = self._parseArg('sf_two_linear', kwargs,
+                                                Formula = formula, ObjectType = 'FormulaVar',
+                                                Arguments = args['two'])
+                self._timeResSigmasSFs[-1] = self._sf_one
+                self._timeResSigmasSFs[-2] = self._sf_two
+            elif sf_param == 'quadratic':
+                self._parseArg('sf_one_quad', kwargs, Value = 0.1, MinMax = (-10, 10) )
+                self._parseArg('sf_two_quad', kwargs, Value = 0.1, MinMax = (-10, 10) )
+                formula = '@2 + @3 * (@0 - @1) + @4 * (@0 - @1) * (@0 - @1)'
+                args = {'one' : [self._sigmat, self.__sf_placeholder, self._sf_one_offset, self._sf_one_slope, self._sf_one_quad],
+                        'two' : [self._sigmat, self.__sf_placeholder, self._sf_two_offset, self._sf_two_slope, self._sf_two_quad]}
+                self._sf_one = self._parseArg('timeResSFMean_quad', kwargs,
+                                                Formula = formula, ObjectType = 'FormulaVar',
+                                                Arguments = args['one'])
+                self._sf_two = self._parseArg('timeResSFSigma_quad', kwargs,
+                                                Formula = formula, ObjectType = 'FormulaVar',
+                                                Arguments = args['two'])
+                self._timeResSigmasSFs[-1] = self._sf_one
+                self._timeResSigmasSFs[-2] = self._sf_two
+            elif self.__simultaneous:
+                self._splitVars += self._timeResSigmasSFs
+        if split_fracs:
+            self._splitVars += self._timeResFracs
 
         self._check_extraneous_kw( kwargs )
         from ROOT import RooGaussModel as GaussModel
         from ROOT import RooGExpModel as GExpModel
 
         models = []
-        for ( numVal, pee ), sigmaSF, in zip( zip(sigmasSFs, pee), self._timeResSigmasSFs):
+        for numVal, sigmaSF, in zip(sigmasSFs, self._timeResSigmasSFs):
             gexp = gexps[numVal[0]]
-            if not pee:
-                params = [ self._time, self._timeResMu, sigmaSF ]
-                if gexp:
-                    rlife = self._parseArg( 'rlife_%d' % numVal[0], kwargs, Value = 0.1, MinMax = ( 0.0001, 10 ) )
-                    params += [rlife]
+            if gexp:
+                rlife = self._parseArg( 'rlife_%d' % numVal[0], kwargs, Value = 0.1, MinMax = ( 0.0001, 10 ) )
+                rlife_sf = self._parseArg( 'rlife_sf', kwargs, Value = 1, ObjectType = 'ConstVar' )
+                self._splitVars += [rlife]
+                params = [self._time, self._timeResMu, sigmaSF, rlife, self._timeResMuSF, self._timeResMuSF, self._timeResMuSF, 'false', 'Normal']
             else:
-                if gexp:
-                    rlife = self._parseArg( 'rlife_%d' % numVal[0], kwargs, Value = 0.1, MinMax = ( 0.0001, 10 ) )
-                    rlife_sf = self._parseArg( 'rlife_sf', kwargs, Value = 1, ObjectType = 'ConstVar' )
-                    self._realVars += [rlife]
-                    params = [ self._time, self._timeResMu, self._sigmat, rlife, self._timeResMuSF, sigmaSF, self._timeResMuSF, 'false', 'Normal' ]
-                else:
-                    params = [ self._time, self._timeResMu, self._sigmat, self._timeResMuSF, sigmaSF ]
+                params = [self._time, self._timeResMu, sigmaSF]
                 
             model_type = GExpModel if gexp else GaussModel
-            model = ResolutionModel(  Name = '%stimeResGauss_%s' % (namePF, numVal[0])
-                                      , Type = model_type
-                                      , Parameters = params
-                                      , ConditionalObservables = [ self._sigmat ] if pee else [])
+            model = ResolutionModel(  Name = '%stimeResGauss_%s' % (namePF, numVal[0]),
+                                      Type = model_type, Parameters = params,
+                                      ConditionalObservables = [self._sigmat])
             models.append(model)
         TimeResolution.__init__(self, Name = Name
                                 , Model = AddModel(Name, Models = models, Fractions = self._timeResFracs)
                                 , Cache = self._cache)
     def splitVars(self):
-        sv = self._realVars[:]
+        sv = self._splitVars[:]
         if self.__split_mean: sv.append(self._timeResMu)
         return sv
 
@@ -323,15 +358,27 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
 
 class Rest_TimeResolution( TimeResolution ):
     def __init__(self, **kwargs):
-        self._core_model = kwargs.pop('CoreModel')
+        self._core_model = kwargs.pop('CoreModel', None)
         Name = kwargs.pop('Name', 'timeResModelRest')
+        ownMu = kwargs.pop('OwnMu', False)
         namePF = self.getNamePrefix(kwargs)
 
-        self._sigmat = self._core_model._sigmat
-        self._time = self._core_model._time
-        self._timeResMu = self._core_model._timeResMu
-        self._timeResMuSF = self._core_model._timeResMuSF
-
+        if self._core_model:
+            self._sigmat = self._core_model._sigmat
+            self._time = self._core_model._time
+            if ownMu:
+                self._timeResMu = self._parseArg( 'timeResRestMu', kwargs, Value = -0.0027, MinMax = ( -2, 2 ) )
+            else:
+                self._timeResMu = self._core_model._timeResMu
+            self._timeResMuSF = self._core_model._timeResMuSF
+            self.__cache = self._core_model._cache
+        else:
+            self._parseArg('sigmat', kwargs, Title = '#sigma_{t}', Unit = 'ps', Observable = True, MinMax = (0.0001, 0.12) )
+            self._time = self._parseArg('time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ))
+            self._timeResMu = self._parseArg( 'timeResRestMu', kwargs, Value = -0.0027, MinMax = ( -2, 2 ) )
+            self._timeResMuSF = self._parseArg( 'timeResMuSF', kwargs, Value = 1.0, Constant = True )
+            self.__cache = kwargs.pop('Cache', True)
+        
         self._left_sigmaSF = self._parseArg( 'timeResRestLSSF', kwargs, Value = 1.5, MinMax = (0.01, 50))
         self._right_sigmaSF = self._parseArg( 'timeResRestRSSF', kwargs, Value = 1.5, MinMax = (0.01, 50))
         self._left_rlifeSF = self._parseArg( 'timeResRestLTSF', kwargs, Value = 6, MinMax = (0.01, 50))
@@ -342,17 +389,17 @@ class Rest_TimeResolution( TimeResolution ):
         from P2VV.RooFitWrappers import ResolutionModel, AddModel
         from ROOT import RooGExpModel
         self._gexps = []
-        for side, pars in (('right', [self._right_sigmaSF, self._right_rlifeSF, 'false', 'Flipped']),
-                           ('left',  [self._right_sigmaSF, self._left_rlifeSF, 'false', 'Normal'])):
+        for side, pars in (('left',  [self._left_sigmaSF, self._left_rlifeSF, 'false', 'Normal']),
+                           ('right', [self._right_sigmaSF, self._right_rlifeSF, 'false', 'Flipped'])):
             gexp = ResolutionModel(Name = '%sgexp_%s' % (namePF, side), Type = RooGExpModel,
-                                     Parameters = [self._time, self._timeResMu, self._sigmat,
-                                                   self._sigmat, self._timeResMuSF] + pars,
+                                     Parameters = [self._time, self._timeResMu, pars[0], pars[1],
+                                                   self._timeResMuSF, self._sigmat, self._sigmat] + pars[2 :],
                                      ConditionalObservables = [self._sigmat])
             self._gexps.append(gexp)
         TimeResolution.__init__(self, Name = Name,
                                 Model = AddModel("%stimeResModelRest" % namePF, Models = self._gexps,
                                                  Fractions = [self._frac_left]),
-                                Cache = self._core_model._cache)
+                                Cache = self.__cache)
 
     def splitVars(self):
         sv = self._core_model.splitVars()
@@ -480,7 +527,3 @@ class GExp_Gauss(TimeResolution):
                                 Model = AddModel("%sadd_model" % namePF, Fractions = [gexp_frac],
                                                  Models = [gexp_model, gauss_model],
                                                  ConditionalObservables = [sigmat]), Cache = cache)
-
-
-def rms(sf1, f, sf2):
-   return (1 - f) * sf1 * sf1 + f * sf2 * sf2

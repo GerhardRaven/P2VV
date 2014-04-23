@@ -347,6 +347,94 @@ void addVertexErrors(TTree* tree, const std::list<RooDataSet*>& dss, const std::
    }
 }
 
+void addJpsiDLS(TTree* tree, const std::list<RooDataSet*>& dss, const std::string& cut) {
+
+   cout << "Reading tree " << tree->GetName() << " to get vertex errors." << endl;
+
+   tree->Draw(">>dls_elist", cut.c_str(), "entrylist");
+   TEntryList *cut_list = static_cast<TEntryList*>(gDirectory->Get( "dls_elist" ));
+
+   Double_t x = 0., y = 0., z = 0.;
+   Double_t pv_x = 0., pv_y = 0., pv_z = 0.;
+
+   Float_t cov_pv[3][3];
+   Float_t cov_jpsi[3][3];
+
+   tree->SetBranchAddress("J_psi_1S_OWNPV_X", &pv_x);
+   tree->SetBranchAddress("J_psi_1S_OWNPV_Y", &pv_y);
+   tree->SetBranchAddress("J_psi_1S_OWNPV_Z", &pv_z);
+
+   tree->SetBranchAddress("J_psi_1S_ENDVERTEX_X", &x);
+   tree->SetBranchAddress("J_psi_1S_ENDVERTEX_Y", &y);
+   tree->SetBranchAddress("J_psi_1S_ENDVERTEX_Z", &z);
+
+   tree->SetBranchAddress("J_psi_1S_OWNPV_COV_", &cov_pv);
+   tree->SetBranchAddress("J_psi_1S_ENDVERTEX_COV_", &cov_jpsi);
+
+   TMatrixT<float> X(3, 1);
+   TMatrixT<float> r(1, 1);
+   TMatrixT<float> tmp(3, 1);
+
+   RooRealVar* dl = new RooRealVar("jpsi_DL", "jpsi_DL", -1000, 1000);
+   RooRealVar* dls = new RooRealVar("jpsi_DLS", "jpsi_DLS", -1000, 1000);
+
+   RooDataSet* ds = new RooDataSet("dls", "dls", RooArgSet(*dl, *dls));
+   const RooArgSet* obs = ds->get();
+   std::string dln = dl->GetName();
+   std::string dlsn = dls->GetName();
+   delete dl;
+   delete dls;
+   dl = static_cast<RooRealVar*>(obs->find(dln.c_str()));
+   dls = static_cast<RooRealVar*>(obs->find(dlsn.c_str()));
+
+   Long64_t n = tree->GetEntries();
+   for (Long64_t i = 0; i < n; ++i) {
+      if (i != 0 && i != n && i % (n / 20) == 0) {
+         cout << int(double(i + 20) / double(n) * 100) << "% ";
+         cout.flush();
+      }
+      if (!cut_list->Contains(i)) {
+         continue;
+      } else {
+         tree->GetEntry(i);
+      }
+
+      double D = sqrt((x - pv_x) * (x - pv_x) + (y- pv_y) * (y- pv_y) + (z- pv_z) + (z- pv_z));
+      dl->setVal(D);
+
+      X(0, 0) = x - pv_x;
+      X(1, 0) = y - pv_y;
+      X(2, 0) = z - pv_z;
+      X *= 1 / D;
+
+      TMatrixT<float> X_T(TMatrixT<float>::kTransposed, X);
+
+      TMatrixT<float> cjpsi(3, 3, &cov_jpsi[0][0]);
+
+      tmp.Mult(cjpsi, X);
+      r.Mult(X_T, tmp);
+
+      // Result is (c * tau)^2, set value in ps
+      double dle_jpsi = sqrt(r(0, 0));
+
+      TMatrixT<float> cpv(3, 3, &cov_pv[0][0]);
+      tmp.Mult(cpv, X);
+      r.Mult(X_T, tmp);
+
+      // Result is (c * tau)^2, set value in ps
+      double dle_pv = sqrt(r(0, 0));
+
+      dls->setVal(sqrt(dle_jpsi * dle_jpsi + dle_pv * dle_pv));
+      ds->fill();
+   }
+   cout << endl;
+
+   cout << "Adding vertex errors to RooDataSets" << endl;
+   for (list<RooDataSet*>::const_iterator it = dss.begin(), end = dss.end(); it != end; ++it) {
+      (*it)->merge(ds);
+   }
+}
+
 TTree* RooDataSetToTree(const RooDataSet& dataSet, const char* name,
       const char* title, const char* weightName, const char* branchList,
       Bool_t RooFitFormat)

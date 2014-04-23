@@ -1,18 +1,21 @@
 import sys
 import os
 try:
-    from P2VV.ToyMCUtils import Toy
+    from P2VV.ToyMCUtils import FitToy as Toy
 except ImportError:
     print 'Could not import P2VV version, trying local directory'
-    from ToyMCUtils import Toy
+    from ToyMCUtils import FitToy as Toy
 
 toy = Toy()
 parser = toy.parser()
 
 parser.add_option("--sfit", dest = "sFit", default = False,
                   action = 'store_true', help = "Generate with cFit, fit with sFit")
-
+parser.add_option("--correct-weights", dest = "correct_weights", default = '',
+                  action = 'store', help = "Correct weights using 1 / (sum of weights^2) or corrected covariance matrix")
 (options, args) = toy.configure()
+
+assert(options.correct_weights in ['', 'weights', 'matrix'])
 
 from ROOT import gROOT
 #gROOT.SetBatch(True)
@@ -54,14 +57,16 @@ mu['Value'] = -0.00407301
 from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
 
 ## Signal and background time resolutions.
-tres_args = dict(time = time_obs, sigmat = st, Cache = True, PerEventError = True,
-                 Parameterise = 'Comb', TimeResSFParam = '', timeResMu = mu,
+tres_args = dict(time = time_obs, sigmat = st, Cache = True,
+                 Parameterise = 'RMS', TimeResSFParam = 'linear_no_offset', timeResMu = mu,
                  ScaleFactors = [(2, 2.1), (1, 1.26)], Fractions = [(2, 0.2)])
 sig_tres = TimeResolution(Name = 'sig_tres', **tres_args)
 
 # Resolution models
-bkg_tres = TimeResolution(Name = 'bkg_tres', ParNamePrefix = 'bkg', **tres_args)
 
+bkg_tres = TimeResolution(Name = 'bkg_tres', ParNamePrefix = 'bkg', time = time_obs, sigmat = st,
+                          Cache = True, Parameterise = 'RMS', TimeResSFParam = 'linear_no_offset',
+                          timeResMu = mu, ScaleFactors = [(2, 2.1), (1, 1.26)], Fractions = [(2, 0.2)])
 # J/psi mass pdf
 from P2VV.Parameterizations.MassPDFs import DoubleCB_Psi_Mass as PsiMassPdf
 psi_m = PsiMassPdf(mpsi, Name = 'psi_m', mpsi_alpha_1 = dict(Name = 'mpsi_alpha_1', Value = 2., Constant = True))
@@ -87,71 +92,87 @@ bkg_ln = DoubleLogNormal(st, ParNamePrefix = 'bkg')
 
 # Background time pdf
 from P2VV.Parameterizations.TimePDFs import Prompt_Peak
-bkg_t = Prompt_Peak(time_obs, bkg_tres.model(), Name = 'bkg_pdf')
+bkg_peak = Prompt_Peak(time_obs, bkg_tres.model(), Name = 'prompt_bkg')
+bkg_t = Background_Time(Name = 'bkg_t', time = time_obs, resolutionModel = bkg_tres.model())
 
 # J/psi signal component
 psi_ll = Component('psi_ll', (psi_m, psi_t, sig_ln.pdf()), Yield= (8.5575e+03,100,500000) )
+psi_prompt_pdf = Prompt_Peak(time_obs, sig_tres.model(), Name = 'psi_prompt_pdf')
+psi_prompt = Component('psi_prompt', (psi_prompt_pdf.pdf(), psi_m, sig_ln.pdf()), Yield = (160160, 100, 500000))
 
 # Background component
-background = Component('background', (bkg_mpsi.pdf(), bkg_t.pdf(), bkg_ln.pdf()),
-                       Yield = (19620,100,500000) )
+bkg_prompt_pdf = Prompt_Peak(time_obs, bkg_tres.model(), Name = 'bkg_prompt_pdf')
+bkg_prompt = Component('bkg_prompt', (bkg_mpsi.pdf(), bkg_prompt_pdf.pdf(), bkg_ln.pdf()),
+                       Yield = (19620,100,500000))
+bkg_ll = Component('bkg_ll', (bkg_mpsi.pdf(), bkg_t.pdf(), bkg_ln.pdf()),
+                    Yield = (19620,100,500000) )
 
-# Prompt component
-prompt_pdf = Prompt_Peak(time_obs, sig_tres.model(), Name = 'prompt_pdf')
-prompt = Component('prompt', (prompt_pdf.pdf(), psi_m, sig_ln.pdf()), Yield = (160160, 100, 500000))
+from ROOT import RooKeysPdf
+def observables(self):
+    return self._observables
+def conditional_observables(self):
+    return set()
+def external_constraints(self):
+    return set()
+RooKeysPdf.Observables = observables
+RooKeysPdf.ConditionalObservables = conditional_observables
+RooKeysPdf.ExternalConstraints = external_constraints
 
-def make_wpv_pdf(prefix):
-    wpv_mean = RealVar('%swpv_mean' % prefix, Value = 0, MinMax = (-1, 1), Constant = True)
-    wpv_sigma = RealVar('%swpv_sigma' % prefix, Value = 0.305, MinMax = (0.01, 10), Constant = True)
-    return Pdf(Name = '%swpv_pdf' % prefix, Type = Gaussian, Parameters = (time_obs, wpv_mean, wpv_sigma))
-sig_wpv_pdf = make_wpv_pdf('sig_')
+## Load parameter values
+from ROOT import TFile
+param_file = TFile.Open("gen_params.root")
+## bkg_wpv_pdf = param_file.Get('bkg_wpv')
+## bkg_wpv_pdf.SetName('bkg_wpv')
+## bkg_wpv_pdf._observables = set([time_obs])
+## w.put(bkg_wpv_pdf)
+## bkg_wpv = Component('bkg_wpv', (bkg_mpsi.pdf(), bkg_wpv_pdf, bkg_ln.pdf()),
+##                     Yield = (19620,100,500000))
 
-sig_wpv = Component('sig_wpv', (sig_wpv_pdf, psi_m, sig_ln.pdf()), Yield = (552, 1, 50000))
-
-components = [prompt, psi_ll, background, sig_wpv]
+components = [psi_prompt, psi_ll, bkg_prompt, bkg_ll]
 
 ## PDF to generate with
 gen_obs = (time_obs, mpsi, st)
 gen_pdf = buildPdf(Components = components, Observables = gen_obs, Name = 'gen_pdf')
 
-## Load parameter values
-from ROOT import TFile
-param_file = TFile.Open("gen_params.root")
 gen_params = param_file.Get("gen_params")
 gen_pdf_pars = gen_pdf.getParameters(RooArgSet(*gen_obs))
 
 for p in gen_pdf_pars:
-     gp = gen_params.find(p)
-     if not gp and not p.isConstant():
-         print 'cannot find %s' % p.GetName()
-     elif not p.isConstant():
-         p.setVal(gp.getVal())
-         p.setError(gp.getError())
+    gp = gen_params.find(p)
+    if not gp:
+        if not p.isConstant():
+            print 'cannot find %s' % p.GetName()
+    else:
+        p.setVal(gp.getVal())
+        p.setError(gp.getError())
 
 ## Fit options
 fitOpts = dict(  Optimize  = 2
                , Timer     = True
                , Strategy  = 1
                , Save      = True
+               , Minos     = False
+               , Offset    = True
                , Verbose   = False
+               , SumW2Error = bool(options.correct_weights == 'matrix')
                , Minimizer = 'Minuit2')
 
 toy.set_fit_opts(**fitOpts)
 
 if options.sFit:
     # Components for sFit
-    components = [prompt, psi_ll, sig_wpv]
+    components = [psi_prompt, psi_ll]
 
     ## PDF for sFit
     fit_pdf = buildPdf(Components = components, Observables = (time_obs,), Name = 'fit_pdf')
 
     ## SWeights
     from P2VV.ToyMCUtils import SWeightTransform
-    mass_pdf = buildPdf(Components = (prompt, background), Observables = (mpsi,), Name = 'mass_pdf')
-    toy.set_transform(SWeightTransform(mass_pdf, 'prompt', fitOpts))
+    mass_pdf = buildPdf(Components = (psi_prompt, bkg_prompt), Observables = (mpsi,), Name = 'mass_pdf')
+    toy.set_transform(SWeightTransform(mass_pdf, 'psi_prompt', fitOpts, correct_weights = bool(options.correct_weights == 'weights')))
 else:
     # Components for cFit
-    components = [prompt, psi_ll, background, sig_wpv]
+    components = [psi_prompt, psi_ll, bkg_ll, bkg_prompt]
 
     ## PDF for cFit
     fit_pdf = buildPdf(Components = components, Observables = (time_obs, mpsi), Name = 'fit_pdf')

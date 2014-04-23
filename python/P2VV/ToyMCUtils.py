@@ -148,8 +148,8 @@ class FitToy(Toy):
         # Make another ArgSet to put the fit results in
         result_params = RooArgSet(pdf_params, "result_params")
 
-        transfrom = self.transform()
-        if transfrom:
+        transform = self.transform()
+        if transform:
             trans_params = transform.gen_params(gen_obs_set)
             for p in trans_params:
                 result_params.add(p)
@@ -179,8 +179,7 @@ class FitToy(Toy):
         from ROOT import RooRandom
         import struct, os
 
-        i = 0
-        while i < self.options().ntoys:
+        while self._data.numEntries() < self.options().ntoys:
             # Get a good random seed, set it and store it
             s = struct.unpack('I', os.urandom(4))[0]    
             RooRandom.randomGenerator().SetSeed(s)
@@ -205,9 +204,11 @@ class FitToy(Toy):
             if data.isWeighted() and 'SumW2Error' not in self.fit_opts():
                 self.fit_opts()['SumW2Error'] = False
 
+            j = 0
             while j < 4: 
                 fit_result = pdf.fitTo(data, NumCPU = self.options().ncpu, **(self.fit_opts()))
                 if fit_result.status() == 0:
+                    fit_result.Print()
                     break
                 j += 1
             if fit_result.status() != 0:
@@ -247,13 +248,12 @@ class DilutionToy(Toy):
         __check_req_kw__('Pdf', kwargs)
         __check_req_kw__('Sigmat', kwargs)
         __check_req_kw__('Time', kwargs)
-        __check_req_kw__('SigmatCat', kwargs)
-
+        __check_req_kw__('SigmaGen', kwargs)
+        sigma_gen = kwargs.pop('SigmaGen')
         observables = kwargs.pop('Observables')
         obs_set = RooArgSet(*observables)
         
         pdf = kwargs.pop('Pdf')
-        sigmat_cat = kwargs.pop('SigmatCat')
         sigmat = kwargs.pop('Sigmat')
         time = kwargs.pop('Time')
         
@@ -309,10 +309,9 @@ class DilutionToy(Toy):
                     self._data.add(data_params)
                     continue
 
-            st_cat = data.addColumn(sigmat_cat._target_())
             from P2VV import Dilution
-            d_ft = Dilution.dilution_bins(data, time, sigmat, st_cat, t_range = 2)
-            d_a = Dilution.signal_dilution_dg(data, sigmat, 1.2, 0.2, 2)
+            d_ft = Dilution.dilution_ft(data, time, t_range = 2, quiet = True)
+            d_a = Dilution.signal_dilution_dg(data, sigmat, *sigma_gen)
             da.setVal(d_a[0])
             da.setError(d_a[1] if d_a[1] != None else 0.)
             dft.setVal(d_ft[0])
@@ -329,11 +328,12 @@ class DilutionToy(Toy):
         return self._gen_params
 
 class SWeightTransform(object):
-    def __init__(self, pdf, component, fit_opts):
+    def __init__(self, pdf, component, fit_opts, correct_weights = True):
         self.__comp = component
         self.__pdf = pdf
         self.__fit_opts = fit_opts
         self.__result = None
+        self.__correct_weights = correct_weights
 
         from ROOT import RooCategory
         self.__status = RooCategory('sweight_status', 'sweight fit status')
@@ -373,7 +373,11 @@ class SWeightTransform(object):
         if success:
             from P2VV.Utilities.SWeights import SData
             self.__sData = SData(Pdf = self.__pdf, Data = data, Name = 'MassSPlot')
-            return self.__sData.data(self.__comp)
+            data = self.__sData.data(self.__comp)
+            if self.__correct_weights:
+                from P2VV.Utilities.DataHandling import correctWeights
+                data = correctWeights(data, splitCatNames = None, ImportIntoWS = False)
+            return data
         else:
             return None
 

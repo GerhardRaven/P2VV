@@ -31,261 +31,99 @@
 #include "Riostream.h"
 #include "RooRealVar.h"
 #include "RooRandom.h"
-#include "RooGaussian.h"
+#include "RooGenContext.h"
+#include "RooResolutionModel.h"
+#include "RooParamBinning.h"
+#include "RooConvGenContext.h"
 
 // Local
+#include "P2VV/RooTPConvGenContext.h"
 #include "P2VV/RooTPDecay.h"
 
 using namespace std;
 
-namespace {
-   const double c_light = 0.299792458; // mm / ps
-
-   bool sort_tps(const pair<double, double>& tp1, const pair<double, double>& tp2) {
-      return tp1.first < tp2.first;
-   }
-}
-
-
 //_____________________________________________________________________________
 RooTPDecay::RooTPDecay(const char *name, const char *title, 
-                       RooRealVar& t, RooAbsReal& tau, RooArgList& tps,
-                       const RooResolutionModel& model, const Roo1DTable& nPV,
-                       RooAbsReal& z, RooAbsPdf& zPDF)
-   : RooDecay(name, title, t, tau, model, RooDecay::SingleSided),
-     _tps("tps", "turning points", this),
-     _nPV(nPV),
-     _z("z", "z coordinate", this, z, kFALSE, kFALSE),
-     _zPDF("zPDF", "Z distribution PDF", this, zPDF, kFALSE, kFALSE),
-     _d("TPDecay_distance", "TPDecay_distance", -50, 50),
-     _mean("TPDecay_mean", "TPDecay_mean", 0.1),
-     _gmean("TPDecay_gmean", "TPDecay_gmean", 0.0),
-     _sigma("TPDecay_smearing", "TPDecay_smearing", 0.1)
+                       RooRealVar& t, RooAbsReal& tau, const RooResolutionModel& model,
+                       DecayType type, const char* normRange)
+   : RooDecay(name, title, t, tau, model, type)
 {
-   _nPV.Print("v");
-   _tps.add(tps);
-   _min = t.getMin();
-   _max = t.getMax();
-   assert(_tps.getSize() > 0 && _tps.getSize() % 2 == 0);
+   setNormRange(normRange);
 
-   _gauss = new RooGaussian("TPDecay_gauss", "TPDecay_gauss", _d, _gmean, _sigma);
-
+   TObjArray* oa = TString(normRange).Tokenize(",");
+   for (int i = 0; i < oa->GetEntries(); ++i) {
+      TObjString* os = (TObjString*)(*oa)[i];
+      if(!os) break;
+      try {
+         const RooParamBinning& binning = dynamic_cast<const RooParamBinning&>(t.getBinning(os->String(), true, false));
+         const RooAbsRealLValue* bf = dynamic_cast<const RooAbsRealLValue*>(binning.lowBoundFunc());
+         assert(bf && bf->getMin() == t.getMin());
+         _tps.add(*bf);
+         bf = dynamic_cast<const RooAbsRealLValue*>(binning.highBoundFunc());
+         assert(bf && bf->getMax() == t.getMax());
+         _tps.add(*bf);
+      } catch (const std::bad_cast&) {
+         delete oa;
+         assert(false);
+      }
+   }
+   delete oa;
 }
 
 
 //_____________________________________________________________________________
 RooTPDecay::RooTPDecay(const RooTPDecay& other, const char* name)
-   : RooDecay(other, name), 
-     _tps("tps", this, other._tps),
-     _nPV(other._nPV),
-     _z("z", this, other._z),
-     _zPDF("zPDF", this, other._zPDF),
-     _d(other._d),
-     _mean(other._mean),
-     _gmean(other._gmean),
-     _sigma(other._sigma),
-     _min(other._min),
-     _max(other._max)
+   : RooDecay(other, name),
+     _tps("!tps", this, other._tps)
 {
-   // Copy constructor
-   const char* gname = other._gauss->GetName();
-   _gauss = new RooGaussian(gname, gname, _d, _mean, _sigma);
 }
-
-
 
 //_____________________________________________________________________________
 RooTPDecay::~RooTPDecay()
 {
-   // Destructor
-   delete _gauss;
 }
-
-
 
 //_____________________________________________________________________________
-Int_t RooTPDecay::getGenerator(const RooArgSet& directVars, RooArgSet &generateVars, Bool_t /*staticInitOK*/) const
+RooAbsGenContext* RooTPDecay::genContext(const RooArgSet &vars, const RooDataSet *prototype,
+                                         const RooArgSet* auxProto, Bool_t verbose) const
 {
-   RooArgSet allVars(_tps);
-   allVars.add(_t.arg());
-   if (matchArgs(directVars, generateVars, allVars)) {
-      RooArgSet z(_z.arg());
-      RooArgSet genVars;
-      _zCode = static_cast<const RooAbsPdf*>(_zPDF.absArg())->getGenerator(z, genVars);
-      _gCode = _gauss->getGenerator(RooArgSet(_d), genVars);
-      return 1 ;
-   } else if (matchArgs(directVars, generateVars, _t)) {
-      return 2 ;
-   } else {
-      return 0;
-   }
+   // Create a generator context for this p.d.f. If both the p.d.f and the resolution model
+   // support internal generation of the convolution observable on an infinite domain,
+   // deploy a specialized convolution generator context, which generates the physics distribution
+   // and the smearing separately, adding them a posteriori. If this is not possible return
+   // a (slower) generic generation context that uses accept/reject sampling
+
+   // Check if the resolution model specifies a special context to be used.
+   RooResolutionModel* conv = dynamic_cast<RooResolutionModel*>(_model.absArg());
+   assert(conv);
+
+   RooArgSet* modelDep = _model.absArg()->getObservables(&vars) ;
+   modelDep->remove(*convVar(),kTRUE,kTRUE) ;
+   Int_t numAddDep = modelDep->getSize() ;
+   delete modelDep ;
+
+   // Check if physics PDF and resolution model can both directly generate the convolution variable
+   RooArgSet dummy ;
+   Bool_t pdfCanDir = (getGenerator(*convVar(),dummy) != 0) ;
+   Bool_t resCanDir = conv && (conv->getGenerator(*convVar(),dummy)!=0) && conv->isDirectGenSafe(*convVar()) ;
+
+   if (numAddDep>0 || !pdfCanDir || !resCanDir) {
+      // Any resolution model with more dependents than the convolution variable
+      // or pdf or resmodel do not support direct generation
+      string reason ;
+      if (numAddDep>0) reason += "Resolution model has more onservables that the convolution variable. " ;
+      if (!pdfCanDir) reason += "PDF does not support internal generation of convolution observable. " ;
+      if (!resCanDir) reason += "Resolution model does not support internal generation of convolution observable. " ;
+
+      coutI(Generation) << "RooTPDecay::genContext(" << GetName() << ") Using regular accept/reject generator " 
+                        << "for convolution p.d.f because: " << reason.c_str() << endl ;    
+      return new RooGenContext(*this,vars,prototype,auxProto,verbose) ;
+   } 
+
+   RooAbsGenContext* context = conv->modelGenContext(*this, vars, prototype, auxProto, verbose);
+   if (context) return context;
+  
+   // Any other resolution model: use specialized generator context
+   // return new RooTPConvGenContext(*this, vars, _tps, prototype, auxProto, verbose);
+   return new RooConvGenContext(*this, vars, prototype, auxProto, verbose);
 }
-
-
-//_____________________________________________________________________________
-void RooTPDecay::initGenerator(Int_t /*code*/)
-{
-   RooArgSet z(_z.arg());
-   _zPDF.absArg()->recursiveRedirectServers(z);
-   static_cast<RooAbsPdf*>(_zPDF.absArg())->initGenerator(_zCode);
-   _gauss->initGenerator(_gCode);
-}
-
-#ifdef STANDALONE
-//_____________________________________________________________________________
-void RooTPDecay::generateEvent(Int_t code)
-{
-   
-   assert(code == 1 || code == 2) ;
-   // Generate decay time
-   RooDecay::generateEvent(code);
-
-   if (code == 2) return;
-
-   vector<double> PVz;
-   PVz.reserve(10);
-
-   vector<pair<double, double> > tps;
-   vector<double> tmp_tps;
-   vector<double> new_tps;
-
-   // Generate delta-t dependent
-   while(1) {
-      // First generate the decay time.
-      RooDecay::generateEvent(code);
-
-      // Then the TPs
-      Double_t rand = RooRandom::uniform();
-      int n = 1;
-      double f = 0;
-      while(true) {
-         f += _nPV.getFrac(n);
-         if (f > rand) break;
-         ++n;
-      }
-      for (int i = 0; i < n; ++i) {
-         RooAbsPdf* zPDF = static_cast<RooAbsPdf*>(_zPDF.absArg());
-         zPDF->generateEvent(_zCode);
-         PVz.push_back(_z);
-      }
-      
-      // Pick an origin PV
-      rand = RooRandom::uniform();
-      unsigned int j = 0;
-      f = 1 / double(n);
-      while (f < rand) {
-         f += 1 / double(n);
-         j++;
-      }
-
-      // Add the decay time at all turning points. The first TP is from true to false
-      // and the last from false to true.
-      for (size_t i = 0; i < PVz.size(); ++i) {
-         double z = PVz[i];
-
-         // Smear the turning point distance
-         _gauss->generateEvent(_gCode);
-         double d = fabs(_d.getVal()) + _mean.getVal();
-         tps.push_back(make_pair((PVz[j] - (z + d)) / c_light, (PVz[j] - (z - d)) / c_light));
-      }
-
-      std::sort(tps.begin(), tps.end(), sort_tps);
-
-      // Check for overlaps
-      for (size_t i = 0; i < tps.size(); ++i) {
-         if (i != 0 && tps[i - 1].second > tps[i].first) {
-            // If there is an overlap, merge
-            vector<pair<double, double> >::iterator it = tps.begin() + i;
-            tps[i - 1].first  = tps[i - 1].first  < tps[i].first  ? tps[i - 1].first  : tps[i].first;
-            tps[i - 1].second = tps[i - 1].second > tps[i].second ? tps[i - 1].second : tps[i].second;
-            tps.erase(it);
-            --i;
-         }
-      }
-
-      // Check if the lifetime / momentum combination yields a candidate inside the acceptance.
-      bool bad = false;
-      for (size_t i = 0; i < tps.size() - 1; ++i) {
-         if (_t > tps[i].first && _t < tps[i + 1].second) {
-            bad = true;
-            break;
-         }
-      }
-
-      // Try again
-      if (bad) {
-         tps.clear();
-         PVz.clear();
-         continue;
-      }
-
-      // Copy to a regular vector
-      for (size_t i = 0; i < tps.size(); ++i) {
-         tmp_tps.push_back(tps[i].first);
-         tmp_tps.push_back(tps[i].second);
-      }      
-
-      // Clip temporary TPs with lifetime range.
-      for (size_t i = 0; i < tmp_tps.size(); ++i) {
-         if (tmp_tps[i] < _min) {
-            continue;
-         } else if (new_tps.empty() && (i % 2 == 0)) {
-            // if the first TP is true -> false, add the start of the interval first
-            new_tps.push_back(_min);
-         } else if (tmp_tps[i] > _max) {
-            // if the last TP is false -> true, add the end of the interval
-            if (i % 2 == 0) new_tps.push_back(_max);
-            break;
-         } 
-         new_tps.push_back(tmp_tps[i]);
-         // If we're done at this moment, we're in a true interval and 
-         // need to add the max.
-         if (i == (tmp_tps.size() - 1)) {
-            new_tps.push_back(_max);
-         }
-      }
-
-      assert(new_tps.size() != 0 &&  new_tps.size() % 2 == 0);
-
-      if (new_tps.size() > size_t(_tps.getSize())) {
-         coutW(Generation) << "Number of turning points is larger than number "
-                           << "of available variables." << endl;
-         tps.clear();
-         PVz.clear();
-         tmp_tps.clear();
-         new_tps.clear();
-         continue;
-      }
-      
-      tmp_tps.clear();
-      // Distribute left-over TPs over TP variables
-      unsigned int nTP = new_tps.size() / 2;
-      unsigned int div = _tps.getSize() / 2 - nTP + 1;
-      unsigned int last = new_tps.size() - 1;
-      double d = (new_tps[last] - new_tps[last - 1]) / double(div);
-      for (unsigned int i = 0; i < last - 1; ++i) {
-         tmp_tps.push_back(new_tps[i]);
-      }
-      for (unsigned int i = last - 1; i <= last - 1 + div; ++i) {
-         double tp = new_tps[last - 1] + (i - last + 1) * d;
-         tmp_tps.push_back(tp);
-         if (i != last - 1 && i !=  last - 1 + div) {
-            tmp_tps.push_back(tp);
-         }
-      }
-
-      // Set output RealVars to generated values
-      for (size_t i = 0; i < tmp_tps.size(); ++i) {
-         RooAbsRealLValue* tp = dynamic_cast<RooAbsRealLValue*>(_tps.at(i));
-         tp->setVal(tmp_tps[i]);
-      }
-      break;
-   }  
-}
-#else
-//_____________________________________________________________________________
-void RooTPDecay::generateEvent(Int_t /* code */)
-{
-   
-}
-#endif
