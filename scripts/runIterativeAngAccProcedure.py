@@ -1,21 +1,21 @@
 #!/usr/bin/env python
-from optparse import OptionParser
-parser = OptionParser()
-parser.add_option('-n', '--numIters',   dest='numIters',    default = 8,     type=int,       help='number of iterations')
-parser.add_option('-N', '--oneIter',    dest='oneIter',     default = 0,     type=int,       help='run a specific iteration')
-parser.add_option('-i', '--initPhPars', dest='initPhPars',  default = None,                  help='initial physics parameter estimates')
-parser.add_option('-c', '--numCpu',     dest='numCpu',      default = 8,     type=int,       help='fit with specified number of cpus')
-parser.add_option('-p', '--makePlots',  dest='makePlots',   default = 'False',               help='switch on/off plotting')
-parser.add_option('-s', '--sample',     dest='sample',      default = '20112012',            help='reweight 11/12 or 11+12')
-parser.add_option('-f', '--fit',        dest='fit',         default = 'True',                help='switch on/off fitting')
-parser.add_option('-o', '--rewSteps',   dest='rewSteps',    default = 'Bmom_mkk_phys_KKmom', help='reweghting steps order')
-parser.add_option('-r', '--paralRew',   dest='paralRew',    default = 'True',                help='switch on/off plotting')
-parser.add_option('-m', '--sevdaImpmnt',dest='sevdaImpmnt', default = 'True',                help='use only w_pkk weights to calcllate eff. oments')
-parser.add_option('-w', '--writeData',  dest='writeData',   default = 'False',               help='save mc datasets to file')
-parser.add_option('-b', '--Bmom2DRew',  dest='Bmom2DRew',   default = 'False',               help='2 dimentional Bmom reweighting switch')
-parser.add_option('-D', '--BmomMkk2D',  dest='BmomMkk2D',   default = 'True',                help='2 dimentional (Bmom,mkk) reweighting switch')
-parser.add_option('-e', '--eqStatBins', dest='eqStatBins',  default = 'False',               help='2 dimentional Bmom reweighting switch')
-(options, args) = parser.parse_args()
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument( '-o', '--rewSteps',    default = 'Bmom_mkk_phys_KKmom' )
+parser.add_argument( '-s', '--sample',      default = '20112012'            )
+parser.add_argument( '-n', '--numIters',    default = 8,     type=int       )
+parser.add_argument( '-N', '--oneIter',     default = 0,     type=int       )
+parser.add_argument( '-c', '--numCpu',      default = 8,     type=int       )
+parser.add_argument( '-i', '--initPhPars',  default = None                  )
+parser.add_argument( '-p', '--makePlots',   default = False, action = 'store_true'  )
+parser.add_argument( '-f', '--fit',         default = True,  action = 'store_false' )
+parser.add_argument( '-r', '--paralRew',    default = True , action = 'store_false' )
+parser.add_argument( '-w', '--writeData',   default = False, action = 'store_true'  )
+parser.add_argument( '-m', '--sevdaImpmnt', default = True,  action = 'store_false' )
+parser.add_argument( '-b', '--Bmom2DRew',   default = False, action = 'store_true'  )
+parser.add_argument( '-D', '--BmomMkk2D',   default = True,  action = 'store_false' )
+parser.add_argument( '-e', '--eqStatBins',  default = False, action = 'store_true'  )               
+options = parser.parse_args()
 
 # paths and paramteres
 path               = '/project/bfys/vsyropou/data/Bs2JpsiPhi/nominalFitResults/'
@@ -34,16 +34,16 @@ parameterEstimatesName  = lambda n, u: '20112012Reco14DataFitValues_6KKMassBins.
 # set up subproceses options
 import subprocess, shlex, select, sys
 processes  = []
-parallelReweighting = True if 'True' in options.paralRew else False
+parallelReweighting = options.paralRew
 if '2012' in options.sample and not '2011' in options.sample: parallelReweighting = False
 
 combMomOpt     = ' -cTrue'
-writeOpt       = ' -wTrue' if 'True' in options.writeData else ' -wFalse'
-plotOpt        = ' -pTrue' if 'True' in options.makePlots else ' -pFalse'
-Bmom2DRewOpt   = True if 'True' in options.Bmom2DRew else False
-BmomMkk2DRew   = True if 'True' in options.BmomMkk2D else False
-equalStatBins  = True if 'True' in options.eqStatBins else False
-KKmomWghtsOnly = True if 'True' in options.sevdaImpmnt else False
+writeOpt       = ' -wTrue' if options.writeData else ' -wFalse'
+plotOpt        = ' -pTrue' if options.makePlots else ' -pFalse'
+Bmom2DRewOpt   = options.Bmom2DRew
+BmomMkk2DRew   = options.BmomMkk2D
+equalStatBins  = options.eqStatBins
+KKmomWghtsOnly = options.sevdaImpmnt
 rewSpetOpt     = options.rewSteps 
 finalIterOpts  = ' ' + plotOpt + writeOpt
 
@@ -129,7 +129,7 @@ for itNum in whichIterations:
         subprocess.call(cmd_12, stdin = None, stdout = None, stderr = subprocess.STDOUT)
     
     # perform 3fb fit
-    if 'True' in options.fit:
+    if options.fit:
         cmdfit = shlex.split( fittingScript + ' ' + fitOpts(itNum) )
         _info( '', itNum, cmdfit, 'fit' )
         sys.stdout.flush()
