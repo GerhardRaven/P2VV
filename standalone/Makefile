@@ -17,17 +17,17 @@ LINKFLAGS  := $(LDFLAGS) $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit 
 ## Reflex dictionary testing flags:
 ## LDFLAGS  := $(shell $(ROOTCONFIG) --libs) -lRooFit -lFoam -lMinuit -lRooFitCore -lMathCore -lMathMore -lReflex -lCintex
 
-HAVE_WORKING_PYTHONCONFIG := $(shell python-config  --prefix 2>&1 1> /dev/null ; if [[ "$?" -eq  "0" ]]  ; then echo 'yes' ; else echo 'no' ; fi )
-ifeq ($(HAVE_WORKING_PYTHONCONFIG), yes)
-PYTHON_CFLAGS := $(shell $(PYTHONCONFIG) --cflags | sed -e "s=/afs/cern.ch/sw=/cvmfs/lhcb.cern.ch/lib=")
-PYTHON_LDFLAGS := $(shell $(PYTHONCONFIG) --ldflags | sed -e "s=/afs/cern.ch/sw=/cvmfs/lhcb.cern.ch/lib=")
-else
+#HAVE_WORKING_PYTHONCONFIG := $(shell python-config  --prefix 2>&1 1> /dev/null ; if [[ "$?" -eq  "0" ]]  ; then echo 'yes' ; else echo 'no' ; fi )
+#ifeq ($(HAVE_WORKING_PYTHONCONFIG), yes)
+#PYTHON_CFLAGS := $(shell $(PYTHONCONFIG) --cflags | sed -e "s=/afs/cern.ch/sw=/cvmfs/lhcb.cern.ch/lib=")
+#PYTHON_LDFLAGS := $(shell $(PYTHONCONFIG) --ldflags | sed -e "s=/afs/cern.ch/sw=/cvmfs/lhcb.cern.ch/lib=")
+#else
 PYTHON = $(shell which python)
 PYTHON_VERSION := $(shell $(PYTHON) --version 2>&1 | grep -o "2\.[567]")
 PYTHON_DIR := $(shell echo `dirname $(PYTHON)`/..)
 PYTHON_CFLAGS := -I$(PYTHON_DIR)/include/python$(PYTHON_VERSION)
 PYTHON_LDFLAGS := -L$(PYTHON_DIR)/lib -lpython$(PYTHON_VERSION)
-endif
+#endif
 
 
 
