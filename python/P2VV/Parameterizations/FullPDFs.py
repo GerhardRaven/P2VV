@@ -1922,19 +1922,23 @@ def buildTaggingCategories( self, **kwargs ) :
 
     if data :
         # get category bins
-        assert observables['wTagOS'].hasBinning('tagCats'),\
-               'P2VV - ERROR: buildTaggingCategories(): binning "tagCats" not found for OS estimated wrong-tag probability'
-        assert observables['wTagSS'].hasBinning('tagCats'),\
-               'P2VV - ERROR: buildTaggingCategories(): binning "tagCats" not found for SS estimated wrong-tag probability'
-        etaBinsOS = observables['wTagOS'].getBinning('tagCats')
-        etaBinsSS = observables['wTagSS'].getBinning('tagCats')
+        etaBins = { }
+        for wTagName in [ 'wTagOS', 'wTagSS' ] :
+            if not observables[wTagName].hasBinning('tagCats') :
+                print 'P2VV - WARNING: buildTaggingCategories(): defining default tagging categories binning for %s' % wTagName
+                from array import array
+                from ROOT import RooBinning
+                binBounds = array( 'd', [ 0., 0.499999999, 0.500000001 ] )
+                tagCatBinning = RooBinning( len(binBounds) - 1, binBounds, 'tagCats' )
+                observables[wTagName].setBinning( tagCatBinning, 'tagCats' )
+            etaBins[wTagName] = observables[wTagName].getBinning('tagCats')
 
         # get bin parameters from data for OS and SS
         tagBins = [ ]
-        for wTag, cat, bins, isSS in zip(  ( obsDict['wTagOS'][0],                        obsDict['wTagSS'][0]                        )
-                                         , ( observables['tagCatOS'],                     observables['tagCatSS']                     )
-                                         , ( observables['wTagOS'].getBinning('tagCats'), observables['wTagSS'].getBinning('tagCats') )
-                                         , ( False,                                       True                                        )
+        for wTag, cat, bins, isSS in zip(  ( obsDict['wTagOS'][0],    obsDict['wTagSS'][0]    )
+                                         , ( observables['tagCatOS'], observables['tagCatSS'] )
+                                         , ( etaBins['wTagOS'],       etaBins['wTagSS']       )
+                                         , ( False,                   True                    )
                                         ) :
             for it in range( bins.numBins() ) :
                 assert cat.isValidIndex(it), 'P2VV - ERROR: buildTaggingCategories(): no bin %d found for tagging category "%s" ' % ( it, cat.GetName() )
