@@ -8,7 +8,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument( '--jobID', '-I', type = int, default = 1000000 )
 parser.add_argument( '--generateMass', '-m', default = False )
 parser.add_argument( '--dataPathIn', '-f', default = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140421.root' )
-parser.add_argument( '--dataPathOut', '-o', default = 'genData.root' )
+parser.add_argument( '--dataPathOut', '-o', default = 'genProtoData.root' )
 parser.add_argument( '--datasetName', '-n', default = 'JpsiKK_sigSWeight' )
 parser.add_argument( '--parFilePathIn', '-i', default = 'JpsiKKMassPars.par' )
 args = parser.parse_args()
@@ -181,9 +181,6 @@ for comp in comps :
 # create datasets
 from ROOT import RooFit, RooDataSet, RooRealVar
 dataObs = RooArgSet( dataSet.get() )
-for name in [ 'time', 'helcosthetaK', 'helcosthetaL', 'helphi' ] :
-    var = dataObs.find(name)
-    if var : dataObs.remove(var)
 if genMass :
     var = dataObs.find('mass')
     if var : dataObs.remove(var)
