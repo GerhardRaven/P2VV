@@ -27,6 +27,7 @@ parser.add_argument( '--parFileOut', '-o' )
 parser.add_argument( '--resultFileOut', '-r' )
 parser.add_argument( '--timeAccFile2011', '-x', default = 'timeAcceptanceFit_2011.root' )
 parser.add_argument( '--timeAccFile2012', '-y', default = 'timeAcceptanceFit_2012.root' )
+parser.add_argument( '--angAccType', '-t', default = 'weights' )  # 'weights' / 'basis012' / 'basis01234' / 'basisSig6'
 parser.add_argument( '--angAccFile', '-z', default = 'angEffNominalRew_moms.par' )
 parser.add_argument( '--constAngAcc', '-q', default = True )
 
@@ -70,6 +71,7 @@ elif resultFileOut :
     resultFileOut = workPath + resultFileOut
 timeAccFile2011 = dataPath + args.timeAccFile2011
 timeAccFile2012 = dataPath + args.timeAccFile2012
+assert args.angAccType in [ 'weights', 'basis012', 'basis01234', 'basisSig6' ]
 angAccFile = dataPath + args.angAccFile
 constAngAcc = False if not args.constAngAcc or str( args.constAngAcc ).lower() in [ 'false', '0' ] else True
 
@@ -98,6 +100,7 @@ print '  output parameter file: %s' % parFileOut
 print '  output fit result file: %s' % resultFileOut
 print '  time acceptance file 2011: %s' % timeAccFile2011
 print '  time acceptance file 2012: %s' % timeAccFile2012
+print '  angular acceptance type: %s' % args.angAccType
 print '  angular acceptance file: %s' % angAccFile
 print '  constant angular acceptance parameters: %s' % ( 'true' if constAngAcc else 'false' )
 
@@ -151,7 +154,7 @@ if fixTagAsym :
     pdfConfig['externalConstr']['wTagDelP0SS'] = ( -0.015786075,  0. )#( -0.0158, 0.00001 )
     pdfConfig['externalConstr']['wTagDelP1SS'] = (  0.0081990069, 0. )#(  0.008,  0.00001 )
 
-pdfConfig['anglesEffType'] = 'weights'
+pdfConfig['anglesEffType'] = args.angAccType
 pdfConfig['constAngEffCoefs'] = constAngAcc
 pdfConfig['angEffMomsFiles'] = angAccFile
 
