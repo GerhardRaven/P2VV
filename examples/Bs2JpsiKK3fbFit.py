@@ -194,6 +194,12 @@ elif args.model == 'lamb_phi' :
 pdfObs  = pdf.getObservables(dataSet)
 pdfPars = pdf.getParameters(dataSet)
 
+# prevent tagging dilution = 0 in initialization
+if abs( 1. - pdfPars.getRealValue('wTagP1OS') ) < 1.e-5 and not pdfPars.find('wTagP1OS').isConstant() :
+    pdfPars.setRealValue( 'wTagP1OS', 0.999 )
+if abs( 1. - pdfPars.getRealValue('wTagP1SS') ) < 1.e-5 and not pdfPars.find('wTagP1SS').isConstant() :
+    pdfPars.setRealValue( 'wTagP1SS', 0.999 )
+
 # print parameters
 print 120 * '='
 print 'Bs2JpsiKK3fbFit: data:'
