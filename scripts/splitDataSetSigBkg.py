@@ -7,17 +7,20 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument( '--jobID', '-I', type = int, default = 1000000 )
 parser.add_argument( '--generateMass', '-m', default = False )
+parser.add_argument( '--weightedData', '-w', default = False )
 parser.add_argument( '--dataPathIn', '-f', default = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140421.root' )
 parser.add_argument( '--dataPathOut', '-o', default = 'genProtoData.root' )
 parser.add_argument( '--datasetName', '-n', default = 'JpsiKK_sigSWeight' )
 parser.add_argument( '--parFilePathIn', '-i', default = 'JpsiKKMassPars.par' )
 args = parser.parse_args()
 genMass = True if args.generateMass else False
+weightData = True if args.weightedData else False
 
 # print script settings
 print 'job parameters:'
 print '  job ID: %d' % args.jobID
 print '  generate mass: %s' % ( 'true' if genMass else 'false' )
+print '  weighted data: %s' % ( 'true' if weightData else 'false' )
 print '  data file in: %s' % args.dataPathIn
 print '  data path out: %s' % args.dataPathOut
 print '  dataset name: %s' % args.datasetName
@@ -189,8 +192,12 @@ if genMass :
 else :
     sigWeight = RooRealVar( 'sigWeight', 'sigWeight', 1. )
     dataObs.add(sigWeight)
-    splitData = dict( [ ( comp, dict( [ ( 'total', RooDataSet( '%s_%s' % ( dataSet.GetName(), comp ), dataSet.GetTitle()
-                                                              , dataObs, RooFit.WeightVar(sigWeight) ) ) ] ) ) for comp in comps ] )
+    if weightData :
+        splitData = dict( [ ( comp, dict( [ ( 'total', RooDataSet( '%s_%s' % ( dataSet.GetName(), comp ), dataSet.GetTitle()
+                                                                  , dataObs, RooFit.WeightVar(sigWeight) ) ) ] ) ) for comp in comps ] )
+    else :
+        splitData = dict( [ ( comp, dict( [ ( 'total', RooDataSet( '%s_%s' % ( dataSet.GetName(), comp ), dataSet.GetTitle()
+                                                                  , dataObs ) ) ] ) ) for comp in comps ] )
 
 # function to get observable value from dataset
 def getObsVal( names, obsSet ) :
@@ -227,8 +234,10 @@ for evObs in dataSet :
         if addVal < genVal * totVal : continue
         if genMass :
             splitData[comp][stateName].add(dataObs)
-        else :
+        elif weightData :
             splitData[comp]['total'].add( dataObs, sigWeight.getVal() )
+        else :
+            splitData[comp]['total'].add(dataObs)
         break
 
 if genMass :
