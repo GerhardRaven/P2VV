@@ -13,7 +13,7 @@ savedObjects     = [ 'sigSWeight' ]
 plotsFilePath    = 'temp_plots' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_6KKMassBins_2TagCats_plots'
 parFileIn        = 'eventYields6KKBins_HLT2.par' #'eventYields6KKBins.par' #'eventYields6KKBinsNoMC.par' #'eventYields6KKBins.par'
 parFileOut       = ''
-plotLabelText    = 'LHCb'
+plotLabelText    = ''
 
 simulation       = False
 weightName       = 'pbkgWeight' # 'wMC' # 'pbkgWeight'
@@ -90,6 +90,7 @@ obsKeys = [#  'sWeights_ipatia'
            #, 'wTag', 'tagDec'
            , 'wTagOS'#, 'tagDecOS'
            , 'wTagSS'#, 'tagDecSS'
+           #, 'tagCatOS', 'tagCatSS'
            #, 'sel', 'selClTail'#, 'selA', 'selB'
            , 'hlt1ExclB', 'hlt2B', 'hlt2UB'#, 'hlt1B', 'hlt1UB'
            #, 'trigDecUnb', 'trigDecExclB'
@@ -134,10 +135,14 @@ obsDict = dict(  runPeriod = ( 'runPeriod',            'run period', dict( [ ( '
                #, tagDecOS  = ( 'tagdecision_os',       'OS tag decision', { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }         )
                #, tagDecSS  = ( 'tagdecision_ss',       'SS tag decision', { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }         )
                , tagDecOS  = ( 'tagdecision_os_cb',    'OS tag decision', { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }         )
+               #, tagDecOS  = ( 'iTagOS',               'OS tag decision', { 'B' : +1, 'Bbar' : -1 }                          )
                #, tagDecSS  = ( 'tagdecision_ss_cb',    'SS tag decision', { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }         )
                #, tagDecOS  = ( 'tagdecision_os_nn',    'OS tag decision', { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }         )
                , tagDecSS  = ( 'tagdecision_ss_nn',    'SS tag decision', { 'B' : +1, 'Bbar' : -1, 'Untagged' : 0 }         )
-               , tagCatOS  = ( 'tagcat_os',            'OS tag category', [ 'unt' ] + [ 'cat%d' % c for c in range(1, 6) ]  )
+               #, tagDecSS  = ( 'iTagSS',               'SS tag decision', { 'B' : +1, 'Bbar' : -1 }                          )
+               #, tagCatOS  = ( 'tagcat_os',            'OS tag category', [ 'unt' ] + [ 'cat%d' % c for c in range(1, 6) ]  )
+               , tagCatOS  = ( 'tagCatP2VVOS',         'OS tag category', { 'Untagged' : 0, 'Tagged' : 1 }                  )
+               , tagCatSS  = ( 'tagCatP2VVSS',         'SS tag category', { 'Untagged' : 0, 'Tagged' : 1 }                  )
                , bkgcat    = ( 'bkgcat',               'background cat',  { 'signal' : 0, 'lowMass' : 50 }                  )
                , trueid    = ( 'trueid',               'true B ID',       { 'B' : 531, 'Bbar' : 531,  'noMatch' : 0 }       )
                , sel       = ( 'sel',                  'selection',       { 'sel'   : 1, 'notSel'   : 0 }                   )
