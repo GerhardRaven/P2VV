@@ -6,25 +6,34 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument( '--jobID', '-I', type = int, default = 1000000 )
 parser.add_argument( '--model', '-m', default = 'lamb_phi' )  # 'phi' / 'lamb_phi' / 'polarDep'
+parser.add_argument( '--inputData', '-f', default = 'genProtoData.root' )
+parser.add_argument( '--outputData', '-o' )
+parser.add_argument( '--dataName', '-n', default = 'JpsiKK_sigSWeight_sig' )
+parser.add_argument( '--parFileIn', '-i' )
 
 args = parser.parse_args()
 assert args.model in [ 'phi', 'lamb_phi', 'polarDep' ]
+parFileIn = args.parFileIn
+if parFileIn == None or parFileIn == 'None' :
+    parFileIn = '20112012Reco14DataFitValues_6KKMassBins%s.par'\
+                % ( '_CPVDecay' if args.model == 'polarDep' else '_fixedLamb' if args.model == 'phi' else '' )
+outputDataFile = args.outputData
+if not outputDataFile : outputDataFile = 'genData_sig_%s.root' % args.model
 
 print 'job parameters:'
 print '  job ID:', args.jobID
 print '  model: %s' % args.model
+print '  input data file: %s' % args.inputData
+print '  output data file: %s' % outputDataFile
+print '  dataset name: %s' % args.dataName
+print '  input parameter file: %s' % parFileIn
 
 from math import pi
 from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_RunIAnalysis as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
-parFileIn      = '20112012Reco14DataFitValues_6KKMassBins%s.par'\
-                 % ( '_CPVDecay' if args.model == 'polarDep' else '_fixedLamb' if args.model == 'phi' else '' )
-inputDataFile  = 'genProtoData.root'
-outputDataFile = 'genData_sig_%s.root' % args.model
-dataName       = 'JpsiKK_sigSWeight_sig'
-plotsFilePath  = '' #'genDists_sig_%s.pdf' % args.model
+plotsFilePath = '' #'genDists_sig_%s.pdf' % args.model
 
 # PDF options
 pdfConfig['lambdaCPParam'] = 'observables_CPVDecay' if args.model == 'polarDep' else 'lambPhi'
@@ -47,7 +56,7 @@ ws = RooObject( workspace = 'JpsiphiWorkspace' ).ws()
 
 # read data set from file
 from P2VV.Utilities.DataHandling import readData
-inputData = readData( filePath = inputDataFile, dataSetName = dataName,  NTuple = False )
+inputData = readData( filePath = args.inputData, dataSetName = args.dataName,  NTuple = False )
 pdfConfig['signalData'] = inputData
 pdfConfig['readFromWS'] = True
 
@@ -90,8 +99,8 @@ RooRandom.randomGenerator().SetSeed(args.jobID)
 genObsSet = [ ws[var] for var in [ 'time', 'helcosthetaK', 'helcosthetaL', 'helphi' ] ]
 condObsSet = [ var for var in inputData.get() if not any( var.GetName() == genVar.GetName() for genVar in genObsSet ) ]
 if condObsSet :
-    #protoData = inputData.reduce( Cut = 'hlt1_excl_biased==1' )
     protoData = inputData.reduce( ArgSet = condObsSet )
+    #protoData = protoData.reduce( Cut = 'hlt1_excl_biased==1' )
     print 'genBs2JpsiKKSignal: proto-data set:'
     protoData.Print()
 else :
@@ -105,7 +114,7 @@ else :
     pdf.setMaxVal(0.1)
 
 # generate data
-outputData = pdf.generate( genObsSet, ProtoData = ( protoData, False, False ), Name = dataName )
+outputData = pdf.generate( genObsSet, ProtoData = ( protoData, False, False ), Name = args.dataName )
 print 'genBs2JpsiKKSignal: saving generated data set to %s:' % outputDataFile
 outputData.Print()
 from ROOT import TFile, TObject
