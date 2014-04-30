@@ -1,3 +1,4 @@
+import os
 from P2VV.RooFitWrappers import *
 
 from P2VV.Parameterizations.MassPDFs import DoubleCB_Psi_Mass as PsiMassPdf
@@ -17,7 +18,8 @@ class ShapeBuilder(object):
         self.__weights = Weights
         self.__time = time
         self.__t_diff = t_diff
-
+        pos = Workspace.find('201')
+        self.__year = Workspace[pos : pos + 4]
         self.__input_ws = None
         self.__ws = RooObject().ws()
         self.__shapes = {}
@@ -105,7 +107,6 @@ class ShapeBuilder(object):
             if t_diff:
                 t_diff = __add_alias("time_diff_refit", t_diff)
                 self.__t_diff = t_diff
-                self.__t_diff.Print()
 
         if t_diff:
             self._data = self._data.reduce("{0} > {1} && {0} < {2} && {3} > {4} && {3} < {5}".format(time.GetName(), time.getMin(), time.getMax(), t_diff.GetName(), t_diff.getMin(), t_diff.getMax()))
@@ -182,6 +183,12 @@ class ShapeBuilder(object):
     def __draw(self):
         from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
         from ROOT import TCanvas
+        from ROOT import TPaveText
+        self.__year_label = TPaveText(0.71, 0.72, 0.89, 0.85, "NDC")
+        self.__year_label.SetFillColor(0)
+        self.__year_label.AddText(self.__year)
+        self.__year_label.SetBorderSize(0)
+
         obs = self.__masses.values()
         self.__canvas = TCanvas('wpv_canvas', 'wpv_canvas', len(obs) * 600, 533)
         for (p,o) in zip(self.__canvas.pads(len(obs)), obs):
@@ -190,13 +197,16 @@ class ShapeBuilder(object):
                  , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack, Binning = 50)
                  , pdfOpts  = dict(LineWidth = 2)
                  , plotResidHist = 'BX'
-                 , xTitle = '#mu^+#mu^- invariant mass [MeV/c^2]'
-                 , yTitle = 'Candidates / (%f MeV/c^2)' % ((o.getMax() - o.getMin()) / float(50))
+                 , xTitle = 'M_{#mu^{+}#mu^{-}} [MeV/c^{2}]'
+                 , yTitle = 'Candidates / (%2.1f MeV/c^{2})' % ((o.getMax() - o.getMin()) / float(50))
                  , components = { 'wpv_bkg_*'   : dict( LineColor = kRed,   LineStyle = kDashed )
                                   , 'wpv_psi_*' : dict( LineColor = kGreen, LineStyle = kDashed )
                                   , 'wpv_sig_*' : dict( LineColor = kBlue,  LineStyle = kDashed )
                                   }
                  )
+            self.__canvas.cd(1)
+            self.__year_label.Draw()
+            self.__canvas.Update()
         self.__draw_time()
 
         if self.__t_diff:
@@ -205,21 +215,31 @@ class ShapeBuilder(object):
     def __draw_time(self):
         from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
         from ROOT import TCanvas
-        self.__time_canvases  = [TCanvas('wpv_time_%s' % c.GetName(), 'wpv_time_%s' % c.GetName(), 600, 400) for c in self.__shapes.keys()]
+        from itertools import product
+        self.__time_canvases = []
         t = self.__time
+        from P2VV.Utilities.Plotting import plot
         from ROOT import RooArgSet
-        for (p, (c, shape)) in zip(self.__time_canvases, self.__shapes.items()):
-            from P2VV.Utilities.Plotting import plot
+        for logy, (c, shape) in product((True, False), self.__shapes.items()):
+            cn = 'wpv_time_%s' % c.GetName()
+            if logy: cn += '_log'
+            p = TCanvas(cn, cn, 600, 400)
+            self.__time_canvases.append(p)
             nBins = 80
             frame = plot(p, t, pdf = shape, data = self.__sdatas[c]
                          , frameOpts = dict(Title = c.GetName())
                          , dataOpts = dict(MarkerSize = 0.8, Binning = nBins, MarkerColor = kBlack)
                          , pdfOpts  = dict(LineWidth = 2)
-                         , logy = False
+                         , logy = logy, yScale = (1 if logy else 0, None)
                          , plotResidHist = False)[0]
-            frame.GetXaxis().SetTitle('decay time [ps]')
+            frame.GetXaxis().SetTitle('t [ps]')
+            if logy:
+                frame.GetYaxis().SetRangeUser(1, 7000 if self.__year == '2012' else 5000)
             frame.GetYaxis().SetTitle('Candidates / (%3.2f ps)' % ((t.getMax() - t.getMin()) / float(nBins)))
-
+            self.__year_label.Draw()
+            from P2VV.Utilities.Resolution import plot_dir
+            p.Print(os.path.join(plot_dir, 'wpv_time_%s_%s_%s.pdf' % (c.GetName()[4:], self.__year, 'log' if logy else 'linear')), EmbedFonts = True)
+            
     def __draw_t_diff(self):
         from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
         from ROOT import TCanvas
@@ -239,6 +259,9 @@ class ShapeBuilder(object):
                  , yTitle = 'Candidates / (12.5 fs)'
                  , logy = False
                  , plotResidHist = False)
+            self.__year_label.Draw()
+            from P2VV.Utilities.Resolution import plot_dir
+            canvas.Print(os.path.join(plot_dir, 'wpv_tdiff_%s_linear.pdf' % self.__year), EmbedFonts = True)
 
     def sdata(self, key):
         c = self.__components[self.__weights][key]

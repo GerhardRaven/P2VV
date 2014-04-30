@@ -198,8 +198,8 @@ def plot(  canv, obs, data = None, pdf = None, addPDFs = [ ], components = None,
             residFrame.SetMinimum(-maxY)
 
         if normalize :
-            if residHist.getYAxisMin() > -5.5 : residFrame.SetMinimum(-5.5)
-            if residHist.getYAxisMax() < +5.5 : residFrame.SetMaximum(+5.5)
+            residFrame.SetMinimum(-5.5)
+            residFrame.SetMaximum(+5.5)
 
         # add a line at y=0
         zeroLine = TLine( xAxis.GetXmin(), 0, xAxis.GetXmax(), 0 )
