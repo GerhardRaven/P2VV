@@ -362,6 +362,7 @@ for period in [ '2011', '2012' ] :
         if drawFit :
             fitList = fitAcc[ ( period, trigger ) ]
             scale = float( len(fitList) ) / sum( vals[0] for vals in fitList ) if applyExclBScale and trigger == 'exclB' else 1.
+            #scale = 0.99 / max( vals[0] for vals in fitList ) if applyExclBScale and trigger == 'exclB' else 1.
             fitArr = array( 'd', [ scale * vals[0] for vals in fitList ] )
             fitErrArr = array( 'd', [ scale * vals[1] for vals in fitList ] )
             fitGraph = Graph( len(timeArr), timeArr, fitArr, timeErrArr, fitErrArr )
