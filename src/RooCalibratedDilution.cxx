@@ -13,7 +13,9 @@
  *****************************************************************************/ 
 
 #include "RooAbsReal.h" 
+#include "RooMsgService.h"
 #include "P2VV/RooCalibratedDilution.h" 
+#include "TMath.h"
 
 //_____________________________________________________________________________
 RooCalibratedDilution::RooCalibratedDilution(const char* name,
@@ -124,25 +126,36 @@ Double_t RooCalibratedDilution::AP1() const
 //_____________________________________________________________________________
 Double_t RooCalibratedDilution::evaluate() const
 {
+  // calculate dilution factor
+  Double_t dil(1.);
+  Double_t twoP1Eta(0.);
   if (_P0.absArg() == 0) {
     // without calibration parameters
-    if (_AP1.absArg() != 0) {
-      // return dilution scaled wrong-tag asymmetry
-      return _AP1 == 0. ? 0. : 2. * _estWTag * _AP1 / (1. - 2. * _estWTag);
-    }
-
-    // return dilution
-    return 1. - 2. * _estWTag;
+    dil -= 2. * _estWTag;
+  } else {
+    // with calibration parameters
+    twoP1Eta = 2. * _P1 * (_estWTag - _avgEstWTag);
+    dil -= 2. * _P0 + twoP1Eta;
   }
 
-  // with calibration parameters
-  Double_t twoP1Eta = 2. * _P1 * (_estWTag - _avgEstWTag);
   if (_AP1.absArg() != 0) {
+    // check if dilution is equal to zero: asymmetry undefined
+    if (TMath::Abs(dil) < 1.e-12) {
+      coutF(Eval) << "RooCalibratedDilution::evaluate(" << GetName()
+          << "): |dilution| < 10^-12: this should not happen..." << std::endl;
+      assert(0);
+    }
+
     // return dilution scaled wrong-tag asymmetry
-    return _AP0 == 0. && _AP1 == 0. ? 0.
-        : (2. * _P0 * _AP0 + twoP1Eta * _AP1) / (1. - 2. * _P0 - twoP1Eta);
+    if (_P0.absArg() == 0) {
+      // without calibration parameters
+      return 2. * _estWTag * _AP1 / dil;
+    } else {
+      // with calibration parameters
+      return (2. * _P0 * _AP0 + twoP1Eta * _AP1) / dil;
+    }
   }
 
   // return dilution
-  return 1. - 2. * _P0 - twoP1Eta;
+  return dil;
 }

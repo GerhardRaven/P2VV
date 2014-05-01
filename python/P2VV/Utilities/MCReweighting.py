@@ -796,6 +796,10 @@ class MatchPhysics( ):
         timeRes   = RooObject._rooobject('sigmat')    if ws['sigmat'] else _createGetObservable('timeRes') 
         KKMass    = RooObject._rooobject('KKMass')    if ws['KKMass'] else _createGetObservable('KKMass')
         KKMassCat = RooObject._rooobject('KKMassCat') if ws['KKMassCat'] else _createGetObservable('KKMassCat')
+        
+        # apply a cut in trutime to study ang. acc. in bins of decay time.
+        if kwargs.has_key('trueTimeRange'): trueTime.setRange( kwargs.pop('trueTimeRange',()) ) 
+        
         self._obsSet = [ trueTime, time, timeRes, KKMass, KKMassCat ] + angles
         self._normSet = angles
 

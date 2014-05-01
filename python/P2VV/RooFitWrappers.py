@@ -1013,7 +1013,6 @@ class Pdf(RooObject):
         self._globalObservables = observables
 
     def _add_my_co_ec_go__( self, kwargs ) :
-        print kwargs
         condObs  = self.ConditionalObservables()
         if condObs :
             assert 'ConditionalObservables' not in kwargs or condObs == set(kwargs['ConditionalObservables']) , 'Inconsistent Conditional Observables'

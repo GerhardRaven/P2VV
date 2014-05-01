@@ -1,8 +1,7 @@
-cut = '' # 'hlt2_biased==1'
+cut = 'hlt2_biased==1'
 dataName = 'DecayTree'
-dataFilePathIn  = 'fitNTuple_peakBkg_2011_2012_Reco14_TOS_20140309.root'
-dataFilePathOut = 'fitNTuple_peakBkg_2011_2012_Reco14_TOS_20140309_.root'
-#dataFilePathOut = 'fitNTuple_peakBkg_2011_2012_Reco14_TOS_HLT2B_20140311.root'
+dataFilePathIn  = 'fitNTuple_peakBkg_2011_2012_Reco14_TOS_20140415.root'
+dataFilePathOut = 'fitNTuple_peakBkg_2011_2012_Reco14_TOS_HLT2B_20140415.root'
 
 from ROOT import TFile
 dataFile = TFile.Open(dataFilePathIn)

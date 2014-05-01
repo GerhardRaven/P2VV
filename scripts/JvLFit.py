@@ -260,6 +260,9 @@ if 'Parameterization' in pdfConfig['timeEffParameters'] and pdfConfig['timeEffPa
 #pdfConfig['splitParams']['runPeriod'].append('Gamma')
 #pdfConfig['splitParams']['runPeriod'].remove('Gamma')
 
+for par in [ 'wTagP0OS', 'wTagP0SS', 'wTagP1OS', 'wTagP1SS', 'wTagDelP0OS', 'wTagDelP0SS', 'wTagDelP1OS', 'wTagDelP1SS' ] :
+    pdfConfig['externalConstr'].pop(par)
+
 #for par in [ 'tres_placeholder', 'timeResMu', 'timeResFrac2', 'sf_mean_offset', 'sf_mean_slope', 'sf_sigma_offset', 'sf_sigma_slope' ] :
 #    pdfConfig['splitParams']['runPeriod'].remove(par)
 #    pdfConfig['externalConstr'].pop(par)

@@ -38,10 +38,12 @@ mumuMass = RealVar('mdau1')
 KKMass   = RealVar('mdau2')
 
 # LHCb label
-from ROOT import TLatex
-label = TLatex()
-label.SetTextAlign(12)
-label.SetTextSize(0.072)
+labelText = '' # 'LHCb'
+if labelText :
+    from ROOT import TLatex
+    label = TLatex()
+    label.SetTextAlign(12)
+    label.SetTextSize(0.072)
 
 
 ###########################################################################################################################################
@@ -111,7 +113,7 @@ mumuMassCanv.SetRightMargin(0.05)
 mumuMassCanv.SetBottomMargin(0.18)
 mumuMassCanv.SetTopMargin(0.05)
 mumuMassPlot.Draw()
-label.DrawLatexNDC( 0.25, 0.85, 'LHCb' )
+if labelText : label.DrawLatexNDC( 0.25, 0.85, labelText )
 mumuMassCanv.Print( mumuPlotsFilePath + '(' )
 
 mumuMassPlot.SetMinimum(2.e1)
@@ -125,7 +127,7 @@ mumuMassCanvLog.SetBottomMargin(0.18)
 mumuMassCanvLog.SetTopMargin(0.05)
 mumuMassCanvLog.SetLogy(True)
 mumuMassPlot.Draw()
-label.DrawLatexNDC( 0.25, 0.85, 'LHCb' )
+if labelText : label.DrawLatexNDC( 0.25, 0.85, labelText )
 mumuMassCanvLog.Print( mumuPlotsFilePath + ')' )
 
 
@@ -202,7 +204,7 @@ KKMassCanv.SetRightMargin(0.05)
 KKMassCanv.SetBottomMargin(0.18)
 KKMassCanv.SetTopMargin(0.05)
 KKMassPlot.Draw()
-label.DrawLatexNDC( 0.25, 0.85, 'LHCb' )
+if labelText : label.DrawLatexNDC( 0.25, 0.85, labelText )
 KKMassCanv.Print( KKPlotsFilePath + '(' )
 
 KKMassPlot.SetMinimum(1.e1)
@@ -216,5 +218,5 @@ KKMassCanvLog.SetBottomMargin(0.18)
 KKMassCanvLog.SetTopMargin(0.05)
 KKMassCanvLog.SetLogy(True)
 KKMassPlot.Draw()
-label.DrawLatexNDC( 0.25, 0.85, 'LHCb' )
+if labelText : label.DrawLatexNDC( 0.25, 0.85, labelText )
 KKMassCanvLog.Print( KKPlotsFilePath + ')' )

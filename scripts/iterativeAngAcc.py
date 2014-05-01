@@ -17,6 +17,7 @@ parser.add_option('-p', '--makePlots',    dest='makePlots',    default = 'False'
 # parser.add_option('-l', '--statOnPlots',  dest='statOnPlots',  default = 'False',               help='legend or stats in plots')
 parser.add_option('-c', '--combMoms',     dest='combMoms',     default = 'False',               help='combine 2011,2012 moments')
 parser.add_option('-R', '--reduced',      dest='reduced',      default = 'False',               help='apply a mass cut for a reduced sample')
+parser.add_option('-t', '--trTimeCut',    dest='trTimeCut',    default = '',                    help='run procedue in decay time bin.')
 (options, args) = parser.parse_args()
 
 # reweightng features control
@@ -43,7 +44,10 @@ combineEffMoments     = True if 'True' in options.combMoms else False
 delIntermediateMoms   = False
 scaleWeightsToNumEntr = False
 reduced               = True if 'True' in options.reduced else False
-
+#trTimeCut             = float(options.trTimeCut) if options.trTimeCut else ''
+cut = options.trTimeCut
+print cut
+assert False
 # plotig configuration
 makePlots = True if 'True' in options.makePlots else False
 
@@ -61,7 +65,6 @@ if MCProd == '2012': monteCarloData = dataSetsPath + mcData12FileName
 # target distribution
 dataPath     = dataSetsPath + 'P2VVDataSets%sReco14_I2Mass_6KKMassBins_2TagCats_kinematics_HLT2B.root'%MCProd
 sDataName    = 'JpsiKK_sigSWeight'
-# sWeightsName = 'sWeights_ipatia'
 
 # angluar acceptance baseline filename  
 outputEffMomentsBaselineName = 'hel_UB_UT_trueTime_BkgCat050_KK30'
@@ -97,7 +100,7 @@ worksp = RooObject( workspace = 'iterativeProcedure' ).ws()
 
 # build MC pdf, initialise physics matching class
 print 'P2VV - INFO: Iteration Number %s. Running reweighting procedure in sample %s'%(iterNumb, mcData11FileName if MCProd=='2011' else mcData12FileName)
-PhysicsReweight = MatchPhysics( monteCarloData, mcTupleName , MonteCarloProduction = MCProd, Reduced = reduced )
+PhysicsReweight = MatchPhysics( monteCarloData, mcTupleName , MonteCarloProduction = MCProd, Reduced = reduced, trueTimeRange = trTimeCut )
 
 # manage the weights efficiently
 mcDataMngr = WeightedDataSetsManager( source = PhysicsReweight.getDataSet() )
