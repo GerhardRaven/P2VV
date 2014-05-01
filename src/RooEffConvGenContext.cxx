@@ -81,9 +81,17 @@ RooEffConvGenContext::RooEffConvGenContext(const RooFFTConvPdf &model, const Roo
 void RooEffConvGenContext::initGenerator(const RooArgSet& theEvent)
 {
    RooConvGenContext::initGenerator(theEvent);
+
+   // Replace observables in efficiency function by the generated observables.
    // Attach the output value of the convolution variable to the efficiencies,
    // so the final hit-miss is with respect to the correct (smeared) value;
-   const_cast<RooAbsReal*>(efficiency())->recursiveRedirectServers(RooArgSet(*_cvOut), kFALSE);
+   RooAbsReal* eff = const_cast<RooAbsReal*>(efficiency());
+   RooArgSet* effVars
+       = (RooArgSet*)_modelVars->selectCommon(*eff->getVariables());
+   effVars->remove(*_cvModel, kTRUE, kTRUE);
+   effVars->add(*_cvOut);
+   eff->recursiveRedirectServers(*effVars, kTRUE, kFALSE, kTRUE);
+   delete effVars;
 }
 //_____________________________________________________________________________
 void RooEffConvGenContext::generateEvent(RooArgSet &theEvent, Int_t remaining)
