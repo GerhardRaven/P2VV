@@ -186,6 +186,7 @@ class fitResultsAnalysis(object) :
         self._refParVals = [ None ] * len(self._parNames)
         self._anaParVals = { }
         self._parHists = { }
+        self._nFiles = 0
         self.readRefFile(RefFile)
         self.readAnaFiles(AnaFiles)
 
@@ -201,6 +202,7 @@ class fitResultsAnalysis(object) :
 
     def readAnaFiles( self, files ) :
         self._anaParVals = dict( [ ( name, [ ] ) for name in self._parNames ] )
+        self._nFiles = 0
         if files :
             fileStats = { }
             for file in files :
@@ -216,62 +218,129 @@ class fitResultsAnalysis(object) :
                 for name, vals in self._anaParVals.iteritems() :
                     assert name in parVals\
                            , 'P2VV - ERROR: fitResultsAnalysis.readAnaFiles(): parameter "%s" not found in file "%s"' % ( name, file )
-                    vals.append( parVals[name][0] )
+                    vals.append( parVals[name][ : 2 ] )
 
             self._nFiles = sum( stats for stats in fileStats.itervalues() )
             print 'P2VV - INFO: fitResultsAnalysis.readAnaFiles(): read %d parameter files for analysis (fit status: %s)'\
                   % ( self._nFiles, ', '.join( '%d: %d' % ( stat, count ) for stat, count in fileStats.iteritems() ) )
 
-    def processResults( self, histsFile = '' ) :
-        if not self._anaParVals :
+    def processResults( self, **kwargs ) :
+        if not self._anaParVals or self._nFiles == 0 :
             print 'P2VV - WARNING: fitResultsAnalysis.processResults(): no parameter values available for analysis'
             return
 
-        self._parSums = [ [ sum( self._anaParVals[name] ), 0., 0., 0., 0., 0. ] for name in self._parNames ]
-        self._nParVals = [ [ len( self._anaParVals[name] ), 0., 0. ] for name in self._parNames ]
+        histsFile = kwargs.pop( 'HistsFile', '' ).split('.')[0]
+        anaParSetts = kwargs.pop( 'ParSettings', { } )
+        toyMode = kwargs.pop( 'ToyMode', False )
+
+        self._nParVals = [ [ 0, 0, 0 ] for name in self._parNames ]
+        self._maxPulls = [ 0. for name in self._parNames ]
+        self._parVals = [ [ ] for name in self._parNames ]
+        self._parSums = [ [ 0., 0. ] for name in self._parNames ]
+        self._errSums = [ 0. for name in self._parNames ]
+        self._pullVals = [ [ ] for name in self._parNames ]
+        self._pullSums = [ [ 0., 0., 0., 0., 0., 0. ] for name in self._parNames ]
+        if histsFile :
+            from P2VV.Load import LHCbStyle
+            from ROOT import TH1D, TCanvas, kFullDotLarge, kBlue
+            dCanv = TCanvas('dummy')
+            dCanv.Print( histsFile + '_pars.pdf[' )
+            dCanv.Print( histsFile + '_pulls.pdf[' )
+
+            def drawHist( parName, parHist, fileName ) :
+                print 'P2VV - INFO: fitResultsAnalysis.processResults(): drawing "%s" histogram' % parName
+                parSetts = anaParSetts[parName] if parName in anaParSetts else { }
+                self._parHists[parName] = parHist
+                parHist.SetTitleOffset( 1.15, 'x' )
+                parHist.SetTitleOffset( 1.05, 'y' )
+                parHist.SetXTitle( parSetts['name'] if 'name' in parSetts else parName )
+                parHist.SetYTitle('Entries / %.2g' % parHist.GetBinWidth(1) )
+                parHist.SetMarkerStyle(kFullDotLarge)
+                parHist.SetMarkerSize(0.7)
+                parHist.SetLineWidth(2)
+                if parName in anaParSetts and 'doFit' in anaParSetts[parName] and anaParSetts[parName]['doFit'] :
+                    parHist.Fit('gaus')
+                    fitFunc = parHist.GetFunction('gaus')
+                    fitFunc.SetLineWidth(3)
+                    fitFunc.SetLineColor(kBlue)
+                canv = TCanvas(parName)
+                canv.SetLeftMargin(0.19)
+                canv.SetRightMargin(0.05)
+                canv.SetBottomMargin(0.21)
+                canv.SetTopMargin(0.05)
+                parHist.Draw('E1')
+                canv.Print(fileName)
+
         for parIt, name in enumerate(self._parNames) :
+            isPhase = name in anaParSetts and 'isPhase' in anaParSetts[name] and anaParSetts[name]['isPhase']
+            from math import floor, pi
+            for vals in self._anaParVals[name] :
+                self._nParVals[parIt][0] += 1
+                val = vals[0]
+                if self._refParVals[parIt] != None :
+                    diff = val - self._refParVals[parIt][0]
+                    if isPhase and abs(diff) >= pi :
+                        nShift = floor( 0.5 * ( diff / pi + 1. ) )
+                        val -= nShift * 2. * pi
+                        diff -= nShift * 2. * pi
+                    pull = diff / ( vals[1] if toyMode else self._refParVals[parIt][1] )
+                    self._nParVals[parIt][ 2 if pull < 0. else 1 ] += 1
+                    if abs(pull) > self._maxPulls[parIt] : self._maxPulls[parIt] = abs(pull)
+                    self._pullVals[parIt].append(pull)
+                    self._pullSums[parIt][ 1 if pull < 0. else 0 ] += pull
+                    self._pullSums[parIt][ 3 if pull < 0. else 2 ] += pull**2
+                    self._pullSums[parIt][ 5 if pull < 0. else 4 ] += pull**4
+                self._parVals[parIt].append(val)
+                self._parSums[parIt][0] += val
+                self._parSums[parIt][1] += val**2
+                self._errSums[parIt] += vals[1]
+
             if name in self._parHists and self._parHists[name] :
                 self._parHists[name].Delete()
             if histsFile :
-                histBins = int( float(self._nFiles) / 100. ) if self._nFiles > 1000 else 10
-                histMin = min( self._anaParVals[name] )
-                histMax = max( self._anaParVals[name] )
-                histRange = histMax - histMin
-                if histRange > 0. :
-                    histMin = histMin - 0.01 * histRange
-                    histMax = histMax + 0.01 * histRange
-                from P2VV.Load import LHCbStyle
-                from ROOT import TH1D, kFullDotLarge
-                self._parHists[name] = TH1D( name, name, histBins, histMin, histMax )
-                self._parHists[name].SetXTitle(name)
-                self._parHists[name].SetYTitle('Entries / %.2g' % self._parHists[name].GetBinWidth(1) )
-                self._parHists[name].SetMarkerStyle(kFullDotLarge)
-                self._parHists[name].SetMarkerSize(0.6)
-            for val in self._anaParVals[name] :
-                self._parSums[parIt][1] += val**2
-                if self._refParVals[parIt] != None :
-                    valDiff = val - self._refParVals[parIt][0]
-                    self._parSums[parIt][ 3 if valDiff < 0. else 2 ] += valDiff**2
-                    self._parSums[parIt][ 5 if valDiff < 0. else 4 ] += valDiff**4
-                    self._nParVals[parIt][ 2 if valDiff < 0. else 1 ] += 1
-                if histsFile :
-                    self._parHists[name].Fill(val)
+                histBins = int( float(self._nParVals[parIt][0]) / 100. ) if self._nParVals[parIt][0] > 1000 else 10
+                parHistMin = min( self._parVals[parIt] )
+                parHistMin = min( self._parVals[parIt] )
+                parHistMax = max( self._parVals[parIt] )
+                parHistRange = parHistMax - parHistMin
+                if parHistRange > 0. :
+                    parHistMin = parHistMin - 0.01 * parHistRange
+                    parHistMax = parHistMax + 0.01 * parHistRange
+                parHist = TH1D( name + '_par', name, histBins, parHistMin, parHistMax )
+                for val in self._parVals[parIt] : parHist.Fill(val)
+                drawHist( name, parHist, histsFile + '_pars.pdf' )
+
+                pullHistMin = min( self._pullVals[parIt] )
+                pullHistMax = max( self._pullVals[parIt] )
+                pullHistRange = pullHistMax - pullHistMin
+                if pullHistRange > 0. :
+                    pullHistMin = pullHistMin - 0.01 * pullHistRange
+                    pullHistMax = pullHistMax + 0.01 * pullHistRange
+                pullHist = TH1D( name + '_pull', name, histBins, pullHistMin, pullHistMax )
+                for val in self._pullVals[parIt] : pullHist.Fill(val)
+                drawHist( name, pullHist, histsFile + '_pulls.pdf' )
+
+        if histsFile :
+            dCanv.Print( histsFile + '_pars.pdf]' )
+            dCanv.Print( histsFile + '_pulls.pdf]' )
+
         for valCounts in self._nParVals :
             assert valCounts[0] == self._nFiles and ( valCounts[1] + valCounts[2] == self._nFiles or self._refParVals[0] == None )
 
         from math import sqrt, log10, ceil
         nameLen = min( 30, max( len(name) for name in self._parNames ) )
-        sepStr = ' ' + '-' * ( nameLen + ( 128 if self._refParVals[0] != None else 32 ) )
+        sepStr = ' ' + '-' * ( nameLen + ( 167 if self._refParVals[0] != None else 32 ) )
         print 'P2VV - INFO: fitResultsAnalysis.processResults(): parameter statistics for %d files:' % self._nFiles
         print sepStr
-        print ( '  {0:<%ds}   {1:<8s}   {2:<11s}' % nameLen ).format( 'name', 'mean', 'std dev' ),
+        print ( '  {0:<%ds}   {1:<22s}' % nameLen ).format( 'name', 'measured' ),
         if self._refParVals[0] != None :
-            print '   {0:<8s}   {1:<7s}   {2:<11s}   {3:<19s}   {4:<19s}   {5:<8s}   {6:<8s}'\
-                  .format( 'value', 'uncert', 'mean dev', 'dev rel / abs', 'err rel / abs', '+dev rel', '-dev rel' )
+            print '   {0:<18s}   {1:<20s}   {2:<19s}   {3:<19s}   {4:<19s}   {5:<6s}   {6:<6s}   {7:<8s}'\
+                  .format( 'reference', 'pull offset', 'offset error', 'pull width', 'width error', '+width', '-width', 'max pull' )
         else :
             print
         print sepStr
-        for name, parSums, nParVals, refVal in zip( self._parNames, self._parSums, self._nParVals, self._refParVals ) :
+        for name, nParVals, maxPull, parSums, errSums, pullSums, refVal\
+                in zip( self._parNames, self._nParVals, self._maxPulls, self._parSums, self._errSums, self._pullSums, self._refParVals ) :
             meanVal = parSums[0] / float( nParVals[0] )
             meanSqVal = parSums[1] / float( nParVals[0] )
             stdDev = sqrt( meanSqVal - meanVal**2 )
@@ -279,28 +348,22 @@ class fitResultsAnalysis(object) :
             prec = max( 0, 2 - int( ceil( log10( refVal[1] ) ) ) ) if refVal != None else precDev
             print ( '  {0:<%ds}   {1:<+8.%df}   {2:<11.%df}' % ( nameLen, prec, precDev ) ).format( name, meanVal, stdDev ),
             if refVal != None :
-                diffVar = ( parSums[2] + parSums[3] ) / float( nParVals[0] )
-                diffVarVar = ( parSums[4] + parSums[5] ) / float( nParVals[0] )
-                dev = sqrt(diffVar) / refVal[1]
-                devErr = 0.5 / sqrt(diffVar) / refVal[1] * sqrt( ( diffVarVar - diffVar**2 ) / float( nParVals[0] ) )
-                devPlus = sqrt( parSums[2] / float( nParVals[1] ) ) / refVal[1]
-                devMin  = sqrt( parSums[3] / float( nParVals[2] ) ) / refVal[1]
-                print ( '   {0:<+8.%df}   {1:<7.%df}   {2:<+11.%df}   {3:<5.3f} / {4:<11.%df}   {5:<5.3f} / {6:<11.%df}   {7:<8.3f}   {8:<8.3f}'\
-                    % ( prec, prec, precDev, precDev, precDev ) )\
-                    .format( refVal[0], refVal[1], meanVal - refVal[0], dev, dev * refVal[1], devErr, devErr * refVal[1], devPlus, devMin )
+                refErr = errSums / float( nParVals[0] ) if toyMode else refVal[1]
+                pullOffs = ( pullSums[0] + pullSums[1] ) / float( nParVals[0] )
+                pullVar = ( pullSums[2] + pullSums[3] ) / float( nParVals[0] )
+                pullVarVar = ( pullSums[4] + pullSums[5] ) / float( nParVals[0] )
+                offsErr = sqrt( ( pullVar - pullOffs**2 ) / float( nParVals[0] ) )
+                width = sqrt(pullVar)
+                widthErr = 0.5 / sqrt(pullVar) * sqrt( ( pullVarVar - pullVar**2 ) / float( nParVals[0] ) )
+                widthPlus = sqrt( pullSums[2] / float( nParVals[1] ) ) if nParVals[1] > 0 else 0.
+                widthMin  = sqrt( pullSums[3] / float( nParVals[2] ) ) if nParVals[2] > 0 else 0.
+                print ( '   {0:<+8.%df}   {1:<7.%df}   {2:<+6.3f} / {3:<+11.%df}   {4:<5.3f} / {5:<11.%df}   {6:<5.3f} / {7:<11.%df}   {8:<5.3f} / {9:<11.%df}   {10:<6.3f}   {11:<6.3f}   {12:<8.3f}'\
+                        % ( prec, prec, precDev, precDev, precDev, precDev ) )\
+                        .format( refVal[0], refErr, pullOffs, pullOffs * refErr, offsErr, offsErr * refErr
+                                , width, width * refErr, widthErr, widthErr * refErr, widthPlus, widthMin, maxPull )
             else :
                 print
         print sepStr
-
-        if histsFile :
-            from ROOT import TCanvas
-            dCanv = TCanvas('dummy')
-            dCanv.Print( histsFile + '[' )
-            for name in self._parNames :
-                canv = TCanvas(name)
-                self._parHists[name].Draw('E1')
-                canv.Print(histsFile)
-            dCanv.Print( histsFile + ']' )
 
 # distributions of conditional observables
 condBins = dict(  KKMass = [  1008.0, 1012.0, 1013.7, 1014.7, 1015.5, 1016.0, 1016.4, 1016.8, 1017.2, 1017.5, 1017.7, 1017.9, 1018.1
