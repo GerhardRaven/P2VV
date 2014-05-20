@@ -115,6 +115,18 @@ pdfConfig['timeEffHistFiles']['file'] = timeAccFile2011 if args.runPeriod == '20
 pdfConfig['timeEffHistFiles']['hlt1UB'] = timeAccHistHLT1UB
 pdfConfig['timeEffParameters'] = dict( Cache = False )
 
+pdfConfig['timeResType'] += '_mean_param'
+pdfConfig['externalConstr']['mu_placeholder']   = (  0.0350  if args.runPeriod == '2011' else  0.0349,  0. )
+pdfConfig['externalConstr']['timeResMu_offset'] = ( -0.00174 if args.runPeriod == '2011' else -0.00169, 0. )
+pdfConfig['externalConstr']['timeResMu_slope']  = ( -0.1350  if args.runPeriod == '2011' else -0.127,   0. )
+pdfConfig['externalConstr']['timeResMu_quad']   = ( -3.50    if args.runPeriod == '2011' else -2.29,    0. )
+pdfConfig['externalConstr']['sf_placeholder']   = (  0.0350  if args.runPeriod == '2011' else  0.0349,  0. )
+pdfconfig['externalConstr']['timeResFrac2']     = (  0.191   if args.runPeriod == '2011' else  0.229,   0. )
+pdfconfig['externalConstr']['sf_mean_slope']    = (  1.239   if args.runPeriod == '2011' else  1.2766,  0. )
+pdfconfig['externalConstr']['sf_mean_quad']     = (  1.98    if args.runPeriod == '2011' else  1.34,    0. )
+pdfconfig['externalConstr']['sf_sigma_slope']   = (  0.247   if args.runPeriod == '2011' else  0.232,   0. )
+pdfconfig['externalConstr']['sf_sigma_quad']    = (  3.32    if args.runPeriod == '2011' else  2.10,    0. )
+
 if fixUpAcc :
     pdfConfig['externalConstr']['betaTimeEff'] = ( 0., 0. )
 
