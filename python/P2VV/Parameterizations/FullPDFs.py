@@ -732,8 +732,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         self['KKMassBinning'] = observables['KKMass'].getBinning('KKMassBinning')
 
         assert self['KKMassBinning'].numBins() == observables['KKMassCat'].numTypes() == len(KKMassBinBounds) - 1\
-               , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: different numbers of bins in KK mass category (%s) and/or binning (%s) and specified bin bounds (%s)' \
-               % ( self['KKMassBinning'].numBins(), observables['KKMassCat'].numTypes(), len(KKMassBinBounds) - 1 )
+               , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: different numbers of bins in KK mass category (%d) and/or binning (%d) and specified bin bounds (%d)' \
+               % ( observables['KKMassCat'].numTypes(), self['KKMassBinning'].numBins(), len(KKMassBinBounds) - 1 )
         for it in range( self['KKMassBinning'].numBins() ) :
             assert self['KKMassBinning'].binLow(it) == KKMassBinBounds[it]\
                    , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: different boundary in KK mass binning (%s) and specified bin bounds (%s)' \
