@@ -109,11 +109,12 @@ pdfConfig['paramKKMass']     = ''
 pdfConfig['KKMassBinBounds'] = [ 990., 1050. ]
 pdfConfig['CSPValues']       = [ 1. ]
 
-#timeAccHistHLT1UB2011 = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
-timeAccHistHLT1UB = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
-pdfConfig['timeEffHistFiles']['file'] = timeAccFile2011 if args.runPeriod == '2011' else timeAccFile2012
-pdfConfig['timeEffHistFiles']['hlt1UB'] = timeAccHistHLT1UB
 pdfConfig['timeEffParameters'] = dict( Cache = False )
+pdfConfig['timeEffHistFiles']['file'] = timeAccFile2011 if args.runPeriod == '2011' else timeAccFile2012
+if args.runPeriod == '2011' :
+    #timeAccHistHLT1UB2011 = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached_Reweighted'
+    timeAccHistHLT1UB = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
+    pdfConfig['timeEffHistFiles']['hlt1UB'] = timeAccHistHLT1UB
 
 pdfConfig['timeResType'] += '_mean_param'
 pdfConfig['externalConstr']['mu_placeholder']   = (  0.0350  if args.runPeriod == '2011' else  0.0349,  0. )
