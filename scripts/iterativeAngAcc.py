@@ -44,10 +44,8 @@ combineEffMoments     = True if 'True' in options.combMoms else False
 delIntermediateMoms   = False
 scaleWeightsToNumEntr = False
 reduced               = True if 'True' in options.reduced else False
-#trTimeCut             = float(options.trTimeCut) if options.trTimeCut else ''
-cut = options.trTimeCut
-print cut
-assert False
+trTimeCut             = ( float(options.trTimeCut.partition(',')[0]), float(options.trTimeCut.partition(',')[2]) ) if options.trTimeCut else ''
+
 # plotig configuration
 makePlots = True if 'True' in options.makePlots else False
 
@@ -212,7 +210,7 @@ if combineEffMoments:
     readMoments( combAccName, BasisFuncNames = [], Moments = moments, Correlations = correlations, ProcessAll = True )    
     convertEffWeightsToMoments( moments, OutputFilePath = combAccName.replace('Phys','weights').replace('_norm',''),
                                 WeightNamesPrefix = PhysicsReweight.getParNamePrefix(),
-                                PrintMoments      = False
+                                # PrintMoments      = False
                                 )
   
 # plot data after each reweighting step
