@@ -429,12 +429,12 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
 
         self['externalConstr'] = dict(  wTagP0OS       = (  0.3791, 0.0044 )
                                       , wTagP1OS       = (  1.000,  0.035  )
-                                      , wTagDelP0OS    = (  0.0140, 0.     )
-                                      , wTagDelP1OS    = (  0.066,  0.     )
+                                      , wTagDelP0OS    = (  0.0140, 0.0012 )
+                                      , wTagDelP1OS    = (  0.066,  0.012  )
                                       , wTagP0SS       = (  0.445,  0.005  )
                                       , wTagP1SS       = (  1.00,   0.09   )
-                                      , wTagDelP0SS    = ( -0.016,  0.     )
-                                      , wTagDelP1SS    = (  0.007,  0.     )
+                                      , wTagDelP0SS    = ( -0.0158, 0.0014 )
+                                      , wTagDelP1SS    = (  0.008,  0.022  )
                                       #, dM             = (  17.768, 0.024  )
                                      )
         from collections import defaultdict
@@ -447,23 +447,23 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
         splitConstr['timeResMu']['2012']        = ( -0.00322, 0. ) # ( -0.00333, 0. )
         splitConstr['timeResFrac2']['2011']     = (  0.244,   0. ) # (  0.242,   0. )
         splitConstr['timeResFrac2']['2012']     = (  0.239,   0. ) # (  0.239,   0. )
-        splitConstr['sf_mean_offset']['2011']   = (  1.4207,  0. ) # (  1.4273,  0. )
-        splitConstr['sf_mean_offset']['2012']   = (  1.4811,  0. ) # (  1.4887,  0. )
-        splitConstr['sf_mean_slope']['2011']    = ( -2.85,    0. ) # ( -1.93,    0. )
-        splitConstr['sf_mean_slope']['2012']    = ( -4.96,    0. ) # ( -3.88,    0. )
-        splitConstr['sf_sigma_offset']['2011']  = (  0.3778,  0. ) # (  0.3857,  0. )
-        splitConstr['sf_sigma_offset']['2012']  = (  0.4057,  0. ) # (  0.4143,  0. )
-        splitConstr['sf_sigma_slope']['2011']   = ( -1.55,    0. ) # ( -0.63,    0. )
-        splitConstr['sf_sigma_slope']['2012']   = ( -2.88,    0. ) # ( -2.80,    0. )
+        splitConstr['sf_mean_slope']['2011']   = (  1.4207,  0. ) # (  1.4273,  0. )
+        splitConstr['sf_mean_slope']['2012']   = (  1.4811,  0. ) # (  1.4887,  0. )
+        splitConstr['sf_mean_quad']['2011']    = ( -2.85,    0. ) # ( -1.93,    0. )
+        splitConstr['sf_mean_quad']['2012']    = ( -4.96,    0. ) # ( -3.88,    0. )
+        splitConstr['sf_sigma_slope']['2011']  = (  0.3778,  0. ) # (  0.3857,  0. )
+        splitConstr['sf_sigma_slope']['2012']  = (  0.4057,  0. ) # (  0.4143,  0. )
+        splitConstr['sf_sigma_quad']['2011']   = ( -1.55,    0. ) # ( -0.63,    0. )
+        splitConstr['sf_sigma_quad']['2012']   = ( -2.88,    0. ) # ( -2.80,    0. )
         if runPeriods in [ '2011', '2012' ] :
             self['externalConstr']['betaTimeEff']     = splitConstr['betaTimeEff']     [runPeriods]
             self['externalConstr']['sf_placeholder']  = splitConstr['sf_placeholder'][runPeriods]
             self['externalConstr']['timeResMu']       = splitConstr['timeResMu']       [runPeriods]
             self['externalConstr']['timeResFrac2']    = splitConstr['timeResFrac2']    [runPeriods]
-            self['externalConstr']['sf_mean_offset']  = splitConstr['sf_mean_offset']  [runPeriods]
-            self['externalConstr']['sf_mean_slope']   = splitConstr['sf_mean_slope']   [runPeriods]
-            self['externalConstr']['sf_sigma_offset'] = splitConstr['sf_sigma_offset'] [runPeriods]
-            self['externalConstr']['sf_sigma_slope']  = splitConstr['sf_sigma_slope']  [runPeriods]
+            self['externalConstr']['sf_mean_slope']  = splitConstr['sf_mean_slope']  [runPeriods]
+            self['externalConstr']['sf_mean_quad']   = splitConstr['sf_mean_quad']   [runPeriods]
+            self['externalConstr']['sf_sigma_slope'] = splitConstr['sf_sigma_slope'] [runPeriods]
+            self['externalConstr']['sf_sigma_quad']  = splitConstr['sf_sigma_quad']  [runPeriods]
         else :
             self['splitParams']['runPeriod'] = [ ]
             for par, vals in splitConstr.iteritems() :
@@ -732,8 +732,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         self['KKMassBinning'] = observables['KKMass'].getBinning('KKMassBinning')
 
         assert self['KKMassBinning'].numBins() == observables['KKMassCat'].numTypes() == len(KKMassBinBounds) - 1\
-               , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: different numbers of bins in KK mass category (%s) and/or binning (%s) and specified bin bounds (%s)' \
-               % ( self['KKMassBinning'].numBins(), observables['KKMassCat'].numTypes(), len(KKMassBinBounds) - 1 )
+               , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: different numbers of bins in KK mass category (%d) and/or binning (%d) and specified bin bounds (%d)' \
+               % ( observables['KKMassCat'].numTypes(), self['KKMassBinning'].numBins(), len(KKMassBinBounds) - 1 )
         for it in range( self['KKMassBinning'].numBins() ) :
             assert self['KKMassBinning'].binLow(it) == KKMassBinBounds[it]\
                    , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: different boundary in KK mass binning (%s) and specified bin bounds (%s)' \
@@ -1306,18 +1306,31 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
             timeResArgs['timeResSigma'] = observables['timeRes']
         elif '3fb' in timeResType.lower() :
             from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
-            timeResArgs = dict( time = observables['time'], sigmat = observables['timeRes'], Cache = True, PerEventError = True
-                               , Parameterise = 'RMS', TimeResSFParam = 'linear'
-                               , ScaleFactors     = [ ( 2, 1.817 ), ( 1, 1.131 ) ]
-                               , timeResMu        = dict( Value = 0., Constant = True ) #dict( Value = -0.00298, Constant = True )
-                               , Fractions        = [ ( 2, 0.168 ) ]
-                               , timeResFrac2     = dict( Value =  0.4,  Constant = True ) #dict( Value =  0.24295,   Constant = True )
-                               , sf_mean_offset   = dict( Value =  1.45, Constant = True ) #dict( Value =  1.42479,   Constant = True )
-                               , sf_mean_slope    = dict( Value =  0.,   Constant = True ) #dict( Value = -0.0526273, Constant = True )
-                               , sf_sigma_offset  = dict( Value =  0.,   Constant = True ) #dict( Value =  0.381861,  Constant = True )
-                               , sf_sigma_slope   = dict( Value =  0.,   Constant = True ) #dict( Value = -0.0147151, Constant = True )
-                               , sf_placeholder   = dict( Value =  0.,   Constant = True ) #dict( Value =  0.032,     Constant = True )
+            timeResArgs = dict( time = observables['time'], sigmat = observables['timeRes'], Cache = True
+                               , Parameterise = 'RMS', TimeResSFParam = 'quadratic_no_offset'
+                               , ScaleFactors   = [ ( 2, 1.817 ), ( 1, 1.131 ) ]
+                               , timeResMu      = dict( Value = 0., Constant = True ) #dict( Value = -0.00298, Constant = True )
+                               , Fractions      = [ ( 2, 0.168 ) ]
+                               , timeResFrac2   = dict( Value =  0.4,  Constant = True ) #dict( Value =  0.24295,   Constant = True )
+                               , sf_mean_slope  = dict( Value =  1.45, Constant = True ) #dict( Value =  1.42479,   Constant = True )
+                               , sf_mean_quad   = dict( Value =  0.,   Constant = True ) #dict( Value = -0.0526273, Constant = True )
+                               , sf_sigma_slope = dict( Value =  0.,   Constant = True ) #dict( Value =  0.381861,  Constant = True )
+                               , sf_sigma_quad  = dict( Value =  0.,   Constant = True ) #dict( Value = -0.0147151, Constant = True )
+                               , sf_placeholder = dict( Value =  0.,   Constant = True ) #dict( Value =  0.032,     Constant = True )
                               )
+            if 'linear' in timeResType.lower():
+                for pn in ('sf_mean_quad', 'sf_sigma_quad'):
+                    timeResArgs.pop(pn)
+                timeResArgs.update(dict(TimeResSFParam = 'linear',
+                                        sf_mean_offset = dict( Value =  0.,   Constant = True),
+                                        sf_sigma_offset = dict( Value =  0.,   Constant = True)))
+            if 'mean_param' in timeResType.lower():
+                timeResArgs.pop('timeResMu')
+                timeResArgs.update(dict(MeanParameterisation = 'quadratic', SplitPlaceholders = True,
+                                        timeResMu_offset = dict( Value =  0.,   Constant = True),
+                                        timeResMu_slope = dict( Value =  0.,   Constant = True),
+                                        timeResMu_quad = dict( Value =  0.,   Constant = True)))
+
         else :
             from P2VV.Parameterizations.TimeResolution import Paper2012_TimeResolution as TimeResolution
             timeResArgs['timeResMean'] = dict( Value = -4.0735e-03, Error = 1.33e-04 )
@@ -1909,19 +1922,23 @@ def buildTaggingCategories( self, **kwargs ) :
 
     if data :
         # get category bins
-        assert observables['wTagOS'].hasBinning('tagCats'),\
-               'P2VV - ERROR: buildTaggingCategories(): binning "tagCats" not found for OS estimated wrong-tag probability'
-        assert observables['wTagSS'].hasBinning('tagCats'),\
-               'P2VV - ERROR: buildTaggingCategories(): binning "tagCats" not found for SS estimated wrong-tag probability'
-        etaBinsOS = observables['wTagOS'].getBinning('tagCats')
-        etaBinsSS = observables['wTagSS'].getBinning('tagCats')
+        etaBins = { }
+        for wTagName in [ 'wTagOS', 'wTagSS' ] :
+            if not observables[wTagName].hasBinning('tagCats') :
+                print 'P2VV - WARNING: buildTaggingCategories(): defining default tagging categories binning for %s' % wTagName
+                from array import array
+                from ROOT import RooBinning
+                binBounds = array( 'd', [ 0., 0.499999999, 0.500000001 ] )
+                tagCatBinning = RooBinning( len(binBounds) - 1, binBounds, 'tagCats' )
+                observables[wTagName].setBinning( tagCatBinning, 'tagCats' )
+            etaBins[wTagName] = observables[wTagName].getBinning('tagCats')
 
         # get bin parameters from data for OS and SS
         tagBins = [ ]
-        for wTag, cat, bins, isSS in zip(  ( obsDict['wTagOS'][0],                        obsDict['wTagSS'][0]                        )
-                                         , ( observables['tagCatOS'],                     observables['tagCatSS']                     )
-                                         , ( observables['wTagOS'].getBinning('tagCats'), observables['wTagSS'].getBinning('tagCats') )
-                                         , ( False,                                       True                                        )
+        for wTag, cat, bins, isSS in zip(  ( obsDict['wTagOS'][0],    obsDict['wTagSS'][0]    )
+                                         , ( observables['tagCatOS'], observables['tagCatSS'] )
+                                         , ( etaBins['wTagOS'],       etaBins['wTagSS']       )
+                                         , ( False,                   True                    )
                                         ) :
             for it in range( bins.numBins() ) :
                 assert cat.isValidIndex(it), 'P2VV - ERROR: buildTaggingCategories(): no bin %d found for tagging category "%s" ' % ( it, cat.GetName() )

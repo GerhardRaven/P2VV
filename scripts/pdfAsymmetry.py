@@ -1,11 +1,11 @@
 dataPath         = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
 dataSetFilePath  = 'asymmetryData.root'
-parFilePath      = '20112012Reco14DataPlotValues_6KKMassBins.par'
+parFilePath      = 'parVals.par'
 applyPlotWeights = True
 blindVars        = [ 'phiCP', 'dGamma' ]
 
 from math import pi, sqrt
-Deltam         = 17.761
+Deltam         = 17.723
 numTimeBinsTot = 8
 timeBins       = [ 0 ]
 periods        = [ 0 ]
@@ -87,8 +87,8 @@ dataSetAsymW.Print()
 from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_RunIAnalysis as PdfConfig
 pdfConfig = PdfConfig( RunPeriods = '3fb' )
 
-timeEffFile2011 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins_TOS.root'
-timeEffFile2012 = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_40bins_TOS.root'
+timeEffFile2011 = dataPath + 'timeAcceptanceFit_2011.root'
+timeEffFile2012 = dataPath + 'timeAcceptanceFit_2012.root'
 pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file'] = timeEffFile2011
 pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] )['file'] = timeEffFile2012
 pdfConfig['anglesEffType'] = 'basisSig6'

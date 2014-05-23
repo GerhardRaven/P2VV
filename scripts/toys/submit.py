@@ -7,10 +7,10 @@ location = os.path.realpath(os.curdir)
 atexit.register(os.chdir, location)
 
 # change directory to the git repository
-os.chdir('/bfys/raaij/p2vv/code')
+os.chdir('/project/bfys/raaij/p2vv/code')
 
 # Open bz2 file
-cmd = 'git archive --format=tar master | bzip2 > snapshot.tar.bz2'
+cmd = 'git archive --format=tar test | bzip2 > snapshot.tar.bz2'
 op = subprocess.Popen(cmd, shell = True)
 
 r = op.poll()
@@ -35,7 +35,7 @@ env_vars = {'PATH' : 'bin',
             'LD_LIBRARY_PATH' : 'lib',
             'ROOTSYS' : ''}
 for var, d in env_vars.iteritems():
-    val = os.environ[var].replace('python2.6', 'pyton2.7').replace('2.6.5p2', '2.7.3')
+    val = os.environ[var].replace('python2.6', 'pyton2.7').replace('2.6.5p2', '2.7.4')
     s = val.split(':')
     found = False
     for k in s:
@@ -49,6 +49,7 @@ for var, d in env_vars.iteritems():
     else:
         env[var] = os.path.join(root_location, d) + ':' + val
 j.application.env = env
+j.application.args = []
 
 # Add the inputsandbox
 j.inputsandbox = ['/project/bfys/raaij/p2vv/code/python/P2VV/ToyMCUtils.py',
@@ -67,15 +68,16 @@ j.postprocessors = [CustomMerger(
 
 # Add the splitter
 args = ['dilution_weights.py', '--ncpu=1', '-n',
-        '2', '--nevents=100000', '-s', 'snapshot.tar.bz2']
+        '100', '--nevents=100000', '-s', 'snapshot.tar.bz2']
 j.splitter = GenericSplitter(
     attribute = 'application.args',
-    values = [args for i in range(10)]
+    values = [args for i in range(50)]
     )
 j.name = 'dilution_toys'
 
 # backend
-j.backend = PBS(queue = 'stbcq')
+j.backend = PBS(queue = 'generic')
+j.submit()
 
 # change back to original location
 os.chdir(location)

@@ -1,8 +1,8 @@
 dataName = 'JpsiKK_sigSWeight'
 cut = 'hlt2_biased==1'
-removeObs = [ 'wMC', 'firstData', 'hlt2_prescale', 'polarity', 'mdau1', 'tagCatP2VV' ]
-dataFilePathIn  = 'P2VVDataSets20112012Reco14_noMC_DGMass_6KKMassBins_2TagCats.root'
-dataFilePathOut = 'P2VVDataSets20112012Reco14_noMC_DGMass_6KKMassBins_2TagCats_HLT2B.root'
+removeObs = [ 'wMC', 'mdau1', 'tagCatP2VV' ] #, 'polarity', 'hlt2_prescale', 'nPVCat', 'BpTCat' ]
+dataFilePathIn  = 'P2VVDataSets20112012Reco14_LbLifetime_I2Mass_6KKMassBins_2TagCats.root'
+dataFilePathOut = 'P2VVDataSets20112012Reco14_LbLifetime_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
 
 from ROOT import TFile
 dataFile = TFile.Open(dataFilePathIn)

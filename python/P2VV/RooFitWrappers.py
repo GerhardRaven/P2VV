@@ -131,11 +131,11 @@ class RooObject(object) :
 
     # WARNING: the object 'o' given to _addObject should NEVER be used again
     # instead, use the item returned by _addObject
-    def _addObject(self, o):
+    def _addObject(self, o, **kwargs):
         if o.GetName() not in self.ws(): 
             # print 'P2VV: WARNING: importing %s into workspace.... ' % o.GetName() 
             # assert o.GetName() != 'sig_t_angles'
-            self.ws().put(o)
+            self.ws().put(o, **kwargs)
         o = self.ws()[o.GetName()]
         if o.GetName() not in self.ws()._objects:
             self.ws()._objects[o.GetName()] = o
@@ -1013,7 +1013,6 @@ class Pdf(RooObject):
         self._globalObservables = observables
 
     def _add_my_co_ec_go__( self, kwargs ) :
-        print kwargs
         condObs  = self.ConditionalObservables()
         if condObs :
             assert 'ConditionalObservables' not in kwargs or condObs == set(kwargs['ConditionalObservables']) , 'Inconsistent Conditional Observables'
@@ -1145,22 +1144,22 @@ class ProdPdf(Pdf):
 class SumPdf(Pdf):
     def __init__(self, **kwargs) :
         self._yields = {}
-        pdfs = list(kwargs['PDFs'])
-        co = set([ i for pdf in pdfs for i in pdf.ConditionalObservables() ])
+        self.__pdfs = list(kwargs['PDFs'])
+        co = set([ i for pdf in self.__pdfs for i in pdf.ConditionalObservables() ])
         if 'ConditionalObservables' in kwargs :
             if co != set(kwargs['ConditionalObservables']):
                 print 'WARNING: inconsistent conditional observables: %s vs %s' % ( co, kwargs['ConditionalObservables'] )
         elif co :
             kwargs['ConditionalObservables'] = list(co)
 
-        ec = set([ i for pdf in pdfs for i in pdf.ExternalConstraints() ])
+        ec = set([ i for pdf in self.__pdfs for i in pdf.ExternalConstraints() ])
         if 'ExternalConstraints' in kwargs:
             if ec != set(kwargs['ExternalConstraints']):
                 print 'WARNING: inconsistent external constraints: %s vs %s' % ( ec, kwargs['ExternalConstraints'] )
         elif ec:
             kwargs['ExternalConstraints'] = ec
 
-        diff = set([p.GetName() for p in pdfs]).symmetric_difference(set(kwargs['Yields'].keys()))
+        diff = set([p.GetName() for p in self.__pdfs]).symmetric_difference(set(kwargs['Yields'].keys()))
         if len(diff) not in [0, 1]:
             raise StandardError('The number of yield variables must be equal to or 1'
                                 + 'less then the number of PDFs.')
@@ -1195,6 +1194,9 @@ class SumPdf(Pdf):
     def _separator(self):
         return '_P_'
 
+    def PDFs(self):
+        return self.__pdfs
+    
 class SimultaneousPdf( Pdf ) :
     def __init__( self, Name, **kwargs ) :
         args = { 'Name' : Name }
@@ -1205,7 +1207,7 @@ class SimultaneousPdf( Pdf ) :
             simul = RooSimultaneous(Name, Name, __dref__(kwargs.pop('SplitCategory')))
             for s, pdf in kwargs.pop('States').iteritems():
                 simul.addPdf(pdf, s)
-            self._addObject(simul)
+            self._addObject(simul, RecycleConflictNodes = True)
         elif 'SplitParameters' in kwargs :
             args['Master']     = kwargs.pop('MasterPdf')
             args['SplitCats']  = [ kwargs.pop('SplitCategory').GetName() ] if 'SplitCategory' in kwargs\
@@ -1424,22 +1426,46 @@ class TPDecay(Pdf):
     def __init__(self, Name, **kwargs):
         from ROOT import RooTPDecay
         from ROOT import RooArgList
-        tps = RooArgList( kwargs.pop('TurningPoints'))
         t = kwargs.pop('Time')
         tau = kwargs.pop('Tau')
         model = kwargs.pop('ResolutionModel')
+        gen = kwargs.pop('TPGen')
+        tps = gen.turning_points()
+        norm_range = ','.join(tps[i].GetName() + tps[i + 1].GetName() for i in range(0, len(tps), 2))
+        from ROOT import RooDecay
+        tp_decay = RooTPDecay(Name, Name, __dref__(t), __dref__(tau), __dref__(model),
+                              RooDecay.SingleSided, norm_range)
+        tp_decay = self._addObject(tp_decay)
+        self._init(Name, 'RooTPDecay')
+        for (k,v) in kwargs.iteritems() :
+            self.__setitem__(k,v)
+
+    def _make_pdf(self):
+        pass
+
+class TPGen(Pdf):
+    def __init__(self, Name, **kwargs):
+        from ROOT import RooTPGen
+        from ROOT import RooArgList
+        self.__tps = RooArgList(*kwargs.pop('TurningPoints'))
         nPVs = kwargs.pop('nPVs')
         data = kwargs.pop('Data')
         PV_table = data.table(__dref__(nPVs))
         pvz = kwargs.pop('PVZ')
         pvz_pdf = kwargs.pop('PVZPdf')
 
-        tp_decay = RooTPDecay(Name, Name, __dref__(t), __dref__(tau), tps, __dref__(model),
-                              PV_table, __dref__(pvz), __dref__(pvz_pdf))
-        tp_decay = self._addObject(tp_decay)
-        self._init(Name, 'RooTPDecay')
+        tp_gen = RooTPGen(Name, Name, self.__tps, PV_table, __dref__(pvz),
+                              __dref__(pvz_pdf))
+        tp_gen = self._addObject(tp_gen)
+        self._init(Name, 'RooTPGen')
         for (k,v) in kwargs.iteritems() :
             self.__setitem__(k,v)
+
+    def turning_points(self):
+        return [tp for tp in self.__tps]
+            
+    def _make_pdf(self):
+        pass
 
 class BDecay( Pdf ) :
     def __init__(self, Name, **kwargs):
@@ -2064,7 +2090,7 @@ class BinnedFun(RooObject):
         self._declare( spec )
 
     def __build_from_hist(self,name,observable,hist) :
-        cvar = lambda i : ConstVar(Name = '%s_bin_%d' % (name, i), Value = hist.GetBinContent(1 + i))
+        cvar = lambda i : RealVar(Name = '%s_bin_%d' % (name, i), Value = hist.GetBinContent(1 + i), Constant = True)
         self.__coefficients[name] = [cvar(i) for i in range(hist.GetNbinsX())]
         return self.__build_from_coef(name, observable, self.__create_binning(name, observable, hist),
                                       self.__coefficients[name])
@@ -2283,6 +2309,7 @@ class CubicSplineGaussModel(ResolutionModel) :
             for t, fun in types.iteritems():
                 if isinstance(res_model._target_(), t):
                     model, this_type, name = fun(name, res_model, efficiency)
+                    break
         else:
             model = 'RooGaussEfficiencyModel::{0}({1},{2},{3})'.format(name, params[0].GetName(), efficiency.GetName(), ','.join([p.GetName() for p in params[1:]]))
             this_type = 'RooGaussEfficiencyModel'

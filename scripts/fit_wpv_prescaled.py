@@ -73,8 +73,8 @@ from ROOT import RooDecay as Decay
 # B time PDF
 from P2VV.Parameterizations.TimeResolution import Multi_Gauss_TimeResolution as TimeResolution
 tres_args = dict(time = t, sigmat = st, Cache = True,
-                 PerEventError = True, Parameterise = 'RMS',
-                 TimeResSFParam = False, SplitFracs = False,
+                 Parameterise = 'RMS',
+                 TimeResSFParam = 'linear', SplitFracs = False,
                  ScaleFactors = [(2, 2.1), (1, 1.26)],
                  Fractions = [(2, 0.2)], SplitMean = False)
 tres = TimeResolution(Name = 'tres', **tres_args)
@@ -173,7 +173,7 @@ RooAbsData.setDefaultStorageType(storage)
 
 # Load results from the resolution fit
 from P2VV.CacheUtils import CacheFiles
-directory = '1bin_19000.00fs_simple/2376092246650320919'
+directory = '1bin_19000.00fs_simple/7051155956274815792'
 
 cache_files = CacheFiles(*input_data[args[0]]['cache'].rsplit('/', 1))
 cache_dir, cache_file = cache_files.getFromCache(directory)
@@ -182,11 +182,14 @@ if not cache_dir:
     sys.exit(-2)
 
 rd = cache_dir.Get('results')
-time_result = rd.Get('time_result_double_RMS_Mixing')
+time_result = rd.Get('time_result_double_RMS_Mixing_linear')
+assert(time_result)
 
 # PV bins
 from array import array
 PV_bounds = array('d', [-0.5 + i for i in range(12)])
+
+assert(False)
 
 # Build WPV shape
 from P2VV.Parameterizations import WrongPV
@@ -196,8 +199,9 @@ weights = 'B'
 wpv_builder = WrongPV.ShapeBuilder(t, masses, UseKeysPdf = True, Weights = weights, Draw = True,
                                    InputFile = input_data[args[0]]['wpv'],
                                    Workspace = input_data[args[0]]['workspace'],
-                                   Reweigh = dict(Data = reweigh_data, DataVar = nPV, Binning = PV_bounds),
-                                   sigmat = st, MassResult = result_cut)
+                                   Reweigh = dict(Data = reweigh_data, DataVar = nPV,
+                                                  Binning = PV_bounds),
+                                   MassResult = result_cut)
 wpv_signal = wpv_builder.shape('B')
 sig_wpv = Component('sig_wpv', (wpv_signal, m), Yield = (888, 1, 300000))
 

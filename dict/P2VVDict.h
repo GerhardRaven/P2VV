@@ -28,6 +28,7 @@
 #include "P2VV/MultiHistEntry.h"
 #include "P2VV/RooComplementCoef.h"
 #include "P2VV/RooEffConvGenContext.h"
+#include "P2VV/RooTPConvGenContext.h"
 #include "P2VV/RooBoxPdf.h"
 #include "P2VV/RooExplicitNormPdf.h"
 #include "P2VV/RooCubicSplineKnot.h"
@@ -35,6 +36,7 @@
 #include "P2VV/RooGaussEfficiencyModel.h"
 #include "P2VV/RooAmoroso.h"
 #include "P2VV/RooTPDecay.h"
+#include "P2VV/RooTPGen.h"
 #include "P2VV/RooMassDependence.h"
 #include "P2VV/RooEffResAddModel.h"
 #include "P2VV/RooHessian.h"
@@ -76,6 +78,9 @@ struct Instantiations {
    std::list<RooDataSet*> _i20;
    std::vector<std::pair<double, double> > _i21;
    std::pair<TMatrixDSym, TMatrixDSym> _i22;
+
+   std::map<std::string, RooDataSet*> _i23;
+   std::pair<std::string, RooDataSet*> _i24;
 
 };
 #endif // DICT_P2VVDICT_H

@@ -3,12 +3,12 @@ scaleFacs = dict( t = 1., d = 2.99792458e8 / 5366.77 * 1.e-9, p = 1.e-3, pT = 1.
 yScale = dict( t = 6000., d = 5200., p = 5200., pT = 4000. )
 varUnits = dict( t = 'ps', d = 'mm', p = 'GeV/c', pT = 'GeV/c' )
 binPrec = dict( t = 2, d = 2, p = 2, pT = 2 )
-varTitles = dict(  t  = 'Decay time (%s)' % varUnits['t']
-                 , d  = 'Flight distance (%s)' % varUnits['d']
-                 , p  = 'Momentum (%s)' % varUnits['p']
-                 , pT = 'Transverse momentum (%s)' % varUnits['pT']
+varTitles = dict(  t  = 'Decay time [%s]' % varUnits['t']
+                 , d  = 'Flight distance [%s]' % varUnits['d']
+                 , p  = 'Momentum [%s]' % varUnits['p']
+                 , pT = 'Transverse momentum [%s]' % varUnits['pT']
                 )
-plotsFilePath = 'generalPlots.ps'
+plotsFilePath = 'generalPlots.pdf'
 plotObjFilePath = 'generalPlots.root'
 nTupleFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/fitNTuple_peakBkg_2011_2012_Reco14_TOS_HLT2B_20140215.root'
 
@@ -26,11 +26,16 @@ hists = dict(  t  = TH1D( 'tHist',  'tHist',  50, 0., 5.   )
              , p  = TH1D( 'pHist',  'pHist',  50, 0., 250. )
              , pT = TH1D( 'pTHist', 'pTHist', 53, 0., 15.9 )
             )
+labelText = ''
+if labelText :
+    from ROOT import TLatex
+    label = TLatex()
+    label.SetTextAlign(32)
+    label.SetTextSize(0.072)
 
-from ROOT import TLatex
-label = TLatex()
-label.SetTextAlign(32)
-label.SetTextSize(0.072)
+import P2VV.RooFitWrappers
+from ROOT import gStyle
+gStyle.SetColorModelPS(1)
 
 from ROOT import TCanvas, kFullDotLarge, kBlack as markCol
 canvs = dict( t = TCanvas('tCanv'), d = TCanvas('dCanv'), p = TCanvas('pCanv'), pT = TCanvas('pTCanv') )
@@ -62,11 +67,10 @@ for var in vars :
     xMin = hists[var].GetXaxis().GetXmin()
     xMax = hists[var].GetXaxis().GetXmax()
     yMax = hists[var].GetMaximum()
-    label.DrawLatex( xMin + 0.90 * ( xMax - xMin ), 0.85 * yMax, 'LHCb unofficial' )
+    if labelText : label.DrawLatex( xMin + 0.90 * ( xMax - xMin ), 0.85 * yMax, labelText )
     canv.Print(plotsFilePath)
 canvs[ vars[0] ].Print( plotsFilePath + ']' )
 
-assert False
 from ROOT import TObject
 plotFile.Write( plotObjFilePath, TObject.kOverwrite )
 plotFile.Close()
