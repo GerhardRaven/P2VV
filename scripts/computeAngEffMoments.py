@@ -5,7 +5,9 @@
 from math import pi, sin, cos, sqrt
 
 # job parameters
-MCProd      = 'Sim08'
+MCProd      = 'Sim08_2012'
+trueAngles  = False
+sigmatCut   = True if not trueAngles else True # switch on/off only when using true angles.
 readMoments = False
 makePlots   = False
 transAngles = False
@@ -16,7 +18,7 @@ trigger     = ''
 timeInt     = False
 addInvPdf   = False
 weightVar   = 'wKin' # 'sWeights_ipatia'
-doSelection = False
+doSelection = False if not trueAngles else True
 blind       = { } # { 'phiCP' : ( 'UnblindUniform', 'BsPhisCombination', 0.2 ), 'dGamma' : ( 'UnblindUniform', 'BsDGsCombination', 0.02 ) }
 parFileIn   = '' # '../it6/fitPars.par'
 
@@ -31,9 +33,11 @@ elif MCProd == 'Sim08' :
     #nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_20112012_Sim08_ntupleB_201309_add.root'
     nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/reweighted/Bs2JpsiPhi_Sim08a_reWeighted.root'
 elif MCProd == 'Sim08_2011' :
-    nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_MC2011_Sim08a_ntupleB_20130909_angEff.root'
+    nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_MC2011_Sim08a_ntupleB_20130909_angEff.root' if not trueAngles else\
+        '/project/bfys/vsyropou/data/Bs2JpsiPhi/dataSets/mcWithTrueAngles/Bs2JpsiPhi_MC2011_Sim08a_ntupleB_20130909_trueAngles.root'
 elif MCProd == 'Sim08_2012' :
-    nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_MC2012_ntupleB_20130904_angEff.root'
+    nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_MC2012_ntupleB_20130904_angEff.root' if not trueAngles else\
+        '/project/bfys/vsyropou/data/Bs2JpsiPhi/dataSets/mcWithTrueAngles/Bs2JpsiPhi_MC2012_ntupleB_20130909_trueAngles.root'
 else :
     nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20121010.root'
 
@@ -126,7 +130,8 @@ if transAngles :
     angleFuncs = AngleFuncs( cpsi = 'trcospsi', ctheta = 'trcostheta', phi = 'trphi' )
 else :
     from P2VV.Parameterizations.AngularFunctions import JpsiphiHelicityAngles as AngleFuncs
-    angleFuncs = AngleFuncs( cpsi = 'helcosthetaK', ctheta = 'helcosthetaL', phi = 'helphi' )
+    if not trueAngles: angleFuncs = AngleFuncs( cpsi = 'helcosthetaK', ctheta = 'helcosthetaL', phi = 'helphi' )
+    else:  angleFuncs = AngleFuncs( cpsi = 'helcosthetaK_true', ctheta = 'helcosthetaL_true', phi = 'helphi_true' )
     #angleFuncs = AngleFuncs( cpsi = 'ctkRecoLHCb', ctheta = 'ctlRecoLHCb', phi = 'phiRecoLHCb' )
     #angleFuncs = AngleFuncs( cpsi = 'ctkTrueCalc', ctheta = 'ctlTrueCalc', phi = 'phiTrueCalc' )
 
@@ -154,13 +159,16 @@ if weightVar : obsSet.append(weight)
 bkgcatCut      = '(bkgcat == 0 || bkgcat == 50)'
 trackChiSqCuts = 'muplus_track_chi2ndof < 4. && muminus_track_chi2ndof < 4. && Kplus_track_chi2ndof < 4. && Kminus_track_chi2ndof < 4.'
 massCuts       = 'mass > 5200. && mass < 5550. && mdau1 > 3030. && mdau1 < 3150. && mdau2 > 990. && mdau2 < 1050.'
-trueTimeCut    = 'truetime > 0.'
+trueTimeCut    = 'truetime > 0.' if not trueAngles else 'truetime > 0.3 && truetime < 14' 
 timeCuts       = 'time > 0.3 && time < 14. && sigmat < 0.12'
 tagCuts        = '(tagdecision == 0 || tagdecision == -1 || tagdecision == +1)'
 
 cuts = ''
 if doSelection :
-    cuts = trackChiSqCuts + ' && ' + massCuts + ' && ' + timeCuts + ' && ' + tagCuts
+    if not trueAngles: cuts = trackChiSqCuts + ' && ' + massCuts + ' && ' + timeCuts + ' && ' + tagCuts
+    else:
+        cuts = trackChiSqCuts + ' && ' + massCuts
+        if sigmatCut: cuts += ' && sigmat < 0.12'  
     if MCProd != 'real' :
         cuts += ' && ' + bkgcatCut + ' && ' + trueTimeCut
     if trigger == 'ExclBiased' :
