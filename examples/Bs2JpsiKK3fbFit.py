@@ -11,6 +11,7 @@ parser.add_argument( '--blind', '-b', default = True )
 parser.add_argument( '--fixLowAcc', '-l', default = True )
 parser.add_argument( '--fixUpAcc', '-u', default = False )
 parser.add_argument( '--fixTagging', '-a', default = False )
+parser.add_argument( '--fixTagAsym', '-k', default = False )
 parser.add_argument( '--numCPU', '-c', type = int, default = 2 )
 parser.add_argument( '--runHesse', '-e', default = True )
 parser.add_argument( '--runMinos', '-s', default = '' )
@@ -23,8 +24,10 @@ parser.add_argument( '--timeAccConstr', '-j', default = 'poisson' )
 parser.add_argument( '--dataSetName', '-n', default = 'JpsiKK_sigSWeight' )
 parser.add_argument( '--parFileIn', '-i' )
 parser.add_argument( '--parFileOut', '-o' )
+parser.add_argument( '--resultFileOut', '-r' )
 parser.add_argument( '--timeAccFile2011', '-x', default = 'timeAcceptanceFit_2011.root' )
 parser.add_argument( '--timeAccFile2012', '-y', default = 'timeAcceptanceFit_2012.root' )
+parser.add_argument( '--angAccType', '-t', default = 'weights' )  # 'weights' / 'basis012' / 'basis01234' / 'basisSig6'
 parser.add_argument( '--angAccFile', '-z', default = 'angEffNominalRew_moms.par' )
 parser.add_argument( '--constAngAcc', '-q', default = True )
 
@@ -34,6 +37,7 @@ blind = False if not args.blind or str( args.blind ).lower() in [ 'false', '0' ]
 fixLowAcc = False if not args.fixLowAcc or str( args.fixLowAcc ).lower() in [ 'false', '0' ] else True
 fixUpAcc = False if not args.fixUpAcc or str( args.fixUpAcc ).lower() in [ 'false', '0' ] else True
 fixTagging = False if not args.fixTagging or str( args.fixTagging ).lower() in [ 'false', '0' ] else True
+fixTagAsym = False if not args.fixTagAsym or str( args.fixTagAsym ).lower() in [ 'false', '0' ] else True
 assert type(args.numCPU) == int and args.numCPU > 0 and args.numCPU < 20
 runHesse = False if not args.runHesse or str( args.runHesse ).lower() in [ 'false', '0' ] else True
 minosPars = args.minosPars.split(',') if args.minosPars and str(args.minosPars) != 'None' else [ ]
@@ -46,20 +50,28 @@ dataSetFile = dataPath + args.dataSetFile
 accDataSetFile = dataPath + args.accDataSetFile
 assert args.timeAccConstr in [ 'poisson', 'poisson_minimal', 'multinomial', 'average' ]
 parFileIn = args.parFileIn
-if parFileIn == None :
+if parFileIn == None or parFileIn == 'None' :
     parFileIn = workPath + '20112012Reco14DataFitValues_6KKMassBins%s.par'\
                            % ( '_CPVDecay' if args.model == 'polarDep' else '_fixedLamb' if args.model == 'phi' else '' )
 elif parFileIn :
     parFileIn = workPath + parFileIn
 parFileOut = args.parFileOut
-if parFileOut == None :
+if parFileOut == None or parFileOut == 'None' :
     parFileOut = workPath + '%s%s_%sLow_%sUp_%sTag.par'\
                  % ( args.jobName + ( '_' if args.jobName else '' ), args.model, 'fix' if fixLowAcc else 'float'
                     , 'fix' if fixUpAcc else 'float', 'fix' if fixTagging else 'float' )
 elif parFileOut :
     parFileOut = workPath + parFileOut
+resultFileOut = args.resultFileOut
+if resultFileOut == None or resultFileOut == 'None' :
+    resultFileOut = workPath + '%s%s_%sLow_%sUp_%sTag.root'\
+                 % ( args.jobName + ( '_' if args.jobName else '' ), args.model, 'fix' if fixLowAcc else 'float'
+                    , 'fix' if fixUpAcc else 'float', 'fix' if fixTagging else 'float' )
+elif resultFileOut :
+    resultFileOut = workPath + resultFileOut
 timeAccFile2011 = dataPath + args.timeAccFile2011
 timeAccFile2012 = dataPath + args.timeAccFile2012
+assert args.angAccType in [ 'weights', 'basis012', 'basis01234', 'basisSig6' ]
 angAccFile = dataPath + args.angAccFile
 constAngAcc = False if not args.constAngAcc or str( args.constAngAcc ).lower() in [ 'false', '0' ] else True
 
@@ -72,6 +84,7 @@ print '  blind analysis: %s' % ( 'true' if blind else 'false' )
 print '  fix lower decay-time acceptance: %s' % ( 'true' if fixLowAcc else 'false' )
 print '  fix upper decay-time acceptance: %s' % ( 'true' if fixUpAcc  else 'false' )
 print '  fix tagging calibration: %s' % ( 'true' if fixTagging else 'false' )
+print '  fix tagging calibration asymmetries: %s' % ( 'true' if fixTagAsym else 'false' )
 print '  number of cores: %d' % args.numCPU
 print '  run Hesse: %s' % ( 'true' if runHesse else 'false' )
 print '  run Minos: %s' % ( 'true' if runMinos else 'false' )
@@ -84,8 +97,10 @@ print '  time acceptance constraint: %s' % args.timeAccConstr
 print '  dataset name: %s' % args.dataSetName
 print '  input parameter file: %s' % parFileIn
 print '  output parameter file: %s' % parFileOut
+print '  output fit result file: %s' % resultFileOut
 print '  time acceptance file 2011: %s' % timeAccFile2011
 print '  time acceptance file 2012: %s' % timeAccFile2012
+print '  angular acceptance type: %s' % args.angAccType
 print '  angular acceptance file: %s' % angAccFile
 print '  constant angular acceptance parameters: %s' % ( 'true' if constAngAcc else 'false' )
 
@@ -133,8 +148,13 @@ if fixTagging :
     pdfConfig['externalConstr']['wTagP1OS'] = ( 1.0118512,  0. )#( 1.,     0.00001 )
     pdfConfig['externalConstr']['wTagP0SS'] = ( 0.44585594, 0. )#( 0.445,  0.00001 )
     pdfConfig['externalConstr']['wTagP1SS'] = ( 0.95813206, 0. )#( 1.,     0.00001 )
+if fixTagAsym :
+    pdfConfig['externalConstr']['wTagDelP0OS'] = (  0.014023729,  0. )#(  0.0140, 0.00001 )
+    pdfConfig['externalConstr']['wTagDelP1OS'] = (  0.065743477,  0. )#(  0.066,  0.00001 )
+    pdfConfig['externalConstr']['wTagDelP0SS'] = ( -0.015786075,  0. )#( -0.0158, 0.00001 )
+    pdfConfig['externalConstr']['wTagDelP1SS'] = (  0.0081990069, 0. )#(  0.008,  0.00001 )
 
-pdfConfig['anglesEffType'] = 'weights'
+pdfConfig['anglesEffType'] = args.angAccType
 pdfConfig['constAngEffCoefs'] = constAngAcc
 pdfConfig['angEffMomsFiles'] = angAccFile
 
@@ -173,6 +193,12 @@ elif args.model == 'lamb_phi' :
 # get observables and parameters in PDF
 pdfObs  = pdf.getObservables(dataSet)
 pdfPars = pdf.getParameters(dataSet)
+
+# prevent tagging dilution = 0 in initialization
+if abs( 1. - pdfPars.getRealValue('wTagP1OS') ) < 1.e-5 and not pdfPars.find('wTagP1OS').isConstant() :
+    pdfPars.setRealValue( 'wTagP1OS', 0.999 )
+if abs( 1. - pdfPars.getRealValue('wTagP1SS') ) < 1.e-5 and not pdfPars.find('wTagP1SS').isConstant() :
+    pdfPars.setRealValue( 'wTagP1SS', 0.999 )
 
 # print parameters
 print 120 * '='
@@ -235,3 +261,11 @@ if parFileOut :
     pdfConfig.writeParametersToFile(  filePath = parFileOut
                                     , FitStatus = ( fitResult.status(), fitResult.minNll(), fitResult.edm() )
                                    )
+
+if resultFileOut :
+    # write fit result to file
+    from ROOT import TFile, TObject
+    resultFile = TFile.Open( resultFileOut, 'RECREATE' )
+    resultFile.Append(fitResult)
+    resultFile.Write( resultFileOut, TObject.kOverwrite )
+    resultFile.Close()

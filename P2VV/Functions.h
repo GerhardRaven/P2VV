@@ -28,6 +28,7 @@ void addCategoryToTree(TTree& tree, const char* inBranch,
     std::vector<Int_t> indices);
 
 void addVertexErrors(TTree* tree, const std::list<RooDataSet*>& dss, const std::string& cut);
+void addJpsiDLS(TTree* tree, const std::list<RooDataSet*>& dss, const std::string& cut);
 
 TTree* RooDataSetToTree(const RooDataSet& dataSet, const char* name = 0,
       const char* title = 0, const char* weightName = 0,

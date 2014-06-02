@@ -143,9 +143,11 @@ class ShapeBuilder(object):
                     new_vars = source.get()
                     new_vars.remove(source_cat)
                     source = source.reduce(new_vars)
+                    source_obs = source.get().find(source_obs.GetName())
+
+                source_obs.setBinning(binning, 'reweigh')                
                 source_cat = BinningCategory(Name = cat_name, Observable = source_obs,
                                              Binning = binning, Data = source, Fundamental = True)
-
                 from P2VV.Reweighing import reweigh
                 sdata, weights = reweigh(sdata, sdata.get().find('nPV'),
                                          source, source_cat)
@@ -221,14 +223,20 @@ class ShapeBuilder(object):
     def __draw_t_diff(self):
         from ROOT import kDashed, kRed, kGreen, kBlue, kBlack
         from ROOT import TCanvas
-        self.__diff_canvas = TCanvas('wpv_diff_canvas', 'wpv_diff_canvas', len(self.__diff_shapes) * 500, 500)
+        self.__diff_canvases = []
         t_diff = self.__t_diff
         from ROOT import RooArgSet
-        for (p, (c, shape)) in zip(self.__diff_canvas.pads(len(self.__diff_shapes)), self.__diff_shapes.items()):
+        for c, shape in self.__diff_shapes.iteritems():
+            name = 'wpv_diff_%s' % c.GetName()
+            canvas = TCanvas(name, name, 600, 400)
+            p = canvas.cd()
+            self.__diff_canvases.append(canvas)
             from P2VV.Utilities.Plotting import plot
             plot(p, t_diff, pdf = shape, data = self.__sdatas[c]
                  , dataOpts = dict(MarkerSize = 0.8, Binning = 80, MarkerColor = kBlack)
                  , pdfOpts  = dict(LineWidth = 2)
+                 , xTitle = 't_{rec} - t_{true} [ps]'
+                 , yTitle = 'Candidates / (12.5 fs)'
                  , logy = False
                  , plotResidHist = False)
 

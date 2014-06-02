@@ -28,18 +28,16 @@ from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_RunIAnalysis as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
-parFileIn   = '/project/bfys/jleerdam/softDevel/P2VV2/test/20112012Reco14DataPlotValues_6KKMassBins.par'
+parFileIn   = '/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/parVals.par'
 dataPath    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
 dataSetName = 'JpsiKK_sigSWeight'
 dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140309.root'
-plotsFilePath = '/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/projPlot_%s_%s_moreBins.ps' % ( plotVar, plotComp )
-ROOTFilePath  = '/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/projPlot_%s_%s_moreBins.root' % ( plotVar, plotComp )
+plotsFilePath = '/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/projPlot_%s_%s.ps' % ( plotVar, plotComp )
+ROOTFilePath  = '/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/projPlot_%s_%s.root' % ( plotVar, plotComp )
 
 # PDF options
-pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file']\
-        = dataPath + 'Bs_HltPropertimeAcceptance_Data_2011_40bins_TOS.root'
-pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] )['file']\
-        = dataPath + 'Bs_HltPropertimeAcceptance_Data_2012_40bins_TOS.root'
+pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file'] = dataPath + 'timeAcceptanceFit_2011.root'
+pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] )['file'] = dataPath + 'timeAcceptanceFit_2012.root'
 pdfConfig['anglesEffType'] = 'basisSig6'
 pdfConfig['angEffMomsFiles'] = dataPath + 'angEffNominalRew_5thOrder.par'
 

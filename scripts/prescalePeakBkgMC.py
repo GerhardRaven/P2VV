@@ -1,4 +1,4 @@
-brNames = [  ( 'runNumber', 'i' ), ( 'eventNumber', 'l' ), ( 'runPeriod', 'I' ), ( 'polarity', 'I' )
+brNames = [  ( 'runNumber', 'i' ), ( 'eventNumber', 'l' ), ( 'runPeriod', 'I' ), ( 'polarity', 'I' ), ( 'nPV', 'D' )
            , ( 'wMC', 'F' )
            , ( 'hlt1_unbiased', 'I' ), ( 'hlt1_excl_biased', 'I' ), ( 'hlt2_unbiased', 'I' ), ( 'hlt2_biased', 'I' )
            , ( 'triggerDecisionUnbiased', 'I' ), ( 'triggerDecisionBiasedExcl', 'I' )
@@ -16,7 +16,7 @@ brNames = [  ( 'runNumber', 'i' ), ( 'eventNumber', 'l' ), ( 'runPeriod', 'I' ),
            , ( 'Kplus_track_chi2ndof', 'D' ), ( 'Kminus_track_chi2ndof', 'D' )
           ]
 nTupleFilePathIn = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_hope_the_last_one.root'
-nTupleFilePathOut = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_hope_the_last_one_presc.root'
+nTupleFilePathOut = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_hope_the_last_one_presc_20140415.root'
 
 from ROOT import TFile, TTree
 nTupleFileIn = TFile.Open(nTupleFilePathIn)
