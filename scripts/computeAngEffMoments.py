@@ -5,9 +5,8 @@
 from math import pi, sin, cos, sqrt
 
 # job parameters
-MCProd      = 'Sim08_2012'
-trueAngles  = False
-sigmatCut   = True if not trueAngles else True # switch on/off only when using true angles.
+MCProd      = 'Sim08_2011'
+trueAngles  = True
 readMoments = False
 makePlots   = False
 transAngles = False
@@ -17,10 +16,14 @@ tResModel   = '' # '3fb'
 trigger     = ''
 timeInt     = False
 addInvPdf   = False
-weightVar   = 'wKin' # 'sWeights_ipatia'
-doSelection = False if not trueAngles else True
+weightVar   = '' #'wKin' # 'sWeights_ipatia'
+doSelection = False
+customSel   = True
+timeRange   = (0.0003, 0.014) if customSel else (0.3, 14.)
+sigmatCut   = False
 blind       = { } # { 'phiCP' : ( 'UnblindUniform', 'BsPhisCombination', 0.2 ), 'dGamma' : ( 'UnblindUniform', 'BsDGsCombination', 0.02 ) }
 parFileIn   = '' # '../it6/fitPars.par'
+trueTimeVarName = 'B_s0_TRUETAU'
 
 momentsFile = '%s_%s_UB_UT_%s_BkgCat050_KK30'      % ( MCProd, 'trans' if transAngles else 'hel', tResModel if tResModel else 'trueTime' )
 plotsFile   = '%s_%s_UB_UT_%s_BkgCat050_KK30.ps'   % ( MCProd, 'trans' if transAngles else 'hel', tResModel if tResModel else 'trueTime' )
@@ -34,10 +37,12 @@ elif MCProd == 'Sim08' :
     nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/reweighted/Bs2JpsiPhi_Sim08a_reWeighted.root'
 elif MCProd == 'Sim08_2011' :
     nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_MC2011_Sim08a_ntupleB_20130909_angEff.root' if not trueAngles else\
-        '/project/bfys/vsyropou/data/Bs2JpsiPhi/dataSets/mcWithTrueAngles/Bs2JpsiPhi_MC2011_Sim08a_ntupleB_20130909_trueAngles.root'
+        '/project/bfys/vsyropou/PhD/workdir/jpsiphiAngAccChecks/temp/MC2011_all_BsJpsiPhi_DTT_20131006_minimal_truth_roel.root'    
+    # '/project/bfys/vsyropou/data/Bs2JpsiPhi/dataSets/mcWithTrueAngles/Bs2JpsiPhi_MC2011_Sim08a_ntupleB_20130909_trueAngles.root'
 elif MCProd == 'Sim08_2012' :
     nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_MC2012_ntupleB_20130904_angEff.root' if not trueAngles else\
-        '/project/bfys/vsyropou/data/Bs2JpsiPhi/dataSets/mcWithTrueAngles/Bs2JpsiPhi_MC2012_ntupleB_20130909_trueAngles.root'
+        '/project/bfys/vsyropou/PhD/workdir/jpsiphiAngAccChecks/temp/MC2012_all_BsJpsiPhi_DTT_20130709_minimal_truth_roel.root'
+        #'/project/bfys/vsyropou/data/Bs2JpsiPhi/dataSets/mcWithTrueAngles/Bs2JpsiPhi_MC2012_ntupleB_20130909_trueAngles.root'
 else :
     nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20121010.root'
 
@@ -137,8 +142,8 @@ else :
 
 # variables in PDF
 from P2VV.RooFitWrappers import RealVar, Category
-time      = RealVar(  'time',      Title = 'Decay time',      Unit = 'ps', Observable = True, Value = 0.5,  MinMax = ( 0.3,    14.  ) )
-trueTime  = RealVar(  'truetime',  Title = 'True decay time', Unit = 'ps', Observable = True, Value = 0.,   MinMax = ( 0.,     20.  ) )
+time      = RealVar(  'time',           Title = 'Decay time',      Unit = 'ps', Observable = True, MinMax = ( timeRange[0], timeRange[1]  ) )
+trueTime  = RealVar(  trueTimeVarName,  Title = 'True decay time', Unit = 'ps', Observable = True, MinMax = ( timeRange[0], timeRange[1]  ) )
 sigmat    = RealVar(  'sigmat',    Title = 'Time resolution', Unit = 'ps', Observable = True, Value = 0.01, MinMax = ( 0.0001, 0.12 ) )
 iTag      = Category( 'iTag',      Title = 'Initial state flavour tag', Observable = True, States = { 'Untagged' : 0 } )
 runPeriod = Category( 'runPeriod', Title = 'Running period',            Observable = True, States = runPeriodStates )
@@ -159,27 +164,33 @@ if weightVar : obsSet.append(weight)
 bkgcatCut      = '(bkgcat == 0 || bkgcat == 50)'
 trackChiSqCuts = 'muplus_track_chi2ndof < 4. && muminus_track_chi2ndof < 4. && Kplus_track_chi2ndof < 4. && Kminus_track_chi2ndof < 4.'
 massCuts       = 'mass > 5200. && mass < 5550. && mdau1 > 3030. && mdau1 < 3150. && mdau2 > 990. && mdau2 < 1050.'
-trueTimeCut    = 'truetime > 0.' if not trueAngles else 'truetime > 0.3 && truetime < 14' 
+trueTimeCut    = 'truetime > 0.' if not trueAngles else 'truetime > 0.3 && truetime < 14'
 timeCuts       = 'time > 0.3 && time < 14. && sigmat < 0.12'
 tagCuts        = '(tagdecision == 0 || tagdecision == -1 || tagdecision == +1)'
 
 cuts = ''
 if doSelection :
-    if not trueAngles: cuts = trackChiSqCuts + ' && ' + massCuts + ' && ' + timeCuts + ' && ' + tagCuts
-    else:
-        cuts = trackChiSqCuts + ' && ' + massCuts
-        if sigmatCut: cuts += ' && sigmat < 0.12'  
-    if MCProd != 'real' :
+    if not trueAngles: cuts = trackChiSqCuts + ' && ' + massCuts + ' && ' + timeCuts + ' && ' + trueTimeCut
+    else:              cuts = trackChiSqCuts + ' && ' + massCuts if not sigmatCut else trackChiSqCuts + ' && ' + massCuts + ' && sigmat < 0.12'
+    if MCProd != 'real':
         cuts += ' && ' + bkgcatCut + ' && ' + trueTimeCut
-    if trigger == 'ExclBiased' :
+    else: 
+        cuts += ' && ' + tagCuts
+    if trigger == 'ExclBiased':
         #cuts = 'sel == 1 && sel_cleantail==1 && hlt1_excl_biased_dec == 1 && hlt2_biased == 1 && ' + cuts
         cuts = 'sel == 1 && sel_cleantail==1 && hlt1_excl_biased == 1 && hlt2_biased == 1 && ' + cuts
-    elif trigger == 'Unbiased' :
+    elif trigger == 'Unbiased':
         #cuts = 'sel == 1 && sel_cleantail==1 && hlt1_unbiased_dec == 1 && hlt2_biased == 1 && ' + cuts
         cuts = 'sel == 1 && sel_cleantail==1 && hlt1_unbiased == 1 && hlt2_biased == 1 && ' + cuts
-    else :
+    else:
         #cuts = 'sel == 1 && sel_cleantail==1 && (hlt1_unbiased_dec == 1 || hlt1_biased == 1) && hlt2_biased == 1 && ' + cuts
         cuts = 'sel == 1 && sel_cleantail==1 && (hlt1_unbiased == 1 || hlt1_biased == 1) && hlt2_biased == 1 && ' + cuts
+
+# customise selection
+if customSel:
+    cuts = ''
+    cuts += 'abs(B_s0_TRUEID)==531'
+    cuts += ' && B_s0_TRUETAU>%s && B_s0_TRUETAU<%s'%(timeRange[0],timeRange[1])
 
 readDataOpts = { }
 if cuts      : readDataOpts['ntupleCuts'] = cuts
@@ -187,7 +198,6 @@ if weightVar : readDataOpts['WeightVar']  = ( weightVar, True )
 
 from P2VV.Utilities.DataHandling import readData
 data = readData( nTupleFile, dataSetName = nTupleName, NTuple = True, observables = obsSet, **readDataOpts )
-
 
 ###########################################################################################################################################
 ## build the B_s -> J/psi phi signal time, angular and tagging PDF ##
