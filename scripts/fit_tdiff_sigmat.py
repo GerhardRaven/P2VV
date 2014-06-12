@@ -111,6 +111,9 @@ year_label.SetBorderSize(0)
 fitOpts = dict(NumCPU = 8, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 1,
                Offset = True, Strategy = 1)
 
+pos = args[0].find('MC')
+from P2VV.Utilities.Resolution import plot_dir
+
 if options.momentum_calib:
     from array import array
     tt_bins = array('d', [0.0, 0.09928, 0.2059, 0.3207, 0.447, 0.5844, 0.7365, 0.9077, 1.101, 1.325, 1.592, 1.916, 2.332, 2.916, 3.92, 14.0])
@@ -160,7 +163,6 @@ if options.momentum_calib:
     line_result = g.Fit(l, 'S0+', 'L')
 
     from ROOT import TCanvas
-    pos = args[0].find('MC')
     cn = 'canvas_' + args[0][pos : -5]
     canvas = TCanvas(cn, cn, 600, 400)
     g.Draw('AP')
@@ -173,7 +175,6 @@ if options.momentum_calib:
     l.Draw('same')
     year_label.Draw()
 
-    from P2VV.Utilities.Resolution import plot_dir
     plot_name = 'mean_res_st_ttrue_' + args[0][pos : -5] + '.pdf'
     canvas.Print(os.path.join(plot_dir, plot_name), EmbedFonts = True)
 else:
@@ -191,6 +192,9 @@ else:
          frameOpts = dict(Range = (-20, 20)),     
          yTitle = 'Candidates / (0.5)', dataOpts = dict(Binning = 80),
          xTitle = '(t - t_{true}) / #sigma_{t}',
+         yScale = (1, 400000),
          pdfOpts = dict(ProjWData = (RooArgSet(st), sdata, True)),
          components = {'gexps' : dict(LineColor = kGreen, LineStyle = kDashed)})
     year_label.Draw()
+    plot_name = 'tdiff_sigmat_' + args[0][pos : -5] + '.pdf'
+    canvas.Print(os.path.join(plot_dir, plot_name), EmbedFonts = True)

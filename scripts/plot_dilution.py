@@ -12,12 +12,12 @@ parser.add_option("--note-labels", dest = "note_labels", default = False, action
 (options, args) = parser.parse_args()
 
 #if options.note_labels:
-from ROOT import gEnv, TPDF
+from ROOT import gEnv, TStdFonts
 if options.note_labels:
     gEnv.SetValue("Root.TTFont.13", "FreeSerif.otf")
-    TPDF.SetFont(13, "Times-Roman")
+    TStdFonts.SetFont(13, "Times-Roman")
 else:
-    TPDF.SetFont(13, "LinBiolinum")
+    TStdFonts.SetFont(13, "LinBiolinum")
 
 try:
     from bsddb3 import dbshelve as shelve

@@ -87,6 +87,8 @@ elif args[1] not in ['single', 'double', 'triple', 'core']:
 
 signal_MC = args[0] in ['MC11a', 'MC2012', 'MC2011_Sim08a']
 prompt_MC = args[0] in ['MC11a_incl_Jpsi', 'MC2011_Sim08a_incl_Jpsi', 'MC2012_incl_Jpsi']
+pos = args[0].find('201')
+year = args[0][pos : pos + 4]
 
 from P2VV.Utilities.Resolution import input_data
 
@@ -142,10 +144,10 @@ elif options.wpv and options.wpv_type == 'Gauss':
     t_minmax = (-1.5, 14)
 else:
     t_minmax = (-5, 14)
-t  = RealVar('time' if not options.use_refit else 'time_refit', Title = 't', Unit='ps', Observable = True, MinMax = t_minmax)
+t  = RealVar('time' if not options.use_refit else 'time_refit', Title = 't', Unit='ps', Value = 1, Observable = True, MinMax = t_minmax)
 m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5200, 5550))
 mpsi = RealVar('mdau1', Title = 'J/psi mass', Unit = 'MeV', Observable = True, MinMax = (3025, 3165))
-st = RealVar('sigmat' if not options.use_refit else 'sigmat_refit',Title = '#sigma_{t}', Unit = 'ps', Observable = True, MinMax = (0.0001, 0.12))
+st = RealVar('sigmat' if not options.use_refit else 'sigmat_refit',Title = '#sigma_{t}', Unit = 'ps', Observable = True, Value = 0.03, MinMax = (0.0001, 0.12))
 
 # add 20 bins for caching the normalization integral
 st.setBins(50, 'cache')
@@ -218,7 +220,7 @@ elif args[1] == 'triple':
 
 # J/psi mass pdf
 from P2VV.Parameterizations.MassPDFs import DoubleCB_Psi_Mass as PsiMassPdf
-psi_m = PsiMassPdf(mpsi, Name = 'psi_m', mpsi_alpha_1 = dict(Value = 2, Constant = '2011' in args[0]),
+psi_m = PsiMassPdf(mpsi, Name = 'psi_m', mpsi_alpha_1 = dict(Value = 2, Constant = (year == '2011')),
                    ParameteriseSigma = options.mass_param)
 psi_m = psi_m.pdf()
 
@@ -348,7 +350,7 @@ if not fit_mass and options.cache:
         split_cats = [split_util.split_cats(data = sig_sdata, mb = options.make_binning)]
 
 ## Fitting opts
-fitOpts = dict(NumCPU = 8, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True,
+fitOpts = dict(NumCPU = 1, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 2, Offset = True,
                Verbose = options.verbose, Strategy = 1)
 
 # PV bins
@@ -502,9 +504,9 @@ if fit_mass and options.simultaneous:
     if (signal_MC or prompt_MC) and options.reweigh:
         if cut.find('trueid') != -1:
             cut = cut.rsplit('&&', 1)[0]
-        reco_data = readData(input_data['2011']['data'], tree_name,
+        reco_data = readData(input_data[args[0]]['data'], tree_name,
                              NTuple = True, observables = observables[:-1],
-                             ntupleCuts = cut, Rename = tree_name + '_2011')
+                             ntupleCuts = cut, Rename = tree_name + '_' + year)
         # We build a mass PDF always wrt the J/psi, since there is not enough
         # signal to do it with. Let's hope this is OK...
         reco_mass_pdf = buildPdf(Components = (psi_ll, background), Observables = (mpsi,), Name='reco_mass_pdf')
@@ -527,9 +529,9 @@ if fit_mass and options.simultaneous:
     bkg_sdata = bkg_sdata_full
 elif fit_mass:
     if (signal_MC or prompt_MC) and options.reweigh:
-        reco_data = readData(input_data['2011']['data'], tree_name,
+        reco_data = readData(input_data[args[0]]['data'], tree_name,
                              NTuple = True, observables = observables[:-1],
-                             ntupleCuts = cut, Rename = tree_name + '_2011')
+                             ntupleCuts = cut, Rename = tree_name + '_' + year)
         reco_mass_pdf = buildPdf(Components = (psi_ll, background), Observables = (mpsi,), Name='reco_mass_pdf')
         reco_mass_result = reco_mass_pdf.fitTo(reco_data, **fitOpts)
         reco_mass_result.SetName('reco_mass_result')
@@ -643,7 +645,10 @@ else:
     fit_data = sig_sdata
     if options.simultaneous:
         fit_data_full = sig_sdata
-        
+
+st_means = {'2011' : 0.350, '2012' : 0.349}
+st_means[year] = sig_sdata.mean(st._target_())
+
 if options.simultaneous:
     split_pars = [[]]
     if options.wpv:
@@ -667,7 +672,7 @@ if options.simultaneous:
     
     ## Calculate the mean in each bin for the splitting observable
     split_obs = split_util.observables()[0]
-    split_obs_mean = sig_sdata.mean(split_obs._target_())
+    split_obs_mean = st_means[year]
     split_cat = split_cats[0][0]
     if hasattr(split_cat, '_target_'):
         split_cat = split_cat._target_()
@@ -731,11 +736,11 @@ if options.simultaneous:
 
 if (not options.simultaneous and options.mu_param) or 'sigmat' in options.mu_param:
     placeholder = sig_tres.muPlaceHolder()
-    placeholder.setVal(sig_sdata.mean(st._target_()))
+    placeholder.setVal(st_means[year])
 
 if options.sf_param:
     placeholder = sig_tres.sfPlaceHolder()
-    placeholder.setVal(sig_sdata.mean(st._target_()))
+    placeholder.setVal(st_means[year])
 
 if options.plot:
     cats = RooArgSet(st)
@@ -815,6 +820,8 @@ if options.constrain:
         print p, parameters[p]
 
 time_pdf.Print("t")
+
+## time_pdf.recursiveRedirectServers(sig_sdata.get())
 
 ## Fit
 print 'fitting data'

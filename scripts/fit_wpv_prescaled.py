@@ -23,25 +23,16 @@ from P2VV.Load import LHCbStyle
 
 from ROOT import RooMsgService
 
-## RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Eval))
-parNames = {'N_background' : ('#background', '\\# background'),
-            'N_signal'     : ('#signal', '\\# signal'),
-            'm_sig_av'     : ('av. sigma', '$\\overline{\\sigma}$'),
-            'm_sig_frac'   : ('fraction 1st Gauss', 'fraction 1st Gauss'),
-            'm_sig_mean'   : ('mean mass', 'mean mass'),
-            'm_sig_sigma'  : ('sigma', '$\\sigma_{\\sigma}$'),
-            'psi_c'        : ('psi_c', 'background slope')}
-
 obj = RooObject( workspace = 'w')
 w = obj.ws()
 
 from math import pi
-t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax=(-5, 14))
+t  = RealVar('time', Title = 't', Unit='ps', Observable = True, MinMax=(-5, 14))
 m  = RealVar('mass', Title = 'B mass', Unit = 'MeV', Observable = True, MinMax = (5200, 5550))
 mpsi = RealVar('mdau1', Title = 'J/psi mass', Unit = 'MeV', Observable = True, MinMax = (3030, 3150))
 mphi = RealVar('mdau2', Title = 'phi mass', Unit = 'MeV', Observable = True, MinMax = (990, 1050))
-st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.0001, 0.12))
-nPV = RealVar('nPV', Title = 'Number of PVs', Observable = True, MinMax = (0, 10))
+st = RealVar('sigmat',Title = '#sigma_{t}', Unit = 'ps', Observable = True, MinMax = (0.0001, 0.12))
+nPV = RealVar('nPV', Title = 'N_{PV}', Observable = True, MinMax = (0, 10))
 
 from math import pi
 cpsi = RealVar('helcosthetaK', Title = 'cpsi', Observable = True, MinMax = (-1, 1))
@@ -137,18 +128,18 @@ def plot_mass(data, prefix = ''):
     mass_canvas = TCanvas('%smass_canvas' % prefix, '%smass_canvas' % prefix, 600, 530)
     __canvases.append(mass_canvas)
     from P2VV.Utilities.Plotting import plot
-    frames = plot(mass_canvas, m, pdf = mass_pdf, data = data
-                  , dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack, Binning = nBins)
-                  , pdfOpts  = dict(LineWidth = 2)
-                  , frameOpts = dict(Title = args[0])
-                  , plotResidHist = True
-                  , components = { 'bkg_*'     : dict( LineColor = kRed,   LineStyle = kDashed )
-                                   , 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed )
-                                   , 'sig_*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
-                                   })
+    frames = plot(mass_canvas, m, pdf = mass_pdf, data = data,
+                  dataOpts = dict(MarkerSize = 0.8, MarkerColor = kBlack, Binning = nBins),
+                  pdfOpts  = dict(LineWidth = 2),
+                  frameOpts = dict(Title = args[0]),
+                  yTitleOffset = 1 / 0.7,
+                  plotResidHist = True,
+                  components = { 'bkg_*'     : dict( LineColor = kRed,   LineStyle = kDashed )
+                                 , 'psi_*'  : dict( LineColor = kGreen, LineStyle = kDashed )
+                                 , 'sig_*'     : dict( LineColor = kBlue,  LineStyle = kDashed )})
     
-    frames[1].GetXaxis().SetTitle('J/#psi K^{+}K^{-} invariant mass [MeV]')
-    frames[0].GetYaxis().SetTitle('Candidates / (%3.2f MeV)' % ((t.getMax() - t.getMin()) / float(nBins)))
+    frames[1].GetXaxis().SetTitle('M_{J/#psi K^{+}K^{-}} [MeV/#font[12]{c}^2]')
+    frames[0].GetYaxis().SetTitle('Candidates / (%3.2f MeV/#font[12]{c}^2)' % ((t.getMax() - t.getMin()) / float(nBins)))
 
 plot_mass(data_cut, 'cut_')
 
@@ -188,6 +179,25 @@ assert(time_result)
 # PV bins
 from array import array
 PV_bounds = array('d', [-0.5 + i for i in range(12)])
+
+from ROOT import TPaveText
+year_label = TPaveText(0.71, 0.72, 0.89, 0.85, "NDC")
+year_label.SetFillColor(0)
+year_label.AddText(args[0].split('_')[0][-4:])
+year_label.SetBorderSize(0)
+
+from ROOT import TCanvas
+canvas = TCanvas('time_canvas', 'time_canvas', 600, 400)
+frame = t.frame()
+sig_sdata.plotOn(frame)
+frame.Draw()
+frame.GetYaxis().SetRangeUser(1, 1000)
+frame.GetYaxis().SetTitle('Candidates / (%3.2f ps)' % t.getBinning().averageBinWidth())
+frame.GetXaxis().SetTitle('t [ps]')
+canvas.SetLogy()
+year_label.Draw()
+from P2VV.Utilities.Resolution import plot_dir
+canvas.Print(os.path.join(plot_dir, 'prescaled_sig_time_%s.pdf' % args[0]), EmbedFonts = True)
 
 assert(False)
 

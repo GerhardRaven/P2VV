@@ -3,7 +3,7 @@ from P2VV.RooFitWrappers import *
 obj = RooObject( workspace = 'w')
 w = obj.ws()
 
-mass = RealVar( 'B_s0_MM',  Title = 'm(J/#psi K^{+}K^{-})', Unit = 'MeV/c^{2}', Observable = True
+mass = RealVar( 'B_s0_LOKI_MASS_JpsiConstr',  Title = 'm(J/#psi K^{+}K^{-})', Unit = 'MeV/c^{2}', Observable = True
                  , Value = 5368., MinMax = ( 5200., 5550. ),
                  Ranges = dict(  LeftSideBand  = ( 5200., 5320. )
                                  , Signal        = ( 5320., 5420. )

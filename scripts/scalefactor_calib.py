@@ -42,7 +42,7 @@ from P2VV.Load import LHCbStyle
 
 if options.note_labels:
     gEnv.SetValue("Root.TTFont.13", "FreeSerif.otf")
-    TPDF.SetFont(13, "Times-Roman")
+    TStdFonts.SetFont(13, "Times-Roman")
 
 from P2VV.RooFitDecorators import *
 
