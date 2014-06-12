@@ -7,28 +7,30 @@ applyDilWeights   = True
 applyAngWeights   = '' # 'para_perp'
 dilutionCut       = 0.01
 dataPath          = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
-plotsFilePath     = 'asymPlot.ps' # 'asymPlot_08bins_m1p590_f0050_b.ps' # 'asymPlot_08bins_f0050_b.ps' # 'asymPlot_04bins_f00255075_b.ps'
-plotsROOTFilePath = 'asymPlot.root'
+plotsFilePath     = 'asymPlot_blindBins.pdf' # 'asymPlot_08bins_m1p590_f0050_b.ps' # 'asymPlot_08bins_f0050_b.ps' # 'asymPlot_04bins_f00255075_b.ps'
+plotsROOTFilePath = 'asymPlot_blindBins.root'
 dataSetName       = 'JpsiKK_sigSWeight'
-dataSetFileIn     = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
+dataSetFileIn     = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140309.root'
 dataSetFileOut    = 'asymmetryData.root'
-pdfFilePaths      = 'pdfVals/pdfVals_08bins_m1p641_b*_p*_f0050_b.par'
+#pdfFilePaths      = 'pdfVals/pdfVals_08bins_m3p234_b*_p*_f0050_b.par'
+pdfFilePaths      = 'pdfVals/pdfVals_08bins_m1p616_b*_p*_f0050_b.par'
 timeFracs         = [ '0.00', '0.50' ] # [ '0.00', '0.50' ] # [ '0.00', '0.25', '0.50', '0.75' ]
+labelText = '' # 'LHCb'
 if blind :
-    addText = 'blind: C #approx 0.04; S #approx -0.08'
+    addText = 'blind: C #approx +0.04; S #approx -0.07'
 else :
     addText = ''
 
 from math import pi, sqrt, sin, cos, atan2
 numTimeBins = 8 # 4
-Deltam      = 17.761
+Deltam      = 17.723
 oscPeriod   = 2. * pi / Deltam
-phis        = 0.076
-lamb        = 0.960
+phis        = +0.073 #-0.057 #+0.073
+lamb        = 0.963
 AperpSq     = 0.251
-fS          = ( 2484. * 0.426 + 9997. * 0.0586 + 34557. * 0.0097 + 28320. * 0.0093 + 12567. * 0.0477 + 7751. * 0.1918 ) / 95677.
+fS          = ( 2443. * 0.426 + 9885. * 0.0587 + 34190. * 0.0096 + 28012. * 0.0094 + 12428. * 0.0482 + 7676. * 0.1920 ) / 94634.
 binOffset   = -0.5 - atan2( 1. - lamb**2, 2. * ( (1. - fS) * (1. - 2. * AperpSq) - fS ) * lamb * sin(phis) ) / 2. / pi * float(numTimeBins)
-asymMax     = 0.10
+asymMax     = 0.07
 
 # function to set graph attributes
 def setGraphAtts( graph, colour, markerSize, minimum, maximum ) :
@@ -350,7 +352,7 @@ horLine = dotLine.DrawLine( tMin, ASumW, tMax, ASumW )
 if dataGraph : dataGraph.Draw('P SAMES')
 if pdfIntGraph : pdfIntGraph.Draw('P SAMES')
 if pdfGraph : pdfGraph.Draw('C SAMES')
-label.DrawLatex( tMin + 0.77 * ( tMax - tMin ), 0.76 * asymMax, 'LHCb' )
+if labelText : label.DrawLatex( tMin + 0.77 * ( tMax - tMin ), 0.76 * asymMax, labelText )
 if addText : text.DrawLatex( 0.5 * ( tMax + tMin ), -0.7 * asymMax, addText )
 canv.Print(plotsFilePath)
 

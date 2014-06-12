@@ -260,7 +260,7 @@ void RooExplicitNormPdf::initFunctions() const
   }
 
   // replace observables in functions by observables in our set
-  RooArgSet redirectSet(_obsSet);
+  RooArgSet redirectSet(_obsSet, _parSet);
   if (_projData) {
     // replace observables in functions by observables in projection data set
     redirectSet.add(*_projData->get());

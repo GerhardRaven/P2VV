@@ -1,5 +1,5 @@
 from math import sqrt
-plotsFilePath = 'timeAcc.ps'
+plotsFilePath = 'timeAcc.pdf'
 histsFilePath = 'timeAcc.root'
 histsType = 'fit' # 'hists' # 'fit'
 dataPath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
@@ -7,30 +7,35 @@ nTupleFilePath = 'fitNTuple_peakBkg_2011_2012_Reco14_TOS_20140309.root'
 #nTupleFilePath = 'DEC/fitNTuple_peakBkg_2011_2012_Reco14_20140116.root'
 nTupleName = 'DecayTree'
 period2011 = '' # 'summer'
+weightName = 'sWeights_ipatia'
 applyExclBScale = True
+plotBins = False
 hlt1TOS = True
 incHLT2UB = False
 hlt1UnbEff = 0.7
-plotMinMax = dict( UB = ( 0.85, 1.0 ), exclB = ( 0.25, 1.55 ) if applyExclBScale else ( 0.05, 0.22 ) )
-LHCbLabel = 'LHCb unofficial'
+plotMinMax = dict( UB = ( 0.9, 1.0 ), exclB = ( 0.25, 1.55 ) if applyExclBScale else ( 0.05, 0.22 ) )
+timeMinMax = ( 0., 7.1 )
+divisions = dict( UB = ( 5, 5, 0 ), exclB = ( 8, 5, 0 ) )
+LHCbLabel = '' # 'LHCb'
 yTitle = dict(  UB    = 'Acceptance'
               , exclB = 'Acceptance (arb. scale)'
              )
 
-drawHists = True
-drawCounts = False
-drawFit = True
+drawHists = False
+drawCounts = True
+drawFit = False
 
 #binBounds = [ 0.3, 14.0 ]
 #binBounds = [ 0.3, 0.5, 1.0, 1.7, 2.7, 14.0 ]
 #binBounds = [ 0.3, 0.46, 0.63, 0.83, 1.05, 1.32, 1.65, 2.07, 2.67, 3.7, 14. ]
-binBounds = [  0.3,            0.337264386972, 0.37549669625,  0.414748554299, 0.455075831456, 0.496539120209, 0.53920428282
-             , 0.583143080703, 0.628433900662, 0.675162596446, 0.72342346832,  0.773320408723, 0.824968249017, 0.878494351211
-             , 0.934040500166, 0.991765167029, 1.05184623487,  1.11448430465,  1.17990673635,  1.24837263066,  1.32017902684
-             , 1.39566869131,  1.47524001355,  1.55935973292,  1.64857952745,  1.74355796227,  1.84509002002,  1.95414759126
-             , 2.07193619997,  2.19997646239,  2.34022446712,  2.49525577287,  2.6685581881,   2.86502098649,  3.09180358141
-             , 3.36000284338,  3.68820308685,  4.11122609838,  4.70718114264,  5.724828229,    14.
-            ]
+binBounds = [ 0.3, 0.403, 0.512, 0.636, 0.759, 0.896, 1.047, 1.211, 1.403, 1.622, 1.869, 2.170, 2.540, 3.033, 3.759, 5.321, 14. ]
+#binBounds = [  0.3,            0.337264386972, 0.37549669625,  0.414748554299, 0.455075831456, 0.496539120209, 0.53920428282
+#             , 0.583143080703, 0.628433900662, 0.675162596446, 0.72342346832,  0.773320408723, 0.824968249017, 0.878494351211
+#             , 0.934040500166, 0.991765167029, 1.05184623487,  1.11448430465,  1.17990673635,  1.24837263066,  1.32017902684
+#             , 1.39566869131,  1.47524001355,  1.55935973292,  1.64857952745,  1.74355796227,  1.84509002002,  1.95414759126
+#             , 2.07193619997,  2.19997646239,  2.34022446712,  2.49525577287,  2.6685581881,   2.86502098649,  3.09180358141
+#             , 3.36000284338,  3.68820308685,  4.11122609838,  4.70718114264,  5.724828229,    14.
+#            ]
 
 histNames = dict(  UB_2011    = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
                  , UB_2012    = 'Bs_HltPropertimeAcceptance_Data_2012_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
@@ -223,6 +228,8 @@ nTupleFile = TFile.Open( dataPath + nTupleFilePath )
 nTuple = nTupleFile.Get(nTupleName)
 sumW = { }
 sumWSq = { }
+sumWBins = [ 0. ] * ( len(binBounds) - 1 )
+timeVals = [ 0. ] * ( len(binBounds) - 1 )
 for trigger in [ 'UB', 'exclB' ] :
     for period in [ '2011', '2012' ] :
         sumW[ ( period, trigger, ( 0, 1 ) ) ] = [ 0. ] * ( len(binBounds) - 1 )
@@ -245,10 +252,13 @@ for trigger in [ 'UB', 'exclB' ] :
             for bound in binBounds[ 1 : ] :
                 if ev.time < bound : break
                 timeBin += 1
-            sumW[ ( period, trigger, ( ev.hlt2_unbiased, ev.hlt2_biased ) ) ][timeBin] += ev.sWeights_ipatia
-            sumWSq[ ( period, trigger, ( ev.hlt2_unbiased, ev.hlt2_biased ) ) ][timeBin] += ev.sWeights_ipatia**2
-            sumWTot += ev.sWeights_ipatia
-            sumWSqTot += ev.sWeights_ipatia**2
+            sigWeight = getattr( ev, weightName ) if weightName else 1.
+            sumW[ ( period, trigger, ( ev.hlt2_unbiased, ev.hlt2_biased ) ) ][timeBin] += sigWeight
+            sumWSq[ ( period, trigger, ( ev.hlt2_unbiased, ev.hlt2_biased ) ) ][timeBin] += sigWeight**2
+            sumWTot += sigWeight
+            sumWSqTot += sigWeight**2
+            sumWBins[timeBin] += sigWeight
+            timeVals[timeBin] += sigWeight * ev.time
         print 'found %.0f +/- %.0f signal events for %s - %s (%d entries):'\
               % ( sumWTot, sqrt(sumWSqTot), period, trigger, nTupleSel.GetEntries() )
         for HLT2Cat in [ ( 0, 1 ), ( 1, 0 ), ( 1, 1 ) ] :
@@ -257,6 +267,7 @@ for trigger in [ 'UB', 'exclB' ] :
                 print '%4.0f' % sumW[ ( period, trigger, HLT2Cat ) ][bin],
             print
         dummyFile.Close()
+timeVals = [ val / sumWBin for val, sumWBin in zip( timeVals, sumWBins ) ]
 
 nTupleFile.Close()
 import os
@@ -273,8 +284,9 @@ for period in [ '2011', '2012' ] :
         N_hlt2Both    = sumW[ ( period, 'UB', ( 1, 1 ) ) ][binIt] + sumW[ ( period, 'exclB', ( 1, 1 ) ) ][binIt]
         V_hlt2ExclUnb = sumWSq[ ( period, 'UB', ( 1, 0 ) ) ][binIt] + sumWSq[ ( period, 'exclB', ( 1, 0 ) ) ][binIt]
         V_hlt2Both    = sumWSq[ ( period, 'UB', ( 1, 1 ) ) ][binIt] + sumWSq[ ( period, 'exclB', ( 1, 1 ) ) ][binIt]
-        hlt2BiasEff = N_hlt2Both / ( N_hlt2Both + N_hlt2ExclUnb )
-        hlt2BiasEffErr = sqrt( N_hlt2ExclUnb**2 * V_hlt2Both + N_hlt2Both**2 * V_hlt2ExclUnb ) / ( N_hlt2Both + N_hlt2ExclUnb )**2
+        hlt2BiasEff = ( N_hlt2Both / ( N_hlt2Both + N_hlt2ExclUnb ) ) if N_hlt2Both + N_hlt2ExclUnb > 0. else 0.
+        hlt2BiasEffErr = ( sqrt( N_hlt2ExclUnb**2 * V_hlt2Both + N_hlt2Both**2 * V_hlt2ExclUnb ) / ( N_hlt2Both + N_hlt2ExclUnb )**2 )\
+                         if N_hlt2Both + N_hlt2ExclUnb > 0. else 0.
         countLists[ ( period, 'UB' ) ].append(hlt2BiasEff)
         countErrLists[ ( period, 'UB' ) ].append(hlt2BiasEffErr)
 
@@ -286,24 +298,33 @@ for period in [ '2011', '2012' ] :
         if incHLT2UB : V_hlt1ExclB += sumWSq[ ( period, 'exclB', ( 1, 0 ) ) ][binIt]
         V_hlt1Unb = sumWSq[ ( period, 'UB', ( 1, 1 ) ) ][binIt] + sumWSq[ ( period, 'UB', ( 0, 1 ) ) ][binIt]
         if incHLT2UB : V_hlt1Unb += sumWSq[ ( period, 'UB', ( 1, 0 ) ) ][binIt]
-        hlt1ExclBEff = hlt1UnbEff * N_hlt1ExclB / N_hlt1Unb * hlt2BiasEff
-        hlt1ExclBEffErr = hlt1UnbEff * sqrt( N_hlt1Unb**2 * hlt2BiasEff**2 * V_hlt1ExclB + N_hlt1ExclB**2 * hlt2BiasEff**2 * V_hlt1Unb\
-                                            + N_hlt1ExclB**2 * N_hlt1Unb**2 * hlt2BiasEffErr**2 ) / N_hlt1Unb**2
+        hlt1ExclBEff = ( hlt1UnbEff * N_hlt1ExclB / N_hlt1Unb * hlt2BiasEff ) if N_hlt1Unb > 0. else 0.
+        hlt1ExclBEffErr = ( hlt1UnbEff * sqrt( N_hlt1Unb**2 * hlt2BiasEff**2 * V_hlt1ExclB + N_hlt1ExclB**2 * hlt2BiasEff**2 * V_hlt1Unb\
+                                              + N_hlt1ExclB**2 * N_hlt1Unb**2 * hlt2BiasEffErr**2 ) / N_hlt1Unb**2 )\
+                          if N_hlt1Unb > 0. else 0.
         countLists[ ( period, 'exclB' ) ].append(hlt1ExclBEff)
         countErrLists[ ( period, 'exclB' ) ].append(hlt1ExclBEffErr)
 
 print 'plotting acceptance bins'
 from P2VV.Load import LHCbStyle
-from ROOT import gStyle, TGraphErrors as Graph, TCanvas, kBlack, kBlue, kRed, kFullDotLarge
-gStyle.SetEndErrorSize(3)
+from ROOT import gStyle, TGraphAsymmErrors as Graph, TCanvas, kBlack, kBlue, kRed, kFullDotLarge
+gStyle.SetColorModelPS(1)
+gStyle.SetEndErrorSize( 3 if plotBins else 2 )
 
 from ROOT import TLatex
 label = TLatex()
 label.SetTextAlign(32)
 label.SetTextSize(0.072)
 
-timeArr = array( 'd', range( 1, len(binBounds) ) )
-timeErrArr = array( 'd', [0.] * ( len(binBounds) - 1 ) )
+if plotBins :
+    timeArr = array( 'd', range( 1, len(binBounds) ) )
+    timeErrLoArr = array( 'd', [ 0. ] * ( len(binBounds) - 1 ) )
+    timeErrHiArr = timeErrLoArr
+else :
+    timeArr = array( 'd', timeVals )
+    timeErrLoArr = array( 'd', [ val - binBounds[it] for it, val in enumerate(timeVals) ] )
+    timeErrHiArr = array( 'd', [ binBounds[ it + 1 ] - val for it, val in enumerate(timeVals) ] )
+
 canv = TCanvas('dummy')
 canv.Print( plotsFilePath + '[' )
 for period in [ '2011', '2012' ] :
@@ -318,42 +339,50 @@ for period in [ '2011', '2012' ] :
         if drawHists :
             accFile = TFile.Open( accHists[period]['file'] )
             hist = accFile.Get( accHists[period][trigger] )
-            histList = [ hist.GetBinContent( int(bin) ) for bin in timeArr ]
+            histList = [ hist.GetBinContent( int(bin) ) for bin in range( 1, len(binBounds) ) ]
             scale = float( len(histList) ) / sum(histList) if applyExclBScale and trigger == 'exclB' else 1.
             histArr = array( 'd', [ scale * val for val in histList ] )
-            histGraph = Graph( len(histArr), timeArr, histArr )
+            histErrArr = array( 'd', [ 0. ] * len(histArr) )
+            histGraph = Graph( len(timeArr), timeArr, histArr, timeErrLoArr, timeErrHiArr, histErrArr, histErrArr )
+            if not plotBins :
+                histGraph.GetXaxis().SetLimits( timeMinMax[0], timeMinMax[1] )
             histGraph.SetMinimum( plotMinMax[trigger][0] )
             histGraph.SetMaximum( plotMinMax[trigger][1] )
             histGraph.SetMarkerStyle(kFullDotLarge)
             histGraph.SetLineColor(kBlack)
             histGraph.SetMarkerColor(kBlack)
-            histGraph.SetLineWidth(3)
-            histGraph.SetMarkerSize(1.0)
+            histGraph.SetLineWidth( 3 if plotBins else 2 )
+            histGraph.SetMarkerSize( 1.0 if plotBins else 0.6 )
             histGraph.GetXaxis().SetTitleOffset(1.1)
             histGraph.GetYaxis().SetTitleOffset(1.0)
-            histGraph.GetXaxis().SetTitle('time bin')
+            histGraph.GetXaxis().SetTitle( 'Decay-time bin' if plotBins else 'Decay time [ps]' )
             histGraph.GetYaxis().SetTitle( yTitle[trigger] )
+            histGraph.GetYaxis().SetNdivisions( divisions[trigger][0], divisions[trigger][1], divisions[trigger][2] )
         else :
             histGraph = None
 
         if drawCounts :
             countList = countLists[ ( period, trigger ) ]
             countErrList = countErrLists[ ( period, trigger ) ]
-            scale = float( len(countList) ) / sum(countList) if applyExclBScale and trigger == 'exclB' else 1.
+            scale = ( float( len(countList) ) / sum(countList) ) if applyExclBScale and trigger == 'exclB' and sum(countList) > 0. else 1.
             countArr = array( 'd', [ scale * val for val in countList ] )
             countErrArr = array( 'd', [ scale * val for val in countErrList ] )
-            countGraph = Graph( len(timeArr), timeArr, countArr, timeErrArr, countErrArr )
+            countGraph = Graph( len(timeArr), timeArr, countArr, timeErrLoArr, timeErrHiArr, countErrArr, countErrArr )
+            if not plotBins :
+                countGraph.GetXaxis().SetLimits( timeMinMax[0], timeMinMax[1] )
             countGraph.SetMinimum( plotMinMax[trigger][0] )
             countGraph.SetMaximum( plotMinMax[trigger][1] )
             countGraph.SetMarkerStyle(kFullDotLarge)
-            countGraph.SetLineColor(kRed)
-            countGraph.SetMarkerColor(kRed)
-            countGraph.SetLineWidth(3)
-            countGraph.SetMarkerSize(1.0)
+            color = kRed if drawFit else kBlue
+            countGraph.SetLineColor(color)
+            countGraph.SetMarkerColor(color)
+            countGraph.SetLineWidth( 3 if plotBins else 2 )
+            countGraph.SetMarkerSize( 1.0 if plotBins else 0.6 )
             countGraph.GetXaxis().SetTitleOffset(1.1)
             countGraph.GetYaxis().SetTitleOffset(1.0)
-            countGraph.GetXaxis().SetTitle('time bin')
+            countGraph.GetXaxis().SetTitle( 'Decay-time bin' if plotBins else 'Decay time [ps]' )
             countGraph.GetYaxis().SetTitle( yTitle[trigger] )
+            countGraph.GetYaxis().SetNdivisions( divisions[trigger][0], divisions[trigger][1], divisions[trigger][2] )
             if histsType != 'fit' :
                 for binIt, val in enumerate(countArr) : hists[trigger].SetBinContent( binIt + 1, val )
         else :
@@ -365,18 +394,21 @@ for period in [ '2011', '2012' ] :
             #scale = 0.99 / max( vals[0] for vals in fitList ) if applyExclBScale and trigger == 'exclB' else 1.
             fitArr = array( 'd', [ scale * vals[0] for vals in fitList ] )
             fitErrArr = array( 'd', [ scale * vals[1] for vals in fitList ] )
-            fitGraph = Graph( len(timeArr), timeArr, fitArr, timeErrArr, fitErrArr )
+            fitGraph = Graph( len(timeArr), timeArr, fitArr, timeErrLoArr, timeErrHiArr, fitErrArr, fitErrArr )
+            if not plotBins :
+                fitGraph.GetXaxis().SetLimits( timeMinMax[0], timeMinMax[1] )
             fitGraph.SetMinimum( plotMinMax[trigger][0] )
             fitGraph.SetMaximum( plotMinMax[trigger][1] )
             fitGraph.SetMarkerStyle(kFullDotLarge)
             fitGraph.SetLineColor(kBlue)
             fitGraph.SetMarkerColor(kBlue)
-            fitGraph.SetLineWidth(3)
-            fitGraph.SetMarkerSize(1.0)
+            fitGraph.SetLineWidth( 3 if plotBins else 2 )
+            fitGraph.SetMarkerSize( 1.0 if plotBins else 0.6 )
             fitGraph.GetXaxis().SetTitleOffset(1.1)
             fitGraph.GetYaxis().SetTitleOffset(1.0)
-            fitGraph.GetXaxis().SetTitle('time bin')
+            fitGraph.GetXaxis().SetTitle( 'Decay-time bin' if plotBins else 'Decay time [ps]' )
             fitGraph.GetYaxis().SetTitle( yTitle[trigger] )
+            fitGraph.GetYaxis().SetNdivisions( divisions[trigger][0], divisions[trigger][1], divisions[trigger][2] )
             if histsType == 'fit' :
                 for binIt, val in enumerate(fitArr) : hists[trigger].SetBinContent( binIt + 1, val )
         else :
@@ -387,13 +419,13 @@ for period in [ '2011', '2012' ] :
         canv.SetRightMargin(0.05)
         canv.SetBottomMargin(0.18)
         canv.SetTopMargin(0.05)
-        drawOpts = 'ALP'
+        drawOpts = 'ALP' if plotBins else 'APE1'
         if histGraph :
             histGraph.Draw(drawOpts)
-            drawOpts = 'LP SAMES'
+            drawOpts = 'LP SAMES' if plotBins else 'PE1 SAMES'
         if countGraph :
             countGraph.Draw(drawOpts)
-            drawOpts = 'LP SAMES'
+            drawOpts = 'LP SAMES' if plotBins else 'PE1 SAMES'
         if fitGraph :
             fitGraph.Draw(drawOpts)
         label.DrawLatexNDC( 0.88, 0.3, LHCbLabel )

@@ -14,6 +14,8 @@ BpTInds = range( len(BpTBounds) + 1 )
 nPVBounds = [ 0.5 + float(it) for it in range(11) ]
 nPVInds = range( len(nPVBounds) + 1 )
 pbkgWeight = 'wMC'
+tagOSBounds = [ ] # [ -531.1, -530.9, 530.9, 531.1 ]
+tagSSBounds = [ ] # [ -531.1, -530.9, 530.9, 531.1 ]
 
 from ROOT import TFile
 print 'reading file "%s" and cloning n-tuple "%s"' % ( nTupleFilePathIn, nTupleName )
@@ -81,6 +83,36 @@ if pbkgWeight :
     print 'copying peaking-background weight "%s" to branch "pbkgWeight"' % pbkgWeight
     copyFloatInTree( nTupleOut, pbkgWeight, 'pbkgWeight' )
 
+if tagOSBounds :
+    from ROOT import addFloatToTree, addCategoryToTree, std
+    tagOSInds = [ -999, -1, 0, +1, +999 ]
+    catOSInds = [ -999, 1, -999, 1, -999 ]
+    print 'adding OS tagging category with indices "%s" and true-ID boundaries "%s" to n-tuple' % ( tagOSInds, tagOSBounds )
+    bounds  = std.vector('Double_t')()
+    tagInds = std.vector('Int_t')()
+    catInds = std.vector('Int_t')()
+    for bound in tagOSBounds : bounds.push_back(bound)
+    for ind in tagOSInds : tagInds.push_back(ind)
+    for ind in catOSInds : catInds.push_back(ind)
+    addCategoryToTree( nTupleOut, 'trueid', 'iTagOS', bounds, tagInds )
+    addCategoryToTree( nTupleOut, 'trueid', 'tagCatP2VVOS', bounds, catInds )
+    addFloatToTree( nTupleOut, 0., 'tagomega_os_cb' )
+
+if tagSSBounds :
+    from ROOT import addCategoryToTree, std
+    tagSSInds = [ -999, -1, 0, +1, +999 ]
+    catSSInds = [ -999, 1, -999, 1, -999 ]
+    print 'adding SS tagging category with indices "%s" and true-ID boundaries "%s" to n-tuple' % ( tagSSInds, tagSSBounds )
+    bounds  = std.vector('Double_t')()
+    tagInds = std.vector('Int_t')()
+    catInds = std.vector('Int_t')()
+    for bound in tagSSBounds : bounds.push_back(bound)
+    for ind in tagSSInds : tagInds.push_back(ind)
+    for ind in catSSInds : catInds.push_back(ind)
+    addCategoryToTree( nTupleOut, 'trueid', 'iTagSS', bounds, tagInds )
+    addCategoryToTree( nTupleOut, 'trueid', 'tagCatP2VVSS', bounds, catInds )
+    addFloatToTree( nTupleOut, 0., 'tagomega_ss_nn' )
+
 print 'first tree entries:'
 for it in range( min( nTupleOut.GetEntries(), 20 ) ) :
     b = nTupleOut.GetEntry(it)
@@ -89,6 +121,11 @@ for it in range( min( nTupleOut.GetEntries(), 20 ) ) :
              , nTupleOut.hlt2_prescale if prescaleBounds else -1, nTupleOut.mdau2, nTupleOut.KKMassCat if KKMassBounds else -1
              , nTupleOut.BpTCat if BpTBounds else -1, nTupleOut.nPVCat if nPVBounds else -1
              , nTupleOut.pbkgWeight if pbkgWeight else 0. )
+    print '   trueid = %d   iTagOS = %d   iTagSS = %d   tagCatOS = %d   tagCatSS = %d   etaOS = %.1f   etaSS = %.1f'\
+          % ( nTupleOut.trueid if tagOSBounds or tagSSBounds else 0
+             , nTupleOut.iTagOS if tagOSBounds else 0, nTupleOut.iTagSS if tagSSBounds else 0
+             , nTupleOut.tagCatP2VVOS if tagOSBounds else -1, nTupleOut.tagCatP2VVSS if tagSSBounds else -1
+             , nTupleOut.tagomega_os_cb if tagOSBounds else -1., nTupleOut.tagomega_ss_nn if tagSSBounds else -1. )
 
 from ROOT import TObject
 print 'writing n-tuple to file "%s"' % nTupleFilePathOut
