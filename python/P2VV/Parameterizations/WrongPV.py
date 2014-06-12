@@ -261,7 +261,7 @@ class ShapeBuilder(object):
                  , plotResidHist = False)
             self.__year_label.Draw()
             from P2VV.Utilities.Resolution import plot_dir
-            canvas.Print(os.path.join(plot_dir, 'wpv_tdiff_%s_linear.pdf' % self.__year), EmbedFonts = True)
+            canvas.Print(os.path.join(plot_dir, 'wpv_tdiff_%s_%s_linear.pdf' % (c.GetName()[4:], self.__year)), EmbedFonts = True)
 
     def sdata(self, key):
         c = self.__components[self.__weights][key]
