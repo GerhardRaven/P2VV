@@ -244,12 +244,12 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         if param == 'RMS':
             if sf_param:
                 self._parseArg('sf_mean_offset', kwargs, Value = 0.05, MinMax = (-0.1, 2.) )
-                self._parseArg('sf_mean_slope', kwargs, Value = 1.29, MinMax = (0., 10) )
+                self._parseArg('sf_mean_slope', kwargs, Value = 1.4, MinMax = (-10, 10) )
                 self._parseArg('sf_sigma_offset', kwargs, Value = 0.01, MinMax = (-0.1, 2.) )
-                self._parseArg('sf_sigma_slope', kwargs, Value = 0.277, MinMax = (0., 10) )
+                self._parseArg('sf_sigma_slope', kwargs, Value = 0.4, MinMax = (-10, 10) )
             if sf_param.startswith('quadratic'):
-                self._parseArg('sf_mean_quad', kwargs, Value = 0, MinMax = (-20, 20))
-                self._parseArg('sf_sigma_quad', kwargs, Value = 0, MinMax = (-20, 20))
+                self._parseArg('sf_mean_quad', kwargs, Value = 1, MinMax = (-20, 20))
+                self._parseArg('sf_sigma_quad', kwargs, Value = 1, MinMax = (-20, 20))
             if sf_param == 'linear':
                 formula = '@2 + @3 * (@0 - @1)'
                 args = {'mean'  : [self._sigmat, self.__sf_placeholder, self._sf_mean_offset, self._sf_mean_slope],
