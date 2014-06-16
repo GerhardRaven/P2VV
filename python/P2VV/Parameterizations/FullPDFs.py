@@ -489,9 +489,14 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
 
 
 # B_s^0 -> J/psi Kst analysis configuration
-class Bs2JpsiKst_PdfConfiguration( PdfConfiguration ) :
+class Bs2JpsiKst_RunIAnalysis( PdfConfiguration ) :
     def __init__( self, **kwargs ) :
-        from math import pi
+        from math import pi    
+        
+        # get Run-I-analysis-specific keyword arguments
+        runPeriods = kwargs.pop( 'RunPeriods', '3fb' )
+        assert runPeriods in [ '2011', '2012', '3fb' ]\
+            , 'P2VV - ERROR: Bs2Jpsiphi_RunIAnalysis: "RunPeriod" can be "2011", "2012" or "3fb" (found "%s")' % runPeriod
 
         # get keyword arguments
         sFit = kwargs.pop( 'sFit', True )
@@ -499,47 +504,26 @@ class Bs2JpsiKst_PdfConfiguration( PdfConfiguration ) :
         # job parameters
         self['sFit']          = sFit            # fit only signal?
         self['blind']         = { }             # { 'phiCP' : ( 'UnblindUniform', 'myString', 0.2 ) }
-        self['numEvents']     = 60000           # sum of event yields
-        self['sigFrac']       = 0.5             # fraction of signal events
+        # self['numEvents']     = 60000           # sum of event yields
+        # self['sigFrac']       = 0.5             # fraction of signal events
         self['parNamePrefix'] = ''              # prefix for parameter names
 
-        self['obsDict'] = dict(  runPeriod = ( 'runPeriod',            'run period',              { }                                   )
-                               , mass      = ( 'mass',                 'm(J/#psi K^{+}#pi^{-})',  'MeV/c^{2}', 5368.,  5200.,   5550.   )
-                               #, mumuMass  = ( 'mdau1',                'm(#mu^{+}#mu^{-})',      'MeV/c^{2}', 3096.,  3030.,   3150.   )
-                               , KKMass    = ( 'mdau2',                'm(K^{+/-}#pi^{-/+})',     'MeV/c^{2}', 1020.,   990.,   1050.   )
-                               , KpiMassCat = ( 'KpiMassCat',            'Kpi mass category',        { }                                   )
-                               #, time      = ( 'time',                 'Decay time',              'ps',        1.5,    0.3,     14.     )
-                               #, timeRes   = ( 'sigmat',               '#sigma(t)',               'ps',        0.01,   0.0001,  0.12    )
-                               , cpsi      = ( 'helcosthetaK',         'cos(#theta_{K})',         '',          0.,    -1.,     +1.      )
-                               , ctheta    = ( 'helcosthetaL',         'cos(#theta_{#mu})',       '',          0.,    -1.,     +1.      )
-                               , phi       = ( 'helphi',               '#phi_{h}',                'rad',       0.,    -pi,     +pi      )
-                               , iTagOS    = ( 'iTagOS',               'OS flavour tag',          { 'B' : +1, 'Bbar' : -1 }             )
-                               , iTagSS    = ( 'iTagSS',               'SS flavour tag',          { 'B' : +1, 'Bbar' : -1 }             )
-                               , tagCatOS  = ( 'tagCatP2VVOS',         'OS flavour tag',          { 'Untagged' : 0, 'Tagged' : 1 }      )
-                               , tagCatSS  = ( 'tagCatP2VVSS',         'SS flavour tag',          { 'Untagged' : 0, 'Tagged' : 1 }      )
-                               , hlt1ExclB = ( 'hlt1_excl_biased',     'HLT1 excl. B.',           { 'exclB' : 1, 'notExclB' : 0 }       )
-                               , hlt1ExclB = ( 'hlt1_excl_biased_dec', 'HLT1 excl. B.',           { 'exclB' : 1, 'notExclB' : 0 }       )
-                               , hlt2B     = ( 'hlt2_biased',          'HLT2 B.',                 { 'B'     : 1, 'notB'     : 0 }       )
-                               , hlt2UB    = ( 'hlt2_unbiased',        'HLT2 UB.',                { 'UB'    : 1, 'notUB'    : 0 }       )
-                              )
+        self['obsDict'] = dict(  
+            # runPeriod = ( 'runPeriod',            'run period',              { }                                   )
+            # , mass      = ( 'mass',                 'm(J/#psi K^{+}#pi^{-})',  'MeV/c^{2}', 5368.,  5200.,   5550.   )
+            #, mumuMass  = ( 'mdau1',                'm(#mu^{+}#mu^{-})',      'MeV/c^{2}', 3096.,  3030.,   3150.   )
+            , KpiMass    = ( 'mdau2',                'm(K^{+/-}#pi^{-/+})',     'MeV/c^{2}', 1020.,   990.,   1050.   )
+              , KpiMassCat = ( 'KpiMassCat',            'Kpi mass category',        { }                                   )
+              , cpsi      = ( 'helcosthetaK',         'cos(#theta_{K})',         '',          0.,    -1.,     +1.      )
+              , ctheta    = ( 'helcosthetaL',         'cos(#theta_{#mu})',       '',          0.,    -1.,     +1.      )
+              , phi       = ( 'helphi',               '#phi_{h}',                'rad',       0.,    -pi,     +pi      )
+              )
+
         self['readFromWS'] = False    # get observables from workspace?
         self['signalData'] = None     # data set of signal events
 
         # fit options
         self['fitOptions'] = dict( NumCPU = 2, Optimize = 2, Timer = True, Minimizer = 'Minuit2' )
-
-        # PDF parameters
-        # self['numTimeBins']        = 30               # number of bins for the decay time observable
-        # self['numTimeResBins']     = 40               # number of bins for the decay-time resolution observable (used for caching)
-        # self['timeResType']        = ''               # '' / 'event' / 'eventNoMean' / 'eventConstMean' / '3Gauss' / 'event3fb'
-        # self['constrainTResScale'] = ''               # '' / 'constrain' / 'fixed'
-        # self['timeEffType']        = 'paper2012'      # 'HLT1Unbiased' / 'HLT1ExclBiased' / 'paper2012' / 'fit'
-        # self['timeEffConstraintType'] = 'poisson'     # 'poisson' / 'poisson_minimal' / 'multinomial' / 'average'
-        # self['constrainDeltaM']    = ''               # '' / 'constrain' / 'fixed'
-
-        # self['timeEffHistFiles']  = { }
-        # self['timeEffData']       = dict( file = 'timeEffData.root', name = 'JpsiKK_sigSWeight' )
-        # self['timeEffParameters'] = { }
 
         self['transAngles']      = False        # use transversity angles?
         self['anglesEffType']    = 'weights'    # '' / 'weights' / 'basis012' / 'basis012Plus' / 'basis012Thetal' / 'basis0123' / 'basis01234' / 'basisSig3' / 'basisSig4'
@@ -547,30 +531,20 @@ class Bs2JpsiKst_PdfConfiguration( PdfConfiguration ) :
         self['angEffMomsFiles']  = ''
         self['angularRanges']    = dict( cpsi = [ ], ctheta = [ ], phi = [ ] )
 
-        self['tagPdfType']       = ''
-        self['SSTagging']        = True           # use same-side Kaon tagging?
-        self['condTagging']      = True           # make tagging categories and B/Bbar tags conditional observables?
-        self['contEstWTag']      = True           # use a continuous estimated wrong-tag probability instead of tagging categories?
-        self['constrainTagging'] = ''             # '' / 'constrain' / 'fixed'
-        self['tagCatsOS']        = [ ]            # [ ( 'Untagged', 0, 0.5000001, 0.5,   0.5,   0.0, 0.669, 0.0 ), ( 'Tagged',   1, 0.4999999, 0.392, 0.392, 0.0, 0.331, 0.0 ) ]
-        self['tagCatsSS']        = [ ]            # [ ( 'Untagged', 0, 0.5000001, 0.5,   0.5,   0.0, 0.896, 0.0 ), ('Tagged',    1, 0.4999999, 0.359, 0.359, 0.0, 0.104, 0.0 ) ]
-
         self['amplitudeParam'] = 'phasesSWaveFrac'    # 'phases' / 'phasesSWaveFrac' / 'ReIm' / 'bank'
         self['ASParam']        = 'deltaPerp'          # 'delta0' / 'deltaPerp' / 'ReIm' / 'Mag2ReIm' / 'Mag2ReImPerp'
         self['AparParam']      = 'phase'              # 'phase' / 'ReIm' / 'Mag2ReIm' / 'cos' / 'real'
         self['ambiguityPars']  = False                # set parameters to values of the second minimum?
 
-        self['paramKKMass']     = 'simultaneous'       # '' / 'parameters' / 'simultaneous'
+        self['paramKpiMass']     = 'simultaneous'       # '' / 'parameters' / 'simultaneous'
         self['KpiMassBinBounds'] = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ]    # KK-mass bin boundaries
-        self['CSPValues']       = [ 0.9178, 0.9022, 0.8619, 0.8875, 0.9360, 0.9641 ]  # S-P coupling factors for KK-mass bins
+        self['CSPValues']        = [ 0.9178, 0.9022, 0.8619, 0.8875, 0.9360, 0.9641 ]  # S-P coupling factors for KK-mass bins
 
         if not sFit :
             self['bkgAnglePdfType'] = 'hybrid'
             self['numAngleBins']    = ( 10, 24, 5 )
 
-        self['lambdaCPParam'] = 'lambPhi'    # 'ReIm' / 'lambSqPhi' / 'lambPhi' / 'lambPhi_CPVDecay' / 'lambPhiRel_CPVDecay'
-
-        self['splitParams'] = dict( KKMassCat = [ 'f_S', 'ASOddPhase' ] )
+        self['splitParams'] = dict( KpiMassCat = [ 'f_S', 'ASOddPhase' ] )
 
         self['externalConstr'] = { }
 
@@ -580,21 +554,7 @@ class Bs2JpsiKst_PdfConfiguration( PdfConfiguration ) :
         # initialize PdfConfiguration object
         PdfConfiguration.__init__( self )
 
-    def __setitem__( self, key, val ) :
-        if key == 'sFit' :
-            if not val : self.addBkgParams()
-            else       : self.rmBkgParams()
-
-        return dict.__setitem__( self, key, val )
-
-    def addBkgParams(self) :
-        if not 'bkgAnglePdfType' in self : self['bkgAnglePdfType'] = 'hybrid'
-        if not 'numAngleBins'    in self : self['numAngleBins']    = ( 10, 24, 5 )
-
-    def rmBkgParams(self) :
-        for key in [ 'bkgAnglePdfType', 'numAngleBins' ] : self.pop( key, None )
-
-
+ 
 class SimulCatSettings(list) :
     def __init__( self, Name ) :
         self._name = Name
@@ -1268,18 +1228,15 @@ class Bs2JpsiKst_PdfBuilder ( PdfBuilder ) :
         self['kwargs'] = kwargs
 
         # get some build parameters
-        for par in [ 'sFit', 'KKMassBinBounds', 'obsDict', 'CSPValues', 'condTagging', 'contEstWTag', 'SSTagging', 'transAngles'
-                    , 'numEvents', 'sigFrac', 'paramKKMass', 'amplitudeParam', 'ASParam', 'signalData', 'fitOptions', 'parNamePrefix'
-                    , 'tagPdfType', 'timeEffType', 'timeEffHistFiles', 'timeEffData', 'timeEffParameters', 'anglesEffType'
-                    , 'constAngEffCoefs', 'angEffMomsFiles', 'readFromWS', 'splitParams', 'externalConstr', 'runPeriods'
-                    , 'timeEffConstraintType' ] :
+        for par in [ 'sFit', 'KKMassBinBounds', 'obsDict', 'CSPValues', 'transAngles', 'paramKKMass', 'amplitudeParam', 'ASParam', 'signalData', 
+                     'fitOptions', 'parNamePrefix', 'anglesEffType', 'constAngEffCoefs', 'angEffMomsFiles', 'readFromWS', 'splitParams', 
+                     'externalConstr', 'runPeriods'
+                    ] :
             self[par] = getKWArg( self, { }, par )
 
         from P2VV.Parameterizations.GeneralUtils import setParNamePrefix, getParNamePrefix
         setParNamePrefix( self['parNamePrefix'] )
         namePF = getParNamePrefix(True)
-
-        self['condTagging'] = True if self['contEstWTag'] else self['condTagging']
 
         # create observables
         if self['runPeriods'] :
@@ -1298,9 +1255,6 @@ class Bs2JpsiKst_PdfBuilder ( PdfBuilder ) :
 
         # set (empty) dictionary of parameters
         self['parameters'] = { }
-
-        # build tagging categories
-        buildTaggingCategories( self, data = self['signalData'] )
 
         # build signal PDFs
         from P2VV.RooFitWrappers import Component
@@ -1321,13 +1275,13 @@ class Bs2JpsiKst_PdfBuilder ( PdfBuilder ) :
         from P2VV.RooFitWrappers import buildPdf
         print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: requesting %s PDF for observables [%s]'\
               % ( 'signal' if self['sFit'] else 'signal + background', ', '.join( str(obs) for obs in self['obsSetP2VV'] ) )
-        self['fullPdf'] = buildPdf( self['pdfComps'], Observables = self['obsSetP2VV'], Name = 'Jpsiphi' )
+        self['fullPdf'] = buildPdf( self['pdfComps'], Observables = self['obsSetP2VV'], Name = 'JpsiKst' )
 
+        ## TODO: Once built a normal pdf switch to simultaneous
         # build simultaneous PDF by splitting parameters
-        self['pdf'] = self._createSimultaneous()
+        # self['pdf'] = self._createSimultaneous()
 
         # multiply by acceptance functions
-        if self['timeEffType'] :   self._multiplyByTimeAcceptance()
         if self['anglesEffType'] : self._multiplyByAngularAcceptance()
 
         # create external constraints
