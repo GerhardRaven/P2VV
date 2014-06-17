@@ -422,16 +422,17 @@ def dilution(data, sfs, calib = None, error_fun = None):
     err_2 = 0
     values = []
     from math import exp, sqrt
+    sw = 0
     for st, w in data:
         d = 0
         for (pars, frac), cal in zip(sfs, calib):
             d += frac * exp(- dms * cal(pars, st) ** 2)
         total += w * d ** 2
+        sw += w
         ## Call error calculator to update sums
         if error_fun:
             error_fun(w, st)
 
-    sw = sum(e[1] for e in data)
     if error_fun:
         ## Error calculator return error on D^2
         err = 2 * total / sw * error_fun.error()
