@@ -17,6 +17,7 @@ timeInt     = False
 addInvPdf   = False
 weightVar   = 'wKin' # 'sWeights_ipatia'
 doSelection = False
+addCuts     = ''
 blind       = { } # { 'phiCP' : ( 'UnblindUniform', 'BsPhisCombination', 0.2 ), 'dGamma' : ( 'UnblindUniform', 'BsDGsCombination', 0.02 ) }
 parFileIn   = '' # '../it6/fitPars.par'
 
@@ -158,9 +159,9 @@ trueTimeCut    = 'truetime > 0.'
 timeCuts       = 'time > 0.3 && time < 14. && sigmat < 0.12'
 tagCuts        = '(tagdecision == 0 || tagdecision == -1 || tagdecision == +1)'
 
-cuts = ''
+cuts = addCuts
 if doSelection :
-    cuts = trackChiSqCuts + ' && ' + massCuts + ' && ' + timeCuts + ' && ' + tagCuts
+    cuts = trackChiSqCuts + ' && ' + massCuts + ' && ' + timeCuts + ( ' && ' + cuts if cuts else '' )
     if MCProd != 'real' :
         cuts += ' && ' + bkgcatCut + ' && ' + trueTimeCut
     if trigger == 'ExclBiased' :
