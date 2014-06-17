@@ -116,6 +116,10 @@ if args.runPeriod == '2011' :
     timeAccHistHLT1UB = 'Bs_HltPropertimeAcceptance_Data_2011_40bins_Hlt1DiMuon_Hlt2DiMuonDetached'
     pdfConfig['timeEffHistFiles']['hlt1UB'] = timeAccHistHLT1UB
 
+#pdfConfig['timeResType'] = ''
+#pdfConfig['timeEffParameters'] = dict( Cache = False )
+#for par in [ 'sf_placeholder', 'timeResMu', 'timeResFrac2', 'sf_mean_slope', 'sf_mean_quad', 'sf_sigma_slope', 'sf_sigma_quad' ] :
+#    pdfConfig['externalConstr'].pop(par)
 pdfConfig['timeResType'] += '_mean_param'
 pdfConfig['externalConstr']['mu_placeholder']   = (  0.0350  if args.runPeriod == '2011' else  0.0349,  0. )
 pdfConfig['externalConstr']['timeResMu_offset'] = ( -0.00174 if args.runPeriod == '2011' else -0.00169, 0. )
