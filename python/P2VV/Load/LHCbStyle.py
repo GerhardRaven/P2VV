@@ -62,11 +62,11 @@ lhcbWidth    = 2   # Old LHCb style: 3.00;
 lhcbTSize    = 0.06
 
 # Biolinum fonts
-from ROOT import TStdFonts, gEnv
-gEnv.SetValue("Root.TTFont.1", "LinBiolinum_RI.ttf")
-gEnv.SetValue("Root.TTFont.13", "LinBiolinum_R.ttf")
-TStdFonts.SetFont(12, "LinBiolinumI")
-TStdFonts.SetFont(13, "LinBiolinum")
+#from ROOT import TStdFonts, gEnv
+#gEnv.SetValue("Root.TTFont.1", "LinBiolinum_RI.ttf")
+#gEnv.SetValue("Root.TTFont.13", "LinBiolinum_R.ttf")
+#TStdFonts.SetFont(12, "LinBiolinumI")
+#TStdFonts.SetFont(13, "LinBiolinum")
 
 # use plain black on white colors
 from ROOT import gStyle, gROOT, TStyle
