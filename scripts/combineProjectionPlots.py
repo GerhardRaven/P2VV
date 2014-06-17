@@ -1,18 +1,20 @@
-plotVar = 'timeLog'
-ROOTFilePaths = [ 'plots/Reco14/projPlot_%s_%s_moreBins.root' % ( plotVar, comp ) for comp in [ 'total' ] ]#, 'even', 'odd', 'S' ] ]
-plotFilePath = 'plots/Reco14/projPlot_%s_moreBins.ps' % plotVar
+plotVar = 'phi'
+ROOTFilePaths = [ 'plots/Reco14/projPlot_%s_%s.root' % ( plotVar, comp ) for comp in [ 'total', 'even', 'odd', 'S' ] ]
+plotFilePath = 'plots/Reco14/projPlot_%s.pdf' % plotVar
 minMax = dict(  timeLin = ( 0.,    6000. )
               , timeLog = ( 1.e-1, 2.e4  )
               , ctk     = ( 0.,    3500. )
               , ctl     = ( 0.,    3500. )
               , phi     = ( 0.,    3500. )
              )
+drawLabel = False
 
 from ROOT import gStyle
 from P2VV.Load import LHCbStyle
 gStyle.SetLineStyleString( 5, ' 40 20 10 20' )
 gStyle.SetLineStyleString( 7, ' 40 20'       )
 gStyle.SetLineStyleString( 9, ' 100 20'      )
+gStyle.SetColorModelPS(1)
 
 projPlot = None
 LHCbLabel = None
@@ -44,6 +46,6 @@ canv.SetTopMargin(0.05)
 if plotVar == 'timeLog' : canv.SetLogy()
 
 projPlot.Draw()
-LHCbLabel.Draw()
+if drawLabel : LHCbLabel.Draw()
 
 canv.Print(plotFilePath)

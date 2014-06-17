@@ -1,5 +1,5 @@
-plotsFilePathIn  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_20140309_plots.root'
-plotsFilePathOut = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_20140309_mass_adj.pdf'
+plotsFilePathIn  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/peakBkg/P2VVDataSets20112012Reco14_noMC_DGMass_6KKMassBins_2TagCats_plots.root'
+plotsFilePathOut = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/peakBkg/P2VVDataSets20112012Reco14_noMC_DGMass_6KKMassBins_2TagCats_mass_adj.pdf'
 plotLabelText = '' # 'LHCb'
 minMax = [ ( 5.e2, 2.e4 ), ( 0., 16000. ) ]
 minMaxResid = [ ( -5., 5. ), ( -5., 5. ) ]
@@ -9,7 +9,7 @@ yTitleOffs = [ 1.00, 1.25 ]
 
 from ROOT import gStyle
 from P2VV.Load import LHCbStyle
-gStyle.SetColorModelPS(0)
+gStyle.SetColorModelPS(1)
 gStyle.SetLineStyleString( 5, ' 40 20 10 20'  )
 gStyle.SetLineStyleString( 7, ' 40 20'        )
 gStyle.SetLineStyleString( 9, ' 100 20'       )
