@@ -20,7 +20,6 @@ doSelection = False
 addCuts     = ''
 blind       = { } # { 'phiCP' : ( 'UnblindUniform', 'BsPhisCombination', 0.2 ), 'dGamma' : ( 'UnblindUniform', 'BsDGsCombination', 0.02 ) }
 parFileIn   = '' # '../it6/fitPars.par'
-
 momentsFile = '%s_%s_UB_UT_%s_BkgCat050_KK30'      % ( MCProd, 'trans' if transAngles else 'hel', tResModel if tResModel else 'trueTime' )
 plotsFile   = '%s_%s_UB_UT_%s_BkgCat050_KK30.ps'   % ( MCProd, 'trans' if transAngles else 'hel', tResModel if tResModel else 'trueTime' )
 dataSetFile = '' # '%s_%s_UB_UT_%s_BkgCat050_KK30.root' % ( MCProd, 'trans' if transAngles else 'hel', tResModel if tResModel else 'trueTime' )
