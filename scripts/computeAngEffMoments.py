@@ -5,7 +5,7 @@
 from math import pi, sin, cos, sqrt
 
 # job parameters
-MCProd      = 'Sim08_2011'
+MCProd      = 'Sim08_2012'
 trueAngles  = True
 readMoments = False
 makePlots   = False
@@ -23,7 +23,12 @@ timeRange   = (0.0003, 0.014) if customSel else (0.3, 14.)
 sigmatCut   = False
 blind       = { } # { 'phiCP' : ( 'UnblindUniform', 'BsPhisCombination', 0.2 ), 'dGamma' : ( 'UnblindUniform', 'BsDGsCombination', 0.02 ) }
 parFileIn   = '' # '../it6/fitPars.par'
-trueTimeVarName = 'B_s0_TRUETAU'
+customSel   = True
+timeRange   = (0., 25.) if customSel else (0.3, 14.)
+sigmatCut   = False
+blind       = { } # { 'phiCP' : ( 'UnblindUniform', 'BsPhisCombination', 0.2 ), 'dGamma' : ( 'UnblindUniform', 'BsDGsCombination', 0.02 ) }
+parFileIn   = '' # '../it6/fitPars.par'
+trueTimeVarName = 'truetime'
 
 momentsFile = '%s_%s_UB_UT_%s_BkgCat050_KK30'      % ( MCProd, 'trans' if transAngles else 'hel', tResModel if tResModel else 'trueTime' )
 plotsFile   = '%s_%s_UB_UT_%s_BkgCat050_KK30.ps'   % ( MCProd, 'trans' if transAngles else 'hel', tResModel if tResModel else 'trueTime' )
@@ -37,6 +42,7 @@ elif MCProd == 'Sim08' :
     nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/reweighted/Bs2JpsiPhi_Sim08a_reWeighted.root'
 elif MCProd == 'Sim08_2011' :
     nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_MC2011_Sim08a_ntupleB_20130909_angEff.root' if not trueAngles else\
+<<<<<<< HEAD
         '/project/bfys/vsyropou/PhD/workdir/jpsiphiAngAccChecks/temp/MC2011_all_BsJpsiPhi_DTT_20131006_minimal_truth_roel.root'    
     # '/project/bfys/vsyropou/data/Bs2JpsiPhi/dataSets/mcWithTrueAngles/Bs2JpsiPhi_MC2011_Sim08a_ntupleB_20130909_trueAngles.root'
 elif MCProd == 'Sim08_2012' :
@@ -190,7 +196,7 @@ if doSelection :
 if customSel:
     cuts = ''
     cuts += 'abs(B_s0_TRUEID)==531'
-    cuts += ' && B_s0_TRUETAU>%s && B_s0_TRUETAU<%s'%(timeRange[0],timeRange[1])
+    cuts += ' && truetime>%s && truetime<%s'%(timeRange[0],timeRange[1])
 
 readDataOpts = { }
 if cuts      : readDataOpts['ntupleCuts'] = cuts
