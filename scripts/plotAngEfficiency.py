@@ -2,9 +2,9 @@ transAngles = False
 momentsFiles = [ 'Sim08_hel_UB_UT_trueTime_BkgCat050_KK30_Basis_5thOrder' ]
 nTupleFilePath  = 'Sim08_hel_UB_UT_trueTime_BkgCat050_KK30_prodWeight.root'
 nTupleName  = 'DecayTree'
-plotsFile = 'angularEfficiency.ps'
+plotsFile = 'angularEfficiency.pdf'
 
-LHCbLabel = 'LHCb simulation'
+LHCbLabel = '' #'LHCb simulation'
 
 numBins = ( 30, 30, 30 )
 signMoms = [  ( 0, 0, 0 ), ( 2, 0, 0 ), ( 0, 2, 0 ), ( 0, 4, 0 )
@@ -25,6 +25,7 @@ from P2VV.Load import P2VVLibrary, LHCbStyle
 from P2VV.RooFitWrappers import RooObject
 from ROOT import TCanvas, gStyle
 #gStyle.SetEndErrorSize(4)
+gStyle.SetColorModelPS(1)
 gStyle.SetPalette(1)
 gStyle.SetNumberContours(50)
 
@@ -110,13 +111,14 @@ print
 momFunc2.getVariables().Print('v')
 
 # LHCb label
-from ROOT import TPaveText
-LHCbText = TPaveText( 0.33, 0.81, 0.68, 0.89, 'BRNDC')
-LHCbText.AddText(LHCbLabel)
-LHCbText.SetFillColor(0)
-LHCbText.SetTextAlign(12)
-LHCbText.SetTextSize(0.072)
-LHCbText.SetBorderSize(0)
+if LHCbLabel :
+    from ROOT import TPaveText
+    LHCbText = TPaveText( 0.33, 0.81, 0.68, 0.89, 'BRNDC')
+    LHCbText.AddText(LHCbLabel)
+    LHCbText.SetFillColor(0)
+    LHCbText.SetTextAlign(12)
+    LHCbText.SetTextSize(0.072)
+    LHCbText.SetBorderSize(0)
 
 # plot efficiency function slices
 from P2VV.Utilities.Plotting import plot
@@ -148,7 +150,7 @@ for ( pad, angle, xTitle, yTitle, yScale )\
          , pdfOpts      = dict( LineColor = kBlue, LineWidth = 3 )
          #, addPDFsOpts  = [ dict( LineColor = kRed, LineWidth = 3 ), dict( LineColor = kGreen + 2, LineWidth = 3 ) ]
         )
-    LHCbText.Draw()
+    if LHCbLabel : LHCbText.Draw()
 
 # plot efficiency function integrals
 from ROOT import RooArgSet
@@ -188,7 +190,7 @@ for ( pad, func, angle, xTitle, yTitle, yScale, norm )\
          , pdfOpts      = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm )
          #, addPDFsOpts  = [ dict( LineColor = kRed ) ]
         )
-    LHCbText.Draw()
+    if LHCbLabel : LHCbText.Draw()
 
 if nTupleFilePath :
     # read n-tuple from file
@@ -233,7 +235,7 @@ if nTupleFilePath :
              , dataOpts     = dict( MarkerStyle = kFullDotLarge, MarkerSize = 0.8, LineWidth = 3
                                    , Rescale = float(nBins) / 8. / pi )
             )
-        LHCbText.Draw()
+        if LHCbLabel : LHCbText.Draw()
 
     # plot (binned) efficiency function integrals
     canvs += [  TCanvas( 'cpsiDataIntCanv',   'Angular Efficiency' )
@@ -266,7 +268,7 @@ if nTupleFilePath :
                                    , Rescale = float(nBins) / 8. / pi )
              , pdfOpts      = dict( LineColor = kBlue, LineWidth = 3, Normalization = norm )
             )
-        LHCbText.Draw()
+        if LHCbLabel : LHCbText.Draw()
 
 # plot 2D efficiency function integrals
 from ROOT import RooArgList, RooConstVar, RooProduct

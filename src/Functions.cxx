@@ -22,6 +22,7 @@
 #include <TObjArray.h>
 #include <TLorentzVector.h>
 #include <TVector3.h>
+#include <TEfficiency.h>
 
 // RooFit
 #include <RooFit.h>
@@ -376,15 +377,19 @@ void addJpsiDLS(TTree* tree, const std::list<RooDataSet*>& dss, const std::strin
    TMatrixT<float> tmp(3, 1);
 
    RooRealVar* dl = new RooRealVar("jpsi_DL", "jpsi_DL", -1000, 1000);
+   RooRealVar* dle = new RooRealVar("jpsi_DLE", "jpsi_DLE", -1000, 1000);
    RooRealVar* dls = new RooRealVar("jpsi_DLS", "jpsi_DLS", -1000, 1000);
 
-   RooDataSet* ds = new RooDataSet("dls", "dls", RooArgSet(*dl, *dls));
+   RooDataSet* ds = new RooDataSet("dls", "dls", RooArgSet(*dl, *dle, *dls));
    const RooArgSet* obs = ds->get();
    std::string dln = dl->GetName();
+   std::string dlen = dle->GetName();
    std::string dlsn = dls->GetName();
    delete dl;
    delete dls;
+   delete dle;
    dl = static_cast<RooRealVar*>(obs->find(dln.c_str()));
+   dle = static_cast<RooRealVar*>(obs->find(dlen.c_str()));
    dls = static_cast<RooRealVar*>(obs->find(dlsn.c_str()));
 
    Long64_t n = tree->GetEntries();
@@ -414,17 +419,16 @@ void addJpsiDLS(TTree* tree, const std::list<RooDataSet*>& dss, const std::strin
       tmp.Mult(cjpsi, X);
       r.Mult(X_T, tmp);
 
-      // Result is (c * tau)^2, set value in ps
       double dle_jpsi = sqrt(r(0, 0));
 
       TMatrixT<float> cpv(3, 3, &cov_pv[0][0]);
       tmp.Mult(cpv, X);
       r.Mult(X_T, tmp);
 
-      // Result is (c * tau)^2, set value in ps
       double dle_pv = sqrt(r(0, 0));
 
-      dls->setVal(sqrt(dle_jpsi * dle_jpsi + dle_pv * dle_pv));
+      dle->setVal(sqrt(dle_jpsi * dle_jpsi + dle_pv * dle_pv));
+      dls->setVal(dl->getVal() / dle->getVal());
       ds->fill();
    }
    cout << endl;
@@ -898,7 +902,8 @@ RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
 }
 
 
-std::vector<double> HelicityAngles(TLorentzVector Kplus_P, TLorentzVector Kminus_P, TLorentzVector muplus_P, TLorentzVector muminus_P )
+std::vector<double> HelicityAngles(TLorentzVector Kplus_P, TLorentzVector Kminus_P, TLorentzVector muplus_P,
+                                   TLorentzVector muminus_P )
 { // Calculation based on the ANA-2012-067-v3
   
   // Bs, KK, mm momenta 4 vectors 

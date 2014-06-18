@@ -9,6 +9,12 @@ parser = optparse.OptionParser(usage = '%prog data_type top_dirs sub_dir')
 
 parser.add_option("--refit", dest = "refit", default = False, action = 'store_true',
                   help = 'Use new PV refitting.')
+parser.add_option("--split-mean", dest = "split_mean", default = False, action = 'store_true',
+                  help = 'Use split mean result.')
+parser.add_option("--note-labels", dest = "note_labels", default = False, action = 'store_true',
+                  help = 'Use ana not axis labels.')
+parser.add_option("--mixing", dest = "mixing", default = False, action = 'store_true',
+                  help = 'Mixing results.')
 
 (options, args) = parser.parse_args()
 
@@ -22,9 +28,22 @@ elif args[0] not in input_data.keys():
     print "Possible samples are: %s" % ' '.join(input_data.keys())
     sys.exit(-2)
 
+
+if not args[0].startswith('MC'):
+    data_type = 'data'
+elif args[0].endswith('Jpsi'):
+    data_type = 'prompt_mc'
+else:
+    data_type = 'signal_mc'
+
 from ROOT import *
 from collections import defaultdict
 from P2VV.Load import LHCbStyle
+
+if options.note_labels:
+    gEnv.SetValue("Root.TTFont.13", "FreeSerif.otf")
+    TStdFonts.SetFont(13, "Times-Roman")
+
 from P2VV.RooFitDecorators import *
 
 directory = os.path.join(prefix, 'p2vv/data')
@@ -105,7 +124,8 @@ assert(len(good.keys()) == 1)
 
 top_dir = good.keys()[0]
 sub_dir = args[2]
-if args[0] in ['MC2011_Sim08a', 'MC2012']:
+# Refit uses Gauss WPV so single directory is always 15.5 ps.
+if (args[0] in ['MC2011_Sim08a', 'MC2012'] and not options.refit) or options.mixing:
     single_dir = '1bin_19000.00fs_simple'
 else:
     single_dir = '1bin_15500.00fs_simple' 
@@ -115,41 +135,10 @@ interesting.update(dict([(k, dirs[k]) for k in set([k.replace(top_dir, single_di
 
 good = dict([(cd, i) for i, cd in enumerate(sorted(list(good[top_dir])))])
 
-if args[0].startswith('MC') and not args[0].endswith('Jpsi'):
+if data_type == 'signal_mc':
     sig_name = 'signal'
 else:
     sig_name = 'psi_ll'
-
-## if args[0] == '2011':
-##     ## good = {'1243785060103642893' : 4, 'm2334064025374600976' : 3,
-##     ##         '1626518906014697943' : 2, 'm3832912631969227654' : 1,
-##     ##         '4086600821164745518' : 6, 'm6573713017788044320' : 5}
-##     good = {'2027465761870101697' : 1}
-##     sig_name = 'psi_ll'
-## elif args[0] == '2012':
-##     good = {'2027465761870101697' : 1}
-##     ## 'm934737057402830078'
-##     sig_name = 'psi_ll'
-## elif args[0] == '2011_Reco14':
-##     good = {'2027465761870101697' : 1}
-##     sig_name = 'psi_ll'
-## elif args[0] == 'MC11a':
-##     good = {'389085267962218368' : 4, 'm3019457528953402347' : 3,
-##             'm7780668933605436626' : 2, 'm8376372569899625413' : 1,
-##             'm1545059518337894505' : 6, 'm8342219958663192955' : 5}
-##     sig_name = 'signal'
-## elif args[0] == 'MC2012':
-##     good = {'m8673867318518908571' : 1}
-##     sig_name = 'signal'
-## elif args[0] == 'MC2011_Sim08a':
-##     good = {'m8673867318518908571' : 1}
-##     sig_name = 'signal'
-## elif args[0] == 'MC2011_Sim08a_incl_Jpsi':
-##     good = {'2027465761870101697' : 1}
-##     sig_name = 'psi_ll'
-## elif args[0] == 'MC2012_incl_Jpsi':
-##     good = {'2027465761870101697' : 1}
-##     sig_name = 'psi_ll'
 
 from itertools import chain
 PDFs = defaultdict(dict)
@@ -177,10 +166,6 @@ for k, cache_dir in filter(lambda k: k[0].split('/')[0] in [top_dir, single_dir]
         add_sdata(sub_cache_dir.Get('sdata'), sub_dir)
         add_results(sub_cache_dir.Get('results'))
 
-    ## pdf_dir = cache_dir.Get('PDFs')
-    ## for e in pdf_dir.GetListOfKeys():
-    ##     PDFs[index][e.GetName()] = e.ReadObj()
-
 from ROOT import kGray
 from ROOT import TH1D
 from ROOT import TMatrixT
@@ -188,14 +173,20 @@ from math import sqrt
 from P2VV.PropagateErrors import propagateScaleFactor
 
 __canvases = []
-__histos = []
+from collections import defaultdict
+__histos = defaultdict(dict)
 __fit_funcs = []
 
-fit_type = 'double_RMS_Gauss'
+if options.mixing:
+    fit_type = 'double_RMS_Mixing'
+else:
+    fit_type = 'double_RMS_Gauss'
 if args[0] in ['MC2012', 'MC2011_Sim08a'] and not options.refit:
     fit_type = 'double_RMS_Rest'
-if options.refit:
-    fit_type += '_PVRefit'
+## if options.refit:
+##     fit_type += '_PVRefit'
+## if options.split_mean:
+##    fit_type += '_split_mean'
 
 __fit_results = defaultdict(list)
 from array import array
@@ -234,7 +225,7 @@ def draw_res_graph(res_graph, hist_events):
     res_max = TMath.MaxElement(res_graph.GetN(), res_graph.GetY()) * 1.10
     scale = res_max / hist_events.GetMaximum()
     hist_events = hist_events.Clone()
-    __histos.append(hist_events)
+    __histos[res_graph.GetName()]['events'] = hist_events
     hist_events.Scale(scale)
     hist_events.GetYaxis().SetRangeUser(0, res_max * 1.10)
     res_graph.GetYaxis().SetRangeUser(0, res_max * 1.10)
@@ -242,7 +233,7 @@ def draw_res_graph(res_graph, hist_events):
     hist_events.SetFillColor(kGray + 1)
     hist_events.Draw('hist') 
     res_graph.Draw('P')
-    hist_events.GetXaxis().SetTitle('estimated decay time resolution [ps]')
+    hist_events.GetXaxis().SetTitle('#sigma_{t} [ps]')
     return hist_events
 
 if top_dir.split('_')[0].startswith('momentum'):
@@ -253,6 +244,19 @@ else:
     split_cat_name = 'sigmat_cat' if not options.refit else 'sigmat_refit_cat'
     binning_name = 'st_binning'
     obs_name = 'sigmat' if not options.refit else 'sigmat_refit'
+
+from ROOT import TPaveText
+labels = {'width' : TPaveText(0.71, 0.72, 0.89, 0.85, "NDC")}
+if data_type == 'signal_mc':
+    labels['mean'] = TPaveText(0.71, 0.72, 0.89, 0.85, "NDC")
+else:
+    labels['mean'] = TPaveText(0.21, 0.72, 0.39, 0.85, "NDC")
+
+for label in labels.itervalues():
+    label.SetFillColor(0)
+    pos = args[0].find('201')
+    label.AddText(args[0][pos : pos + 4])
+    label.SetBorderSize(0)
     
 ffs = defaultdict(dict)
 for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split('/')[-1]]):
@@ -272,10 +276,14 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
     __canvases.append(canvas)
     name = 'hist_events_%s' % index
     hist_events = TH1D(name, name, len(split_bounds) - 1, array('d', [v for v in split_bounds]))
-    __histos.append(hist_events)
+    __histos['events'][key] = hist_events
     mass_result = mass_fpf = fit_results['sWeight_mass_result']
     mass_fpf = mass_result.floatParsFinal()
     for suffix in (fit_type, fit_type + '_pee'):
+        if options.refit:
+            suffix += '_PVRefit'
+        if options.split_mean:
+            suffix += '_split_mean'
         if 'time_result_' + suffix in fit_results:
             time_result = fit_results['time_result_' + suffix]
             break
@@ -319,8 +327,9 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
         
         if split_mean:
             mean_var = time_fpf.find('timeResMu_%s' % ct.GetName())
-            means.append(mean_var.getVal())
-            mean_es.append(mean_var.getError())
+            # Do this in fs
+            means.append(mean_var.getVal() * 1000)
+            mean_es.append(mean_var.getError() * 1000)
 
         range_cut = '{0} == {0}::{1}'.format(split_cat.GetName(), ct.GetName())
         mean = full_sdata.mean(observable, range_cut)
@@ -335,12 +344,12 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
     res_graph.SetName('res_graph_%d' % index)
     sfo_graph = TGraphErrors(len(res_x), res_x, sfos, res_ex, sfo_es)
     sfo_graph.SetName('sfo_graph_%d' % index)
-    __histos.extend([res_graph, sfo_graph])
+    __histos['res_graphs'][key] = (res_graph, sfo_graph)
 
     if split_mean:
         mean_graph = TGraphErrors(len(res_x), res_x, means, res_ex, mean_es)
         mean_graph.SetName('mean_graph_%d' % index)
-        __histos.append(mean_graph)
+        __histos['mean_graph'][key] = mean_graph
 
     from ROOT import TF1
     fit_funcs = {'pol0' : ('pol0', 'S0+'),
@@ -372,19 +381,22 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
     
     print ''
 
-    def draw_calib_graph(prefix, calib_type, formula, pars, color):
+    def draw_calib_graph(res_graph, prefix, calib_type, formula, pars, color):
         if key.replace(top_dir, single_dir) not in results:
             return
         ## Try extra _pee suffix for backwards compatibility
         for rn in [(calib_type,), (calib_type, 'pee')]:
             time_name = time_result.GetName().replace('_pee', '')
-            calib_result = results[key.replace(top_dir, single_dir)].get('_'.join((time_name,) + rn), None)
+            if options.split_mean:
+                time_name = time_name.replace('_split_mean', '')
+            calib_name = time_name.replace(fit_type, '_'.join((fit_type,) + rn))
+            calib_result = results[key.replace(top_dir, single_dir)].get(calib_name, None)
             if calib_result:
                 break
         else:
             return
         calib_fpf = dict([(p.GetName(), [p.getVal(), p.getError()]) for p in calib_result.floatParsFinal()])
-        calib_func = TF1(prefix + '_simul', formula,
+        calib_func = TF1('%s_%s' % (prefix, calib_type), formula,
                          (split_bounds[0] + split_bounds[1]) / 2.,
                          (split_bounds[-2] + split_bounds[-1]) / 2.)
         for i, par_name in enumerate(pars):
@@ -394,25 +406,51 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
         calib_func.SetParameter(0, mean)
         calib_func.SetLineColor(color)
         calib_func.Draw('same')
-        __histos.append(calib_func)
+        if res_graph.GetName() in __histos['calib']:
+            __histos['calib'][res_graph.GetName()].append(calib_func)
+        else:
+            __histos['calib'][res_graph.GetName()] = [calib_func]
     
     canvas.cd(1)
     sf1_hist = draw_res_graph(res_graph, hist_events)
-    sf1_hist.GetYaxis().SetTitle('#bar{#sigma}')
-    sf1_hist.GetYaxis().SetTitleOffset(1.05)
+    if options.note_labels:
+        sf1_hist.GetYaxis().SetTitle("#delta'")
+        sf1_hist.GetYaxis().SetTitleOffset(0.9)
+    else:
+        sf1_hist.GetYaxis().SetTitle('#bar{#sigma}')
+        sf1_hist.GetYaxis().SetTitleOffset(1.05)
     
     canvas.cd(2)
     sfo_hist = draw_res_graph(sfo_graph, hist_events)
-    sfo_hist.GetYaxis().SetTitle('#sigma_{#sigma}')
-    sfo_hist.GetYaxis().SetTitleOffset(1.05)
+    if options.note_labels:
+        sfo_hist.GetYaxis().SetTitle("#delta''")
+        sfo_hist.GetYaxis().SetTitleOffset(0.9)
+    else:
+        sfo_hist.GetYaxis().SetTitle('#sigma_{#sigma}')
+        sfo_hist.GetYaxis().SetTitleOffset(1.05)
 
     from itertools import product
     par_defs = [('linear', '[1] + [2] * (x - [0])', ('offset', 'slope'), kBlue),
                 ## ('quadratic', '[1] + [2] * (x - [0]) + [3] * (x - [0])^2', ('offset', 'slope', 'quad'), kGreen),
                 ('quadratic_no_offset', '([1] + [2] * (x - [0])) * x', ('slope', 'quad'), kOrange)]
-    for (pad, prefix), args in product(((1, 'sf_mean'), (2, 'sf_sigma')), par_defs):
+    for (pad, prefix), fargs in product(((1, (res_graph, 'sf_mean')), (2, (sfo_graph, 'sf_sigma'))), par_defs):
         canvas.cd(pad)
-        draw_calib_graph(*tuple((prefix, ) + args))
+        draw_calib_graph(*tuple(prefix + fargs))
+    canvas.cd(1)
+    labels['width'].Draw()
+    canvas.cd(2)
+    labels['width'].Draw()
+    canvas.Update()
+    if not options.split_mean:
+        from P2VV.Utilities.Resolution import plot_dir
+        plot_name = 'sigma_calib_%s.pdf' % args[0]
+        if options.note_labels:
+            plot_name = plot_name.replace('.pdf', '_note.pdf')
+        if options.refit:
+            plot_name = plot_name.replace('.pdf', '_refit.pdf')
+        if options.mixing:
+            plot_name = plot_name.replace('.pdf', '_mixing.pdf')
+        canvas.Print(os.path.join(plot_dir, plot_name), EmbedFonts = not options.note_labels)
 
     if split_mean:
         name = 'mean_canvas_%s' % index
@@ -421,19 +459,42 @@ for key, fit_results in sorted(results.items(), key = lambda e: good[e[0].split(
         __canvases.append(mean_canvas)
         mean_graph.Draw("AP")
         mean_graph.GetXaxis().SetTitle("#sigma_{t} [ps]")
-        mean_graph.GetYaxis().SetTitle("#mu [ps]  ")
-        mean_graph.GetYaxis().SetTitleOffset(1.07)
+        mean_graph.GetYaxis().SetTitle("#mu [fs]")
+        mean_graph.GetYaxis().SetTitleOffset(1.0)
         def __dg(n, c):
             g = ffs[mean_graph.GetName()][n]
             g.SetLineColor(c)
             g.SetRange((split_bounds[0] + split_bounds[1]) / 2.,
                        (split_bounds[-2] + split_bounds[-1]) / 2.)
             g.Draw('same')
-        for n, c in [('pol1_mean_param', kBlue), ('pol2_mean_param', kGreen), ('pol0', 7)]:
+        curves = [('pol1_mean_param', kBlue), ('pol2_mean_param', kGreen)]
+        if data_type != 'signal_mc':
+            # for signal MC don't plot the flat one
+            curves += [('pol0', 7)]
+        for n, c in curves:
             __dg(n, c)
+        labels['mean'].Draw()    
         mean_canvas.Update()
-    
-    canvas.Update()
+        if options.split_mean:
+            from P2VV.Utilities.Resolution import plot_dir
+            plot_name = 'mean_calib_%s.pdf' % args[0]
+            if options.refit:
+                plot_name = plot_name.replace('.pdf', '_refit.pdf')
+            mean_canvas.Print(os.path.join(plot_dir, plot_name), EmbedFonts = not options.note_labels)
+
+chi2s = {}
+from ROOT import Double
+for rgn, cfs in __histos['calib'].iteritems():
+    rg = filter(lambda x: x.GetName() == rgn, __histos['res_graphs'].values()[0])[0]
+    x = Double(0)
+    y = Double(0)
+    for cf in cfs:
+        chi2 = 0
+        for i in range(rg.GetN()):
+            res = rg.GetPoint(i, x, y)
+            ey = rg.GetErrorY(i)
+            chi2 += ((y - cf.Eval(x)) / ey) ** 2
+        chi2s[(rgn, cf.GetName())] = chi2 / (rg.GetN() - (cf.GetNpar() - 1))
 
 def write_constraints(constraints, sample_key, mu_key, sf_key):
     import shelve
@@ -444,7 +505,6 @@ def write_constraints(constraints, sample_key, mu_key, sf_key):
     dbase[sample_key] = pars
     dbase.close()
 
-    
 ## def chunks(l, n):
 ##     """ Yield successive n-sized chunks from l.
 ##     """

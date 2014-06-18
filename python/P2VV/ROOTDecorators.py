@@ -132,7 +132,9 @@ def __wrap_font_embed(fun):
         if root_font_path != 'unset':
             font_path.append(root_font_path)
         font_path = ':'.join(font_path)
-        pdf = os.path.realpath(args[0]) if len(args) >= 1 and type(args[0] == str) and '.pdf' in args[0] else None
+        pdf = None
+        if len(args) >= 1 and type(args[0] == str) and '.pdf' in args[0]:
+            pdf = os.path.realpath(args[0])
         r = fun(self, *args)
         if pdf and embed:
             import tempfile

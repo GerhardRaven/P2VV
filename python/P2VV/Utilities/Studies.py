@@ -345,7 +345,7 @@ class fitResultsAnalysis(object) :
             meanSqVal = parSums[1] / float( nParVals[0] )
             stdDev = sqrt( meanSqVal - meanVal**2 )
             precDev = max( 0, 3 - int( ceil( log10(stdDev) ) ) )
-            prec = max( 0, 2 - int( ceil( log10( refVal[1] ) ) ) ) if refVal != None else precDev
+            prec = max( 0, 3 - int( ceil( log10( refVal[1] ) ) ) ) if refVal != None else precDev
             print ( '  {0:<%ds}   {1:<+8.%df}   {2:<11.%df}' % ( nameLen, prec, precDev ) ).format( name, meanVal, stdDev ),
             if refVal != None :
                 refErr = errSums / float( nParVals[0] ) if toyMode else refVal[1]

@@ -30,6 +30,7 @@ parser.add_argument( '--timeAccFile2012', '-y', default = 'timeAcceptanceFit_201
 parser.add_argument( '--angAccType', '-t', default = 'weights' )  # 'weights' / 'basis012' / 'basis01234' / 'basisSig6'
 parser.add_argument( '--angAccFile', '-z', default = 'angEffNominalRew_moms.par' )
 parser.add_argument( '--constAngAcc', '-q', default = True )
+parser.add_argument( '--timeResSyst', default = "" )
 
 args = parser.parse_args()
 assert args.model in [ 'phi', 'lamb_phi', 'polarDep' ]
@@ -136,6 +137,53 @@ if pdfConfig['timeEffType'].startswith('fit') :
                                                             }
                                                          )
 
+timeResSystType = args.timeResSyst
+from collections import defaultdict
+splitConstr = defaultdict(dict)
+if timeResSystType == 'mean_param':
+    pdfConfig['timeResType'] += '_mean_param'
+    splitConstr['mu_placeholder']['2011']   = (  0.0350, 0. )
+    splitConstr['timeResMu_offset']['2011'] = ( -0.0020, 0. )
+    splitConstr['timeResMu_slope']['2011']  = ( -0.1475, 0. )
+    splitConstr['timeResMu_quad']['2011']   = ( -6.2781, 0. )
+
+    splitConstr['mu_placeholder']['2012']  =  (  0.0349, 0. )
+    splitConstr['timeResMu_offset']['2012'] = ( -0.0031, 0. )
+    splitConstr['timeResMu_slope']['2012']  = ( -0.1634, 0. )
+    splitConstr['timeResMu_quad']['2012']   = ( -6.9108, 0. )
+    
+    split_runPeriod = set(pdfConfig['splitParams']['runPeriod'])
+    for pn in ('timeResMu',):
+        pdfConfig['externalConstr'].pop(pn)
+        pdfConfig['splitParams']['runPeriod'].remove(pn)
+    for par, vals in splitConstr.iteritems() :
+        if par not in split_runPeriod:
+            pdfConfig['splitParams']['runPeriod'].append(par)
+elif timeResSystType == 'quadratic_no_offset':
+    from collections import defaultdict
+    splitConstr = defaultdict(dict)
+    splitConstr['sf_placeholder']['2011']  = (  0.0350,  0. )
+    splitConstr['sf_mean_slope']['2011']   = (  1.436, 0. )
+    splitConstr['sf_mean_quad']['2011']    = ( -8.145, 0. )
+    splitConstr['timeResFrac2']['2011']    = (  0.151, 0. )
+    splitConstr['sf_sigma_slope']['2011']  = (  0.348, 0. )
+    splitConstr['sf_sigma_quad']['2011']   = (  2.518, 0. )
+
+    splitConstr['sf_placeholder']['2012']  =  ( 0.0349,  0. )
+    splitConstr['sf_mean_slope']['2012']   =  ( 1.425, 0. )
+    splitConstr['sf_mean_quad']['2012']    =  ( 3.167, 0. )
+    splitConstr['timeResFrac2']['2012']    =  ( 0.265, 0. )
+    splitConstr['sf_sigma_slope']['2012']  =  ( 0.271, 0. )
+    splitConstr['sf_sigma_quad']['2012']   =  ( 3.136, 0. )
+
+for par, vals in splitConstr.iteritems() :
+    from P2VV.Parameterizations.FullPDFs import SimulCatSettings
+    constr = SimulCatSettings( '%sConstr' % par )
+    constr.addSettings( [ 'runPeriod' ], [ [ 'p2011' ] ], vals['2011'] )
+    constr.addSettings( [ 'runPeriod' ], [ [ 'p2012' ] ], vals['2012'] )
+    pdfConfig['externalConstr'][par] = constr
+
+    
 if fixUpAcc :
     for it, sett in enumerate( pdfConfig['externalConstr']['betaTimeEff'] ) :
         per = sett[0]['runPeriod']

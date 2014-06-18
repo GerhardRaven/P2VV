@@ -11,6 +11,8 @@
 
 
 class TH1l;
+class TH1I;
+class TEfficiency;
 class TTree;
 class RooDataSet;
 
@@ -41,7 +43,6 @@ RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
 
 std::vector<double> HelicityAngles(TLorentzVector Kplus_P, TLorentzVector Kminus_P, 
 				   TLorentzVector muplus_P, TLorentzVector muminus_P);
-
 
 struct _object;
 
