@@ -512,7 +512,7 @@ class Bs2JpsiKst_RunIAnalysis( PdfConfiguration ) :
             # runPeriod = ( 'runPeriod',            'run period',              { }                                   )
             # , mass      = ( 'mass',                 'm(J/#psi K^{+}#pi^{-})',  'MeV/c^{2}', 5368.,  5200.,   5550.   )
             #, mumuMass  = ( 'mdau1',                'm(#mu^{+}#mu^{-})',      'MeV/c^{2}', 3096.,  3030.,   3150.   )
-            , KpiMass    = ( 'mdau2',                'm(K^{+/-}#pi^{-/+})',     'MeV/c^{2}', 1020.,   990.,   1050.   )
+                KpiMass    = ( 'mdau2',                'm(K^{+/-}#pi^{-/+})',     'MeV/c^{2}', 1020.,   990.,   1050.   )
               , KpiMassCat = ( 'KpiMassCat',            'Kpi mass category',        { }                                   )
               , cpsi      = ( 'helcosthetaK',         'cos(#theta_{K})',         '',          0.,    -1.,     +1.      )
               , ctheta    = ( 'helcosthetaL',         'cos(#theta_{#mu})',       '',          0.,    -1.,     +1.      )
