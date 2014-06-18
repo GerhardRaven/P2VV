@@ -41,7 +41,7 @@ runPeriod          = options.runPeriod
 kaonSign           = options.kaonSign
 kaonSignStr        = 'neg' if options.kaonSign < 0 else 'pos'
 dataSetKey         = str(runPeriod) + kaonSignStr + 'Kaons'
-path               = protoTreePaths[dataSetKey]
+protoTreePath      = protoTreePaths[dataSetKey]
 wghtArg            = options.sigWeight
 if   's' in wghtArg or 'S' in wghtArg: weightName, weightVarName = 'Bs', 'Bs_sWeight' 
 elif 'd' in wghtArg or 'D' in wghtArg: weightName, weightVarName = 'Bd', 'Bd_sWeight'
@@ -71,7 +71,7 @@ obsDict = dict(   runPeriod         = ( 'runPeriod',       'run period', { 'p%s'
                  )
 
 # add branches for angEff or helicity angles calculation
-if createAngAccNtuple:
+if createAngAccNtuple or calculateHelAngles:
     for name in [ '%s_P%s' % ( part, comp ) for part in [ 'muplus', 'muminus', 'Kplus', 'piminus' ] for comp in ( 'X', 'Y', 'Z' ) ]:
         obsDict[name] = ( name, name, 'MeV/c', 0.,   -RooInf, +RooInf )
 
@@ -85,7 +85,7 @@ if weightName == 'Bd': obsDict.pop('cor_sWeights_Bs')
 
 # read input file
 from ROOT import TFile
-protoFile   = TFile.Open(path)
+protoFile   = TFile.Open(protoTreePath)
 protoTree   = protoFile.Get(inputTreeName)
 
 # create temporary intermediate file
@@ -100,7 +100,7 @@ del protoFile
 from P2VV.Load import P2VVLibrary
 from ROOT import addIntegerToTree 
 
-print 'P2VV - INFO: Processing tree (%s initial entries): %s'%(intermediateTree.GetEntries(),path)
+print 'P2VV - INFO: Processing tree (%s initial entries): %s'%(intermediateTree.GetEntries(),protoTreePath)
 if addRunPeriodInfo:   
     print 'P2VV - INFO: Adding run period (%s) info to ntuple'%runPeriod
     addIntegerToTree(intermediateTree, int(runPeriod), 'runPeriod' )
@@ -173,42 +173,11 @@ outDataSet = readData( intermediateFileName, inputTreeName,
 outDataSet.Print()
 
 # create final output file
-outFileName = outDataSetPaths[dataSetKey]
-if createFitNtuple: outFileName += '_fitNtuple'
-if createAngAccNtuple: outFileName += '_angEff'
-outFileName += '_%s_%s.root'%(prodDate,weightName + '_weighted')
+outFileName = outDataSetPaths[dataSetKey] + '_fitNtuple_%s_%s.root'%(prodDate,weightName + '_weighted')
+#if createFitNtuple: outFileName += '_fitNtuple'
+#if createAngAccNtuple or calculateHelAngles: outFileName += '_angEff'
 
 outFile = TFile.Open(outFileName, 'recreate')
 outDataSet.Write()
 outFile.Close()
 del outFile
-
-
-
-
-
-# define helping functions
-def addKpiMassCategory(tree, BinBounds, KpiMassBranchName):
-    # create binning
-    nBins = len(BinBounds) -1
-    Bins = {}
-    for i_thBin in range(nBins): Bins['bin%s'%i_thBin] = (BinBounds[i_thBin],BinBounds[i_thBin+1])
-    
-    def getBinNumber(KpiMass):
-        binIndx = 0
-        for bin, binRange in Bins.iteritems():
-            if KpiMass > binRange[0] and KpiMass <= binRange[1]: 
-                binIndx = bin[-1]
-                break
-        return int(binIndx)
-
-    # create branch for Kpi mass category
-    from array import array
-    br_addr = array('i',[0])
-    branch  = tree.Branch('KpiMassCat', br_addr, 'KpiMassCat/I')    
-    
-    # loop over treee and fill
-    for event in tree:
-        #KpiMass = getattr(tree, KpiMassBranchName)
-        br_addr[0] = 1 #getBinNumber(KpiMass)
-        branch.Fill()
