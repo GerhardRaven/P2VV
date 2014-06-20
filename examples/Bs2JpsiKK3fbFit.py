@@ -8,6 +8,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument( '--jobName', '-N', default = 'Bs2JpsiKKFit' )
 parser.add_argument( '--model', '-m', default = 'lamb_phi' )  # 'phi' / 'lamb_phi' / 'polarDep'
 parser.add_argument( '--blind', '-b', default = True )
+parser.add_argument( '--tagCatsType', '-T', default = 'linearCats' )
+parser.add_argument( '--contEstWTag', '-C', default = True )
 parser.add_argument( '--fixLowAcc', '-l', default = True )
 parser.add_argument( '--fixUpAcc', '-u', default = False )
 parser.add_argument( '--fixTagging', '-a', default = False )
@@ -30,11 +32,13 @@ parser.add_argument( '--timeAccFile2012', '-y', default = 'timeAcceptanceFit_201
 parser.add_argument( '--angAccType', '-t', default = 'weights' )  # 'weights' / 'basis012' / 'basis01234' / 'basisSig6'
 parser.add_argument( '--angAccFile', '-z', default = 'angEffNominalRew_moms.par' )
 parser.add_argument( '--constAngAcc', '-q', default = True )
-parser.add_argument( '--timeResSyst', default = "" )
+parser.add_argument( '--timeResSyst', '-R', default = '' )
 
 args = parser.parse_args()
 assert args.model in [ 'phi', 'lamb_phi', 'polarDep' ]
 blind = False if not args.blind or str( args.blind ).lower() in [ 'false', '0' ] else True
+assert args.tagCatsType in [ '', 'linearCats' ]
+contEstWTag = False if not args.tagCatsType or str( args.contEstWTag ).lower() in [ 'false', '0' ] else True
 fixLowAcc = False if not args.fixLowAcc or str( args.fixLowAcc ).lower() in [ 'false', '0' ] else True
 fixUpAcc = False if not args.fixUpAcc or str( args.fixUpAcc ).lower() in [ 'false', '0' ] else True
 fixTagging = False if not args.fixTagging or str( args.fixTagging ).lower() in [ 'false', '0' ] else True
@@ -82,6 +86,8 @@ if args.jobName :
     print '  job name: %s' % args.jobName
 print '  model: %s' % args.model
 print '  blind analysis: %s' % ( 'true' if blind else 'false' )
+print '  tagging categories type: %s' % args.tagCatsType
+print '  continuous estimated wrong-tag variable: %s' % contEstWTag
 print '  fix lower decay-time acceptance: %s' % ( 'true' if fixLowAcc else 'false' )
 print '  fix upper decay-time acceptance: %s' % ( 'true' if fixUpAcc  else 'false' )
 print '  fix tagging calibration: %s' % ( 'true' if fixTagging else 'false' )
@@ -115,6 +121,12 @@ from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_RunIAnalysis as PdfConfig
 pdfConfig = PdfConfig()
 if not blind :
     pdfConfig['blind'] = { }
+
+pdfConfig['tagCatsType'] = args.tagCatsType
+pdfConfig['contEstWTag'] = contEstWTag
+if pdfConfig['tagCatsType'] != 'linearCats' :
+    for name in [ 'wTagP0OS', 'wTagP1OS', 'wTagDelP0OS', 'wTagDelP1OS', 'wTagP0SS', 'wTagP1SS', 'wTagDelP0SS', 'wTagDelP1SS' ] :
+        pdfConfig['externalConstr'].pop(name)
 
 pdfConfig['lambdaCPParam'] = 'observables_CPVDecay' if args.model == 'polarDep' else 'lambPhi'
 if pdfConfig['lambdaCPParam'] == 'observables_CPVDecay' :

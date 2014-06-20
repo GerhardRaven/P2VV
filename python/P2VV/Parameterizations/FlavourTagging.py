@@ -700,11 +700,14 @@ class TaggingCategories( _util_parse_mixin, _util_extConstraints_mixin, _util_co
 
 class Independent_TaggingCategories( TaggingCategories ) :
     def __init__( self, **kwargs ) :
+        # get tagging category parameters
+        tagCats = kwargs.pop( 'TagCats', [ ] )
+
         # get number of tagging categories
-        if 'NumTagCats' not in kwargs : 
+        if not tagCats and 'NumTagCats' not in kwargs :
             raise KeyError('Independent_TaggingCategories: did not find "NumTagCats" argument')
         else :
-            numTagCats = kwargs.pop('NumTagCats')
+            numTagCats = kwargs.pop( 'NumTagCats', len(tagCats) )
 
         # get tagging category variable (or its name)
         tagCat = kwargs.pop( 'tagCat', 'tagCat' )
@@ -718,27 +721,23 @@ class Independent_TaggingCategories( TaggingCategories ) :
                                     )
             return params
 
+        # set default category parameters
         catParams = [ getCatParam(params) for params in [ 'TagCatCoefs', 'ATagEffs', 'TagDilutions', 'ADilWTags' ] ]
-
-        if numTagCats == 6 :
-            # set default parameters for the six (standard) categories
-            if not catParams[0] : catParams[0] = [ 0.15, 0.07, 0.03, 0.01, 0.003 ]
-            if not catParams[1] : catParams[1] = 5 * [ 0. ]
-            if not catParams[2] : catParams[2] = [ 0.20, 0.30, 0.46, 0.52, 0.76  ]
-            if not catParams[3] : catParams[3] = 5 * [ 0. ]
-
-        else :
-            # loop over tagging categories and set default parameters
-            for cat in range( numTagCats - 1 ) :
-                if len(catParams[0]) == cat :
+        for cat in range( numTagCats - 1 ) :
+            catDil = 1. - 2. * tagCats[ cat + 1 ][4] if tagCats else float(cat + 1) / float(numTagCats)
+            catCoef = tagCats[ cat + 1 ][6] if tagCats else 1.
+            if len(catParams[0]) == cat :
+                if not tagCats :
                     from math import pow
                     numCatsFrac = float(numTagCats) / 6.
-                    tagCatCoef  = 0.15 / numCatsFrac * pow( 0.5, float(cat) / numCatsFrac )
-                    catParams[0].append( tagCatCoef )
+                    catCoef  = 0.15 / numCatsFrac * pow( 0.5, float(cat) / numCatsFrac )
+                catParams[0].append(catCoef)
 
-                if len(catParams[1]) == cat : catParams[1].append(0.)
-                if len(catParams[2]) == cat : catParams[2].append( float(cat + 1) / float(numTagCats) )
-                if len(catParams[3]) == cat : catParams[3].append(0.)
+            if len(catParams[1]) == cat : catParams[1].append(0.)
+            if len(catParams[2]) == cat : catParams[2].append(catDil)
+            if len(catParams[3]) == cat : catParams[3].append(0.)
+        if len(catParams[0]) < numTagCats : catParams[0].insert( 0, 1. - sum(catParams[0]) )
+        if len(catParams[1]) < numTagCats : catParams[1].insert( 0, 0. )
 
         # check for remaining arguments and initialize
         self._check_extraneous_kw( kwargs )
