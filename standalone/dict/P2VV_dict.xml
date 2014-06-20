@@ -56,6 +56,7 @@
         <class name = "RooCombEffConstraint" />
         <function name = "HelicityAngles" />
         <function name = "getRooRealMaxVal" />
+        <function name = "addHelicityAnglesToTree" />
 
         <class name = "std::map<RooAbsCategory*, std::string>" />
         <class name = "std::map<RooCategoryProxy*, std::string>" />

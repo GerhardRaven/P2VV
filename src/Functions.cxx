@@ -898,9 +898,130 @@ RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
 }
 
 
+void addHelicityAnglesToTree(TTree& tree, 
+			     const TString& posHadrName, const TString& negHadrName, 
+			     const TString& posLeptName, const TString& negLeptName,
+			     const Double_t& posHadrMass, const Double_t& negHadrMass, 
+			     const Double_t& posLeptMass, const Double_t& negLeptMass,
+			     const TString& helcosthetaK_brName, const TString& helcosthetaL_brName, const TString& helphi_brName)
+{
+
+  // new branch addresses
+  Double_t helcosthetaK_address;
+  Double_t helcosthetaL_address;
+  Double_t helphi_address;
+
+  // create new branches
+  TBranch* helcosthetaK_branch = tree.Branch(helcosthetaK_brName, &helcosthetaK_address, helcosthetaK_brName + "/D");
+  TBranch* helcosthetaL_branch = tree.Branch(helcosthetaL_brName, &helcosthetaL_address, helcosthetaL_brName + "/D");
+  TBranch* helphi_branch       = tree.Branch(helphi_brName,       &helphi_address,       helphi_brName + "/D"      );
+
+  // existing branch addresses
+  std::vector<Double_t> posHadrMomentum(3);
+  std::vector<Double_t> negHadrMomentum(3);
+  std::vector<Double_t> posLeptMomentum(3);
+  std::vector<Double_t> negLeptMomentum(3);
+  
+  // set branch addresses
+  //TODO: Make the suffixes more flexible
+  //tree.SetMakeClass(1);
+  tree.SetBranchAddress( posHadrName + "_PX", &posHadrMomentum[0]);
+  tree.SetBranchAddress( posHadrName + "_PY", &posHadrMomentum[1]);
+  tree.SetBranchAddress( posHadrName + "_PZ", &posHadrMomentum[2]);
+
+  tree.SetBranchAddress( negHadrName + "_PX", &negHadrMomentum[0]);
+  tree.SetBranchAddress( negHadrName + "_PY", &negHadrMomentum[1]);
+  tree.SetBranchAddress( negHadrName + "_PZ", &negHadrMomentum[2]);
+
+  tree.SetBranchAddress( posLeptName + "_PX", &posLeptMomentum[0]);
+  tree.SetBranchAddress( posLeptName + "_PY", &posLeptMomentum[1]);
+  tree.SetBranchAddress( posLeptName + "_PZ", &posLeptMomentum[2]);
+
+  tree.SetBranchAddress( negLeptName + "_PX", &negLeptMomentum[0]);
+  tree.SetBranchAddress( negLeptName + "_PY", &negLeptMomentum[1]);
+  tree.SetBranchAddress( negLeptName + "_PZ", &negLeptMomentum[2]);
+
+  
+  // calculate helicity angles and fill branches
+  for (Long64_t it = 0; it < tree.GetEntries(); ++it)
+    { 
+      tree.GetEntry(it);
+      // TODO: Do the mass calculation with a lambda function.
+    
+      // positive Hadron four momentum
+      TVector3 posHadrMomVector = TVector3(posHadrMomentum[0], posHadrMomentum[1], posHadrMomentum[2]);
+      Double_t posHadronEnergy = TMath::Sqrt( posHadrMass*posHadrMass + posHadrMomVector.Mag2() );
+      TLorentzVector posHadrFourVect = TLorentzVector(posHadrMomVector, posHadronEnergy);
+
+      // negative Hadron four momentum
+      TVector3 negHadrMomVector = TVector3(negHadrMomentum[0], negHadrMomentum[1], negHadrMomentum[2]);
+      Double_t negHadronEnergy = TMath::Sqrt( negHadrMass*negHadrMass + negHadrMomVector.Mag2() );
+      TLorentzVector negHadrFourVect = TLorentzVector(negHadrMomVector, negHadronEnergy);
+
+      // positive Lepton four momentum
+      TVector3 posLeptMomVector = TVector3(posLeptMomentum[0], posLeptMomentum[1], posLeptMomentum[2]);
+      Double_t posLeptonEnergy = TMath::Sqrt( posLeptMass*posLeptMass + posLeptMomVector.Mag2() );
+      TLorentzVector posLeptFourVect = TLorentzVector(posLeptMomVector, posLeptonEnergy);
+
+      // negative Lepton four momentum
+      TVector3 negLeptMomVector = TVector3(negLeptMomentum[0], negLeptMomentum[1], negLeptMomentum[2]);
+      Double_t negLeptonEnergy = TMath::Sqrt( negLeptMass*negLeptMass + negLeptMomVector.Mag2() );
+      TLorentzVector negLeptFourVect = TLorentzVector(negLeptMomVector, negLeptonEnergy);
+      
+      // posHadrMomVector.Print();
+      // posHadrFourVect.Print();
+      // cout<<posHadrFourVect.Mag()<<endl;
+      // cout<<endl;
+
+      // negHadrMomVector.Print();
+      // negHadrFourVect.Print();
+      // cout<<negHadrFourVect.Mag()<<endl;
+      // cout<<endl;
+
+      // posLeptMomVector.Print();
+      // posLeptFourVect.Print();
+      // cout<<posLeptFourVect.Mag()<<endl;
+      // cout<<endl;
+
+      // negLeptMomVector.Print();
+      // negLeptFourVect.Print();
+      // cout<<negLeptFourVect.Mag()<<endl;
+      // cout<<endl;
+
+      std::vector<Double_t> helAngles = HelicityAngles(posHadrFourVect, negHadrFourVect, posLeptFourVect, negLeptFourVect);    
+      // cout<<helAngles[0]<<endl;
+      // cout<<helAngles[1]<<endl;
+      // cout<<helAngles[2]<<endl;
+
+      // cout<<"not pointer"<<endl;
+      // cout<<helAngles[0]<<endl;
+      // cout<<&helAngles[0]<<endl;
+      // cout<<"not pointer"<<endl;
+
+
+      // cout<<"pointer"<<endl;
+      // cout<<helcosthetaK_address<<endl; 
+
+      helcosthetaK_address = helAngles[0];
+      helcosthetaL_address = helAngles[1];
+      helphi_address       = helAngles[2];
+      // cout<<helcosthetaK_address<<endl;
+      // cout<<&helcosthetaK_address<<endl;
+      // cout<<"pointer"<<endl;
+
+      helcosthetaK_branch->Fill();
+      helcosthetaL_branch->Fill();
+      helphi_branch->Fill();
+
+    }
+  tree.FlushBaskets();
+}
+
+
 std::vector<double> HelicityAngles(TLorentzVector Kplus_P, TLorentzVector Kminus_P, TLorentzVector muplus_P, TLorentzVector muminus_P )
 { // Calculation based on the ANA-2012-067-v3
-  
+  // IMPORTANT NOTE: To Generalisze remember that: Kplus/Kminus MUST be the postive/hadron. Same oes for the leptons.
+
   // Bs, KK, mm momenta 4 vectors 
   TLorentzVector KK_P   = Kplus_P + Kminus_P;
   TLorentzVector mm_P   = muplus_P + muminus_P;
@@ -943,7 +1064,7 @@ std::vector<double> HelicityAngles(TLorentzVector Kplus_P, TLorentzVector Kminus
   Kplus_P.Boost( - KK_P.BoostVector() );
   muplus_P.Boost( - mm_P.BoostVector() );
 
-  std::vector<double> angles(3);
+  std::vector<Double_t> angles(3);
   angles[0] = ( Kplus_P.Vect().Unit()  ).Dot(e_KK);
   angles[1] = ( muplus_P.Vect().Unit() ).Dot(e_mm);
       
