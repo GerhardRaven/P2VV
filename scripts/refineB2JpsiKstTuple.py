@@ -17,18 +17,18 @@ protoTreePaths['2012negKaons'] = inputPath + '2012n.root'
 protoTreePaths['2012posKaons'] = inputPath + '2012p.root'
 
 # configure job
-saveDataSetToLocalFolder = True   # protect official output location
-delIntermidiatTree       = False  # delete temporary file
+saveDataSetToLocalFolder = False   # protect official output location
+delIntermidiatTree       = True    # delete temporary file
 
 runPeriods         = [2011,2012]
 prodDate           = '120614'
 createFitNtuple    = True  # choose branches necessary for fitting
-createAngAccNtuple = True  # add track momenta branches
-minimalNtuple      = False
+createAngAccNtuple = False  # add track momenta branches
+minimalNtuple      = True
 addKpiMassCategory = True
 addKaonSignInfo    = True
 addRunPeriodInfo   = True # replace old helicity angles
-saveOldHelAngles   = True 
+saveOldHelAngles   = False 
 applySelection     = False 
 calculateHelAngles = True
 oldHelAngleNames   = dict(ctheta='helcosthetaK', cpsi='helcosthetaL', phi='B0_Phi') # old hel. ang. are the values of the dictionary 
@@ -36,6 +36,7 @@ daughterPartNames  = dict(posHad='Kplus', negHad='piminus', posLep='muplus', neg
 KpiMassBranchName  = 'Kst_892_0_M'
 KpiMassBinBounds   = [826, 825+35, 892, 965-35, 966]
 KpiMassInds        = range( len(KpiMassBinBounds) + 1 )
+outDataSetName     = 'Bs2JpsiKst'
 bdtgSelCuts        = {2011:0.2, 2012:-0.24}
 runPeriod          = options.runPeriod
 kaonSign           = options.kaonSign
@@ -89,7 +90,7 @@ if weightName == 'Bd': obsDict.pop('cor_sWeights_Bs')
 
 # minimal dataset for fitting
 if minimalNtuple: 
-    for key in ['Mjpsik', 'J_psi_1S_MM', 'Kst_892_0_MM', 'mass']: obsDict.pop(key)
+    for key in ['Mjpsik','J_psi_1S_MM','Kst_892_0_MM']: obsDict.pop(key)
 
 #####################################################################################################################
 ## refine all ntuple ##
@@ -189,14 +190,14 @@ if calculateHelAngles:
     negHadMass = Mpi if 'pi' in daughterPartNames['negHad'] else Mk
     lepMass    = Mmu
     
-    print 'P2VV - INFO: The following associations will be made:\n '\
+    print ' P2VV - INFO: The following associations will be made:\n '\
         ' Positive hadron name: %s, mass=%s \n  Negative hadron name: %s, mass=%s \n '\
         ' Positive lepton name: %s, mass=%s \n  Negative lepton name: %s, mass=%s \n'\
         ' Units MUST be in GeV. Check!!!'\
         %(daughterPartNames['posHad'], posHadMass, daughterPartNames['negHad'], negHadMass,\
           daughterPartNames['posLep'], lepMass, daughterPartNames['negLep'], lepMass)
 
-    print 'Helicity angles names:\n helcosthetaK = %s \n helcosthetaL = %s \n helphi = %s'\
+    print ' Helicity angles names:\n helcosthetaK = %s \n helcosthetaL = %s \n helphi = %s'\
         %( obsDict['helcosthetaK'][0], obsDict['helcosthetaL'][0], obsDict['helphi'][0] )
 
     addHelicityAnglesToTree(intermediateTree, 
@@ -223,6 +224,10 @@ from P2VV.RooFitWrappers import RooObject, RealVar, Category
 ws = RooObject(workspace = 'JpsiphiWorkspace').ws()
 
 # create observables
+if not createAngAccNtuple:
+    for name in [ '%s_P%s' % ( part, comp ) for part in [ 'muplus', 'muminus', 'Kplus', 'piminus' ] for comp in ( 'X', 'Y', 'Z' ) ]:
+        obsDict.pop(name)
+
 observables  = { }
 for obs in obsDict.keys():
     if type( obsDict[obs][2] ) == dict or type( obsDict[obs][2] ) == list :
@@ -249,12 +254,13 @@ outDataSet = readData( intermediateFileName, inputTreeName,
                        ImportIntoWS = False,
                        **dataSetArgs
                        )
+outDataSet.SetName(outDataSetName)
 outDataSet.Print()
 if initNumEvts != outDataSet.numEntries(): print 'P2VV -INFO: You lost %s entries due to selection cuts:'% (initNumEvts-outDataSet.numEntries()) 
 
 # create final output file
 outFileName = outDataSetPaths[dataSetKey]
-if createAngAccNtuple or calculateHelAngles: outFileName += '_angEff'
+if createAngAccNtuple: outFileName += '_angEff'
 if createFitNtuple: outFileName += '_fitNtuple'
 outFileName += '_%s_%s.root'%(prodDate,weightName + '_weighted')
 
@@ -267,4 +273,4 @@ print 'P2VV - INFO: Wrote final dataset to file %s'%(outFileName)
 if delIntermidiatTree:
     import os
     os.remove(intermediateFileName)
-
+    print 'P2VV - INFO: Delete temporary file %s'%(intermediateFileName) 
