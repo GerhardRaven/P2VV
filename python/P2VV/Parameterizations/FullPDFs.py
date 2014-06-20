@@ -491,33 +491,49 @@ class Bs2Jpsiphi_RunIAnalysis( Bs2Jpsiphi_PdfConfiguration ) :
 # B_s^0 -> J/psi Kst analysis configuration
 class Bs2JpsiKst_RunIAnalysis( PdfConfiguration ) :
     def __init__( self, **kwargs ) :
-        from math import pi    
+        from math import pi
+        from ROOT import RooNumber
+        RooInf = RooNumber.infinity()
         
         # get Run-I-analysis-specific keyword arguments
         runPeriods = kwargs.pop( 'RunPeriods', '3fb' )
         assert runPeriods in [ '2011', '2012', '3fb' ]\
             , 'P2VV - ERROR: Bs2Jpsiphi_RunIAnalysis: "RunPeriod" can be "2011", "2012" or "3fb" (found "%s")' % runPeriod
-
+        if '3fb' in runPeriods: 
+            runPeriods = [2011,2012]
+            self['runPeriods'] = runPeriods
+ 
         # get keyword arguments
         sFit = kwargs.pop( 'sFit', True )
+        self['sWeights'] = 'Bs'
 
         # job parameters
-        self['sFit']          = sFit            # fit only signal?
-        self['blind']         = { }             # { 'phiCP' : ( 'UnblindUniform', 'myString', 0.2 ) }
-        # self['numEvents']     = 60000           # sum of event yields
-        # self['sigFrac']       = 0.5             # fraction of signal events
-        self['parNamePrefix'] = ''              # prefix for parameter names
+        self['parNamePrefix'] = ''           # prefix for parameter names        
+        self['sFit']          = sFit         # fit only signal?
+        self['blind']         = { }          # { 'phiCP' : ( 'UnblindUniform', 'myString', 0.2 ) }
+        self['numEvents']     = 229654       # sum of event yields
+        self['sigFrac']       = 0.1 if self['sWeights'] == 'Bs'else .9  # fraction of signal events
 
-        self['obsDict'] = dict(  
-            # runPeriod = ( 'runPeriod',            'run period',              { }                                   )
-            # , mass      = ( 'mass',                 'm(J/#psi K^{+}#pi^{-})',  'MeV/c^{2}', 5368.,  5200.,   5550.   )
-            #, mumuMass  = ( 'mdau1',                'm(#mu^{+}#mu^{-})',      'MeV/c^{2}', 3096.,  3030.,   3150.   )
-            , KpiMass    = ( 'mdau2',                'm(K^{+/-}#pi^{-/+})',     'MeV/c^{2}', 1020.,   990.,   1050.   )
-              , KpiMassCat = ( 'KpiMassCat',            'Kpi mass category',        { }                                   )
-              , cpsi      = ( 'helcosthetaK',         'cos(#theta_{K})',         '',          0.,    -1.,     +1.      )
-              , ctheta    = ( 'helcosthetaL',         'cos(#theta_{#mu})',       '',          0.,    -1.,     +1.      )
-              , phi       = ( 'helphi',               '#phi_{h}',                'rad',       0.,    -pi,     +pi      )
-              )
+        # Kp mass specific parameters
+        self['KpiMassBinBounds'] = [826, 825+35, 892, 965-35, 966]
+        self['CSPValues']        = [ 0.9178, 0.9022, 0.8619, 0.8875 ]
+        KKMin, KKMax = self['KpiMassBinBounds'][0], self['KpiMassBinBounds'][-1]
+
+        self['obsDict']  = dict(   runPeriod         = ( 'runPeriod',       'run period', { 'p%s'%runPeriod : runPeriod for runPeriod in runPeriods }        )
+                                   , KpiMassCat       = ( 'KpiMassCat',      'KpiMassCat', { 'bin%s'%b : b  for b in range(1,len(self['KpiMassBinBounds']))} )               
+                                   , kaonSign         = ( 'kaonSign',        'kaon sign',  {        'neg': -1, 'pos': 1}                                )
+                                   , mass             = ( 'mass',            'm(J/#psi K^{+}#pi^{-})', 'MeV/c^{2}', 5368.,  5110.,   5690.        ) # 5110.,    5690.       )
+                                   , Mjpsik           = ( 'mJpsiK',          'm(J/#psi K^{+}',         'MeV/c^{2}', 4594,   3810.,   5380.        )
+                                   , KpiMass          = ( 'mdau2',           'm(K^{+}#pi^{-})',        'MeV/c^{2}', 892.,   KKMin,    KKMax       )
+                                   , mumuMass         = ( 'mdau1',           'm(mu^{+}#mu^{-})',       'MeV/c^{2}', 3094,   3000.,    3190.       )
+                                   #, sWeights_Bs      = ( 'sWeights_Bs',     'Bs sWeights',            '',           0.,    -RooInf, RooInf       )
+                                   #, sWeights_Bd      = ( 'sWeights_Bd',     'Bd sWeights',            '',           0.,    -RooInf, RooInf       )
+                                   , cor_sWeights_Bs  = ( 'Bs_sWeight', 'corrected Bs sWeights',       '',           0.,    -RooInf, RooInf       )
+                                   , cor_sWeights_Bd  = ( 'Bd_sWeight', 'corrected Bd sWeights',       '',           0.,    -RooInf, RooInf       )
+                                   , cpsi             = ( 'helcosthetaK',    'cos(#theta_{K})',        '',           0.,      -1.,     +1.        )
+                                   , ctheta           = ( 'helcosthetaL',    'cos(#theta_{#mu})',      '',           0.,      -1.,     +1.        )
+                                   , phi              = ( 'helphi',          '#phi_{h}',               'rad',        0.,      -pi,     pi         )
+                                   )
 
         self['readFromWS'] = False    # get observables from workspace?
         self['signalData'] = None     # data set of signal events
@@ -536,10 +552,8 @@ class Bs2JpsiKst_RunIAnalysis( PdfConfiguration ) :
         self['AparParam']      = 'phase'              # 'phase' / 'ReIm' / 'Mag2ReIm' / 'cos' / 'real'
         self['ambiguityPars']  = False                # set parameters to values of the second minimum?
 
-        self['paramKpiMass']     = 'simultaneous'       # '' / 'parameters' / 'simultaneous'
-        self['KpiMassBinBounds'] = [ 990., 1020. - 12., 1020., 1020. + 12., 1050. ]    # KK-mass bin boundaries
-        self['CSPValues']        = [ 0.9178, 0.9022, 0.8619, 0.8875, 0.9360, 0.9641 ]  # S-P coupling factors for KK-mass bins
-
+        self['paramKpiMass']     = 'simultaneous'     # '' / 'parameters' / 'simultaneous'
+    
         if not sFit :
             self['bkgAnglePdfType'] = 'hybrid'
             self['numAngleBins']    = ( 10, 24, 5 )
@@ -1228,9 +1242,9 @@ class Bs2JpsiKst_PdfBuilder ( PdfBuilder ) :
         self['kwargs'] = kwargs
 
         # get some build parameters
-        for par in [ 'sFit', 'KKMassBinBounds', 'obsDict', 'CSPValues', 'transAngles', 'paramKKMass', 'amplitudeParam', 'ASParam', 'signalData', 
+        for par in [ 'sFit', 'KpiMassBinBounds', 'obsDict', 'CSPValues', 'transAngles', 'paramKpiMass', 'amplitudeParam', 'ASParam', 'signalData', 
                      'fitOptions', 'parNamePrefix', 'anglesEffType', 'constAngEffCoefs', 'angEffMomsFiles', 'readFromWS', 'splitParams', 
-                     'externalConstr', 'runPeriods'
+                     'externalConstr', 'runPeriods', 'numEvents', 'sigFrac'
                     ] :
             self[par] = getKWArg( self, { }, par )
 
@@ -1245,13 +1259,15 @@ class Bs2JpsiKst_PdfBuilder ( PdfBuilder ) :
         else :
             self['obsDict'].pop('runPeriod')
 
-        states = dict( [ ( 'bin%d' % it, it ) for it in range( len( self['KKMassBinBounds'] ) - 1 ) ] )
-        self['obsDict']['KKMassCat'] = tuple( [ comp if it != 2 else states for it, comp in enumerate( self['obsDict']['KKMassCat'] ) ] )
+        states = dict( [ ( 'bin%d' % it, it ) for it in range( len( self['KpiMassBinBounds'] ) - 1 ) ] )
+        self['obsDict']['KpiMassCat'] = tuple( [ comp if it != 2 else states for it, comp in enumerate( self['obsDict']['KpiMassCat'] ) ] )
 
         self._createObservables()
-        self._setObsProperties()
-        self['obsSetP2VV']  = getKWArg( self, { }, 'obsSetP2VV' )
+        # self._setObsProperties()
+        # self['obsSetP2VV']  = getKWArg( self, { }, 'obsSetP2VV' )
         self['observables'] = getKWArg( self, { }, 'observables' )
+        print 'Tune setObsProperties'
+
 
         # set (empty) dictionary of parameters
         self['parameters'] = { }
@@ -1260,20 +1276,19 @@ class Bs2JpsiKst_PdfBuilder ( PdfBuilder ) :
         from P2VV.RooFitWrappers import Component
         self['pdfComps'] = [ ]
         self['pdfComps'].append( Component( namePF + 'sig', [ ], Yield = ( self['numEvents'] * self['sigFrac'], 0., self['numEvents'] ) ) )
-        self['pdfComps'][0] += buildBs2JpsiphiSignalPdf(self)
+        self['pdfComps'][0] += buildBs2JpsiKstSignalPdf(self)
         if self['tagPdfType'] or not self['condTagging'] : self['pdfComps'][0] += buildTaggingPdf( self, data = self['signalData'] )
 
         if not self['sFit'] :
             # build background PDFs
             self['pdfComps'].append( Component( namePF + 'bkg', [ ]
                                     , Yield = ( self['numEvents'] * ( 1. - self['sigFrac'] ), 0., self['numEvents'] ) ) )
-            self['pdfComps'][1] += buildBs2JpsiphiCombBkgTimePdf(self)
-            self['pdfComps'][1] += buildBs2JpsiphiCombBkgAnglesPdf(self)
+            self['pdfComps'][1] += buildBs2JpsiKstCombBkgAnglesPdf(self)
             if self['tagPdfType'] or not self['condTagging'] : self['pdfComps'][1] += buildTaggingPdf( self, data = self['signalData'] )
 
         # build full PDF
         from P2VV.RooFitWrappers import buildPdf
-        print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: requesting %s PDF for observables [%s]'\
+        print 'P2VV - INFO: Bs2JpsiKst_PdfBuilder: requesting %s PDF for observables [%s]'\
               % ( 'signal' if self['sFit'] else 'signal + background', ', '.join( str(obs) for obs in self['obsSetP2VV'] ) )
         self['fullPdf'] = buildPdf( self['pdfComps'], Observables = self['obsSetP2VV'], Name = 'JpsiKst' )
 
@@ -1292,34 +1307,26 @@ class Bs2JpsiKst_PdfBuilder ( PdfBuilder ) :
         gc.collect()
 
         # check if no configuration arguments are left
-        assert not self['kwargs'], 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: superfluous arguments found: %s' % self['kwargs']
+        assert not self['kwargs'], 'P2VV - ERROR: Bs2JpsiKst_PdfBuilder: superfluous arguments found: %s' % self['kwargs']
         print 120 * '='
 
 
     def _setObsProperties( self, **kwargs ) :
         observables      = getKWArg( self, kwargs, 'observables' )
         obsDict          = getKWArg( self, kwargs, 'obsDict' )
-        KKMassBinBounds  = getKWArg( self, kwargs, 'KKMassBinBounds' )
-        paramKKMass      = getKWArg( self, kwargs, 'paramKKMass' )
+        KpiMassBinBounds  = getKWArg( self, kwargs, 'KpiMassBinBounds' )
+        paramKpiMass      = getKWArg( self, kwargs, 'paramKpiMass' )
         CSPValues        = getKWArg( self, kwargs, 'CSPValues' )
-        tagPdfType       = getKWArg( self, kwargs, 'tagPdfType' )
-        condTagging      = getKWArg( self, kwargs, 'condTagging' )
         sFit             = getKWArg( self, kwargs, 'sFit' )
-        numTimeBins      = getKWArg( self, kwargs, 'numTimeBins' )
-        numTimeResBins   = getKWArg( self, kwargs, 'numTimeResBins' )
         angularRanges    = getKWArg( self, kwargs, 'angularRanges' )
 
         # set observable properties
-        observables['time'].setRange( 'Bulk', ( None, 5. ) )
-        observables['time'].setBins(numTimeBins)
-        observables['timeRes'].setBins(numTimeResBins)
-        observables['timeRes'].setBins( numTimeResBins, 'cache' )
-        observables['mass'].setRanges( dict(  LeftSideBand  = ( 5200., 5320. )
-                                            , Signal        = ( 5320., 5420. )
-                                            , RightSideBand = ( 5420., 5550. )
-                                            , PeakBkg       = ( 5390., 5440. )
-                                           )
-                                     )
+        # observables['mass'].setRanges( dict(  LeftSideBand  = ( 5200., 5320. )
+        #                                     , Signal        = ( 5320., 5420. )
+        #                                     , RightSideBand = ( 5420., 5550. )
+        #                                     , PeakBkg       = ( 5390., 5440. )
+        #                                    )
+        #                              )
 
         for ran in angularRanges.get( 'cpsi',   [ ] ) : observables['cpsi'].setRange(   ran[0], ran[ 1 : 3 ] )
         for ran in angularRanges.get( 'ctheta', [ ] ) : observables['ctheta'].setRange( ran[0], ran[ 1 : 3 ] )
@@ -1328,93 +1335,80 @@ class Bs2JpsiKst_PdfBuilder ( PdfBuilder ) :
         if self['runPeriods'] :
             # check run-period category
             assert len( self['obsDict']['runPeriod'][2] ) == observables['runPeriod'].numTypes()\
-                   , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: number of run periods specified (%d) does not match number of types of run-period category (%d)'\
+                   , 'P2VV - ERROR: Bs2JpsiKst_PdfBuilder: number of run periods specified (%d) does not match number of types of run-period category (%d)'\
                    % ( len( self['obsDict']['runPeriod'][2] ), observables['runPeriod'].numTypes() )
             for name, index in self['obsDict']['runPeriod'][2].iteritems() :
                 assert observables['runPeriod'].isValidLabel(name) and observables['runPeriod'].isValidIndex(index)\
-                       , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: run period "%s" ("%d") not found in run-period category' % ( name, index )
+                       , 'P2VV - ERROR: Bs2JpsiKst_PdfBuilder: run period "%s" ("%d") not found in run-period category' % ( name, index )
 
-        # check KK mass bin parameters
-        assert obsDict['KKMass'][4] == KKMassBinBounds[0] and obsDict['KKMass'][5] == KKMassBinBounds[-1]\
-               , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: KK mass range in "KKMassBinBounds" is not the same as in "obsDict"'
+        # check Kpi mass bin parameters
+        assert obsDict['KpiMass'][4] == KpiMassBinBounds[0] and obsDict['KpiMass'][5] == KpiMassBinBounds[-1]\
+               , 'P2VV - ERROR: Bs2JpsiKst_PdfBuilder: Kpi mass range in "KpiMassBinBounds" is not the same as in "obsDict"'
 
-        if paramKKMass in [ 'parameters', 'simultaneous' ] :
-            assert len(CSPValues) == len(KKMassBinBounds) - 1,\
-                   'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: wrong number of KK mass bin parameters specified'
-            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: KK mass bins: %s' % ' - '.join( '%.1f' % binEdge for binEdge in KKMassBinBounds )
+        if paramKpiMass in [ 'parameters', 'simultaneous' ] :
+            assert len(CSPValues) == len(KpiMassBinBounds) - 1,\
+                   'P2VV - ERROR: Bs2JpsiKst_PdfBuilder: wrong number of Kpi mass bin parameters specified'
+            print 'P2VV - INFO: Bs2JpsiKst_PdfBuilder: Kpi mass bins: %s' % ' - '.join( '%.1f' % binEdge for binEdge in KpiMassBinBounds )
         else :
             assert len(CSPValues) == 1,\
-                   'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: only one S-P-wave coupling factor and no S-wave amplitude values should be specified'
+                   'P2VV - ERROR: Bs2JpsiKst_PdfBuilder: only one S-P-wave coupling factor and no S-wave amplitude values should be specified'
 
-        # get KK mass binning
-        assert observables['KKMass'].hasBinning('KKMassBinning')\
-               , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: KK mass observable does not have a binning named "KKMassBinning"'
-        self['KKMassBinning'] = observables['KKMass'].getBinning('KKMassBinning')
+        # get Kpi mass binning
+        assert observables['KpiMass'].hasBinning('KpiMassBinning')\
+               , 'P2VV - ERROR: Bs2JpsiKst_PdfBuilder: Kpi mass observable does not have a binning named "KpiMassBinning"'
+        self['KpiMassBinning'] = observables['KpiMass'].getBinning('KpiMassBinning')
 
-        assert self['KKMassBinning'].numBins() == observables['KKMassCat'].numTypes() == len(KKMassBinBounds) - 1\
-               , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: different numbers of bins in KK mass category (%s) and/or binning (%s) and specified bin bounds (%s)' \
-               % ( self['KKMassBinning'].numBins(), observables['KKMassCat'].numTypes(), len(KKMassBinBounds) - 1 )
-        for it in range( self['KKMassBinning'].numBins() ) :
-            assert self['KKMassBinning'].binLow(it) == KKMassBinBounds[it]\
-                   , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: different boundary in KK mass binning (%s) and specified bin bounds (%s)' \
-                   % ( self['KKMassBinning'].binLow(it),  KKMassBinBounds[it] )
+        assert self['KpiMassBinning'].numBins() == observables['KpiMassCat'].numTypes() == len(KpiMassBinBounds) - 1\
+               , 'P2VV - ERROR: Bs2JpsiKst_PdfBuilder: different numbers of bins in Kpi mass category (%s) and/or binning (%s) and specified bin bounds (%s)' \
+               % ( self['KpiMassBinning'].numBins(), observables['KpiMassCat'].numTypes(), len(KpiMassBinBounds) - 1 )
+        for it in range( self['KpiMassBinning'].numBins() ) :
+            assert self['KpiMassBinning'].binLow(it) == KpiMassBinBounds[it]\
+                   , 'P2VV - ERROR: Bs2JpsiKst_PdfBuilder: different boundary in Kpi mass binning (%s) and specified bin bounds (%s)' \
+                   % ( self['KpiMassBinning'].binLow(it),  KpiMassBinBounds[it] )
 
         # PDF observables set
-        self['obsSetP2VV'] = [ observables[name] for name in [ 'time', 'cpsi', 'ctheta', 'phi' ] ]
-        if tagPdfType or not condTagging :
-            self['obsSetP2VV'].append( observables['iTagOS'] )
-            if SSTagging : self['obsSetP2VV'].append( observables['iTagSS'] )
-        if not sFit :
-            self['obsSetP2VV'].append( observables['mass'] )
+        self['obsSetP2VV'] = [ observables[name] for name in [ 'cpsi', 'ctheta', 'phi' ] ]
+        if not sFit: self['obsSetP2VV'].append( observables['mass'] )
 
 
     def _createSimultaneous( self, **kwargs ) :
         observables       = getKWArg( self, kwargs, 'observables' )
         CSPValues         = getKWArg( self, kwargs, 'CSPValues' )
         contEstWTag       = getKWArg( self, kwargs, 'contEstWTag' )
-        paramKKMass       = getKWArg( self, kwargs, 'paramKKMass' )
+        paramKpiMass       = getKWArg( self, kwargs, 'paramKpiMass' )
         ASParam           = getKWArg( self, kwargs, 'ASParam' )
-        timeEffType       = getKWArg( self, kwargs, 'timeEffType' )
-        timeEffHistFiles  = getKWArg( self, kwargs, 'timeEffHistFiles' )
         anglesEffType     = getKWArg( self, kwargs, 'anglesEffType' )
         angEffMomsFiles   = getKWArg( self, kwargs, 'angEffMomsFiles' )
         splitParams       = getKWArg( self, kwargs, 'splitParams' )
         fullPdf           = getKWArg( self, kwargs, 'fullPdf' )
-        timeResModelsOrig = getKWArg( self, kwargs, 'timeResModelsOrig' )
-
+        
         from P2VV.Parameterizations.GeneralUtils import getParNamePrefix
         namePF = getParNamePrefix(True)
 
         self['splitParsDict'] = { }
 
         # check split parameters
-        if paramKKMass == 'simultaneous' :
-            if 'KKMassCat' not in splitParams : splitParams['KKMassCat'] = [ 'C_SP' ]
-            elif 'C_SP' not in splitParams['KKMassCat'] : splitParams['KKMassCat'].append('C_SP')
+        if paramKpiMass == 'simultaneous' :
+            if 'KpiMassCat' not in splitParams : splitParams['KpiMassCat'] = [ 'C_SP' ]
+            elif 'C_SP' not in splitParams['KpiMassCat'] : splitParams['KpiMassCat'].append('C_SP')
             for cat, pars in splitParams.iteritems() :
-                if cat != 'KKMassCat' :
+                if cat != 'KpiMassCat' :
                     assert 'C_SP' not in pars\
-                           , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: S-P coupling factors are set to be split for category "%s"' % cat
+                           , 'P2VV - ERROR: Bs2JpsiKst_PdfBuilder: S-P coupling factors are set to be split for category "%s"' % cat
 
         if anglesEffType and type(angEffMomsFiles) != str :
             for cat in angEffMomsFiles.categories() :
                 assert type(cat) == str\
-                       , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: one of category names specified in "angEffMomsFiles" is not a string'
+                       , 'P2VV - ERROR: Bs2JpsiKst_PdfBuilder: one of category names specified in "angEffMomsFiles" is not a string'
                 if cat not in splitParams :
                     splitParams[cat] = [ 'angEffDummyCoef' ]
                 elif 'angEffDummyCoef' not in splitParams[cat] :
                     splitParams[cat].append('angEffDummyCoef')
 
-        if timeEffType and type(timeEffHistFiles) != dict :
-            for cat in timeEffHistFiles.categories() :
-                assert type(cat) == str\
-                       , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: one of category names specified in "timeEffHistFiles" is not a string'
-                assert cat in splitParams\
-                       , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: PDF is not set to be split for category "%s" (required by "timeEffHistFiles")' % cat
 
         # split PDF for different data samples
         if splitParams :
-            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: splitting parameters in PDF "%s"' % fullPdf
+            print 'P2VV - INFO: Bs2JpsiKst_PdfBuilder: splitting parameters in PDF "%s"' % fullPdf
 
             # get workspace and PDF variables
             ws   = fullPdf.ws()
@@ -1423,12 +1417,12 @@ class Bs2JpsiKst_PdfBuilder ( PdfBuilder ) :
             # get splitting categories and parameters
             splitParsDict = { }
             for cat, params in splitParams.iteritems() :
-                assert ws.cat(cat), 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: category "%s" not in workspace' % cat
+                assert ws.cat(cat), 'P2VV - ERROR: Bs2JpsiKst_PdfBuilder: category "%s" not in workspace' % cat
                 for par in params :
                     par = namePF + par
                     if par not in pdfVars:
                         continue
-                    assert ws.var(par), 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: no variable "%s" in workspace' % par
+                    assert ws.var(par), 'P2VV - ERROR: Bs2JpsiKst_PdfBuilder: no variable "%s" in workspace' % par
                     if ws[par] not in splitParsDict :
                         splitParsDict[ ws[par] ] = set( [ ws[cat] ] )
                     else :
@@ -1440,7 +1434,7 @@ class Bs2JpsiKst_PdfBuilder ( PdfBuilder ) :
             splitPars = createSplitParsList(splitParsDict)
 
             # build simultaneous PDF
-            print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: building simultaneous PDF "%s":' % ( fullPdf.GetName() + '_simul' )
+            print 'P2VV - INFO: Bs2JpsiKst_PdfBuilder: building simultaneous PDF "%s":' % ( fullPdf.GetName() + '_simul' )
             print 13 * ' ' + 'split parameters:'
             for it, pars in enumerate(splitPars) :
                 print 13 * ' ' + '%2d: pars: [ %s ]' % ( it, ', '.join( par.GetName() for par in pars[0] ) )
@@ -1451,52 +1445,10 @@ class Bs2JpsiKst_PdfBuilder ( PdfBuilder ) :
                                                , SplitCategories = [ pars[1] for pars in splitPars ]
                                                , SplitParameters = [ pars[0] for pars in splitPars ] )
 
-            # set time resolution models
-            from ROOT import RooArgSet, RooArgList
-            splitCatPars = RooArgSet()
-            self['simulPdf'].treeNodeServerList(splitCatPars)
-            splitCat  = self['simulPdf'].indexCat()
-            inputCats = RooArgList(splitCat) if splitCat.isFundamental() else splitCat.inputCatList()
-            prototype = timeResModelsOrig['prototype']['model']
-            from P2VV.RooFitWrappers import AddModel
-            ## NOTE, this only works for either a single resolution model or an AddModel which does
-            ## not contain further add models
-            if isinstance(prototype, AddModel):
-                origResParams = {}
-                for model in prototype.models():
-                    assert(not isinstance(model, AddModel))
-                    origResParams[model.GetName()] = model['Parameters']
-                origResParams[prototype.GetName()] = prototype.fractions()
-            else:
-                origResParams = {prototype.GetName() : prototype['Parameters']}
-
-            from P2VV.Utilities.Splitting import replacement_model
-            # Figure out which way the time resolution model is to be split
-            pfLen = len(namePF)
-            resParams = set( var.GetName()[ pfLen : ] for var in timeResModelsOrig['prototype']['model'].getVariables() )
-            splitResCats = [c for c, pars in splitParams.iteritems() if set(pars).intersection(resParams)]
-            splitResCats = [inputCats.find(c) for c in splitResCats]
-            replacements = { ( ) : timeResModelsOrig['prototype'] }
-            for splitCatState in splitCat:
-                splitCat.setIndex( splitCatState.getVal() )
-                k = tuple(c.getLabel() for c in splitResCats)
-                if k not in replacements:
-                    catPdf = self['simulPdf'].getPdf( splitCatState.GetName() )
-                    resModelCount = 0
-                    from ROOT import RooBTagDecay
-                    for comp in filter( lambda x : isinstance( x, RooBTagDecay ), catPdf.getComponents() ) :
-                        # TODO: don't do this with RooBTagDecay, but move RooBTagDecay::resModel() to RooAbsAnaConvPdf
-                        assert resModelCount < 1, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: multiple resolution models found for simultaneous category "%s"' % splitCatState.GetName()
-                        replacements[k] = replacement_model(prototype, comp.resolutionModel(), inputCats, self['splitParsDict'], splitCatPars, origResParams)
-                        resModelCount += 1
-                    assert resModelCount > 0, ('P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: no resolution'
-                                               + ' model found for simultaneous category "%s"' % splitCatState.GetName())
-                timeResModelsOrig[splitCatState.GetName()] = replacements[k]
-                    
-            if paramKKMass == 'simultaneous' and ASParam != 'Mag2ReIm' :
+            if paramKpiMass == 'simultaneous' and ASParam != 'Mag2ReIm' :
                 # set values for split S-P coupling factors
                 if ASParam != 'Mag2ReIm' :
-                    print 'P2VV - INFO: Bs2Jpsiphi_PdfBuilder: using S-P-wave coupling factors:',
+                    print 'P2VV - INFO: Bs2JpsiKst_PdfBuilder: using S-P-wave coupling factors:',
                     for iter, fac in enumerate( CSPValues ) :
                         print '%d: %.4f%s' % ( iter, fac, '' if iter == len( CSPValues ) - 1 else ',' ),
                     print
@@ -1504,81 +1456,14 @@ class Bs2JpsiKst_PdfBuilder ( PdfBuilder ) :
                 from P2VV.Utilities.General import getSplitPar
                 for splitCatState in splitCat:
                     splitCat.setIndex( splitCatState.getVal() )
-                    C_SP = getSplitPar( namePF + 'C_SP', observables['KKMassCat'].getLabel(), splitCatPars )
-                    C_SP.setVal( CSPValues[ observables['KKMassCat'].getIndex() ] )
+                    C_SP = getSplitPar( namePF + 'C_SP', observables['KpiMassCat'].getLabel(), splitCatPars )
+                    C_SP.setVal( CSPValues[ observables['KpiMassCat'].getIndex() ] )
                     C_SP.setConstant(True)
 
         else :
             self['simulPdf'] = None
 
         return self['simulPdf'] if self['simulPdf'] else self['fullPdf']
-
-
-    def _multiplyByTimeAcceptance( self, **kwargs ) :
-        timeEffType       = getKWArg( self, kwargs, 'timeEffType' )
-        timeEffHistFiles  = getKWArg( self, kwargs, 'timeEffHistFiles' )
-        pdf               = getKWArg( self, kwargs, 'pdf' )
-        simulPdf          = getKWArg( self, kwargs, 'simulPdf' )
-        signalData        = getKWArg( self, kwargs, 'signalData' )
-        observables       = getKWArg( self, kwargs, 'observables' )
-        timeResModels     = getKWArg( self, kwargs, 'timeResModels' )
-        timeResModelsOrig = getKWArg( self, kwargs, 'timeResModelsOrig' )
-
-        if not simulPdf :
-            # original PDF is not simultaneous: multiply with acceptance from outside PDF
-            if type(timeEffHistFiles) == SimulCatSettings :
-                timeEffHistFiles = timeEffHistFiles.default()
-            multiplyByTimeAcceptance( pdf, self, data = signalData, histFile = timeEffHistFiles['file']
-                                     , histUBName = timeEffHistFiles['hlt1UB'], histExclBName = timeEffHistFiles['hlt1ExclB'] )
-        else :
-            # original PDF is simultaneous: multiply with acceptance separately for all categories
-            from ROOT import RooArgList
-            splitCat = simulPdf.indexCat()
-            inputCats = RooArgList(splitCat) if splitCat.isFundamental() else splitCat.inputCatList()
-            splitAccCats = [ ]
-            if type(timeEffHistFiles) == SimulCatSettings :
-                splitAccCats = [ inputCats.find(cat) for cat in timeEffHistFiles.categories() ]
-                assert all( cat for cat in splitAccCats )\
-                       , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: PDF was not split for all categories in "%s"' % timeEffHistFiles.name()
-            singleHLT1Eff = timeEffType.startswith('paper2012')\
-                            and any( cat.GetName() == observables['hlt1ExclB'].GetName() for cat in inputCats )
-
-            # loop over simultaneous categories
-            resModels = { }
-            for splitCatState in splitCat:
-                # get category state and corresponding acceptance parameters
-                splitCat.setIndex( splitCatState.getVal() )
-                catPdf = simulPdf.getPdf( splitCatState.GetName() )
-                if type(timeEffHistFiles) == SimulCatSettings :
-                    effFile = timeEffHistFiles.getSettings( [ ( cat.GetName(), cat.getLabel() ) for cat in splitAccCats ] )
-                else :
-                    effFile = timeEffHistFiles
-
-                cNamePF = '_'.join( '%s_%s' % ( cat.GetName(), cat.getLabel() ) for cat in splitAccCats )
-                if singleHLT1Eff :
-                    cNamePF += '_%s_%s' % ( observables['hlt1ExclB'].GetName(), observables['hlt1ExclB'].getLabel() )
-                    if observables['hlt1ExclB'].getIndex() == 0 :
-                        timeEffType = 'HLT1Unbiased'
-                    elif observables['hlt1ExclB'].getIndex() == 1 :
-                        timeEffType = 'HLT1ExclBiased'
-                    else :
-                        raise AssertionError, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: unknown HLT1 exclusively biased state: %s (%d)'\
-                                              % ( observables['hlt1ExclB'].getLabel(), observables['hlt1ExclB'].getIndex() )
-
-                if cNamePF in resModels and timeResModelsOrig[ splitCatState.GetName() ] == timeResModelsOrig[ resModels[cNamePF] ] :
-                    # use resolution model with acceptance function from a previous category
-                    prevResModelKey = resModels[cNamePF]
-                else :
-                    # create new resolution model with acceptance function
-                    resModels[cNamePF] = splitCatState.GetName()
-                    prevResModelKey = ''
-
-                # multiply PDF for this category state with acceptance
-                multiplyByTimeAcceptance( catPdf, self, data = signalData, timeEffType = timeEffType
-                                         , histFile = effFile['file'], histUBName = effFile['hlt1UB']
-                                         , histExclBName = effFile['hlt1ExclB'], coefNamePF = cNamePF
-                                         , motherPdf = simulPdf, resModelKey = splitCatState.GetName()
-                                         , timeResModel = timeResModels[prevResModelKey] if prevResModelKey else None )
 
 
     def _multiplyByAngularAcceptance( self, **kwargs ) :
@@ -1647,7 +1532,7 @@ class Bs2JpsiKst_PdfBuilder ( PdfBuilder ) :
 
         for par, constrVals in externalConstr.iteritems() :
             parVar = ws[ namePF + par ]
-            assert parVar, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: parameter "%s" is set to be constrained, but it is not found in workspace'\
+            assert parVar, 'P2VV - ERROR: Bs2JpsiKst_PdfBuilder: parameter "%s" is set to be constrained, but it is not found in workspace'\
                            % ( namePF + par )
             splitCats = splitParsDict.get( parVar, set() )
             if not splitCats :
@@ -1656,7 +1541,7 @@ class Bs2JpsiKst_PdfBuilder ( PdfBuilder ) :
 
             else :
                 assert simulPdf\
-                      , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: found splitting categories for parameter "%s", but no simultaneous PDF' % par
+                      , 'P2VV - ERROR: Bs2JpsiKst_PdfBuilder: found splitting categories for parameter "%s", but no simultaneous PDF' % par
 
                 catsStrings = set()
                 splitCat = simulPdf.indexCat()
@@ -1672,7 +1557,7 @@ class Bs2JpsiKst_PdfBuilder ( PdfBuilder ) :
                     catsStrings.add(catsStr)
                     from P2VV.Utilities.General import getSplitPar
                     parVar = getSplitPar( namePF + par, catsStr, pdfVars )
-                    assert parVar, 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: parameter "%s" is set to be constrained, but it is not found in PDF'\
+                    assert parVar, 'P2VV - ERROR: Bs2JpsiKst_PdfBuilder: parameter "%s" is set to be constrained, but it is not found in PDF'\
                                    % ( namePF + par )
 
                     if type(constrVals) == SimulCatSettings :
@@ -2247,6 +2132,115 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
     return self['sigBTagDecay']
 
 
+
+
+# function to build B_s^0 -> J/psi Kst signal PDF
+def buildBs2JpsiKstSignalPdf( self, **kwargs ) :
+    """builds the signal PDF for the angular fit of B_s -> J/psi(->mu^+ mu^-) Kst(->K^+ pi^-)
+    """
+
+    # build parameters
+    blind              = getKWArg( self, kwargs, 'blind' )
+    obsDict            = getKWArg( self, kwargs, 'obsDict' )
+    observables        = getKWArg( self, kwargs, 'observables' )
+    transAngles        = getKWArg( self, kwargs, 'transAngles' )
+    ambiguityPars      = getKWArg( self, kwargs, 'ambiguityPars' )
+    CSPValues          = getKWArg( self, kwargs, 'CSPValues' )
+    paramKpiMass       = getKWArg( self, kwargs, 'paramKpiMass' )
+    amplitudeParam     = getKWArg( self, kwargs, 'amplitudeParam' )
+    ASParam            = getKWArg( self, kwargs, 'ASParam' )
+    AparParam          = getKWArg( self, kwargs, 'AparParam' )
+    anglesEffType      = getKWArg( self, kwargs, 'anglesEffType' )
+    angEffMomsFiles    = getKWArg( self, kwargs, 'angEffMomsFiles' )
+    parNamePrefix      = getKWArg( self, kwargs, 'parNamePrefix', '' )
+
+    from P2VV.Parameterizations.GeneralUtils import setParNamePrefix, getParNamePrefix
+    setParNamePrefix(parNamePrefix)
+    namePF = getParNamePrefix(True)
+
+    print 120 * '='
+    print 'P2VV - INFO: buildBs2JpsiKstSignalPdf(): building B_s^0 -> J/psi Kst signal PDF'
+
+    # angular functions
+    if transAngles : from P2VV.Parameterizations.AngularFunctions import JpsiKstTransversityAngles as AngleFuncs
+    else :           from P2VV.Parameterizations.AngularFunctions import JpsiKstHelicityAngles     as AngleFuncs
+    self['angleFuncs'] = AngleFuncs( cpsi = observables['cpsi'], ctheta = observables['ctheta'], phi = observables['phi']
+                                    , DummyCoef = ( anglesEffType and type(angEffMomsFiles) != str ) )
+
+    # transversity amplitudes
+
+    ################################################################################
+    ## TODO:: all this part must be made flexible/accesible from the pdfConfig
+    ampNames = [ 'A0', 'Apar', 'Aperp', 'AS' ]
+    sWave = False
+    A0Mag2Val    = .58 # 0.722**2 / (0.722**2 + 0.480**2 + 0.499**2)
+    AperpMag2Val = .2 # 0.499**2 / (0.722**2 + 0.480**2 + 0.499**2) 
+    # AparMag2Val  = 1 - A0Mag2Val - AperpMag2Val  # 0.480**2 / (0.722**2 + 0.480**2 + 0.499**2)
+    A0PhVal    = 0.
+    AparPhVal  = -3.30 
+    AperpPhVal = 3.27
+
+    from P2VV.Parameterizations.DecayAmplitudes import JpsiVPolarSWaveFrac_AmplitudeSet as Amplitudes
+    self['amplitudes'] = Amplitudes(  A0Mag2 = A0Mag2Val, 
+                                      AperpMag2 = AperpMag2Val,
+                                      AparPhase = AparPhVal - A0PhVal, 
+                                      AperpPhase = AperpPhVal - A0PhVal,
+                                      f_S = 0.,
+                                      ASOddPhase = 0., C_SP = 1.
+                                      )
+
+    # set constants
+    # if not sWave:
+    #     for var in ws.allVars():
+    #         if 'f_S' in var.GetName() or 'SOddPhase' in var.GetName(): var.setConstant() 
+    #         elif 'C_SP' in var.GetName(): var.setConstant()    
+    ################################################################################
+
+
+    print self['angleFuncs']
+    print self['angleFuncs'].functions
+
+    import pdb
+    pdb.set_trace()
+
+    # build angular terms from PY combinations 
+    from P2VV.Parameterizations.AngularPDFs import Amplitudes_AngularPdfTerms
+    pdfTerms = Amplitudes_AngularPdfTerms( AmpNames = ampNames, 
+                                           Amplitudes = ['amplitudes'], 
+                                           AngFunctions = self['angleFuncs'].functions
+                                           )
+
+    # build signal PDF
+    self['sigAngPdf'] = pdfTerms.buildSumPdf('AngularPDF')
+
+    ## make simultaneous
+    # splitCats, splitPars = [ ], [ ]
+    # splitCats.append( [ KKMassCat ] )
+    # splitPars.append( [ ws[par] for par in SWaveAmps.iterkeys() ] )
+    
+    # # split PDF for run period and KK-mass bins
+    # from P2VV.RooFitWrappers import SimultaneousPdf
+    # self._pdf = SimultaneousPdf( protoPdf.GetName() + '_simul', MasterPdf = protoPdf
+    #                        , SplitCategories = splitCats, SplitParameters = splitPars )
+    
+    # # set values of split parameters
+    # for par, vals in SWaveAmps.iteritems() :
+    #     for cat, val in vals.iteritems() : ws[ par + '_' + cat ].setVal(val)
+    
+    # for p in self._pdf.Parameters():
+    #     if 'C_SP' in p.GetName():
+    #         try: binIndex = int(p.GetName().partition('bin')[2])
+    #         except ValueError: assert False, 'P2VV - ERROR: MatchPhysics: Cannot set C_SP factors'
+    #         p.setVal( pdfConfig['CSPValues'][binIndex] )
+    #         p.setConstant()
+    
+    # collect python garbage
+    import gc
+    gc.collect()
+
+    return self['sigAngPdf']
+
+
 # function to build B_s^0 -> J/psi phi background decay time PDF
 def buildBs2JpsiphiCombBkgTimePdf( self, **kwargs ) :
     observables    = getKWArg( self, kwargs, 'observables' )
@@ -2762,6 +2756,3 @@ def multiplyByAngularAcceptance( pdf, self, **kwargs ) :
                                                                          + ( '_' if coefNamePF else '' ) + coefNamePF )
 
     return pdf
-
-
-
