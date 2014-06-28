@@ -298,16 +298,16 @@ class fitResultsAnalysis(object) :
             if name in self._parHists and self._parHists[name] :
                 self._parHists[name].Delete()
             if histsFile :
+                plotShift = anaParSetts[name]['plotShift'] if name in anaParSetts and 'plotShift' in anaParSetts[name] else 0.
                 histBins = int( float(self._nParVals[parIt][0]) / 100. ) if self._nParVals[parIt][0] > 1000 else 10
-                parHistMin = min( self._parVals[parIt] )
-                parHistMin = min( self._parVals[parIt] )
-                parHistMax = max( self._parVals[parIt] )
+                parHistMin = min( self._parVals[parIt] ) + plotShift
+                parHistMax = max( self._parVals[parIt] ) + plotShift
                 parHistRange = parHistMax - parHistMin
                 if parHistRange > 0. :
                     parHistMin = parHistMin - 0.01 * parHistRange
                     parHistMax = parHistMax + 0.01 * parHistRange
                 parHist = TH1D( name + '_par', name, histBins, parHistMin, parHistMax )
-                for val in self._parVals[parIt] : parHist.Fill(val)
+                for val in self._parVals[parIt] : parHist.Fill( val + plotShift )
                 drawHist( name, parHist, histsFile + '_pars.pdf' )
 
                 pullHistMin = min( self._pullVals[parIt] )
