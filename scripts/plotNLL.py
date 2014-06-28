@@ -1,8 +1,8 @@
 model = 'lamb_phi'
-scanParFilePath = '/project/bfys/jleerdam/softDevel/P2VV2/test/NLLPlots/jobOutput/%s_%s/NLLVals_%s_1000???.par'
+scanParFilePath = '/project/bfys/jleerdam/softDevel/P2VV2/test/NLLPlots/jobOutput/%s_%s/NLLVals_%s_1002???.par'
 plotFilePath = '/project/bfys/jleerdam/softDevel/P2VV2/test/NLLPlots/%s_plots.pdf' % model
 nPointsPara = 1000
-nllRange = ( 0., 6. )
+nllRange = ( 0., 13. )
 
 from math import pi
 if model == 'phi' :
@@ -28,13 +28,13 @@ if model == 'phi' :
                                                    , mean = 0.2512126, error = 0.0049162961 )
                        , f_S_bin0           = dict( name = 'F_{S1}', min = 0.16, max = 0.70
                                                    , mean = 0.42608908, error = 0.054057373 )
-                       , f_S_bin1           = dict( name = 'F_{S2}', min = 1.e-5, max = 0.156
+                       , f_S_bin1           = dict( name = 'F_{S2}', min = 0., max = 0.156
                                                    , mean = 0.058932781, error = 0.017982136 )
-                       , f_S_bin2           = dict( name = 'F_{S3}', min = 1.e-5, max = 0.042
+                       , f_S_bin2           = dict( name = 'F_{S3}', min = 0., max = 0.042
                                                    , mean = 0.0095124401, error = 0.0068361602 )
-                       , f_S_bin3           = dict( name = 'F_{S4}', min = 1.e-5, max = 0.039
+                       , f_S_bin3           = dict( name = 'F_{S4}', min = 0., max = 0.039
                                                    , mean = 0.007901675, error = 0.005714802 )
-                       , f_S_bin4           = dict( name = 'F_{S5}', min = 1.e-5, max = 0.126
+                       , f_S_bin4           = dict( name = 'F_{S5}', min = 0., max = 0.126
                                                    , mean = 0.045102864, error = 0.016058515 )
                        , f_S_bin5           = dict( name = 'F_{S6}', min = 0.064, max = 0.319
                                                    , mean = 0.19240477, error = 0.025483256 )
@@ -65,35 +65,35 @@ elif model == 'lamb_phi' :
                 , 'ASOddPhase_bin0', 'ASOddPhase_bin1', 'ASOddPhase_bin2', 'ASOddPhase_bin3', 'ASOddPhase_bin4', 'ASOddPhase_bin5'
                ]
 
-    parSettings = dict(  phiCP              = dict( name = '#phi_{s}', min = -0.31, max = 0.19
+    parSettings = dict(  phiCP              = dict( name = '#phi_{s}', min = -0.35, max = 0.25
                                                    , mean = -0.057095686, error = 0.049722504 )
-                       , lambdaCP           = dict( name = '|#lambda_{s}|', min = 0.869, max = 1.057
+                       , lambdaCP           = dict( name = '|#lambda_{s}|', min = 0.83, max = 1.12
                                                    , mean = 0.96269479, error = 0.018785372 )
-                       , Gamma              = dict( name = '#Gamma_{s}', min = 0.643, max = 0.676
+                       , Gamma              = dict( name = '#Gamma_{s}', min = 0.64, max = 0.68
                                                    , mean = 0.65916402, error = 0.0031062888 )
-                       , dGamma             = dict( name = '#Delta#Gamma_{s}', min = 0.033, max = 0.124
+                       , dGamma             = dict( name = '#Delta#Gamma_{s}', min = 0.02, max = 0.13
                                                    , mean = 0.078511129, error = 0.0091307288 )
-                       , dM                 = dict( name = '#Deltam_{s}', min = 17.44, max = 18.01
+                       , dM                 = dict( name = '#Deltam_{s}', min = 17.3, max = 18.1
                                                    , mean = 17.723016, error = 0.056704725 )
-                       , A0Mag2             = dict( name = '|A_{#kern[0.4]{0}}|^{2}', min = 0.506, max = 0.541
+                       , A0Mag2             = dict( name = '|A_{#kern[0.4]{0}}|^{2}', min = 0.50, max = 0.55
                                                    , mean = 0.52367494, error = 0.0034391553 )
-                       , AperpMag2          = dict( name = '|A_{#perp#kern[1.8]{ }}|^{2}', min = 0.227, max = 0.276
+                       , AperpMag2          = dict( name = '|A_{#perp#kern[1.8]{ }}|^{2}', min = 0.22, max = 0.28
                                                    , mean = 0.25121522, error = 0.0049002128 )
-                       , f_S_bin0           = dict( name = 'F_{S1}', min = 0.16, max = 0.70
+                       , f_S_bin0           = dict( name = 'F_{S1}', min = 0.15, max = 0.70
                                                    , mean = 0.42628995, error = 0.054010232 )
-                       , f_S_bin1           = dict( name = 'F_{S2}', min = 1.e-5, max = 0.156
+                       , f_S_bin1           = dict( name = 'F_{S2}', min = 0., max = 0.16
                                                    , mean = 0.05875113, error = 0.017556867 )
-                       , f_S_bin2           = dict( name = 'F_{S3}', min = 1.e-5, max = 0.042
+                       , f_S_bin2           = dict( name = 'F_{S3}', min = 0., max = 0.06
                                                    , mean = 0.0095565319, error = 0.00656844 )
-                       , f_S_bin3           = dict( name = 'F_{S4}', min = 1.e-5, max = 0.039
+                       , f_S_bin3           = dict( name = 'F_{S4}', min = 0., max = 0.06
                                                    , mean = 0.0094082209, error = 0.0058415528 )
-                       , f_S_bin4           = dict( name = 'F_{S5}', min = 1.e-5, max = 0.126
+                       , f_S_bin4           = dict( name = 'F_{S5}', min = 0., max = 0.15
                                                    , mean = 0.04816402, error = 0.015469857 )
-                       , f_S_bin5           = dict( name = 'F_{S6}', min = 0.064, max = 0.319
+                       , f_S_bin5           = dict( name = 'F_{S6}', min = 0.06, max = 0.35
                                                    , mean = 0.19205916, error = 0.02548107 )
-                       , AparPhase          = dict( name = '#delta_{#parallel} - #delta_{0}', min = 2.64, max = 3.88
+                       , AparPhase          = dict( name = '#delta_{#parallel} - #delta_{0}', min = 2.6, max = 3.7
                                                    , mean = 3.2567147, error = 0.12416783 )
-                       , AperpPhase         = dict( name = '#delta_{#kern[1.8]{#perp}#kern[1.8]{ }} - #delta_{0}', min = 2.38, max = 3.82
+                       , AperpPhase         = dict( name = '#delta_{#kern[1.8]{#perp}#kern[1.8]{ }} - #delta_{0}', min = 2.0, max = 4.0
                                                    , mean = 3.0985034, error = 0.14397861 )
                        , ASOddPhase_bin0    = dict( name = '#delta_{S1} - #delta_{#kern[1.8]{#perp}#kern[1.8]{ }}', min = -pi, max = pi
                                                    , mean = 0.84325523, error = 0.19890243 )
@@ -145,13 +145,13 @@ else :
                                                    , mean = 0.25125825, error = 0.0049294865 )
                        , avf_S_bin0         = dict( name = 'F_{S1}^{av}', min = 0.16, max = 0.70
                                                    , mean = 0.42437739, error = 0.054153196 )
-                       , avf_S_bin1         = dict( name = 'F_{S2}^{av}', min = 1.e-5, max = 0.156
+                       , avf_S_bin1         = dict( name = 'F_{S2}^{av}', min = 0., max = 0.156
                                                    , mean = 0.057217699, error = 0.01766972 )
-                       , avf_S_bin2         = dict( name = 'F_{S3}^{av}', min = 1.e-5, max = 0.042
+                       , avf_S_bin2         = dict( name = 'F_{S3}^{av}', min = 0., max = 0.042
                                                    , mean = 0.0085864882, error = 0.0065480008 )
-                       , avf_S_bin3         = dict( name = 'F_{S4}^{av}', min = 1.e-5, max = 0.039
+                       , avf_S_bin3         = dict( name = 'F_{S4}^{av}', min = 0., max = 0.039
                                                    , mean = 0.0092803772, error = 0.0056304117 )
-                       , avf_S_bin4         = dict( name = 'F_{S5}^{av}', min = 1.e-5, max = 0.126
+                       , avf_S_bin4         = dict( name = 'F_{S5}^{av}', min = 0., max = 0.126
                                                    , mean = 0.047881399, error = 0.015387567 )
                        , avf_S_bin5         = dict( name = 'F_{S6}^{av}', min = 0.064, max = 0.319
                                                    , mean = 0.19101304, error = 0.025535031 )
