@@ -10,6 +10,7 @@
 #include <set>
 #include <vector>
 #include <list>
+#include <typeinfo>
 
 // ROOT
 #include <TH1.h>
@@ -902,7 +903,8 @@ void addHelicityAnglesToTree(TTree& tree,
 			     const TString& posLeptName, const TString& negLeptName,
 			     const Double_t& posHadrMass, const Double_t& negHadrMass, 
 			     const Double_t& posLeptMass, const Double_t& negLeptMass,
-			     const TString& helcosthetaK_brName, const TString& helcosthetaL_brName, const TString& helphi_brName)
+			     const TString& helcosthetaK_brName, const TString& helcosthetaL_brName, const TString& helphi_brName,
+			     const TString& trackMomType)
 {// TODO: Use defaul values for the hel angles branch names
 
   // new branch addresses
@@ -916,11 +918,24 @@ void addHelicityAnglesToTree(TTree& tree,
   TBranch* helphi_branch       = tree.Branch(helphi_brName,       helphi_address,       helphi_brName + "/D"      );
 
   // existing branch addresses
-  std::vector<Double_t> posHadrMomentum(3);
-  std::vector<Double_t> negHadrMomentum(3);
-  std::vector<Double_t> posLeptMomentum(3);
-  std::vector<Double_t> negLeptMomentum(3);
-  
+  // if(trackMomType=='F'){
+  //   std::vector<Float_t> posHadrMomentum(3);
+  //   std::vector<Float_t> negHadrMomentum(3);
+  //   std::vector<Float_t> posLeptMomentum(3);
+  //   std::vector<Float_t> negLeptMomentum(3);
+  // };
+  // else {
+  //   std::vector<Double_t> posHadrMomentum(3);
+  //   std::vector<Double_t> negHadrMomentum(3);
+  //   std::vector<Double_t> posLeptMomentum(3);
+  //   std::vector<Double_t> negLeptMomentum(3);
+  // };
+
+  std::vector<Float_t> posHadrMomentum(3);
+  std::vector<Float_t> negHadrMomentum(3);
+  std::vector<Float_t> posLeptMomentum(3);
+  std::vector<Float_t> negLeptMomentum(3);
+
   // set branch addresses
   //TODO: Make the suffixes more flexible
   tree.SetBranchAddress( posHadrName + "_PX", &posHadrMomentum[0]);
