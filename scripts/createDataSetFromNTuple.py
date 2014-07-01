@@ -6,6 +6,7 @@ KKMassBins = [ 990., 1050. ]
 removeVars = [ 'tagCatP2VV' ]
 selection = 'hlt2_biased==1'
 numDataSets = 40
+weightName = ''
 
 import P2VV.RooFitWrappers
 from ROOT import TFile, RooArgSet
@@ -14,7 +15,7 @@ nTupleFileIn = TFile.Open(nTupleFilePathIn)
 protoData = protoFile.Get('JpsiKK_sigSWeight')
 nTupleIn = nTupleFileIn.Get('DecayTree')
 
-from ROOT import RooCategory
+from ROOT import RooRealVar, RooCategory
 obsSet = RooArgSet( protoData.get() )
 if runPeriods :
     rp = obsSet.find('runPeriod')
@@ -39,6 +40,10 @@ if KKMassBins :
 if removeVars :
     for var in removeVars : obsSet.remove( obsSet.find(var) )
 
+if weightName :
+    wVar = RooRealVar( weightName, weightName, 1. )
+    obsSet.add(wVar)
+
 import os, subprocess, tempfile
 tmp = tempfile.NamedTemporaryFile()
 tmpFileName = os.path.realpath(tmp.name)
@@ -52,7 +57,10 @@ for it in range(numDataSets) :
     nEv = nEvDS if it < numDataSets - 1 else nTupleIn.GetEntries() - ( numDataSets - 1 ) * nEvDS
     tmpFile = TFile.Open( tmpFileName, 'RECREATE' )
     nTupleSplit = nTupleIn.CopyTree( selection, '', nEv, startEv )
-    dataOut = RooDataSet( protoData.GetName(), protoData.GetTitle(), obsSet, Import = nTupleSplit )
+    if weightName :
+        dataOut = RooDataSet( protoData.GetName(), protoData.GetTitle(), obsSet, Import = nTupleSplit, WeightVar = ( weightName, True ) )
+    else :
+        dataOut = RooDataSet( protoData.GetName(), protoData.GetTitle(), obsSet, Import = nTupleSplit )
     tmpFile.Close()
 
     print 'produced dataset:'

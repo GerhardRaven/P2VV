@@ -298,16 +298,16 @@ class fitResultsAnalysis(object) :
             if name in self._parHists and self._parHists[name] :
                 self._parHists[name].Delete()
             if histsFile :
+                plotShift = anaParSetts[name]['plotShift'] if name in anaParSetts and 'plotShift' in anaParSetts[name] else 0.
                 histBins = int( float(self._nParVals[parIt][0]) / 100. ) if self._nParVals[parIt][0] > 1000 else 10
-                parHistMin = min( self._parVals[parIt] )
-                parHistMin = min( self._parVals[parIt] )
-                parHistMax = max( self._parVals[parIt] )
+                parHistMin = min( self._parVals[parIt] ) + plotShift
+                parHistMax = max( self._parVals[parIt] ) + plotShift
                 parHistRange = parHistMax - parHistMin
                 if parHistRange > 0. :
                     parHistMin = parHistMin - 0.01 * parHistRange
                     parHistMax = parHistMax + 0.01 * parHistRange
                 parHist = TH1D( name + '_par', name, histBins, parHistMin, parHistMax )
-                for val in self._parVals[parIt] : parHist.Fill(val)
+                for val in self._parVals[parIt] : parHist.Fill( val + plotShift )
                 drawHist( name, parHist, histsFile + '_pars.pdf' )
 
                 pullHistMin = min( self._pullVals[parIt] )
@@ -345,7 +345,7 @@ class fitResultsAnalysis(object) :
             meanSqVal = parSums[1] / float( nParVals[0] )
             stdDev = sqrt( meanSqVal - meanVal**2 )
             precDev = max( 0, 3 - int( ceil( log10(stdDev) ) ) )
-            prec = max( 0, 2 - int( ceil( log10( refVal[1] ) ) ) ) if refVal != None else precDev
+            prec = max( 0, 3 - int( ceil( log10( refVal[1] ) ) ) ) if refVal != None else precDev
             print ( '  {0:<%ds}   {1:<+8.%df}   {2:<11.%df}' % ( nameLen, prec, precDev ) ).format( name, meanVal, stdDev ),
             if refVal != None :
                 refErr = errSums / float( nParVals[0] ) if toyMode else refVal[1]

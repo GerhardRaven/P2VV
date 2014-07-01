@@ -1,6 +1,3 @@
-from P2VV.RooFitWrappers import BinningCategory
-from P2VV.RooFitWrappers import MappedCategory
-from ROOT import RooBinning
 from array import array
 
 class SplitUtil(object):
@@ -46,12 +43,14 @@ class SplitUtil(object):
                 self.__binnings[observable] = bins
             else:
                 bins = self.__binnings[observable]
+            from ROOT import RooBinning
             binning = RooBinning(len(bins) - 1, bins, prefix + '_binning')
             observable.setBinning(binning, prefix + '_binning')
             args = dict(Observable = observable, Binning = binning,
                         CatTypeName = prefix + '_bin_')
             if data:
                 args.update(dict(Data = data, Fundamental = True))
+                from P2VV.RooFitWrappers import BinningCategory
             self.__cats[observable] = BinningCategory(observable.GetName() + '_cat', **args)
         return self.__cats[observable]
 
@@ -138,8 +137,8 @@ class SplitNPV(SplitUtil):
         
 parNames = {'N_prompt'         : ('#prompt',     '$N_{\\text{prompt}}$'),
             'N_psi_ll'         : ('#longlived',  '$N_{\\text{ll}}$'),
-            'N_signal'         : ('#signal',     '\\# signal'),
-            'N_bkg'            : ('#background', '\\# background'),
+            'N_signal'         : ('#signal',     '$N_{\\text{sig}$}'),
+            'N_bkg'            : ('#background', '$N_{\\text{bkg}}'),
             'N_sig_wpv'        : ('#wpv' ,       '$N_{\\text{WPV}}$'),
             'psi_t_fml'        : ('frac short lift', '$f_{\\text{sl}}$'),
             'psi_t_ll_tau'     : ('tau long', '$\\tau_{\\text{ll}}$'),
@@ -163,10 +162,10 @@ parNames = {'N_prompt'         : ('#prompt',     '$N_{\\text{prompt}}$'),
 import os
 prefix = '/stuff/PhD' if os.path.exists('/stuff') else '/project/bfys/raaij'
 input_data = {'2011_Reco14' : {'data' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2011_Reco14_Stripv20r1_ntupleB_20131002.root'),
-                               'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_Mixing_2011_Reco14_DataSet.root'),
-                               'workspace' : 'Bs2JpsiPhi_WPV_2011_Reco14_workspace',
+                               'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_Mixing_2011_Reco14_DataSet.root'),
+                               'workspace' : 'Bs2JpsiPhiPrescaled_WPV_2011_Reco14_workspace',
                                'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2011_Reco14_Prescaled.root')},
-              '2012' : {'data' :os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2012_ntupleB_20130905.root'),
+              '2012' : {'data' :os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_2012_ntupleB_20140429.root'),
                         'wpv' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhiPrescaled_WPV_2012_DataSet.root'),
                         'workspace' : 'Bs2JpsiPhiPrescaled_WPV_2012_workspace',
                         'cache' : os.path.join(prefix, 'p2vv/data/Bs2JpsiPhi_2012_Prescaled.root')},

@@ -266,6 +266,7 @@ class Bs2Jpsiphi_PdfConfiguration( PdfConfiguration ) :
         self['angularRanges']    = dict( cpsi = [ ], ctheta = [ ], phi = [ ] )
 
         self['tagPdfType']       = ''
+        self['tagCatsType']      = 'linearCats'   # type of tagging categories: '' / 'linearCats'
         self['SSTagging']        = True           # use same-side Kaon tagging?
         self['condTagging']      = True           # make tagging categories and B/Bbar tags conditional observables?
         self['contEstWTag']      = True           # use a continuous estimated wrong-tag probability instead of tagging categories?
@@ -508,6 +509,7 @@ class Bs2JpsiKst_RunIAnalysis( PdfConfiguration ) :
         self['sWeights'] = 'Bs'
 
         # job parameters
+<<<<<<< HEAD
         self['parNamePrefix'] = ''           # prefix for parameter names        
         self['sFit']          = sFit         # fit only signal?
         self['blind']         = { }          # { 'phiCP' : ( 'UnblindUniform', 'myString', 0.2 ) }
@@ -685,7 +687,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         # get some build parameters
         for par in [ 'sFit', 'KKMassBinBounds', 'obsDict', 'CSPValues', 'condTagging', 'contEstWTag', 'SSTagging', 'transAngles'
                     , 'numEvents', 'sigFrac', 'paramKKMass', 'amplitudeParam', 'ASParam', 'signalData', 'fitOptions', 'parNamePrefix'
-                    , 'tagPdfType', 'timeEffType', 'timeEffHistFiles', 'timeEffData', 'timeEffParameters', 'anglesEffType'
+                    , 'tagPdfType', 'tagCatsType', 'timeEffType', 'timeEffHistFiles', 'timeEffData', 'timeEffParameters', 'anglesEffType'
                     , 'constAngEffCoefs', 'angEffMomsFiles', 'readFromWS', 'splitParams', 'externalConstr', 'runPeriods'
                     , 'timeEffConstraintType' ] :
             self[par] = getKWArg( self, { }, par )
@@ -694,6 +696,7 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         setParNamePrefix( self['parNamePrefix'] )
         namePF = getParNamePrefix(True)
 
+        self['contEstWTag'] = False if self['tagCatsType'] != 'linearCats' else self['contEstWTag']
         self['condTagging'] = True if self['contEstWTag'] else self['condTagging']
 
         # create observables
@@ -2524,6 +2527,7 @@ def buildTaggingCategories( self, **kwargs ) :
     tagCatsSS        = getKWArg( self, kwargs, 'tagCatsSS', [ ] )
     constrainTagging = getKWArg( self, kwargs, 'constrainTagging' )
     tagPdfType       = getKWArg( self, kwargs, 'tagPdfType' )
+    tagCatsType      = getKWArg( self, kwargs, 'tagCatsType' )
     condTagging      = getKWArg( self, kwargs, 'condTagging' )
     contEstWTag      = getKWArg( self, kwargs, 'contEstWTag' )
     data             = getKWArg( self, kwargs, 'data', None )
@@ -2569,17 +2573,28 @@ def buildTaggingCategories( self, **kwargs ) :
         assert tagCatsOS and tagCatsSS, 'P2VV - ERROR: buildTaggingCategories(): no tagging category binnings found'
 
     # build tagging categories
-    from P2VV.Parameterizations.FlavourTagging import Linear_TaggingCategories as TaggingCategories
-    self['tagCatsOS'] = TaggingCategories(  tagCat = observables['tagCatOS'] if observables['tagCatOS'] else obsDict['tagCatOS'][0]
-                                          , estWTag = observables['wTagOS'] if contEstWTag else None
-                                          , estWTagName = obsDict['wTagOS'][0], TagCats = tagCatsOS, SameSide = False
-                                          , wTagP0Constraint = constrainTagging, wTagP1Constraint = constrainTagging
-                                         )
-    self['tagCatsSS'] = TaggingCategories(  tagCat = observables['tagCatSS'] if observables['tagCatSS'] else obsDict['tagCatSS'][0]
-                                          , estWTag = observables['wTagSS'] if contEstWTag else None
-                                          , estWTagName = obsDict['wTagSS'][0], TagCats = tagCatsSS, SameSide = True
-                                          , wTagP0Constraint = constrainTagging, wTagP1Constraint = constrainTagging
-                                         )
+    tagCatOS = observables['tagCatOS'] if observables['tagCatOS'] else obsDict['tagCatOS'][0]
+    tagCatSS = observables['tagCatSS'] if observables['tagCatSS'] else obsDict['tagCatSS'][0]
+    if tagCatsType == 'linearCats' :
+        from P2VV.Parameterizations.FlavourTagging import Linear_TaggingCategories as TaggingCategories
+        self['tagCatsOS'] = TaggingCategories(  tagCat = tagCatOS
+                                              , estWTag = observables['wTagOS'] if contEstWTag else None
+                                              , estWTagName = obsDict['wTagOS'][0], TagCats = tagCatsOS, SameSide = False
+                                              , wTagP0Constraint = constrainTagging, wTagP1Constraint = constrainTagging
+                                             )
+        self['tagCatsSS'] = TaggingCategories(  tagCat = tagCatSS
+                                              , estWTag = observables['wTagSS'] if contEstWTag else None
+                                              , estWTagName = obsDict['wTagSS'][0], TagCats = tagCatsSS, SameSide = True
+                                              , wTagP0Constraint = constrainTagging, wTagP1Constraint = constrainTagging
+                                             )
+    else :
+        from P2VV.Parameterizations.FlavourTagging import Independent_TaggingCategories as TaggingCategories
+        self['tagCatsOS'] = TaggingCategories(  tagCat = observables['tagCatOS'] if observables['tagCatOS'] else obsDict['tagCatOS'][0]
+                                              , TagCats = tagCatsOS
+                                             )
+        self['tagCatsSS'] = TaggingCategories(  tagCat = observables['tagCatSS'] if observables['tagCatSS'] else obsDict['tagCatSS'][0]
+                                              , TagCats = tagCatsSS
+                                             )
 
     observables['tagCatOS'] = self['tagCatsOS']['tagCat']
     observables['tagCatSS'] = self['tagCatsSS']['tagCat']

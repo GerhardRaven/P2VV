@@ -5,7 +5,8 @@
 from math import pi, sin, cos, sqrt
 
 # job parameters
-MCProd      = 'Sim08'
+MCProd      = 'Sim08_2012'
+trueAngles  = True
 readMoments = False
 makePlots   = False
 transAngles = False
@@ -17,9 +18,16 @@ timeInt     = False
 addInvPdf   = False
 weightVar   = 'wKin' # 'sWeights_ipatia'
 doSelection = False
-addCuts     = ''
 blind       = { } # { 'phiCP' : ( 'UnblindUniform', 'BsPhisCombination', 0.2 ), 'dGamma' : ( 'UnblindUniform', 'BsDGsCombination', 0.02 ) }
 parFileIn   = '' # '../it6/fitPars.par'
+customSel   = True
+timeRange   = (0., 25.) if customSel else (0.3, 14.)
+sigmatCut   = False
+blind       = { } # { 'phiCP' : ( 'UnblindUniform', 'BsPhisCombination', 0.2 ), 'dGamma' : ( 'UnblindUniform', 'BsDGsCombination', 0.02 ) }
+parFileIn   = '' # '../it6/fitPars.par'
+trueTimeVarName = 'truetime'
+
+
 momentsFile = '%s_%s_UB_UT_%s_BkgCat050_KK30'      % ( MCProd, 'trans' if transAngles else 'hel', tResModel if tResModel else 'trueTime' )
 plotsFile   = '%s_%s_UB_UT_%s_BkgCat050_KK30.ps'   % ( MCProd, 'trans' if transAngles else 'hel', tResModel if tResModel else 'trueTime' )
 dataSetFile = '' # '%s_%s_UB_UT_%s_BkgCat050_KK30.root' % ( MCProd, 'trans' if transAngles else 'hel', tResModel if tResModel else 'trueTime' )
@@ -31,9 +39,13 @@ elif MCProd == 'Sim08' :
     #nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_20112012_Sim08_ntupleB_201309_add.root'
     nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/reweighted/Bs2JpsiPhi_Sim08a_reWeighted.root'
 elif MCProd == 'Sim08_2011' :
-    nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_MC2011_Sim08a_ntupleB_20130909_angEff.root'
+    nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_MC2011_Sim08a_ntupleB_20130909_angEff.root' if not trueAngles else\
+        '/project/bfys/vsyropou/PhD/workdir/jpsiphiAngAccChecks/DTT_stripingAndBkg60/MC2011_all_BsJpsiPhi_DTT_20131006_minimal_truth_roel.root'    
+    # '/project/bfys/vsyropou/data/Bs2JpsiPhi/dataSets/mcWithTrueAngles/Bs2JpsiPhi_MC2011_Sim08a_ntupleB_20130909_trueAngles.root'
 elif MCProd == 'Sim08_2012' :
-    nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_MC2012_ntupleB_20130904_angEff.root'
+    nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_MC2012_ntupleB_20130904_angEff.root' if not trueAngles else\
+        '/project/bfys/vsyropou/PhD/workdir/jpsiphiAngAccChecks/DTT_stripingAndBkg60/MC2012_all_BsJpsiPhi_DTT_20130709_minimal_truth_roel_v2.root'
+        #'/project/bfys/vsyropou/data/Bs2JpsiPhi/dataSets/mcWithTrueAngles/Bs2JpsiPhi_MC2012_ntupleB_20130909_trueAngles.root'
 else :
     nTupleFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Bs2JpsiPhiPrescaled_MC11a_ntupleB_for_fitting_20121010.root'
 
@@ -158,9 +170,9 @@ trueTimeCut    = 'truetime > 0.'
 timeCuts       = 'time > 0.3 && time < 14. && sigmat < 0.12'
 tagCuts        = '(tagdecision == 0 || tagdecision == -1 || tagdecision == +1)'
 
-cuts = addCuts
+cuts = ''
 if doSelection :
-    cuts = trackChiSqCuts + ' && ' + massCuts + ' && ' + timeCuts + ( ' && ' + cuts if cuts else '' )
+    cuts = trackChiSqCuts + ' && ' + massCuts + ' && ' + timeCuts + ' && ' + tagCuts
     if MCProd != 'real' :
         cuts += ' && ' + bkgcatCut + ' && ' + trueTimeCut
     if trigger == 'ExclBiased' :
@@ -172,6 +184,12 @@ if doSelection :
     else :
         #cuts = 'sel == 1 && sel_cleantail==1 && (hlt1_unbiased_dec == 1 || hlt1_biased == 1) && hlt2_biased == 1 && ' + cuts
         cuts = 'sel == 1 && sel_cleantail==1 && (hlt1_unbiased == 1 || hlt1_biased == 1) && hlt2_biased == 1 && ' + cuts
+
+# customise selection
+if customSel:
+    cuts = ''
+    cuts += 'abs(B_s0_TRUEID)==531'
+    cuts += ' && truetime>%s && truetime<%s'%(timeRange[0],timeRange[1])
 
 readDataOpts = { }
 if cuts      : readDataOpts['ntupleCuts'] = cuts

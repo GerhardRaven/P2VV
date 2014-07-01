@@ -27,7 +27,7 @@ from P2VV.RooFitWrappers import *
 obj = RooObject( workspace = 'w')
 w = obj.ws()
 
-mass = RealVar('B_s0_MM', Title = 'm(J/#psi K^{+}K^{-})', Unit = 'MeV/c^{2}', Observable = True,
+mass = RealVar('B_s0_LOKI_MASS_JpsiConstr', Title = 'm(J/#psi K^{+}K^{-})', Unit = 'MeV/c^{2}', Observable = True,
                Value = 5368., MinMax = (5200., 5550.))
 st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.0, 0.1))
 t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax = (-1.5, 8))
@@ -52,7 +52,7 @@ cut += ' && sel_cleantail == 1'
 for o in [mass, t, st]:
     cut += ' && {0} > {1} && {0} < {2}'.format(o.GetName(), o.getMin(), o.getMax())
 
-from P2VV.GeneralUtils import readData
+from P2VV.Utilities.DataHandling import readData
 data = readData(filePath = input_file, dataSetName = 'DecayTree', NTuple = True,
                 observables = [mass, t, st, excl_biased], Rename = 'JpsiphiData', ntupleCuts = cut)
 
@@ -61,9 +61,11 @@ nEvents     = data.sumEntries()
 nSignal     = nEvents * sigFrac
 nBackground = nEvents * ( 1. - sigFrac )
 
-from P2VV.Parameterizations.MassPDFs import Ipatia2_Signal_Mass as SignalBMass
-sig_m = SignalBMass(Name = 'sig_m', mass = mass, m_sig_lambda = -2.5, m_sig_zeta = 0.01,
-                    m_sig_alpha_1 = 3.0, m_sig_alpha_2 = 2.5, m_sig_n_1 = 1.5, m_sig_n_2 = 2.0)
+## from P2VV.Parameterizations.MassPDFs import Ipatia2_Signal_Mass as SignalBMass
+## sig_m = SignalBMass(Name = 'sig_m', mass = mass, m_sig_lambda = -2.5, m_sig_zeta = 0.01,
+##                     m_sig_alpha_1 = 3.0, m_sig_alpha_2 = 2.5, m_sig_n_1 = 1.5, m_sig_n_2 = 2.0)
+from P2VV.Parameterizations.MassPDFs import LP2011_Signal_Mass as SignalBMass
+sig_m = SignalBMass(Name = 'sig_m', mass = mass)
 
 signal = Component( 'signal', [sig_m.pdf()], Yield = ( nSignal,     0., nEvents ) )
 
@@ -94,7 +96,7 @@ if not options.prescaled:
     # set yields for categories
     split_cat  = sWeight_mass_pdf.indexCat()
     split_vars = sWeight_mass_pdf.getVariables()
-    from P2VV.GeneralUtils import getSplitPar
+    from P2VV.Utilities.General import getSplitPar
     from math import sqrt
     for state in split_cat:
         sigYield = getSplitPar( 'N_signal', state.GetName(), split_vars )
@@ -144,8 +146,10 @@ option = "update" if os.path.exists(output_file) else "new"
 f = TFile(output_file, option)
 if not f.Get(year):
     f.mkdir(year)
+
 d = f.Get(year)
 for n, ds in {'sig_sdata' : sig_sdata, 'bkg_sdata' : bkg_sdata}.iteritems():    
-    d.WriteTObject(ds, n)
+    d.WriteTObject(ds, n, 'overwrite')
+
 f.Write()
 f.Close()

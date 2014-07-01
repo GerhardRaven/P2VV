@@ -14,8 +14,8 @@ parser.add_option('-c', '--NumCpu',       dest='NumCpu',       default=8,       
 (options, args) = parser.parse_args()
 
 # data
-dataPath    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/'
-myPath = '/project/bfys/vsyropou/data/Bs2JpsiPhi/'
+dataPath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/'
+myPath   = '/project/bfys/vsyropou/data/Bs2JpsiPhi/'
 dataSetFile = options.FitData if options.FitData else \
               dataPath + 'angEff/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
 dataSetName = 'JpsiKK_sigSWeight'

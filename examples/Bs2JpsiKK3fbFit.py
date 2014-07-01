@@ -8,6 +8,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument( '--jobName', '-N', default = 'Bs2JpsiKKFit' )
 parser.add_argument( '--model', '-m', default = 'lamb_phi' )  # 'phi' / 'lamb_phi' / 'polarDep'
 parser.add_argument( '--blind', '-b', default = True )
+parser.add_argument( '--tagCatsType', '-T', default = 'linearCats' )
+parser.add_argument( '--contEstWTag', '-C', default = True )
 parser.add_argument( '--fixLowAcc', '-l', default = True )
 parser.add_argument( '--fixUpAcc', '-u', default = False )
 parser.add_argument( '--fixTagging', '-a', default = False )
@@ -30,10 +32,13 @@ parser.add_argument( '--timeAccFile2012', '-y', default = 'timeAcceptanceFit_201
 parser.add_argument( '--angAccType', '-t', default = 'weights' )  # 'weights' / 'basis012' / 'basis01234' / 'basisSig6'
 parser.add_argument( '--angAccFile', '-z', default = 'angEffNominalRew_moms.par' )
 parser.add_argument( '--constAngAcc', '-q', default = True )
+parser.add_argument( '--timeResSyst', '-R', default = '' )
 
 args = parser.parse_args()
 assert args.model in [ 'phi', 'lamb_phi', 'polarDep' ]
 blind = False if not args.blind or str( args.blind ).lower() in [ 'false', '0' ] else True
+assert args.tagCatsType in [ '', 'linearCats' ]
+contEstWTag = False if not args.tagCatsType or str( args.contEstWTag ).lower() in [ 'false', '0' ] else True
 fixLowAcc = False if not args.fixLowAcc or str( args.fixLowAcc ).lower() in [ 'false', '0' ] else True
 fixUpAcc = False if not args.fixUpAcc or str( args.fixUpAcc ).lower() in [ 'false', '0' ] else True
 fixTagging = False if not args.fixTagging or str( args.fixTagging ).lower() in [ 'false', '0' ] else True
@@ -81,6 +86,8 @@ if args.jobName :
     print '  job name: %s' % args.jobName
 print '  model: %s' % args.model
 print '  blind analysis: %s' % ( 'true' if blind else 'false' )
+print '  tagging categories type: %s' % args.tagCatsType
+print '  continuous estimated wrong-tag variable: %s' % contEstWTag
 print '  fix lower decay-time acceptance: %s' % ( 'true' if fixLowAcc else 'false' )
 print '  fix upper decay-time acceptance: %s' % ( 'true' if fixUpAcc  else 'false' )
 print '  fix tagging calibration: %s' % ( 'true' if fixTagging else 'false' )
@@ -115,6 +122,12 @@ pdfConfig = PdfConfig()
 if not blind :
     pdfConfig['blind'] = { }
 
+pdfConfig['tagCatsType'] = args.tagCatsType
+pdfConfig['contEstWTag'] = contEstWTag
+if pdfConfig['tagCatsType'] != 'linearCats' :
+    for name in [ 'wTagP0OS', 'wTagP1OS', 'wTagDelP0OS', 'wTagDelP1OS', 'wTagP0SS', 'wTagP1SS', 'wTagDelP0SS', 'wTagDelP1SS' ] :
+        pdfConfig['externalConstr'].pop(name)
+
 pdfConfig['lambdaCPParam'] = 'observables_CPVDecay' if args.model == 'polarDep' else 'lambPhi'
 if pdfConfig['lambdaCPParam'] == 'observables_CPVDecay' :
     pdfConfig['splitParams']['KKMassCat'] = [ 'av' + par if par == 'f_S' else par for par in pdfConfig['splitParams']['KKMassCat'] ]
@@ -136,6 +149,53 @@ if pdfConfig['timeEffType'].startswith('fit') :
                                                             }
                                                          )
 
+timeResSystType = args.timeResSyst
+from collections import defaultdict
+splitConstr = defaultdict(dict)
+if timeResSystType == 'mean_param':
+    pdfConfig['timeResType'] += '_mean_param'
+    splitConstr['mu_placeholder']['2011']   = (  0.0350, 0. )
+    splitConstr['timeResMu_offset']['2011'] = ( -0.0020, 0. )
+    splitConstr['timeResMu_slope']['2011']  = ( -0.1475, 0. )
+    splitConstr['timeResMu_quad']['2011']   = ( -6.2781, 0. )
+
+    splitConstr['mu_placeholder']['2012']  =  (  0.0349, 0. )
+    splitConstr['timeResMu_offset']['2012'] = ( -0.0031, 0. )
+    splitConstr['timeResMu_slope']['2012']  = ( -0.1634, 0. )
+    splitConstr['timeResMu_quad']['2012']   = ( -6.9108, 0. )
+    
+    split_runPeriod = set(pdfConfig['splitParams']['runPeriod'])
+    for pn in ('timeResMu',):
+        pdfConfig['externalConstr'].pop(pn)
+        pdfConfig['splitParams']['runPeriod'].remove(pn)
+    for par, vals in splitConstr.iteritems() :
+        if par not in split_runPeriod:
+            pdfConfig['splitParams']['runPeriod'].append(par)
+elif timeResSystType == 'quadratic_no_offset':
+    from collections import defaultdict
+    splitConstr = defaultdict(dict)
+    splitConstr['sf_placeholder']['2011']  = (  0.0350,  0. )
+    splitConstr['sf_mean_slope']['2011']   = (  1.436, 0. )
+    splitConstr['sf_mean_quad']['2011']    = ( -8.145, 0. )
+    splitConstr['timeResFrac2']['2011']    = (  0.151, 0. )
+    splitConstr['sf_sigma_slope']['2011']  = (  0.348, 0. )
+    splitConstr['sf_sigma_quad']['2011']   = (  2.518, 0. )
+
+    splitConstr['sf_placeholder']['2012']  =  ( 0.0349,  0. )
+    splitConstr['sf_mean_slope']['2012']   =  ( 1.425, 0. )
+    splitConstr['sf_mean_quad']['2012']    =  ( 3.167, 0. )
+    splitConstr['timeResFrac2']['2012']    =  ( 0.265, 0. )
+    splitConstr['sf_sigma_slope']['2012']  =  ( 0.271, 0. )
+    splitConstr['sf_sigma_quad']['2012']   =  ( 3.136, 0. )
+
+for par, vals in splitConstr.iteritems() :
+    from P2VV.Parameterizations.FullPDFs import SimulCatSettings
+    constr = SimulCatSettings( '%sConstr' % par )
+    constr.addSettings( [ 'runPeriod' ], [ [ 'p2011' ] ], vals['2011'] )
+    constr.addSettings( [ 'runPeriod' ], [ [ 'p2012' ] ], vals['2012'] )
+    pdfConfig['externalConstr'][par] = constr
+
+    
 if fixUpAcc :
     for it, sett in enumerate( pdfConfig['externalConstr']['betaTimeEff'] ) :
         per = sett[0]['runPeriod']

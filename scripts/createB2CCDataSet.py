@@ -9,7 +9,7 @@ nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_hope_th
 nTupleName       = 'DecayTree'
 dataSetsFilePath = 'temp.root' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_6KKMassBins_2TagCats.root'
 appendToFile     = False
-savedObjects     = [ 'sigSWeight' ]
+savedObjects     = [ 'sigSWeight' ] # [ 'main', 'sigSWeight', 'cbkgSWeight' ]
 plotsFilePath    = 'temp_plots' #'/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_6KKMassBins_2TagCats_plots'
 parFileIn        = 'eventYields6KKBins_HLT2.par' #'eventYields6KKBins.par' #'eventYields6KKBinsNoMC.par' #'eventYields6KKBins.par'
 parFileOut       = ''
@@ -206,33 +206,50 @@ massRanges = dict(  LeftSideBand  = ( 5200., 5300. )
                   , PeakBkg       = ( 5380., 5440. )
                  )
 
-if addTaggingObs and addTaggingObs[0] == 2 :
+if addTaggingObs and addTaggingObs[0] == 1 :
+    tagCatsOS = [ ( 'Untagged', 0, 0.500000001 ) ]
+elif addTaggingObs and addTaggingObs[0] == 2 :
     tagCatsOS = [  ( 'Untagged', 0, 0.500000001 )
                  , ( 'Tagged',   1, 0.499999999 )
                 ]
-elif addTaggingObs and addTaggingObs[0] > 2 :
+elif addTaggingObs and addTaggingObs[0] == 4 :
     tagCatsOS = [  ( 'Untagged', 0, 0.500000001 )
                  , ( 'TagCat1',  1, 0.499999999 )
-                 , ( 'TagCat2',  2, 0.38        )
-                 , ( 'TagCat3',  3, 0.31        )
-                 , ( 'TagCat4',  4, 0.24        )
-                 , ( 'TagCat5',  5, 0.17        )
+                 , ( 'TagCat2',  2, 0.34        )
+                 , ( 'TagCat3',  3, 0.22        )
                 ]
+elif addTaggingObs and addTaggingObs[0] != 0 :
+    raise AssertionError( 'P2VV - ERROR: createB2CCDataSet: unknown number of opposite-side tagging categories: %s' % addTaggingObs[0] )
 else :
     tagCatsOS = [ ]
 
-if addTaggingObs and addTaggingObs[1] == 2 :
+if addTaggingObs and addTaggingObs[1] == 1 :
+    tagCatsSS = [ ( 'Untagged', 0, 0.500000001 ) ]
+elif addTaggingObs and addTaggingObs[1] == 2 :
     tagCatsSS = [  ( 'Untagged', 0, 0.500000001 )
                  , ( 'Tagged',   1, 0.499999999 )
                 ]
-elif addTaggingObs and addTaggingObs[1] > 2 :
+elif addTaggingObs and addTaggingObs[1] == 4 :
     tagCatsSS = [  ( 'Untagged', 0, 0.500000001 )
                  , ( 'TagCat1',  1, 0.499999999 )
-                 , ( 'TagCat2',  2, 0.32        )
-                 , ( 'TagCat3',  3, 0.25        )
+                 , ( 'TagCat2',  2, 0.40        )
+                 , ( 'TagCat3',  3, 0.30        )
                 ]
+elif addTaggingObs and addTaggingObs[1] != 0 :
+    raise AssertionError( 'P2VV - ERROR: createB2CCDataSet: unknown number of same-side tagging categories: %s' % addTaggingObs[1] )
 else :
     tagCatsSS = [ ]
+
+from P2VV.Imports import extConstraintValues
+extConstraintValues.setVal( 'DM',      ( 17.768,  0.024   ) )
+extConstraintValues.setVal( 'P0OS',    (  0.3791, 0.0044, 0.3791 ) )
+extConstraintValues.setVal( 'P1OS',    (  1.00,   0.035  ) )
+extConstraintValues.setVal( 'DelP0OS', (  0.0140, 0.0012 ) )
+extConstraintValues.setVal( 'DelP1OS', (  0.066,  0.012  ) )
+extConstraintValues.setVal( 'P0SS',    (  0.445,  0.005, 0.445 ) )
+extConstraintValues.setVal( 'P1SS',    (  1.00,   0.09   ) )
+extConstraintValues.setVal( 'DelP0SS', ( -0.016,  0.002  ) )
+extConstraintValues.setVal( 'DelP1SS', (  0.007,  0.019  ) )
 
 plotsFilePath = plotsFilePath.split('.')[0]
 
@@ -847,9 +864,9 @@ if addTaggingObs :
 
     # get tagging category bins
     from P2VV.Parameterizations.FlavourTagging import getTagCatParamsFromData as getTagParams
-    tagBinsOS = getTagParams( dataSets['preS'][0], estWTagName = wTagOSName, tagCats = tagCatsOS, numSigmas = 1., SameSide = False
+    tagBinsOS = getTagParams( dataSets['preS'][0], estWTagName = wTagOSName, tagCats = tagCatsOS, numSigmas = 2., SameSide = False
                              , WeightVarName = '' if simulation else weightVars[0].GetName() )
-    tagBinsSS = getTagParams( dataSets['preS'][0], estWTagName = wTagSSName, tagCats = tagCatsSS, numSigmas = 1., SameSide = True
+    tagBinsSS = getTagParams( dataSets['preS'][0], estWTagName = wTagSSName, tagCats = tagCatsSS, numSigmas = 2., SameSide = True
                              , WeightVarName = '' if simulation else weightVars[0].GetName() )
 
     # add tagging categories to data sets

@@ -303,7 +303,7 @@ class Cache(object):
                     dirs[d].WriteTObject(p[0], p[0].GetName(), 'overwrite')
             for d in dirs.itervalues():
                 d.Write(d.GetName(), TObject.kOverwrite)
-        
+                
 class SimCache(Cache):
     def __init__(self, cache_def, directory, sub_dir):
         self.__sub_dir = sub_dir

@@ -1,12 +1,3 @@
-import os
-from P2VV.RooFitWrappers import *
-from P2VV.Load import P2VVLibrary
-from P2VV.Load import LHCbStyle
-from ROOT import RooCBShape as CrystalBall
-from ROOT import RooMsgService
-
-## RooMsgService.instance().addStream(RooFit.DEBUG,RooFit.Topic(RooFit.Eval))
-
 #!/usr/bin/env python
 import gc
 import optparse
@@ -14,7 +5,7 @@ import sys
 import os
 from math import sqrt
 
-parser = optparse.OptionParser(usage = 'usage: %prog <resolution|physics <2011|2012|combined> <signal|background>')
+parser = optparse.OptionParser(usage = 'usage: %prog <resolution|physics> <2011|2012|combined> <signal|background>')
 
 (options, args) = parser.parse_args()
 
@@ -40,6 +31,9 @@ if not component in ['background', 'signal']:
 if years == 'combined' and type == 'resolution':
     print 'Combined sample for resolution does not make sense'
     sys.exit(2)
+
+from P2VV.RooFitWrappers import *
+from P2VV.Load import LHCbStyle
 
 obj = RooObject( workspace = 'w')
 w = obj.ws()
