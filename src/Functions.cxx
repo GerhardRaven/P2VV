@@ -909,7 +909,7 @@ void addHelicityAnglesToTree(TTree& tree,
 			     const Double_t& posLeptMass, const Double_t& negLeptMass,
 			     const TString& helcosthetaK_brName, const TString& helcosthetaL_brName, const TString& helphi_brName,
 			     const TString& trackMomType)
-{// TODO: Use defaul values for the hel angles branch names
+{// TODO: Use default values for the hel angles branch names
 
   // new branch addresses
   Double_t* helcosthetaK_address = new Double_t(0);
@@ -922,19 +922,6 @@ void addHelicityAnglesToTree(TTree& tree,
   TBranch* helphi_branch       = tree.Branch(helphi_brName,       helphi_address,       helphi_brName + "/D"      );
 
   // existing branch addresses
-  // if(trackMomType=='F'){
-  //   std::vector<Float_t> posHadrMomentum(3);
-  //   std::vector<Float_t> negHadrMomentum(3);
-  //   std::vector<Float_t> posLeptMomentum(3);
-  //   std::vector<Float_t> negLeptMomentum(3);
-  // };
-  // else {
-  //   std::vector<Double_t> posHadrMomentum(3);
-  //   std::vector<Double_t> negHadrMomentum(3);
-  //   std::vector<Double_t> posLeptMomentum(3);
-  //   std::vector<Double_t> negLeptMomentum(3);
-  // };
-
   std::vector<Float_t> posHadrMomentum(3);
   std::vector<Float_t> negHadrMomentum(3);
   std::vector<Float_t> posLeptMomentum(3);
@@ -963,7 +950,7 @@ void addHelicityAnglesToTree(TTree& tree,
   for (Long64_t it = 0; it < tree.GetEntries(); ++it)
     { 
       tree.GetEntry(it);
-      // TODO: Do all these a lambda functions.
+      // TODO: Do all these with a lambda functions.
     
       // positive Hadron four momentum
       TVector3 posHadrMomVector = TVector3(posHadrMomentum[0], posHadrMomentum[1], posHadrMomentum[2]);
