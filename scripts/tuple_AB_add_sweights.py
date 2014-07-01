@@ -3,25 +3,25 @@ from P2VV.RooFitWrappers import *
 obj = RooObject( workspace = 'w')
 w = obj.ws()
 
-mass = RealVar( 'B_s0_MM',  Title = 'm(J/#psi K^{+}K^{-})', Unit = 'MeV/c^{2}', Observable = True
+mass = RealVar( 'B_s0_LOKI_MASS_JpsiConstr',  Title = 'm(J/#psi K^{+}K^{-})', Unit = 'MeV/c^{2}', Observable = True
                  , Value = 5368., MinMax = ( 5200., 5550. ),
                  Ranges = dict(  LeftSideBand  = ( 5200., 5320. )
                                  , Signal        = ( 5320., 5420. )
                                  , RightSideBand = ( 5420., 5550. )
                                  , PeakBkg       = ( 5390., 5440. )
                                  ))
-st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.0, 0.07))
-t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax = (-1.5, 8))
+st = RealVar('sigmat',Title = '#sigma(t)', Unit = 'ps', Observable = True, MinMax = (0.0001, 0.12))
+t  = RealVar('time', Title = 'decay time', Unit='ps', Observable = True, MinMax = (0.3, 14))
 
 excl_biased = Category('hlt1_excl_biased_dec', Observable = True,
                        States = { 'excl_biased' : 1, 'unbiased' : 0 } )
-data_type = "2012_signal"
+data_type = "2011_signal"
 
 if data_type == "2011_prescaled":
-    input_file = '/glusterfs/bfys/users/raaij/NTuples/2011/Bs2JpsiPhiPrescaled_ntupleAB_20130531.root'
+    input_file = '/glusterfs/bfys/users/raaij/NTuples/2011/Bs2JpsiPhiPrescaled_2011_Reco14_ntupleAB_20140430.root'
     cut = 'sel == 1 && triggerDecisionUnbiasedPrescaled == 1 && '
 elif data_type == "2011_signal":
-    input_file = '/glusterfs/bfys/users/raaij/NTuples/2011/Bs2JpsiPhi_ntupleAB_20130531.root'
+    input_file = '/glusterfs/bfys/users/raaij/NTuples/2011/Bs2JpsiPhi_2011_Reco14_ntupleAB_20130906.root'
     cut = '%s==1 && (%s==1 || %s==1) && %s==1 && ' % ('sel', 'hlt1_biased', 'hlt1_unbiased_dec', 'hlt2_biased')
 elif data_type == "2012_prescaled":
     input_file = '/glusterfs/bfys/users/raaij/NTuples/2012/Bs2JpsiPhiPrescaled_2012_ntupleAB_20130419.root'
@@ -35,7 +35,7 @@ cut += ' && sel_cleantail == 1'
 for o in [mass, t, st]:
     cut += ' && {0} > {1} && {0} < {2}'.format(o.GetName(), o.getMin(), o.getMax())
 
-from P2VV.GeneralUtils import readData
+from P2VV.Utilities.DataHandling import readData
 data = readData(filePath = input_file, dataSetName = 'DecayTree', NTuple = True,
                 observables = [mass, t, st, excl_biased], Rename = 'JpsiphiData', ntupleCuts = cut)
 
@@ -76,7 +76,7 @@ if data_type.endswith("signal"):
     # set yields for categories
     split_cat  = sWeight_mass_pdf.indexCat()
     split_vars = sWeight_mass_pdf.getVariables()
-    from P2VV.GeneralUtils import getSplitPar
+    from P2VV.Utilities.General import getSplitPar
     from math import sqrt
     for state in split_cat:
         sigYield = getSplitPar( 'N_signal', state.GetName(), split_vars )
@@ -102,30 +102,37 @@ if data_type.endswith("signal"):
 else:
     sweight_pdf = mass_pdf
 
-from P2VV.GeneralUtils import SData
+from P2VV.Utilities.SWeights import SData
+from P2VV.Utilities.DataHandling import correctWeights
 sdata = SData( Pdf = sweight_pdf, Data = data, Name = 'mass_sdata')
-sig_sdata = sdata.data('signal')
-bkg_sdata = sdata.data('background')
+
+sig_sdata = correctWeights(sdata.data('signal'), splitCatNames = [excl_biased.GetName()],
+                           ImportIntoWS = False)
+bkg_sdata = correctWeights(sdata.data('background'), splitCatNames = [excl_biased.GetName()],
+                           ImportIntoWS = False)
 
 from array import array
 weights = array('d')
 
 from ROOT import TFile
-f = TFile.Open(input_file, "update")
+f = TFile.Open(input_file, "read")
 tree = f.Get("DecayTree")
 
 from ROOT import gDirectory
 tree.Draw(">>elist", cut, "entrylist")
-cut_list = gDirectory.Get("elist")
+
+output = "temp.root"
+output_file = TFile(output, "recreate")
+copy_tree = tree.CopyTree(cut)
+copy_tree.Write()
 
 j = 0
-for i in range(tree.GetEntries()):
-    if cut_list.Contains(i):
-        r = sig_sdata.get(j)
-        weights.append(sig_sdata.weight())
-        j += 1
-    else:
-        weights.append(0)
+for i in range(copy_tree.GetEntries()):
+    r = sig_sdata.get(j)
+    weights.append(sig_sdata.weight())
 
 from ROOT import addSWeightToTree
-## addSWeightToTree(weights, len(weights), tree, 'sweight')
+addSWeightToTree(weights, len(weights), copy_tree, 'sweight')
+copy_tree.Write()
+output_file.Close()
+

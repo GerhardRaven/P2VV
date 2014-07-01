@@ -11,6 +11,8 @@
 
 
 class TH1l;
+class TH1I;
+class TEfficiency;
 class TTree;
 class RooDataSet;
 
@@ -42,6 +44,7 @@ RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
 std::vector<double> HelicityAngles(TLorentzVector Kplus_P, TLorentzVector Kminus_P, 
 				   TLorentzVector muplus_P, TLorentzVector muminus_P);
 
+<<<<<<< HEAD
 void addHelicityAnglesToTree(TTree& tree, const TString& posHadrName, const TString& negHadrName, const TString& posLeptName, const TString& negLetName,
 			     const Double_t& posHadrMass, const Double_t& negHadrMass, const Double_t& posLeptMass, const Double_t& negLeptMass,
 			     const TString& helcosthetaK_brName, const TString& helcosthetaL_brName, const TString& helphi_brName,
@@ -49,6 +52,8 @@ void addHelicityAnglesToTree(TTree& tree, const TString& posHadrName, const TStr
 
 
 
+=======
+>>>>>>> Jeroen/master
 struct _object;
 
 struct TFakeObjectProxy {

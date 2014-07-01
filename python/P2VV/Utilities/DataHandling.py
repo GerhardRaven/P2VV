@@ -398,6 +398,7 @@ def addTaggingObservables( dataSet, iTagName, tagCatName, tagDecisionName, estim
     for obsSet in dataSet :
         assert obsSet.getCatIndex(iTagName) == +1 or obsSet.getCatIndex(iTagName) == -1,\
                 'P2VV - ERROR: addTaggingObservables: initial state flavour tag has value %+d' % obsSet.getCatIndex(iTagName)
+        if len(binBounds) < 3 : continue
         assert obsSet.getCatIndex(tagDecisionName) == 0 or obsSet.getCatIndex(iTagName) == obsSet.getCatIndex(tagDecisionName),\
                 'P2VV - ERROR: addTaggingObservables: initial state flavour tag and tag decision have different values: %+d and %+d'\
                 % ( obsSet.getCatIndex(iTagName), obsSet.getCatIndex(tagDecisionName) )

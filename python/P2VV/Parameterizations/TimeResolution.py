@@ -73,17 +73,48 @@ class Gaussian_TimeResolution ( TimeResolution ) :
         scaleBias = kwargs.pop('BiasScaleFactor', False)
         pee = kwargs.pop('PerEventError', False)
         sf_param = kwargs.pop('TimeResSFParam', '')
+        self.__mu_param = kwargs.pop('MeanParameterisation', '')
         self.__split_mean = kwargs.pop('SplitMean', False)
+        self.__simultaneous = kwargs.pop('Simultaneous', False)
         self.__sf_placeholder = self._parseArg('sf_placeholder', kwargs, Value = 0,
                                                MinMax = (-1e6, 1e6), Constant = True) 
         
+        self._parseArg( 'time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
+        self._parseArg( 'sigmat',  kwargs, Title = 'per-event decaytime error', Unit = 'ps', Observable = True, MinMax = (0.0,0.2) )
+
         assert(sf_param in ['', 'linear', 'linear_no_offset', 'quadratic', 'quadratic_no_offset'])
 
+        assert(not (self.__split_mean and self.__mu_param))
+        assert(self.__mu_param in ['quadratic', 'linear', '', 'linear_sigmat', 'quadratic_sigmat'])
+        self._timeResMu = self._parseArg( 'timeResMu', kwargs, Value = -0.0027, MinMax = ( -2, 2 ) )
+        if 'linear' in self.__mu_param:
+            self._mu = self._timeResMu
+            self._mu_offset = self._parseArg( 'timeResMu_offset', kwargs, Value = 0, MinMax = (-2, 2))
+            self._mu_slope = self._parseArg( 'timeResMu_slope', kwargs, Value = 0, MinMax = (-2, 2))
+            if not self.__simultaneous or 'sigmat' in self.__mu_param:
+                formula = '@0 + @1 * (@2 - @3)'
+                args = [self._mu_offset, self._mu_slope, self._sigmat, self.muPlaceHolder()]
+            else:
+                formula = '@0 + @1 * @2'
+                args = [self._mu_offset, self._mu_slope, self.muPlaceHolder()]
+            self._timeResMu = self._parseArg('timeResMu_linear', kwargs, Formula = formula,
+                                             ObjectType = 'FormulaVar', Arguments = args)
+        elif 'quadratic' in self.__mu_param:
+            self._mu = self._timeResMu
+            self._mu_offset = self._parseArg( 'timeResMu_offset', kwargs, Value = -0.001723, MinMax = (-2, 2))
+            self._mu_slope = self._parseArg( 'timeResMu_slope', kwargs, Value = -0.2, MinMax = (-2, 2))
+            self._mu_quad = self._parseArg( 'timeResMu_quad', kwargs, Value = -1, MinMax = (-50, 50))
+            if not self.__simultaneous or 'sigmat' in self.__mu_param:
+                formula = '@2 + @3 * (@0 - @1) + @4 * (@0 - @1) * (@0 - @1)'
+                args = [self._sigmat, self.muPlaceHolder(), self._mu_offset, self._mu_slope, self._mu_quad]
+            else:
+                formula = '@1 + @2 * @0 + @3 * @0 * @0'
+                args = [self.muPlaceHolder(), self._mu_offset, self._mu_slope, self._mu_quad]
+            self._timeResMu = self._parseArg('timeResMu_quadratic', kwargs, Formula = formula,
+                                             ObjectType = 'FormulaVar', Arguments = args)
+
         extraArgs = {}
-        self._parseArg( 'time', kwargs, Title = 'Decay time', Unit = 'ps', Observable = True, Value = 0., MinMax = ( -0.5, 5. ) )
-        self._timeResMu = self._parseArg( 'timeResMu', kwargs, Title = 'Decay time resolution mean', Value = -0.004, MinMax = (-1, 1) )
         if pee :
-            self._parseArg( 'sigmat',  kwargs, Title = 'per-event decaytime error', Unit = 'ps', Observable = True, MinMax = (0.0,0.2) )
             self._timeResSigmaSF = self._parseArg( 'timeResSigmaSF', kwargs, Title = 'Decay time scale factor',
                                                    Value = 1.46, MinMax = (0.1, 5) )
             if sf_param:
@@ -113,6 +144,7 @@ class Gaussian_TimeResolution ( TimeResolution ) :
                                                  Value = 0.05,  MinMax = (0.0001, 2.5) )
             params = [ self._time, self._timeResMu, self._timeResSigma ]
 
+        self._cache = kwargs.pop('Cache', True)
         from ROOT import RooGaussModel as GaussModel
         from P2VV.RooFitWrappers import ResolutionModel
         TimeResolution.__init__(  self
@@ -121,11 +153,14 @@ class Gaussian_TimeResolution ( TimeResolution ) :
                                                           , Type = GaussModel
                                                           , Parameters  = params
                                                           , **extraArgs)
-                                , Cache = kwargs.pop('Cache', True)
+                                , Cache = self._cache
                                )
         self._check_extraneous_kw( kwargs )
 
     def sfPlaceHolder(self):
+        return self.__sf_placeholder
+
+    def muPlaceHolder(self):
         return self.__sf_placeholder
 
     def splitVars(self):
@@ -164,7 +199,7 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
             self.__mu_placeholder = self.__sf_placeholder
         
         assert(len(sigmasSFs) - 1 == len(fracs))
-        assert(not (self.__simultaneous and self.__sf_param))
+        assert(not (self.__simultaneous and sf_param))
         
         ## If this is to be fitted in a non-simultaneous fit, the mean sigmat
         ## value should be passed in to get the parameterisation correct.
@@ -187,7 +222,7 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
             self._mu = self._timeResMu
             self._mu_offset = self._parseArg( 'timeResMu_offset', kwargs, Value = -0.001723, MinMax = (-2, 2))
             self._mu_slope = self._parseArg( 'timeResMu_slope', kwargs, Value = -0.2, MinMax = (-2, 2))
-            self._mu_quad = self._parseArg( 'timeResMu_quad', kwargs, Value = -7, MinMax = (-50, 50))
+            self._mu_quad = self._parseArg( 'timeResMu_quad', kwargs, Value = -1, MinMax = (-50, 50))
             if not self.__simultaneous or 'sigmat' in self.__mu_param:
                 formula = '@2 + @3 * (@0 - @1) + @4 * (@0 - @1) * (@0 - @1)'
                 args = [self._sigmat, self.__mu_placeholder, self._mu_offset, self._mu_slope, self._mu_quad]
@@ -201,7 +236,7 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         assert(param in [False, 'RMS', 'Comb'])
         self._timeResSigmasSFs = [ self._parseArg( 'timeResSigmaSF_%s' % num, kwargs, Value = val, MinMax = (0.001, 20) )\
                                   for num, val in sigmasSFs ]
-        self._timeResFracs     = [ self._parseArg( 'timeResFrac%s' % num, kwargs, Value = val, MinMax = (0.1, 0.999))\
+        self._timeResFracs     = [ self._parseArg( 'timeResFrac%s' % num, kwargs, Value = val, MinMax = (0.01, 0.999))\
                                   for num, val in fracs ]
 
         from ROOT import RooNumber
@@ -209,12 +244,12 @@ class Multi_Gauss_TimeResolution ( TimeResolution ) :
         if param == 'RMS':
             if sf_param:
                 self._parseArg('sf_mean_offset', kwargs, Value = 0.05, MinMax = (-0.1, 2.) )
-                self._parseArg('sf_mean_slope', kwargs, Value = 1.29, MinMax = (0., 10) )
+                self._parseArg('sf_mean_slope', kwargs, Value = 1.4, MinMax = (-10, 10) )
                 self._parseArg('sf_sigma_offset', kwargs, Value = 0.01, MinMax = (-0.1, 2.) )
-                self._parseArg('sf_sigma_slope', kwargs, Value = 0.277, MinMax = (0., 10) )
+                self._parseArg('sf_sigma_slope', kwargs, Value = 0.4, MinMax = (-10, 10) )
             if sf_param.startswith('quadratic'):
-                self._parseArg('sf_mean_quad', kwargs, Value = -4, MinMax = (-20, 20))
-                self._parseArg('sf_sigma_quad', kwargs, Value = 8, MinMax = (-20, 20))
+                self._parseArg('sf_mean_quad', kwargs, Value = 1, MinMax = (-20, 20))
+                self._parseArg('sf_sigma_quad', kwargs, Value = 1, MinMax = (-20, 20))
             if sf_param == 'linear':
                 formula = '@2 + @3 * (@0 - @1)'
                 args = {'mean'  : [self._sigmat, self.__sf_placeholder, self._sf_mean_offset, self._sf_mean_slope],

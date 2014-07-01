@@ -87,22 +87,19 @@ from collections import defaultdict
 splitConstr = defaultdict(dict)
 if timeResSystType == 'mean_param':
     pdfConfig['timeResType'] += '_mean_param'
+    ## splitConstr['timeResMu']['2011']        = ( -0.00259 - 0.00075, 0. )
+    ## splitConstr['timeResMu']['2012']        = ( -0.00333 - 0.0012 , 0. )
     splitConstr['mu_placeholder']['2011']  = (  0.0350, 0. )
-
-    ## offset differences
-    ## 2011 : -0.00075
-    ## 2012  : -0.0012
-    ## splitConstr['timeResMu']['2011']        = ( -0.00259 -0.00075, 0. )
-    ## splitConstr['timeResMu']['2012']        = ( -0.00333 -0.0012 , 0. )
-
-    splitConstr['timeResMu_offset']['2011'] = ( -0.00259 - 0.00075, 0. )
-    splitConstr['timeResMu_slope']['2011']  = ( -0.1742, 0. )
-    splitConstr['timeResMu_quad']['2011']   = ( -6.64, 0. )
+    ##                                           data       sig MC    prompt MC
+    splitConstr['timeResMu_offset']['2011'] = ( -0.00255 - (0.00174 - 0.00056), 0. )
+    splitConstr['timeResMu_slope']['2011']  = (  0       - (0.135   - 0      ), 0. )
+    splitConstr['timeResMu_quad']['2011']   = (  0       - (3.50    - 0      ), 0. )
     
     splitConstr['mu_placeholder']['2012']  =  (  0.0349, 0. )
-    splitConstr['timeResMu_offset']['2012'] = ( -0.00333 - 0.0012, 0. )
-    splitConstr['timeResMu_slope']['2012']  = ( -0.1953, 0. )
-    splitConstr['timeResMu_quad']['2012']   = ( -6.90, 0. )
+    ##                                           data       sig MC    prompt MC
+    splitConstr['timeResMu_offset']['2012'] = ( -0.00322 - (0.00169 - 0.00072), 0. )
+    splitConstr['timeResMu_slope']['2012']  = (  0       - (0.127   - 0      ), 0. )
+    splitConstr['timeResMu_quad']['2012']   = (  0       - (2.29    - 0      ), 0. )
     split_runPeriod = set(pdfConfig['splitParams']['runPeriod'])
     for pn in ('timeResMu',):
         pdfConfig['externalConstr'].pop(pn)

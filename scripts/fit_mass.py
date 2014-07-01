@@ -115,8 +115,8 @@ def plot_mass(data, prefix = ''):
                                    , 'sig_*'     : dict( LineColor = kBlue,  LineStyle = kDashed )
                                    })
     
-    frames[1].GetXaxis().SetTitle('J/#psi K^{+}K^{-} invariant mass [MeV]')
-    frames[0].GetYaxis().SetTitle('Candidates / (%3.2f MeV)' % ((t.getMax() - t.getMin()) / float(nBins)))
+    frames[1].GetXaxis().SetTitle('M_{J/#psi K^{+}K^{-}} [MeV/c^2]')
+    frames[0].GetYaxis().SetTitle('Candidates / (%3.2f MeV/c^2)' % ((m.getMax() - m.getMin()) / float(nBins)))
 
 plot_mass(data_cut, 'cut_')
 
@@ -127,11 +127,3 @@ for p in sig_m.getParameters(data.get()):
 
 result = mass_pdf.fitTo(data, **fitOpts)
 plot_mass(data)
-o
-parNames = {'N_background' : ('#background', '\\# background'),
-            'N_signal'     : ('#signal', '\\# signal'),
-            'm_sig_av'     : ('av. sigma', '$\\overline{\\sigma}$'),
-            'm_sig_frac'   : ('fraction 1st Gauss', 'fraction 1st Gauss'),
-            'm_sig_mean'   : ('mean mass', 'mean mass'),
-            'm_sig_sigma'  : ('sigma', '$\\sigma_{\\sigma}$'),
-            'psi_c'        : ('psi_c', 'background slope')}

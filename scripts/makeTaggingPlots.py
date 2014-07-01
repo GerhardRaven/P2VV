@@ -1,6 +1,6 @@
 # script paramters
-plotsFilePath   = 'plots/Reco14/20112012Reco14_tagging.ps'
-dataSetFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_4KKMassBins_2TagCats.root'
+plotsFilePath   = 'plots/Reco14/20112012Reco14_tagging.pdf'
+dataSetFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140619.root'
 fullDataSetName = 'JpsiKK'
 sigDataSetName  = 'JpsiKK_sigSWeight'
 cbkgDataSetName = 'JpsiKK_cbkgSWeight'
@@ -18,8 +18,8 @@ cbkgData = readData( filePath = dataSetFilePath, dataSetName = cbkgDataSetName, 
 
 # get observables
 from P2VV.RooFitWrappers import RealVar, Category
-estWTagOS = RealVar('tagomega_os')
-estWTagSS = RealVar('tagomega_ss')
+estWTagOS = RealVar('tagomega_os_cb')
+estWTagSS = RealVar('tagomega_ss_nn')
 tagCatOS  = Category('tagCatP2VVOS')
 tagCatSS  = Category('tagCatP2VVSS')
 
@@ -47,8 +47,10 @@ untagFracBkgOS = cbkgData.table(tagCatOS).getFrac('Untagged')
 untagFracSS    = fullData.table(tagCatSS).getFrac('Untagged')
 untagFracSigSS = sigData.table(tagCatSS).getFrac('Untagged')
 untagFracBkgSS = cbkgData.table(tagCatSS).getFrac('Untagged')
-                                                                                                                     
+
 # plot estimated wrong-tag probabilities for signal and for background
+from ROOT import gStyle
+gStyle.SetColorModelPS(1)
 from P2VV.Load import LHCbStyle
 from P2VV.Utilities.Plotting import plot
 from ROOT import TCanvas, kBlue, kFullDotLarge

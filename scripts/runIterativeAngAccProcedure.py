@@ -3,6 +3,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument( '-o', '--rewSteps',    default = 'Bmom_mkk_phys_KKmom' )
 parser.add_argument( '-s', '--sample',      default = '20112012'            )
+parser.add_argument( '-t', '--trTimeCut',   default = False                 )               
 parser.add_argument( '-n', '--numIters',    default = 8,     type=int       )
 parser.add_argument( '-N', '--oneIter',     default = 0,     type=int       )
 parser.add_argument( '-c', '--numCpu',      default = 8,     type=int       )
@@ -20,8 +21,8 @@ options = parser.parse_args()
 # paths and paramteres
 path               = '/project/bfys/vsyropou/data/Bs2JpsiPhi/nominalFitResults/'
 numberOfIterations = options.numIters
-oneIterationScript = 'python /project/bfys/vsyropou/Repository/p2vv/scripts/iterativeAngAcc.py'
-fittingScript      = 'python /project/bfys/vsyropou/Repository/p2vv/scripts/vsFit.py'
+oneIterationScript = 'python /project/bfys/vsyropou/repos/p2vv/scripts/iterativeAngAcc.py'
+fittingScript      = 'python /project/bfys/vsyropou/repos/p2vv/scripts/vsFit.py'
 fitData            = '/project/bfys/jleerdam/data/Bs2Jpsiphi/angEff/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B.root'
 parameterEstimates = options.initPhPars if options.initPhPars else path + 'corrAngAccDEC/20112012Reco14DataFitValues_6KKMassBins.par' 
                                                                  # path + 'uncorrAngAccTOS/20112012Reco14DataFitValues_6KKMassBins.par'
@@ -45,10 +46,11 @@ BmomMkk2DRew   = options.BmomMkk2D
 equalStatBins  = options.eqStatBins
 KKmomWghtsOnly = options.sevdaImpmnt
 rewSpetOpt     = options.rewSteps 
+trTimeCut      = options.trTimeCut # cut on true time to calculate ang. acc. in bins of true time.
 finalIterOpts  = ' ' + plotOpt + writeOpt
 
-rewOpts = lambda s, n: '-n%i -s%s -d%s -o%s -b%s -e%s -m%s -D%s'%( n, s, parameterEstimatesName(n-1,True), rewSpetOpt, Bmom2DRewOpt, equalStatBins, KKmomWghtsOnly, BmomMkk2DRew ) if n!=1 else \
-                       '-n%i -s%s -d%s -o%s -b%s -e%s -m%s -D%s'%( 1, s, parameterEstimates.replace('.par','_unbl.par'), rewSpetOpt, Bmom2DRewOpt, equalStatBins, KKmomWghtsOnly, BmomMkk2DRew )
+rewOpts = lambda s, n: '-n%i -s%s -d%s -o%s -b%s -e%s -m%s -D%s -t%s'%( n, s, parameterEstimatesName(n-1,True), rewSpetOpt, Bmom2DRewOpt, equalStatBins, KKmomWghtsOnly, BmomMkk2DRew, trTimeCut ) if n!=1 else \
+                       '-n%i -s%s -d%s -o%s -b%s -e%s -m%s -D%s -t%s'%( 1, s, parameterEstimates.replace('.par','_unbl.par'), rewSpetOpt, Bmom2DRewOpt, equalStatBins, KKmomWghtsOnly, BmomMkk2DRew, trTimeCut )
 fitOpts = lambda n:  '-d%s -a%s -i%s -o%s -c%s'%( fitData, (correctedAngAccBaseName + str(n)), parameterEstimatesName(n-1,False), parameterEstimatesName(n,False), options.numCpu ) if n!=1 else \
                      '-d%s -a%s -i%s -o%s -c%s'%( fitData, (correctedAngAccBaseName + str(n)), parameterEstimates, parameterEstimatesName(n,False), options.numCpu )
 
@@ -63,7 +65,8 @@ rewOptsLegend = {'-c' : 'Combine eff. moments      ',
                  '-b' : '2D B(p,p_T) reweighting   ',
                  '-e' : 'Equal statistics binning  ',
                  '-m' : 'Reweight with w_pkk only  ',
-                 '-D' : 'Reweight (B_p,mkk) in 2D  '
+                 '-D' : 'Reweight (B_p,mkk) in 2D  ',
+                 '-t' : 'TrueTime cut              '
                  }
 fitOptsLegend = {'-d' : 'Fiting dataset          ', 
                  '-a' : 'Input angular acceptance', 

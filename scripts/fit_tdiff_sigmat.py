@@ -50,7 +50,7 @@ mean_quad = RooRealVar('mean_quad', 'mean_quad', -0.00380, -0.1, 0.1)
 st_mean = RooConstVar('st_mean', 'st_mean', 0.03276)
 formula = '@2 + @3 * (@0 - @1) + @4 * (@0 - @1) * (@0 - @1)'
 if options.momentum_calib:
-    mean = RooRealVar('mean', 'mean', 0., -0.1, 0.1)
+    mean = RooRealVar('mean', 'mean', 0., -0.2, 0.1)
 else:
     params = [st, st_mean, mean_offset, mean_slope, mean_quad]
     mean = RooFormulaVar("mean_quad", "mean_quad", formula, RooArgList(*params))
@@ -73,7 +73,7 @@ gaussians = RooAddPdf("gaussians", "gaussians", RooArgList(g2, g1), RooArgList(f
 # 1st GExp
 one = RooConstVar("one", "one", 1)
 mean_gexp = RooRealVar("mean_gexp", "mean_gexp", -0.0529544, -10, 10)
-sigma_gexp = RooRealVar("sigma_gexp", "sigma_gexp", 10, 1, 50)
+sigma_gexp = RooRealVar("sigma_gexp", "sigma_gexp", 10, 0.1, 50)
 rlife1 = RooRealVar("rlife1", "rlife1", 3.2416, 0.1, 10)
 gexp1 = RooGExpModel("gexp1", "gexp1", t_diff_st, mean_gexp, sigma_gexp, rlife1, one, one, one)
 
@@ -98,14 +98,21 @@ w.put(model)
 w.put(sdata)
 
 from ROOT import TPaveText
-year_label = TPaveText(0.71, 0.72, 0.89, 0.85, "NDC")
+if options.momentum_calib:
+    year_label = TPaveText(0.71, 0.32, 0.89, 0.45, "NDC")
+else:
+    year_label = TPaveText(0.71, 0.72, 0.89, 0.85, "NDC")
+
 year_label.SetFillColor(0)
 pos = args[0].find('201')
 year_label.AddText(args[0][pos : pos + 4])
 year_label.SetBorderSize(0)
 
-fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 1,
+fitOpts = dict(NumCPU = 8, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 1,
                Offset = True, Strategy = 1)
+
+pos = args[0].find('MC')
+from P2VV.Utilities.Resolution import plot_dir
 
 if options.momentum_calib:
     from array import array
@@ -126,8 +133,12 @@ if options.momentum_calib:
 
     fitOpts = dict(NumCPU = 4, Timer = 1, Save = True, Minimizer = 'Minuit2', Optimize = 1,
                    Offset = True, Strategy = 1)
-    result = split_pdf.fitTo(sdata, SumW2Error = False, **fitOpts)
-
+    for i in range(3):
+        result = split_pdf.fitTo(sdata, SumW2Error = False, **fitOpts)
+        if result.status() == 0 and abs(result.minNll()) < 5e5:
+            break
+    assert(result.status() == 0)
+    
     fpf = result.floatParsFinal()
     from array import array
     tt_cat = w.cat('truetime_cat')
@@ -152,14 +163,20 @@ if options.momentum_calib:
     line_result = g.Fit(l, 'S0+', 'L')
 
     from ROOT import TCanvas
-    canvas = TCanvas('canvas', 'canvas', 600, 400)
+    cn = 'canvas_' + args[0][pos : -5]
+    canvas = TCanvas(cn, cn, 600, 400)
     g.Draw('AP')
-    g.GetXaxis().SetTitle("t_{true}")
-    g.GetYaxis().SetTitle("#bar{(t - t_{true}) / #sigma_{t}}")
+    g.GetXaxis().SetTitle("t_{true} [ps]")
+    g.GetYaxis().SetTitle("#mu / #sigma_{t}")
+    g.GetYaxis().SetRangeUser(-0.12, 0)
     
     from ROOT import kBlue
     l.SetLineColor(kBlue)
     l.Draw('same')
+    year_label.Draw()
+
+    plot_name = 'mean_res_st_ttrue_' + args[0][pos : -5] + '.pdf'
+    canvas.Print(os.path.join(plot_dir, plot_name), EmbedFonts = True)
 else:
     from ROOT import kGreen, kDashed
     from P2VV.Utilities.Plotting import plot
@@ -175,6 +192,9 @@ else:
          frameOpts = dict(Range = (-20, 20)),     
          yTitle = 'Candidates / (0.5)', dataOpts = dict(Binning = 80),
          xTitle = '(t - t_{true}) / #sigma_{t}',
+         yScale = (1, 400000),
          pdfOpts = dict(ProjWData = (RooArgSet(st), sdata, True)),
          components = {'gexps' : dict(LineColor = kGreen, LineStyle = kDashed)})
     year_label.Draw()
+    plot_name = 'tdiff_sigmat_' + args[0][pos : -5] + '.pdf'
+    canvas.Print(os.path.join(plot_dir, plot_name), EmbedFonts = True)

@@ -125,3 +125,16 @@ def make_binning(data, var, n_bins):
 
     bounds = [float('%4.3e' % e) for e in bounds]
     return bounds
+
+def make_exp_binning(n_bins, t_min, t_max, tau = 1.5):
+    # Make an exponential binning
+    def next_bin(prev_bin, min_bin, max_bin):
+        from math import e, log
+        a = e ** (- min_bin / tau) - e ** (- max_bin / tau)
+        return - tau * log(e ** (- prev_bin / tau) - a / n_bins)
+    from array import array
+    bins = array('d', [t_min])
+    for i in range(n_bins - 1):
+        bins.append(next_bin(bins[-1], t_min, t_max))
+    bins.append(t_max)
+    return bins
