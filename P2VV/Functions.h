@@ -44,8 +44,9 @@ std::vector<double> HelicityAngles(TLorentzVector Kplus_P, TLorentzVector Kminus
 
 void addHelicityAnglesToTree(TTree& tree, const TString& posHadrName, const TString& negHadrName, const TString& posLeptName, const TString& negLetName,
 			     const Double_t& posHadrMass, const Double_t& negHadrMass, const Double_t& posLeptMass, const Double_t& negLeptMass,
-			     const TString& helcosthetaK_brName, const TString& helcosthetaL_brName, const TString& helphi_brName);
-/* , const TString& negHadronName, const TString& posLeptonName, const TString&negLeptonName, */
+			     const TString& helcosthetaK_brName, const TString& helcosthetaL_brName, const TString& helphi_brName,
+			     const TString& trackMomType);
+
 
 
 struct _object;
