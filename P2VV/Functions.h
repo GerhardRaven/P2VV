@@ -42,12 +42,12 @@ RooDataSet* TreeToRooDataSet(TTree& tree, const RooArgSet& observables,
       RooDataSet* origDataSet = 0);
 
 std::vector<double> HelicityAngles(TLorentzVector Kplus_P, TLorentzVector Kminus_P, 
-				   TLorentzVector muplus_P, TLorentzVector muminus_P);
+				   TLorentzVector muplus_P, TLorentzVector muminus_P );
 
 void addHelicityAnglesToTree(TTree& tree, const TString& posHadrName, const TString& negHadrName, const TString& posLeptName, const TString& negLetName,
 			     const Double_t& posHadrMass, const Double_t& negHadrMass, const Double_t& posLeptMass, const Double_t& negLeptMass,
 			     const TString& helcosthetaK_brName, const TString& helcosthetaL_brName, const TString& helphi_brName,
-			     const TString& trackMomType);
+			     const std::vector<TString>& momSufixes, const TString& trackMomType="Float_t");
 
 struct _object;
 
