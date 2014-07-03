@@ -16,16 +16,30 @@ if options.addAllConfigrtns:
 ## configure ##
 #######################################################
 from P2VV.Load import P2VVLibrary
-dataSetPath   = '/data/bfys/vsyropou/Bs2JpsiKst/edinburgTuples/' 
-dataSetFile   = 'Bd2JpsiKstar_DTT_after_yuehongs_script_20120203.root' #'Bd2JpsiKstar_biased_Selected_20120202_sw_eff.root'   # 
-dataSetName   = 'DecayTree'
+from ROOT import std
+dataSetPath   = '/data/bfys/vsyropou/Bs2JpsiKst/DiegosUnrefinedTuples/MC/' #'/data/bfys/vsyropou/Bs2JpsiKst/edinburgTuples/'  #
+dataSetFile   = 'Bd_MCT_p.root' #'Bd2JpsiKstar_DTT_after_yuehongs_script_20120203.root' # #'Bd2JpsiKstar_DTT_after_yuehongs_script_20120203.root' #'Bd2JpsiKstar_biased_Selected_20120202_sw_eff.root'   # 
+dataSetName   = 'T' #'T' #'DecayTree'
 minimalNtuple = options.minimalTuples
 
-daughterPartNames  = dict( posHad='Kplus'    if not options.flipHadrons else 'piminus',  
-                           negHad='piminus'  if not options.flipHadrons else 'Kplus',  
-                           posLep='muplus'   if not options.flipLeptons else 'muminus',  
-                           negLep='muminus'  if not options.flipLeptons else 'muplus'
+# branch names as they appear in the input tree
+daughterPartNames = dict(  posHad= 'k1',  #posHad='Kplus'    if not options.flipHadrons else 'piminus',  # 
+                           negHad= 'p1',  #negHad='piminus'  if not options.flipHadrons else 'Kplus',    # 
+                           posLep= 'mu1', #posLep='muplus'   if not options.flipLeptons else 'muminus',  # 
+                           negLep= 'mu2'  #negLep='muminus'  if not options.flipLeptons else 'muplus'    # 
                           )
+
+# sufixes of the base momenta name 
+daughterPartNameSufixes = dict(x='p1', y='p2', z='p3')# dict(x='_PX', y='_PY', z='_PZ') # 
+sufixes = std.vector('TString')()
+for component in ['x','y','z']: 
+    sufixes.push_back(daughterPartNameSufixes[component])
+
+# masses of daughters
+daughterPartMasses = dict( posHad = 'kaon', negHad = 'pion', 
+                           posLep = 'muon', negLep = 'muon'
+                         )
+
 caseSpecifier = '_%s_%s_%s_%s'%( daughterPartNames['posHad'][:3],daughterPartNames['negHad'][:3],\
                                  daughterPartNames['posLep'][:3],daughterPartNames['negLep'][:3] )
 
@@ -35,9 +49,10 @@ angleNames['helcosthetaK'] = 'helcosthetaK_%s' %caseSpecifier
 angleNames['helcosthetaL'] = 'helcosthetaL_%s'%caseSpecifier
 angleNames['helphi']       = 'helphi_%s'%caseSpecifier
 
-oldangleNames['helcosthetaK'] = 'B0_ThetaK'
-oldangleNames['helcosthetaL'] = 'B0_ThetaL'
-oldangleNames['helphi']       = 'B0_Phi'
+oldangleNames['helcosthetaK'] = 'cK'#'B0_ThetaK'  #  
+oldangleNames['helcosthetaL'] = 'cL'#'B0_ThetaL'  #  
+oldangleNames['helphi']       = 'ph'#'B0_Phi'     #  
+rawAngles = False
 
 # manually select Kst flavour, if datasets are not already splited.
 if options.ManualKstFlavor=='neg':
@@ -92,10 +107,14 @@ Mmu = PDG.GetParticle('mu-').Mass()*MeV
 Mk  = PDG.GetParticle('K-').Mass()*MeV
 Mpi = PDG.GetParticle('pi-').Mass()*MeV
 
-posHadMass = Mk  if 'K' in daughterPartNames['posHad'] else Mpi
-negHadMass = Mpi if 'pi' in daughterPartNames['negHad'] else Mk
-lepMass    = Mmu
+if daughterPartMasses['posHad'] == 'kaon': posHadMass = Mk  
+if daughterPartMasses['posHad'] == 'pion': posHadMass = Mpi  
+if daughterPartMasses['negHad'] == 'kaon': negHadMass = Mk 
+if daughterPartMasses['negHad'] == 'pion': negHadMass = Mpi 
+if daughterPartMasses['posLep'] == 'muon': lepMass = Mmu
+if daughterPartMasses['negLep'] == 'muon': lepMass = Mmu
 
+# add helicity angles to tree
 print ' P2VV - INFO: The following associations will be made:\n '\
     ' Positive hadron name: %s, mass=%s \n  Negative hadron name: %s, mass=%s \n '\
     ' Positive lepton name: %s, mass=%s \n  Negative lepton name: %s, mass=%s \n'\
@@ -110,9 +129,9 @@ addHelicityAnglesToTree(tree,
                         daughterPartNames['posLep'], daughterPartNames['negLep'],
                         posHadMass, negHadMass, lepMass, lepMass,
                         angleNames['helcosthetaK'], angleNames['helcosthetaL'], angleNames['helphi'],
-                        'Float_t')
+                        sufixes)
 
-
+# add all the possible configurations as well  
 if options.addAllConfigrtns:
     print 'P2VV - INFO: Fliping hadrons and recalculating helicity angles'
     addHelicityAnglesToTree(tree, 
@@ -120,7 +139,7 @@ if options.addAllConfigrtns:
                             daughterPartNames['posLep'], daughterPartNames['negLep'],
                             negHadMass, posHadMass, lepMass, lepMass,
                             'helcosthetaK__pim_Kpl_mup_mum','helcosthetaL__pim_Kpl_mup_mum','helphi__pim_Kpl_mup_mum',
-                            'Float_t')
+                            sufixes)
 
     print 'P2VV - INFO: Fliping leptons and recalculating helicity angles'
     addHelicityAnglesToTree(tree, 
@@ -128,7 +147,7 @@ if options.addAllConfigrtns:
                             daughterPartNames['negLep'], daughterPartNames['posLep'], 
                             posHadMass, negHadMass, lepMass, lepMass,
                             'helcosthetaK__Kpl_pim_mum_mup','helcosthetaL__Kpl_pim_mum_mup','helphi__Kpl_pim_mum_mup',
-                            'Float_t')
+                            sufixes)
 
     print 'P2VV - INFO: Fliping hadrons and leptons and recalculating helicity angles'
     addHelicityAnglesToTree(tree, 
@@ -136,7 +155,7 @@ if options.addAllConfigrtns:
                             daughterPartNames['negLep'], daughterPartNames['posLep'],
                             negHadMass, posHadMass, lepMass, lepMass,
                             'helcosthetaK__pim_Kpl_mum_mup','helcosthetaL__pim_Kpl_mum_mup','helphi__pim_Kpl_mum_mup',
-                            'Float_t')
+                            sufixes)
 
 # close outfile
 tempFile.cd()
@@ -149,7 +168,7 @@ print 'P2VV - INFO: Wrote file: %s'%dataSetFile[:-5] + '_%s.root'%caseSpecifier
 if options.compare:
     # re-open outfile
     file_ = TFile.Open(dataSetFile[:-5] + '_%s.root'%caseSpecifier)
-    tree = file_.Get('DecayTree')
+    tree = file_.Get(dataSetName)
     
     from math import cos 
     from ROOT import TH1D, TH2D, TCanvas
@@ -166,24 +185,22 @@ if options.compare:
     h_scat_cthL = TH2D('helcosthetaL', 'helcosthetaL', 100, -1, 1,   100, -1, 1)
     h_scat_phi  = TH2D('helphi',       'helphi',       100, -pi, pi, 100, -pi, pi)
 
+    # value getter function to choose between raw angle and cos(rawAngles)
+    _val = lambda ent,name,flag: cos(getattr(ent,name)) if flag else getattr(ent,name)
+
     # new comparision
     for entry in tree:
         h_my_cthK.Fill(getattr(entry,angleNames['helcosthetaK']))
         h_my_cthL.Fill(getattr(entry,angleNames['helcosthetaL']))
         h_my_phi.Fill( getattr(entry,angleNames['helphi']      ))       
 
-        h_cthK.Fill(cos(getattr(entry,oldangleNames['helcosthetaK']))) 
-        h_cthL.Fill(cos(getattr(entry,oldangleNames['helcosthetaL'])))
+        h_cthK.Fill( _val(entry,oldangleNames['helcosthetaK'],rawAngles) ) 
+        h_cthL.Fill( _val(entry,oldangleNames['helcosthetaL'],rawAngles) )
         h_phi.Fill(getattr(entry,oldangleNames['helphi']))
 
-        h_scat_cthK.Fill( getattr(entry,angleNames['helcosthetaK']),   cos(getattr(entry,oldangleNames['helcosthetaK'])) )
-        h_scat_cthL.Fill( getattr(entry,angleNames['helcosthetaL']),   cos(getattr(entry,oldangleNames['helcosthetaL'])) )
-        h_scat_phi. Fill( getattr(entry,angleNames['helphi']      ),       getattr(entry,oldangleNames['helphi']       ) )
-        
-        # if getattr(entry,oldangleNames['helphi']) < 0: 
-        #            h_scat_phi. Fill(angleNames['helphi'], getattr(entry,oldangleNames['helphi']) - pi)
-        # else: h_scat_phi. Fill(angleNames['helphi'], getattr(entry,oldangleNames['helphi']) + pi)
-        
+        h_scat_cthK.Fill( getattr(entry,angleNames['helcosthetaK']), _val(entry,oldangleNames['helcosthetaK'],rawAngles) )
+        h_scat_cthL.Fill( getattr(entry,angleNames['helcosthetaL']), _val(entry,oldangleNames['helcosthetaL'],rawAngles) )
+        h_scat_phi. Fill( getattr(entry,angleNames['helphi']      ),       getattr(entry,oldangleNames['helphi']       ) )      
      
     c = TCanvas('calculated angles','calculated angles')
     c.Divide(3,2)
