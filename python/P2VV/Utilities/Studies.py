@@ -242,12 +242,12 @@ class fitResultsAnalysis(object) :
         self._pullSums = [ [ 0., 0., 0., 0., 0., 0. ] for name in self._parNames ]
         if histsFile :
             from P2VV.Load import LHCbStyle
-            from ROOT import TH1D, TCanvas, kFullDotLarge, kBlue
+            from ROOT import TH1D, TLine, TCanvas, kFullDotLarge, kBlue
             dCanv = TCanvas('dummy')
             dCanv.Print( histsFile + '_pars.pdf[' )
             dCanv.Print( histsFile + '_pulls.pdf[' )
 
-            def drawHist( parName, parHist, fileName ) :
+            def drawHist( parName, parHist, fileName, refVal = None ) :
                 print 'P2VV - INFO: fitResultsAnalysis.processResults(): drawing "%s" histogram' % parName
                 parSetts = anaParSetts[parName] if parName in anaParSetts else { }
                 self._parHists[parName] = parHist
@@ -263,12 +263,25 @@ class fitResultsAnalysis(object) :
                     fitFunc = parHist.GetFunction('gaus')
                     fitFunc.SetLineWidth(3)
                     fitFunc.SetLineColor(kBlue)
+
+                histMax = -1.
+                for bin in range( 1, parHist.GetNbinsX() + 1 ) :
+                    val = parHist.GetBinContent(bin) + parHist.GetBinErrorUp(bin)
+                    if val > histMax : histMax = val
+                assert histMax > 0.
+                histMax *= 1.05
+                parHist.SetMinimum(0.)
+                parHist.SetMaximum(histMax)
+
                 canv = TCanvas(parName)
                 canv.SetLeftMargin(0.19)
                 canv.SetRightMargin(0.05)
                 canv.SetBottomMargin(0.21)
                 canv.SetTopMargin(0.05)
                 parHist.Draw('E1')
+                if refVal != None :
+                    line = TLine()
+                    line.DrawLine( refVal, 0., refVal, histMax )
                 canv.Print(fileName)
 
         for parIt, name in enumerate(self._parNames) :
@@ -308,7 +321,8 @@ class fitResultsAnalysis(object) :
                     parHistMax = parHistMax + 0.01 * parHistRange
                 parHist = TH1D( name + '_par', name, histBins, parHistMin, parHistMax )
                 for val in self._parVals[parIt] : parHist.Fill( val + plotShift )
-                drawHist( name, parHist, histsFile + '_pars.pdf' )
+                drawHist( name, parHist, histsFile + '_pars.pdf'
+                         , self._refParVals[parIt][0] + plotShift if self._refParVals[parIt] != None else None )
 
                 pullHistMin = min( self._pullVals[parIt] )
                 pullHistMax = max( self._pullVals[parIt] )
@@ -318,7 +332,7 @@ class fitResultsAnalysis(object) :
                     pullHistMax = pullHistMax + 0.01 * pullHistRange
                 pullHist = TH1D( name + '_pull', name, histBins, pullHistMin, pullHistMax )
                 for val in self._pullVals[parIt] : pullHist.Fill(val)
-                drawHist( name, pullHist, histsFile + '_pulls.pdf' )
+                drawHist(name, pullHist, histsFile + '_pulls.pdf', 0. )
 
         if histsFile :
             dCanv.Print( histsFile + '_pars.pdf]' )
@@ -335,7 +349,7 @@ class fitResultsAnalysis(object) :
         print ( '  {0:<%ds}   {1:<22s}' % nameLen ).format( 'name', 'measured' ),
         if self._refParVals[0] != None :
             print '   {0:<18s}   {1:<20s}   {2:<19s}   {3:<19s}   {4:<19s}   {5:<6s}   {6:<6s}   {7:<8s}'\
-                  .format( 'reference', 'pull offset', 'offset error', 'pull width', 'width error', '+width', '-width', 'max pull' )
+                  .format( 'reference', 'pull mean', 'mean error', 'pull RMS', 'width error', '+RMS', '-RMS', 'max pull' )
         else :
             print
         print sepStr
@@ -349,17 +363,17 @@ class fitResultsAnalysis(object) :
             print ( '  {0:<%ds}   {1:<+8.%df}   {2:<11.%df}' % ( nameLen, prec, precDev ) ).format( name, meanVal, stdDev ),
             if refVal != None :
                 refErr = errSums / float( nParVals[0] ) if toyMode else refVal[1]
-                pullOffs = ( pullSums[0] + pullSums[1] ) / float( nParVals[0] )
+                pullMean = ( pullSums[0] + pullSums[1] ) / float( nParVals[0] )
                 pullVar = ( pullSums[2] + pullSums[3] ) / float( nParVals[0] )
                 pullVarVar = ( pullSums[4] + pullSums[5] ) / float( nParVals[0] )
-                offsErr = sqrt( ( pullVar - pullOffs**2 ) / float( nParVals[0] ) )
+                meanErr = sqrt( ( pullVar - pullMean**2 ) / float( nParVals[0] ) )
                 width = sqrt(pullVar)
                 widthErr = 0.5 / sqrt(pullVar) * sqrt( ( pullVarVar - pullVar**2 ) / float( nParVals[0] ) )
                 widthPlus = sqrt( pullSums[2] / float( nParVals[1] ) ) if nParVals[1] > 0 else 0.
                 widthMin  = sqrt( pullSums[3] / float( nParVals[2] ) ) if nParVals[2] > 0 else 0.
                 print ( '   {0:<+8.%df}   {1:<7.%df}   {2:<+6.3f} / {3:<+11.%df}   {4:<5.3f} / {5:<11.%df}   {6:<5.3f} / {7:<11.%df}   {8:<5.3f} / {9:<11.%df}   {10:<6.3f}   {11:<6.3f}   {12:<8.3f}'\
                         % ( prec, prec, precDev, precDev, precDev, precDev ) )\
-                        .format( refVal[0], refErr, pullOffs, pullOffs * refErr, offsErr, offsErr * refErr
+                        .format( refVal[0], refErr, pullMean, pullMean * refErr, meanErr, meanErr * refErr
                                 , width, width * refErr, widthErr, widthErr * refErr, widthPlus, widthMin, maxPull )
             else :
                 print
