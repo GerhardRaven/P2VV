@@ -5,7 +5,7 @@
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument( '--jobID', '-I', type = int, default = 1000000 )
-parser.add_argument( '--scanPar', '-p', required = False )
+parser.add_argument( '--scanPar', '-p', required = True )
 parser.add_argument( '--scanParVals', '-v', required = True, nargs = '+', type = float )
 parser.add_argument( '--model', '-m', default = 'lamb_phi' )  # 'phi' / 'lamb_phi' / 'polarDep'
 parser.add_argument( '--blind', '-b', default = True )
@@ -137,7 +137,7 @@ fitData = correctWeights( dataSet, [ 'runPeriod', 'KKMassCat' ] )
 print 'getNLLVals: create NLL variable'
 nll = pdf.createNLL( fitData, NumCPU = args.numCPU, Optimize = 2 )
 nll.getVal()
-print 'NLL value = %.3f\n' % nll.getVal()
+print '\nNLL value = %.3f' % nll.getVal()
 
 # open output file for NLL values
 nllFilePath = workPath + 'NLLVals_%s_%d.par' % ( args.scanPar, args.jobID )
@@ -150,8 +150,15 @@ except :
 for val in args.scanParVals :
     # set parameter values
     pdfConfig.setParametersInPdf(pdf)
+    if ws[args.scanPar].getMin() > val :
+        print 'getNLLVals: WARNING: setting minimum of parameter "%s" to %.5g' % ( args.scanPar, val )
+        ws[args.scanPar].setMin(val)
+    if ws[args.scanPar].getMax() < val :
+        print 'getNLLVals: WARNING: setting maximum of parameter "%s" to %.5g' % ( args.scanPar, val )
+        ws[args.scanPar].setMax(val)
     ws[args.scanPar].setVal(val)
     ws[args.scanPar].setConstant(True)
+    print 'getNLLVals: %s = %.6g\n' % ( args.scanPar, val )
     nllVal = nll.getVal()
 
     # do profile likelihood fit
@@ -160,6 +167,8 @@ for val in args.scanParVals :
     profVal = nll.getVal()
 
     # write NLL values to file
+    print '\ngetNLLVals: parameters in PDF:'
+    pdfPars.Print('v')
     nllStr = '%s = %.6g : NLL = %.6f : profiled NLL = %.6f' % ( args.scanPar, val, nllVal, profVal )
     print '\ngetNLLVals: %s' % nllStr
     print 'writing NLL values to "%s"\n' % nllFilePath
