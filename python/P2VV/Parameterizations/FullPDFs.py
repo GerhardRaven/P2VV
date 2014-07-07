@@ -509,7 +509,6 @@ class Bs2JpsiKst_RunIAnalysis( PdfConfiguration ) :
         self['sWeights'] = 'Bs'
 
         # job parameters
-<<<<<<< HEAD
         self['parNamePrefix'] = ''           # prefix for parameter names        
         self['sFit']          = sFit         # fit only signal?
         self['blind']         = { }          # { 'phiCP' : ( 'UnblindUniform', 'myString', 0.2 ) }

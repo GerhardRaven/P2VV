@@ -39,14 +39,23 @@ pdfConfig['lambdaCPParam'] = 'lambPhi'
  # decay time
 pdfConfig['timeEffType']   = 'paper2012'
 pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file']\
-        = dataPath + 'Reco14/timeAcceptanceFit_2011.root' # Bs_HltPropertimeAcceptance_Data_2011_40bins_TOS.root'
+        = dataPath + 'Reco14/timeAcceptanceFit_2011.root'
 pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] )['file']\
-        = dataPath + 'Reco14/timeAcceptanceFit_2012.root' # Bs_HltPropertimeAcceptance_Data_2012_40bins_TOS.root'
+        = dataPath + 'Reco14/timeAcceptanceFit_2012.root'
  # decay angles
 pdfConfig['anglesEffType']   = 'weights'
 pdfConfig['angEffMomsFiles'] = options.AngAccFile if options.AngAccFile \
-    else myPath   + 'angEffMoments/correctedEffMoms/DEC/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm_fromAna' # Iter. proc. corrected acc. of DEC dataset  
-#   else myPath   + 'angEffMoments/uncorrecteEffMoments/TOS/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm'     # Uncorrected acc of TOS dataset
+    else myPath   + 'angEffMoments/correctedEffMoms/DEC/Sim08_20112012_hel_UB_UT_trueTime_BkgCat050_KK30_Phys_moms_norm_fromAna'
+
+# print out script settings
+print 'Fit configuration parameters:'
+print ' Fitting Dataset File: %s'%dataSetFile
+print ' Angular Acceptance File: %s'%pdfConfig['angEffMomsFiles']
+print ' Time Acceptance Files 2011: %s'%pdfConfig['timeEffHistFiles'][0][1]['file']
+print ' Time Acceptance Files 2012: %s'%pdfConfig['timeEffHistFiles'][1][1]['file']
+print ' Input Fit Parameters File: %s'%parFileIn
+print ' Output Fit Parameters File: %s'%parFileOut
+print ' Number of cores: %s'%options.NumCpu
 
 #####################################################################################################################
 ## read data and build pdf ##
@@ -80,6 +89,26 @@ print '-' * 80 + '\n\n'
 # fix-float lambda
 ws['lambdaCP'].setConstant(False)
 
+# get observables and parameters in PDF
+pdfObs  = pdf.getObservables(fitData)
+pdfPars = pdf.getParameters(fitData)
+
+# prevent tagging dilution = 0 in initialization
+if abs( 1. - pdfPars.getRealValue('wTagP1OS') ) < 1.e-5 and not pdfPars.find('wTagP1OS').isConstant() :
+    pdfPars.setRealValue( 'wTagP1OS', 0.999 )
+if abs( 1. - pdfPars.getRealValue('wTagP1SS') ) < 1.e-5 and not pdfPars.find('wTagP1SS').isConstant() :
+    pdfPars.setRealValue( 'wTagP1SS', 0.999 )
+
+# print parameters
+print 120 * '='
+print 'Bs2JpsiKK3fbFit: data:'
+fitData.Print()
+print 'Bs2JpsiKK3fbFit: observables in PDF:'
+pdfObs.Print('v')
+print 'Bs2JpsiKK3fbFit: parameters in PDF:'
+pdfPars.Print('v')
+print 'Bs2JpsiKK3fbFit: constraints in PDF:'
+for constr in pdf.ExternalConstraints() : constr.Print()
 
 ###########################################################################################################################################
 ## fit data ##
