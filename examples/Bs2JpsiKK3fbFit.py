@@ -119,6 +119,11 @@ sys.argv = sys.argv[ 0 : 1 ]
 from math import pi
 from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_RunIAnalysis as PdfConfig
 pdfConfig = PdfConfig()
+
+if parFileIn :
+    # read parameters from file
+    pdfConfig.readParametersFromFile( filePath = parFileIn )
+
 if not blind :
     pdfConfig['blind'] = { }
 
@@ -200,19 +205,19 @@ if fixUpAcc :
     for it, sett in enumerate( pdfConfig['externalConstr']['betaTimeEff'] ) :
         per = sett[0]['runPeriod']
         assert per in [ [ 'p2011' ], [ 'p2012' ] ]
-        pdfConfig['externalConstr']['betaTimeEff'][it] = ( sett[0], ( -0.0086331284, 0. ) if per == [ 'p2011' ] else ( -0.012659511, 0. ) )
-        #pdfConfig['externalConstr']['betaTimeEff'][it] = ( sett[0], ( -0.0090, 0. ) if per == [ 'p2011' ] else ( -0.0124, 0. ) )
+        betaVal = pdfConfig[ 'betaTimeEff_%s' % per ]
+        pdfConfig['externalConstr']['betaTimeEff'][it] = ( sett[0], ( betaVal, 0. ) )
 
 if fixTagging :
-    pdfConfig['externalConstr']['wTagP0OS'] = ( 0.38152946, 0. )#( 0.3791, 0.00001 )
-    pdfConfig['externalConstr']['wTagP1OS'] = ( 1.0118512,  0. )#( 1.,     0.00001 )
-    pdfConfig['externalConstr']['wTagP0SS'] = ( 0.44585594, 0. )#( 0.445,  0.00001 )
-    pdfConfig['externalConstr']['wTagP1SS'] = ( 0.95813206, 0. )#( 1.,     0.00001 )
+    pdfConfig['externalConstr']['wTagP0OS'] = ( pdfConfig['wTagP0OS'][0], 0. )
+    pdfConfig['externalConstr']['wTagP1OS'] = ( pdfConfig['wTagP1OS'][0], 0. )
+    pdfConfig['externalConstr']['wTagP0SS'] = ( pdfConfig['wTagP0SS'][0], 0. )
+    pdfConfig['externalConstr']['wTagP1SS'] = ( pdfConfig['wTagP1SS'][0], 0. )
 if fixTagAsym :
-    pdfConfig['externalConstr']['wTagDelP0OS'] = (  0.014023729,  0. )#(  0.0140, 0.00001 )
-    pdfConfig['externalConstr']['wTagDelP1OS'] = (  0.065743477,  0. )#(  0.066,  0.00001 )
-    pdfConfig['externalConstr']['wTagDelP0SS'] = ( -0.015786075,  0. )#( -0.0158, 0.00001 )
-    pdfConfig['externalConstr']['wTagDelP1SS'] = (  0.0081990069, 0. )#(  0.008,  0.00001 )
+    pdfConfig['externalConstr']['wTagDelP0OS'] = ( pdfConfig['wTagDelP0OS'][0], 0. )
+    pdfConfig['externalConstr']['wTagDelP1OS'] = ( pdfConfig['wTagDelP1OS'][0], 0. )
+    pdfConfig['externalConstr']['wTagDelP0SS'] = ( pdfConfig['wTagDelP0SS'][0], 0. )
+    pdfConfig['externalConstr']['wTagDelP1SS'] = ( pdfConfig['wTagDelP1SS'][0], 0. )
 
 pdfConfig['anglesEffType'] = args.angAccType
 pdfConfig['constAngEffCoefs'] = constAngAcc
@@ -239,8 +244,7 @@ pdfBuild = PdfBuilder( **pdfConfig )
 pdf = pdfBuild.pdf()
 
 if parFileIn :
-    # read parameters from file
-    pdfConfig.readParametersFromFile( filePath = parFileIn )
+    # set parameters in PDF
     pdfConfig.setParametersInPdf(pdf)
 
 # fix of float |lambda|
