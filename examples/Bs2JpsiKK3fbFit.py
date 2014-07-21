@@ -205,19 +205,19 @@ if fixUpAcc :
     for it, sett in enumerate( pdfConfig['externalConstr']['betaTimeEff'] ) :
         per = sett[0]['runPeriod']
         assert per in [ [ 'p2011' ], [ 'p2012' ] ]
-        betaVal = pdfConfig[ 'betaTimeEff_%s' % per ]
+        betaVal = pdfConfig.parameters().pop( 'betaTimeEff_%s' % per[0] )[0]
         pdfConfig['externalConstr']['betaTimeEff'][it] = ( sett[0], ( betaVal, 0. ) )
 
 if fixTagging :
-    pdfConfig['externalConstr']['wTagP0OS'] = ( pdfConfig['wTagP0OS'][0], 0. )
-    pdfConfig['externalConstr']['wTagP1OS'] = ( pdfConfig['wTagP1OS'][0], 0. )
-    pdfConfig['externalConstr']['wTagP0SS'] = ( pdfConfig['wTagP0SS'][0], 0. )
-    pdfConfig['externalConstr']['wTagP1SS'] = ( pdfConfig['wTagP1SS'][0], 0. )
+    pdfConfig['externalConstr']['wTagP0OS'] = ( pdfConfig.parameters().pop('wTagP0OS')[0], 0. )
+    pdfConfig['externalConstr']['wTagP1OS'] = ( pdfConfig.parameters().pop('wTagP1OS')[0], 0. )
+    pdfConfig['externalConstr']['wTagP0SS'] = ( pdfConfig.parameters().pop('wTagP0SS')[0], 0. )
+    pdfConfig['externalConstr']['wTagP1SS'] = ( pdfConfig.parameters().pop('wTagP1SS')[0], 0. )
 if fixTagAsym :
-    pdfConfig['externalConstr']['wTagDelP0OS'] = ( pdfConfig['wTagDelP0OS'][0], 0. )
-    pdfConfig['externalConstr']['wTagDelP1OS'] = ( pdfConfig['wTagDelP1OS'][0], 0. )
-    pdfConfig['externalConstr']['wTagDelP0SS'] = ( pdfConfig['wTagDelP0SS'][0], 0. )
-    pdfConfig['externalConstr']['wTagDelP1SS'] = ( pdfConfig['wTagDelP1SS'][0], 0. )
+    pdfConfig['externalConstr']['wTagDelP0OS'] = ( pdfConfig.parameters().pop('wTagDelP0OS')[0], 0. )
+    pdfConfig['externalConstr']['wTagDelP1OS'] = ( pdfConfig.parameters().pop('wTagDelP1OS')[0], 0. )
+    pdfConfig['externalConstr']['wTagDelP0SS'] = ( pdfConfig.parameters().pop('wTagDelP0SS')[0], 0. )
+    pdfConfig['externalConstr']['wTagDelP1SS'] = ( pdfConfig.parameters().pop('wTagDelP1SS')[0], 0. )
 
 pdfConfig['anglesEffType'] = args.angAccType
 pdfConfig['constAngEffCoefs'] = constAngAcc
