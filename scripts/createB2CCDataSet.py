@@ -465,7 +465,7 @@ if not simulation :
             #    for parName in sigParNames :
             #        if 'mean' in parName or 'sigma' in parName : splitCats[ observables['runPeriod'].GetName() ].add(parName)
 
-        if len(KKMassBinBounds) > 2 :
+        if len(KKMassBinBounds) > 1 :
             # split parameters for KK-mass category
             splitCats[ observables['KKMassCat'].GetName() ] = set(yieldNames)
             if sigMassModel.startswith('Ipatia2') :
