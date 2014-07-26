@@ -247,10 +247,11 @@ class fitResultsAnalysis(object) :
             dCanv.Print( histsFile + '_pars.pdf[' )
             dCanv.Print( histsFile + '_pulls.pdf[' )
 
-            def drawHist( parName, parHist, fileName, refVal = None ) :
+            def drawHist( parName, parHist, fileName, doFit = False, refVal = None ) :
                 print 'P2VV - INFO: fitResultsAnalysis.processResults(): drawing "%s" histogram' % parName
                 parSetts = anaParSetts[parName] if parName in anaParSetts else { }
                 self._parHists[parName] = parHist
+                parHist.GetXaxis().SetNdivisions( 7, 5, 0 )
                 parHist.SetTitleOffset( 1.15, 'x' )
                 parHist.SetTitleOffset( 1.05, 'y' )
                 parHist.SetXTitle( parSetts['name'] if 'name' in parSetts else parName )
@@ -258,9 +259,10 @@ class fitResultsAnalysis(object) :
                 parHist.SetMarkerStyle(kFullDotLarge)
                 parHist.SetMarkerSize(0.7)
                 parHist.SetLineWidth(2)
-                if parName in anaParSetts and 'doFit' in anaParSetts[parName] and anaParSetts[parName]['doFit'] :
+                if doFit :
                     parHist.Fit('gaus')
                     fitFunc = parHist.GetFunction('gaus')
+                    fitFunc.SetNpx(1000)
                     fitFunc.SetLineWidth(3)
                     fitFunc.SetLineColor(kBlue)
 
@@ -311,28 +313,35 @@ class fitResultsAnalysis(object) :
             if name in self._parHists and self._parHists[name] :
                 self._parHists[name].Delete()
             if histsFile :
+                parMinMax = anaParSetts[name]['parMinMax'] if name in anaParSetts and 'parMinMax' in anaParSetts[name] else None
+                parHistBins = anaParSetts[name]['parHistBins'] if name in anaParSetts and 'parHistBins' in anaParSetts[name]\
+                              else int( float(self._nParVals[parIt][0]) / 250. ) if self._nParVals[parIt][0] > 1000 else 10
                 plotShift = anaParSetts[name]['plotShift'] if name in anaParSetts and 'plotShift' in anaParSetts[name] else 0.
-                histBins = int( float(self._nParVals[parIt][0]) / 100. ) if self._nParVals[parIt][0] > 1000 else 10
-                parHistMin = min( self._parVals[parIt] ) + plotShift
-                parHistMax = max( self._parVals[parIt] ) + plotShift
+                parHistMin = parMinMax[0] if parMinMax else min( self._parVals[parIt] ) + plotShift
+                parHistMax = parMinMax[1] if parMinMax else max( self._parVals[parIt] ) + plotShift
                 parHistRange = parHistMax - parHistMin
-                if parHistRange > 0. :
+                if not parMinMax and parHistRange > 0. :
                     parHistMin = parHistMin - 0.01 * parHistRange
                     parHistMax = parHistMax + 0.01 * parHistRange
-                parHist = TH1D( name + '_par', name, histBins, parHistMin, parHistMax )
+                parHist = TH1D( name + '_par', name, parHistBins, parHistMin, parHistMax )
                 for val in self._parVals[parIt] : parHist.Fill( val + plotShift )
-                drawHist( name, parHist, histsFile + '_pars.pdf'
+                doParFit = name in anaParSetts and 'doParFit' in anaParSetts[name] and anaParSetts[name]['doParFit']
+                drawHist( name, parHist, histsFile + '_pars.pdf', doParFit
                          , self._refParVals[parIt][0] + plotShift if self._refParVals[parIt] != None else None )
 
-                pullHistMin = min( self._pullVals[parIt] )
-                pullHistMax = max( self._pullVals[parIt] )
+                pullMinMax = anaParSetts[name]['pullMinMax'] if name in anaParSetts and 'pullMinMax' in anaParSetts[name] else None
+                pullHistBins = anaParSetts[name]['pullHistBins'] if name in anaParSetts and 'pullHistBins' in anaParSetts[name]\
+                               else int( float(self._nParVals[parIt][0]) / 250. ) if self._nParVals[parIt][0] > 1000 else 10
+                pullHistMin = pullMinMax[0] if pullMinMax else min( self._pullVals[parIt] )
+                pullHistMax = pullMinMax[1] if pullMinMax else max( self._pullVals[parIt] )
                 pullHistRange = pullHistMax - pullHistMin
-                if pullHistRange > 0. :
+                if not pullMinMax and pullHistRange > 0. :
                     pullHistMin = pullHistMin - 0.01 * pullHistRange
                     pullHistMax = pullHistMax + 0.01 * pullHistRange
-                pullHist = TH1D( name + '_pull', name, histBins, pullHistMin, pullHistMax )
+                pullHist = TH1D( name + '_pull', name, pullHistBins, pullHistMin, pullHistMax )
                 for val in self._pullVals[parIt] : pullHist.Fill(val)
-                drawHist(name, pullHist, histsFile + '_pulls.pdf', 0. )
+                doPullFit = name in anaParSetts and 'doPullFit' in anaParSetts[name] and anaParSetts[name]['doPullFit']
+                drawHist(name, pullHist, histsFile + '_pulls.pdf', doPullFit, 0. )
 
         if histsFile :
             dCanv.Print( histsFile + '_pars.pdf]' )
