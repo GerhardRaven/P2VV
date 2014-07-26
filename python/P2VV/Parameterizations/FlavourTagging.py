@@ -178,9 +178,8 @@ class TaggingParams ( _util_parse_mixin, _util_extConstraints_mixin, _util_condi
         if self._numTagCats[0] == 0 : self._ADilWTags = ( [ ], self._ADilWTags )
         if self._numTagCats[0] == 0 : self._CEvenOdds = [ self._CEvenOdds ]
 
-        if self._numTagCats[0] > 1 or self._numTagCats[1] > 1 :
-            self._tagCatCoefs = kwargs.pop('TagCatCoefs')
-            if self._numTagCats[0] == 0 : self._tagCatCoefs = [ self._tagCatCoefs ]
+        self._tagCatCoefs = kwargs.pop('TagCatCoefs')
+        if self._numTagCats[0] == 0 : self._tagCatCoefs = [ self._tagCatCoefs ]
 
         # cache integrals as a function of observables
         for dils in self._dilutions + self._ADilWTags :
@@ -518,7 +517,7 @@ class CatDilutionsCoefAsyms_TaggingParams( TaggingParams ) :
 
         else :
             self._ATagEffVals[1].append(0)
-            self._singleTagCatCoefs[1][0] = self._parseArg( 'tagCatCoef%s0' % namePF, kwargs, Value = 1., ObjectType = 'ConstVar' )
+            self._singleTagCatCoefs[1].insert( 0, self._parseArg( 'tagCatCoef%s0' % namePF, kwargs, Value = 1., ObjectType = 'ConstVar' ) )
 
         # loop over tagging categories
         for index0 in range( numTagCats[0] if numTagCats[0] > 0 else 1 ) :
