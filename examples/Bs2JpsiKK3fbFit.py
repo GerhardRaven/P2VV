@@ -14,6 +14,7 @@ parser.add_argument( '--fixLowAcc', '-l', default = True )
 parser.add_argument( '--fixUpAcc', '-u', default = False )
 parser.add_argument( '--fixTagging', '-a', default = False )
 parser.add_argument( '--fixTagAsym', '-k', default = False )
+parser.add_argument( '--constrDelM', '-M', default = False )
 parser.add_argument( '--numCPU', '-c', type = int, default = 2 )
 parser.add_argument( '--runHesse', '-e', default = True )
 parser.add_argument( '--runMinos', '-s', default = '' )
@@ -43,6 +44,7 @@ fixLowAcc = False if not args.fixLowAcc or str( args.fixLowAcc ).lower() in [ 'f
 fixUpAcc = False if not args.fixUpAcc or str( args.fixUpAcc ).lower() in [ 'false', '0' ] else True
 fixTagging = False if not args.fixTagging or str( args.fixTagging ).lower() in [ 'false', '0' ] else True
 fixTagAsym = False if not args.fixTagAsym or str( args.fixTagAsym ).lower() in [ 'false', '0' ] else True
+constrDelM = False if not args.constrDelM or str( args.constrDelM ).lower() in [ 'false', '0' ] else True
 assert type(args.numCPU) == int and args.numCPU > 0 and args.numCPU < 20
 runHesse = False if not args.runHesse or str( args.runHesse ).lower() in [ 'false', '0' ] else True
 minosPars = args.minosPars.split(',') if args.minosPars and str(args.minosPars) != 'None' else [ ]
@@ -92,6 +94,7 @@ print '  fix lower decay-time acceptance: %s' % ( 'true' if fixLowAcc else 'fals
 print '  fix upper decay-time acceptance: %s' % ( 'true' if fixUpAcc  else 'false' )
 print '  fix tagging calibration: %s' % ( 'true' if fixTagging else 'false' )
 print '  fix tagging calibration asymmetries: %s' % ( 'true' if fixTagAsym else 'false' )
+print '  constrain DeltaM: %s' % ( 'true' if constrDelM else 'false' )
 print '  number of cores: %d' % args.numCPU
 print '  run Hesse: %s' % ( 'true' if runHesse else 'false' )
 print '  run Minos: %s' % ( 'true' if runMinos else 'false' )
@@ -126,6 +129,11 @@ if parFileIn :
 
 if not blind :
     pdfConfig['blind'] = { }
+
+#pdfConfig['KKMassBinBounds'] = [ 1020. - 12., 1020. - 4., 1020., 1020. + 4., 1020. + 12. ]
+#pdfConfig['CSPValues'] = [ 0.9022, 0.8619, 0.8875, 0.9360 ]
+#pdfConfig['KKMassBinBounds'] = [ 1020. - 12., 1020. + 12. ]
+#pdfConfig['CSPValues'] = [ 0.498 ]
 
 pdfConfig['tagCatsType'] = args.tagCatsType
 pdfConfig['contEstWTag'] = contEstWTag
@@ -218,6 +226,9 @@ if fixTagAsym :
     pdfConfig['externalConstr']['wTagDelP1OS'] = ( pdfConfig.parameters().pop('wTagDelP1OS')[0], 0. )
     pdfConfig['externalConstr']['wTagDelP0SS'] = ( pdfConfig.parameters().pop('wTagDelP0SS')[0], 0. )
     pdfConfig['externalConstr']['wTagDelP1SS'] = ( pdfConfig.parameters().pop('wTagDelP1SS')[0], 0. )
+
+if constrDelM :
+    pdfConfig['externalConstr']['dM'] = ( 17.768, 0.024 )
 
 pdfConfig['anglesEffType'] = args.angAccType
 pdfConfig['constAngEffCoefs'] = constAngAcc
