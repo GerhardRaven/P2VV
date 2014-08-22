@@ -1,5 +1,5 @@
 brNames = [  ( 'runNumber', 'i' ), ( 'eventNumber', 'l' ), ( 'runPeriod', 'I' ), ( 'polarity', 'I' ), ( 'nPV', 'D' )
-           , ( 'wMC', 'F' )
+           , ( 'sWeights_ipatia', 'F' ), ( 'wMC', 'F' )
            , ( 'hlt1_unbiased', 'I' ), ( 'hlt1_excl_biased', 'I' ), ( 'hlt2_unbiased', 'I' ), ( 'hlt2_biased', 'I' )
            , ( 'triggerDecisionUnbiased', 'I' ), ( 'triggerDecisionBiasedExcl', 'I' )
            , ( 'mass', 'D' ), ( 'mdau1', 'D' ), ( 'mdau2', 'D' )
@@ -14,9 +14,10 @@ brNames = [  ( 'runNumber', 'i' ), ( 'eventNumber', 'l' ), ( 'runPeriod', 'I' ),
            , ( 'muminus_PX', 'D' ), ( 'muminus_PY', 'D' ), ( 'muminus_PZ', 'D' ), ( 'muminus_LOKI_ETA', 'D' )
            , ( 'muplus_track_chi2ndof', 'D' ), ( 'muminus_track_chi2ndof', 'D' )
            , ( 'Kplus_track_chi2ndof', 'D' ), ( 'Kminus_track_chi2ndof', 'D' )
+           , ( 'B_s0_ENDVERTEX_X', 'D' ), ( 'B_s0_ENDVERTEX_Y', 'D' ), ( 'B_s0_ENDVERTEX_Z', 'D' )
           ]
-nTupleFilePathIn = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_hope_the_last_one.root'
-nTupleFilePathOut = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_hope_the_last_one_presc_20140415.root'
+nTupleFilePathIn = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_merged.root'
+nTupleFilePathOut = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_merged_presc_20140822.root'
 
 from ROOT import TFile, TTree
 nTupleFileIn = TFile.Open(nTupleFilePathIn)

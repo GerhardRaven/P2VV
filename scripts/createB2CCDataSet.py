@@ -3,7 +3,7 @@
 #####################
 
 #nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/Bs2JpsiPhi_2011_2012_s20_dv33r6p1_20140213_tupleB_selTrig_TOS.root'
-nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_hope_the_last_one_add_20140415.root'
+nTupleFilePath  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_merged_add_20140822.root'
 #nTupleFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_MC2011_Sim08a_ntupleB_20130909_add.root'
 #nTupleFilePath = '/project/bfys/jleerdam/data/Bs2Jpsiphi/MC_Reco14/Bs2JpsiPhi_MC2012_ntupleB_20130904_add.root'
 nTupleName       = 'DecayTree'
@@ -78,7 +78,8 @@ RooInf  = RooNumber.infinity()
 KKMMin  = KKMassBinBounds[0]
 KKMMax  = KKMassBinBounds[-1]
 
-obsKeys = [#  'sWeights_ipatia'
+obsKeys = [ # 'sWeights_ipatia',
+            # 'sWeight_orig'
              'wMC'
            #, 'hlt2_prescale', 'polarity', 'nPVCat', 'BpTCat'
            , 'runPeriod'
@@ -94,6 +95,7 @@ obsKeys = [#  'sWeights_ipatia'
            #, 'sel', 'selClTail'#, 'selA', 'selB'
            , 'hlt1ExclB', 'hlt2B', 'hlt2UB'#, 'hlt1B', 'hlt1UB'
            #, 'trigDecUnb', 'trigDecExclB'
+           #, 'B_s0_ENDVERTEX_X', 'B_s0_ENDVERTEX_Y', 'B_s0_ENDVERTEX_Z'
            #, 'B_P', 'B_Pt', 'B_eta', 'B_phi'
            #, 'Kplus_PX', 'Kplus_PY', 'Kplus_PZ', 'Kplus_LOKI_ETA'
            #, 'Kminus_PX', 'Kminus_PY', 'Kminus_PZ', 'Kminus_LOKI_ETA'
@@ -165,6 +167,9 @@ obsDict = dict(  runPeriod = ( 'runPeriod',            'run period', dict( [ ( '
                , KPTrChi2                   = ( 'Kplus_track_chi2ndof',       'K+ chi^2/#dof',  1.,    0.,      4.     )
                , KMTrChi2                   = ( 'Kminus_track_chi2ndof',      'K- chi^2/#dof',  1.,    0.,      4.     )
                , GLsb                       = ( 'GLsb',                       'GLsb',           0.,    0.,      1.     )
+               , B_s0_ENDVERTEX_X           = ( 'B_s0_ENDVERTEX_X',           'B_s0_ENDVERTEX_X', '', 0., -RooInf, +RooInf )
+               , B_s0_ENDVERTEX_Y           = ( 'B_s0_ENDVERTEX_Y',           'B_s0_ENDVERTEX_Y', '', 0., -RooInf, +RooInf )
+               , B_s0_ENDVERTEX_Z           = ( 'B_s0_ENDVERTEX_Z',           'B_s0_ENDVERTEX_Z', '', 0., -RooInf, +RooInf )
                , muplus_PIDmu               = ( 'muplus_PIDmu',               'muplus_PIDmu',   0.,   -RooInf, +RooInf )
                , muminus_PIDmu              = ( 'muminus_PIDmu',              'muminus_PIDmu',  0.,   -RooInf, +RooInf )
                , Kplus_pidK                 = ( 'Kplus_pidK',                 'Kplus_pidK',     0.,    0.,     +RooInf )
