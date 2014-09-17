@@ -1043,7 +1043,8 @@ Double_t RooBTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code,
       for (Int_t cat1It = catPos1 > -1 ? catPos1 : 0; cat1It < cat1High;
           ++cat1It) {
         // get category coefficients
-        Double_t catCoef = tagCatCoefUnsafe(cat0It, cat1It);
+        Double_t catCoef = _tagCat0Type > 1 || _tagCat1Type > 1
+            ? tagCatCoefUnsafe(cat0It, cat1It) : 1.;
         Double_t cEvenOdd0 = ((RooAbsReal*)((RooArgList*)
             (odd ? _avgCOdds : _avgCEvens).At(cat0It))->at(cat1It))
             ->getVal();
@@ -1372,7 +1373,8 @@ void RooBTagDecay::generateEvent(Int_t code)
       while (catGen[0] < cat0Max) {
         while (catGen[1] < cat1Max) {
           // get tagging category coefficient
-          Double_t catCoef = tagCatCoefUnsafe(catGen[0], catGen[1]);
+          Double_t catCoef = _tagCat0Type > 1 || _tagCat1Type > 1
+              ? tagCatCoefUnsafe(catGen[0], catGen[1]) : 1.;
 
           // check coefficient
           if (catCoef < 0.) {

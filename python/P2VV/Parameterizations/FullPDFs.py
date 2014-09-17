@@ -705,6 +705,12 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
         else :
             self['obsDict'].pop('runPeriod')
 
+        KKMassTuple = (  self['obsDict']['KKMass'][0], self['obsDict']['KKMass'][1], self['obsDict']['KKMass'][2]
+                       , ( self['KKMassBinBounds'][0] + self['KKMassBinBounds'][-1] ) / 2.
+                       , self['KKMassBinBounds'][0]
+                       , self['KKMassBinBounds'][-1]
+                      )
+        self['obsDict']['KKMass'] = KKMassTuple
         states = dict( [ ( 'bin%d' % it, it ) for it in range( len( self['KKMassBinBounds'] ) - 1 ) ] )
         self['obsDict']['KKMassCat'] = tuple( [ comp if it != 2 else states for it, comp in enumerate( self['obsDict']['KKMassCat'] ) ] )
 
@@ -799,7 +805,8 @@ class Bs2Jpsiphi_PdfBuilder ( PdfBuilder ) :
 
         # check KK mass bin parameters
         assert obsDict['KKMass'][4] == KKMassBinBounds[0] and obsDict['KKMass'][5] == KKMassBinBounds[-1]\
-               , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: KK mass range in "KKMassBinBounds" is not the same as in "obsDict"'
+               , 'P2VV - ERROR: Bs2Jpsiphi_PdfBuilder: KK mass range in "KKMassBinBounds" (%.1f - %.1f) is not the same as in "obsDict" (%.1f - %.1f)'\
+                 % ( KKMassBinBounds[0], KKMassBinBounds[-1], obsDict['KKMass'][4], obsDict['KKMass'][5] )
 
         if paramKKMass in [ 'parameters', 'simultaneous' ] :
             assert len(CSPValues) == len(KKMassBinBounds) - 1,\

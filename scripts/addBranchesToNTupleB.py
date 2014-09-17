@@ -1,6 +1,6 @@
 #nTupleFilePathIn  = '/data/bfys/jleerdam/Bs2Jpsiphi/Bs2JpsiPhi_2012_s20r0p1_dv33r6p1_20131217_tupleB.root'
-nTupleFilePathIn  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_hope_the_last_one_presc_20140415.root'
-nTupleFilePathOut = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_hope_the_last_one_add_20140415.root'
+nTupleFilePathIn  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_merged_presc_20140822.root'
+nTupleFilePathOut = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/nTupleC_merged_add_20140822.root'
 
 nTupleName = 'DecayTree'
 runPeriod = None # 2012
@@ -13,6 +13,7 @@ BpTBounds = [ 4600., 6300., 8100., 10800. ]
 BpTInds = range( len(BpTBounds) + 1 )
 nPVBounds = [ 0.5 + float(it) for it in range(11) ]
 nPVInds = range( len(nPVBounds) + 1 )
+sWeight = 'sWeights_ipatia'
 pbkgWeight = 'wMC'
 tagOSBounds = [ ] # [ -531.1, -530.9, 530.9, 531.1 ]
 tagSSBounds = [ ] # [ -531.1, -530.9, 530.9, 531.1 ]
@@ -78,6 +79,11 @@ if nPVBounds :
     for ind in nPVInds : inds.push_back(ind)
     addCategoryToTree( nTupleOut, 'nPV', 'nPVCat', bounds, inds )
 
+if sWeight :
+    from ROOT import copyFloatInTree
+    print 'copying signal sWeight "%s" to branch "sWeight_orig"' % sWeight
+    copyFloatInTree( nTupleOut, sWeight, 'sWeight_orig' )
+
 if pbkgWeight :
     from ROOT import copyFloatInTree
     print 'copying peaking-background weight "%s" to branch "pbkgWeight"' % pbkgWeight
@@ -116,11 +122,11 @@ if tagSSBounds :
 print 'first tree entries:'
 for it in range( min( nTupleOut.GetEntries(), 20 ) ) :
     b = nTupleOut.GetEntry(it)
-    print 'runPeriod = %4d   firstData = %d   hlt2_prescale = %d   mdau2 = %6.1f   KKMassCat = %1d   BpTCat = %1d   nPVCat = %1d   pbkgWeight = %.2f'\
+    print 'runPeriod = %4d   firstData = %d   hlt2_prescale = %d   mdau2 = %6.1f   KKMassCat = %1d   BpTCat = %1d   nPVCat = %1d   sWeight = %.2f   pbkgWeight = %.2f'\
           % ( nTupleOut.runPeriod if runPeriod else -1, nTupleOut.firstData if firstData else -1
              , nTupleOut.hlt2_prescale if prescaleBounds else -1, nTupleOut.mdau2, nTupleOut.KKMassCat if KKMassBounds else -1
              , nTupleOut.BpTCat if BpTBounds else -1, nTupleOut.nPVCat if nPVBounds else -1
-             , nTupleOut.pbkgWeight if pbkgWeight else 0. )
+             , nTupleOut.sWeight_orig if sWeight else 0., nTupleOut.pbkgWeight if pbkgWeight else 0. )
     print '   trueid = %d   iTagOS = %d   iTagSS = %d   tagCatOS = %d   tagCatSS = %d   etaOS = %.1f   etaSS = %.1f'\
           % ( nTupleOut.trueid if tagOSBounds or tagSSBounds else 0
              , nTupleOut.iTagOS if tagOSBounds else 0, nTupleOut.iTagSS if tagSSBounds else 0
