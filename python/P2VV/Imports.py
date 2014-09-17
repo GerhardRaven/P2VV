@@ -435,19 +435,6 @@ cutSelStrings = dict(  noSelection = ''
                                      ' && Kplus_track_chi2ndof < 4. && Kminus_track_chi2ndof < 4.'
                     )
 
-# jpsiKst cut selection strings
-cutSelStringsJpsiKst = dict(  noSelection = ''
-                              , presel_nominal_tightnote = "muplus_MINIPCHI2 > 16. && muminus_MINIPCHI2 > 16. && Kplus_MINIPCHI2 > 2. && piminus_MINIPCHI2 > 2." \
-                                  " && B0_LOKI_DTF_CTAU > 0." \
-                                  " && Kplus_PT > 500. && piminus_PT > 500."\
-                                  " && abs(Kst_892_0_MM - 896) < 70."\
-                                  " && abs(Mjpsik - 5279) > 60."\
-                                  # " && abs(B0_MM - 5366)<25"
-                              , bdtg_2011 = "BDTG > 0.2"
-                              , bdtg_2012 = "BDTG > -0.24"
-                              
-                              )
-
 # external constraint values dictionary
 class ExtConstrValsDict( dict ) :
     def __init__( self, valsDict ) :
