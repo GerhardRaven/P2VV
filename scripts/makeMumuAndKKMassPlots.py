@@ -5,8 +5,8 @@
 dataSetName = 'JpsiKK_sigSWeight'
 dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_20140309.root'
 
-mumuPlotsFilePath = 'mumuMass.ps'
-KKPlotsFilePath   = 'KKMass.ps'
+mumuPlotsFilePath = 'mumuMass.pdf'
+KKPlotsFilePath   = 'KKMass.pdf'
 
 fitOpts = dict( NumCPU = 8, Optimize = 2, Timer = True, Minimizer = 'Minuit2', Strategy = 1, Offset = True )
 
@@ -21,6 +21,8 @@ gStyle.SetLineStyleString( 9, ' 100 20'       )
 ###################################
 
 from P2VV.Load import P2VVLibrary, LHCbStyle
+from ROOT import gStyle
+gStyle.SetColorModelPS(1)
 
 # workspace
 from P2VV.RooFitWrappers import RooObject
