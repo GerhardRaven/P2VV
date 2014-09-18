@@ -2,7 +2,7 @@ from ROOT import kBlack, kGray, kRed, kMagenta, kBlue, kCyan, kGreen, kYellow, k
 model = 'polarDep'
 scanParFilePath = '/project/bfys/jleerdam/softDevel/P2VV2/test/NLLPlots/jobOutput/%s_%s/NLLVals_%s_100[2-3]???.par'
 #scanParFilePath = '/project/bfys/jleerdam/softDevel/P2VV2/test/NLLPlots/jobOutput/%s_%s/NLLVals_%s_1002???.par'
-plotFilePath = '/project/bfys/jleerdam/softDevel/P2VV2/test/NLLPlots/%s_plots.pdf' % model
+plotFilePath = 'NLL_plots_%s.pdf' % model #'/project/bfys/jleerdam/softDevel/P2VV2/test/NLLPlots/%s_plots.pdf' % model
 nPointsPara = 1000
 NLLRange = ( 0., 14.)
 NLLLabel = '-#Deltalog(L)'
@@ -26,11 +26,15 @@ if model == 'phi' :
                 , 'AparPhase', 'AperpPhase'
                 , 'ASOddPhase_bin0', 'ASOddPhase_bin1', 'ASOddPhase_bin2', 'ASOddPhase_bin3', 'ASOddPhase_bin4', 'ASOddPhase_bin5'
                ]
-    parSettings = dict(  phiCP              = dict( name = '#phi_{s} [rad]', min = -0.35, max = 0.25
+    parSettings = dict(  #phiCP              = dict( name = '#phi_{s} [rad]', min = -0.35, max = 0.25
+                         #                          , mean = -0.056308557, error = 0.049043162 )
+                         phiCP              = dict( name = '#phi_{s} [rad]', min = -0.20, max = 0.40, offset = 0.1301
                                                    , mean = -0.056308557, error = 0.049043162 )
                        , Gamma              = dict( name = '#Gamma_{s} [ps^{-1}]', min = 0.64, max = 0.68
                                                    , mean = 0.65909601, error = 0.0031105883 )
-                       , dGamma             = dict( name = '#Delta#Gamma_{s} [ps^{-1}]', min = 0.02, max = 0.13
+                       #, dGamma             = dict( name = '#Delta#Gamma_{s} [ps^{-1}]', min = 0.02, max = 0.13
+                       #                            , mean = 0.078519243, error = 0.0091211774 )
+                       , dGamma             = dict( name = '#Delta#Gamma_{s} [ps^{-1}]', min = 0.03, max = 0.14, offset = 0.0100
                                                    , mean = 0.078519243, error = 0.0091211774 )
                        , dM                 = dict( name = '#Deltam_{s} [ps^{-1}]', min = 17.3, max = 18.1
                                                    , mean = 17.696881, error = 0.060104838 )
@@ -89,13 +93,17 @@ elif model == 'lamb_phi' :
                 , 'ASOddPhase_bin0', 'ASOddPhase_bin1', 'ASOddPhase_bin2', 'ASOddPhase_bin3', 'ASOddPhase_bin4', 'ASOddPhase_bin5'
                ]
 
-    parSettings = dict(  phiCP              = dict( name = '#phi_{s} [rad]', min = -0.34, max = 0.34
+    parSettings = dict(  #phiCP              = dict( name = '#phi_{s} [rad]', min = -0.34, max = 0.34
+                         #                          , mean = -0.057095686, error = 0.049722504 )
+                         phiCP              = dict( name = '#phi_{s} [rad]', min = -0.20, max = 0.40, offset = 0.1301
                                                    , mean = -0.057095686, error = 0.049722504 )
                        , lambdaCP           = dict( name = '|#lambda_{s}|', min = 0.80, max = 1.20
                                                    , mean = 0.96269479, error = 0.018785372 )
                        , Gamma              = dict( name = '#Gamma_{s} [ps^{-1}]', min = 0.64, max = 0.68
                                                    , mean = 0.65916402, error = 0.0031062888 )
-                       , dGamma             = dict( name = '#Delta#Gamma_{s} [ps^{-1}]', min = 0.02, max = 0.13
+                       #, dGamma             = dict( name = '#Delta#Gamma_{s} [ps^{-1}]', min = 0.02, max = 0.13
+                       #                            , mean = 0.078511129, error = 0.0091307288 )
+                       , dGamma             = dict( name = '#Delta#Gamma_{s} [ps^{-1}]', min = 0.03, max = 0.14, offset = 0.0100
                                                    , mean = 0.078511129, error = 0.0091307288 )
                        , dM                 = dict( name = '#Deltam_{s} [ps^{-1}]', min = 17.25, max = 18.10
                                                    , mean = 17.723016, error = 0.056704725 )
@@ -154,13 +162,21 @@ else :
               , 'ASOddPhase_bin0', 'ASOddPhase_bin1', 'ASOddPhase_bin2', 'ASOddPhase_bin3', 'ASOddPhase_bin4', 'ASOddPhase_bin5'
              ]
 
-    parSettings = dict(  phiCPAv            = dict( name = '#phi_{s}^{av} [rad]', min = -0.34, max = 0.34
+    parSettings = dict(#  phiCPAv            = dict( name = '#phi_{s}^{av} [rad]', min = -0.34, max = 0.34
+                       #                            , mean = -0.046577055, error = 0.050931782 )
+                       #, phiCPRel_Apar      = dict( name = '#Delta#phi_{s}^{#parallel} [rad]', min = -0.40, max = 0.40
+                       #                            , mean = -0.018693067, error = 0.042595888 )
+                       #, phiCPRel_AperpApar = dict( name = '#Delta#phi_{s}^{#perp}#kern[1]{\'} [rad]', min = -0.40, max = 0.40
+                       #                            , mean = -0.0026496495, error = 0.028615121 )
+                       #, phiCPRel_AS        = dict( name = '#Delta#phi_{s}^{S} [rad]', min = -0.70, max = 0.40
+                       #                            , mean = 0.014648547, error = 0.062238538 )
+                         phiCPAv            = dict( name = '#phi_{s}^{av} [rad]', min = -0.15, max = 0.45, offset = 0.1801
                                                    , mean = -0.046577055, error = 0.050931782 )
-                       , phiCPRel_Apar      = dict( name = '#Delta#phi_{s}^{#parallel} [rad]', min = -0.40, max = 0.40
+                       , phiCPRel_Apar      = dict( name = '#Delta#phi_{s}^{#parallel} [rad]', min = -0.50, max = 0.30, offset = -0.1089
                                                    , mean = -0.018693067, error = 0.042595888 )
-                       , phiCPRel_AperpApar = dict( name = '#Delta#phi_{s}^{#perp}#kern[1]{\'} [rad]', min = -0.40, max = 0.40
-                                                   , mean = -0.0026496495, error = 0.028615121 )
-                       , phiCPRel_AS        = dict( name = '#Delta#phi_{s}^{S} [rad]', min = -0.70, max = 0.40
+                       , phiCPRel_AperpApar = dict( name = '#Delta#phi_{s}^{#perp}#kern[1]{\'} [rad]', min = -0.30, max = 0.50
+                                                   , offset = 0.0960, mean = -0.0026496495, error = 0.028615121 )
+                       , phiCPRel_AS        = dict( name = '#Delta#phi_{s}^{S} [rad]', min = -0.90, max = 0.20, offset = -0.2350
                                                    , mean = 0.014648547, error = 0.062238538 )
                        , CCPAv              = dict( name = 'C_{s}^{av}', min = -0.24, max = 0.24
                                                    , mean = -0.0063173106, error = 0.03865467 )
@@ -172,7 +188,9 @@ else :
                                                    , mean = 0.059909153, error = 0.032151267 )
                        , Gamma              = dict( name = '#Gamma_{s} [ps^{-1}]', min = 0.64, max = 0.68
                                                    , mean = 0.65910705, error = 0.0031164336 )
-                       , dGamma             = dict( name = '#Delta#Gamma_{s} [ps^{-1}]', min = 0.02, max = 0.13
+                       #, dGamma             = dict( name = '#Delta#Gamma_{s} [ps^{-1}]', min = 0.02, max = 0.13
+                       #                            , mean = 0.078376082, error = 0.009155929 )
+                       , dGamma             = dict( name = '#Delta#Gamma_{s} [ps^{-1}]', min = 0.03, max = 0.14, offset = 0.0100
                                                    , mean = 0.078376082, error = 0.009155929 )
                        , dM                 = dict( name = '#Deltam_{s} [ps^{-1}]', min = 17.25, max = 18.10
                                                    , mean = 17.696386, error = 0.062072481 )
@@ -182,13 +200,13 @@ else :
                                                    , mean = 0.25125825, error = 0.0049294865 )
                        , avf_S_bin0         = dict( name = 'F_{S1}^{av}', min = 0.15, max = 0.70
                                                    , mean = 0.42437739, error = 0.054153196 )
-                       , avf_S_bin1         = dict( name = 'F_{S2}^{av}', min = 0., max = 0.16
+                       , avf_S_bin1         = dict( name = 'F_{S2}^{av}', min = 0., max = 0.15
                                                    , mean = 0.057217699, error = 0.01766972 )
-                       , avf_S_bin2         = dict( name = 'F_{S3}^{av}', min = 0., max = 0.06
+                       , avf_S_bin2         = dict( name = 'F_{S3}^{av}', min = 0., max = 0.04
                                                    , mean = 0.0085864882, error = 0.0065480008 )
-                       , avf_S_bin3         = dict( name = 'F_{S4}^{av}', min = 0., max = 0.06
+                       , avf_S_bin3         = dict( name = 'F_{S4}^{av}', min = 0., max = 0.04
                                                    , mean = 0.0092803772, error = 0.0056304117 )
-                       , avf_S_bin4         = dict( name = 'F_{S5}^{av}', min = 0., max = 0.16
+                       , avf_S_bin4         = dict( name = 'F_{S5}^{av}', min = 0., max = 0.12
                                                    , mean = 0.047881399, error = 0.015387567 )
                        , avf_S_bin5         = dict( name = 'F_{S6}^{av}', min = 0.06, max = 0.35
                                                    , mean = 0.19101304, error = 0.025535031 )
@@ -225,7 +243,7 @@ else :
 
 from P2VV.Load import LHCbStyle
 from ROOT import gStyle
-gStyle.SetColorModelPS(1)
+#gStyle.SetColorModelPS(1)
 #gStyle.SetLineStyleString( 5, ' 40 20 10 20'  )
 #gStyle.SetLineStyleString( 7, ' 40 20'        )
 #gStyle.SetLineStyleString( 9, ' 100 20'       )
@@ -265,7 +283,7 @@ for parIt, par in enumerate(scanPars) :
             assert line[0] == par and line[4] == 'NLL' and line[8] == 'profiled' and line[9] == 'NLL'
 
             pos = 0
-            parVal = float(line[2])
+            parVal = float(line[2]) + parSettings[par].get( 'offset', 0. )
             if par.startswith('ASOddPhase') and parVal > pi : parVal -= 2. * pi
             for val in parVals :
                 if val > parVal : break
@@ -286,7 +304,7 @@ for parIt, par in enumerate(scanPars) :
     parMean = parSettings[par]['mean']
     parErr  = parSettings[par]['error']
     parValsPara = array( 'd', [ parMin + float(it) / float(nPointsPara - 1) * ( parMax - parMin ) for it in range(nPointsPara) ] )
-    NLLValsPara = array( 'd', [ 0.5 * ( ( val - parMean ) / parErr )**2 for val in parValsPara ] )
+    NLLValsPara = array( 'd', [ 0.5 * ( ( val - parMean - parSettings[par].get( 'offset', 0. ) ) / parErr )**2 for val in parValsPara ] )
 
     graphs[par] = (  TGraph( len(parValsPara), parValsPara, NLLValsPara )
                    #, TGraph( len(parVals), parVals, NLLVals )
