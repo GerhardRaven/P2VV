@@ -12,7 +12,7 @@ else: assert False, 'P2VV - ERROR: Wrong sWeight speicifier. Choose either Bs or
 # input dataset paths
 inPath       = '/project/bfys/vsyropou/data/Bs2JpsiKst/RealData/'
 dataSetPaths = {}
-dataSetName  = 'DecayTree'
+dataSetName  = 'Bs2JpsiKst'
 dataSetPaths['2011negKaons'] = inPath + 'P2VVDataSet_2011Reco14_Bs2JpsiKst_negKaons_fitNtuple_120614_%s_weighted.root'%weightName
 dataSetPaths['2011posKaons'] = inPath + 'P2VVDataSet_2011Reco14_Bs2JpsiKst_posKaons_fitNtuple_120614_%s_weighted.root'%weightName
 dataSetPaths['2012negKaons'] = inPath + 'P2VVDataSet_2012Reco14_Bs2JpsiKst_negKaons_fitNtuple_120614_%s_weighted.root'%weightName
@@ -21,7 +21,7 @@ dataSetPaths['2012posKaons'] = inPath + 'P2VVDataSet_2012Reco14_Bs2JpsiKst_posKa
 
 outPath = '/project/bfys/vsyropou/data/Bs2JpsiKst/RealData/'
 outFileName = 'P2VVDataSet_20112012Reco14_Bs2JpsiKst_allKaons_fitNtuple_120614_%s_weighted.root'%weightName
-outDataName = 'jpsiKst'
+outDataName = 'Bs2JpsiKst'
 
 # read datasets into a combined dataset
 from ROOT import TFile, RooDataSet, RooFit

@@ -8,7 +8,7 @@ for val in options.__dict__.itervalues():
     if val==None: assert False, 'P2VV - ERROR: Specify job parameters (runPeriod (-r) / kaonSign (-s) / sWeight (-w) ) with command arguments.'
 
 # data set paths
-inputPath      = '/project/bfys/vsyropou/data/Bs2JpsiKst/RealData/DiegosUnrefinedTuples/'
+inputPath      = '/data/bfys/vsyropou/Bs2JpsiKst/DiegosUnrefinedTuples/'
 inputTreeName  = 'DecayTree'
 protoTreePaths = {} 
 protoTreePaths['2011negKaons'] = inputPath + '2011n.root'
@@ -16,26 +16,27 @@ protoTreePaths['2011posKaons'] = inputPath + '2011p.root'
 protoTreePaths['2012negKaons'] = inputPath + '2012n.root'
 protoTreePaths['2012posKaons'] = inputPath + '2012p.root'
 
-outputPath      = '/project/bfys/vsyropou/data/Bs2JpsiKst/RealData/'
-outDataSetPaths = {}
-outDataSetPaths['2011negKaons'] = outputPath + 'P2VVDataSet_2011Reco14_Bs2JpsiKst_negKaons'
-outDataSetPaths['2011posKaons'] = outputPath + 'P2VVDataSet_2011Reco14_Bs2JpsiKst_posKaons'
-outDataSetPaths['2012negKaons'] = outputPath + 'P2VVDataSet_2012Reco14_Bs2JpsiKst_negKaons'
-outDataSetPaths['2012posKaons'] = outputPath + 'P2VVDataSet_2012Reco14_Bs2JpsiKst_posKaons'
-
 # configure job
-prodDate           = '120614'
+saveDataSetToLocalFolder = False   # protect official output location
+delIntermidiatTree       = True    # delete temporary file
+
 runPeriods         = [2011,2012]
-createFitNtuple    = True
-createAngAccNtuple = True
+prodDate           = '120614'
+createFitNtuple    = True  # choose branches necessary for fitting
+createAngAccNtuple = False  # add track momenta branches
+minimalNtuple      = True
 addKpiMassCategory = True
 addKaonSignInfo    = True
-addRunPeriodInfo   = True
-calculateHelAngles = False
-applySelection     = False
+addRunPeriodInfo   = True # replace old helicity angles
+saveOldHelAngles   = False 
+applySelection     = False 
+calculateHelAngles = True
+oldHelAngleNames   = dict(ctheta='helcosthetaK', cpsi='helcosthetaL', phi='B0_Phi') # old hel. ang. are the values of the dictionary 
+daughterPartNames  = dict(posHad='Kplus', negHad='piminus', posLep='muplus', negLep='muminus')
 KpiMassBranchName  = 'Kst_892_0_M'
 KpiMassBinBounds   = [826, 825+35, 892, 965-35, 966]
 KpiMassInds        = range( len(KpiMassBinBounds) + 1 )
+outDataSetName     = 'Bs2JpsiKst'
 bdtgSelCuts        = {2011:0.2, 2012:-0.24}
 runPeriod          = options.runPeriod
 kaonSign           = options.kaonSign
@@ -47,6 +48,14 @@ if   's' in wghtArg or 'S' in wghtArg: weightName, weightVarName = 'Bs', 'Bs_sWe
 elif 'd' in wghtArg or 'D' in wghtArg: weightName, weightVarName = 'Bd', 'Bd_sWeight'
 else: assert False, 'P2VV - ERROR: Wrong sWeight speicifier. Choose either Bs or Bd.'
 
+# output paths
+outDataSetPaths = {}
+outputPath      = '/project/bfys/vsyropou/data/Bs2JpsiKst/RealData/' if not saveDataSetToLocalFolder else './'
+outDataSetPaths['2011negKaons'] = outputPath + 'P2VVDataSet_2011Reco14_Bs2JpsiKst_negKaons'
+outDataSetPaths['2011posKaons'] = outputPath + 'P2VVDataSet_2011Reco14_Bs2JpsiKst_posKaons'
+outDataSetPaths['2012negKaons'] = outputPath + 'P2VVDataSet_2012Reco14_Bs2JpsiKst_negKaons'
+outDataSetPaths['2012posKaons'] = outputPath + 'P2VVDataSet_2012Reco14_Bs2JpsiKst_posKaons'
+
 # select and rename branches
 from ROOT import RooNumber
 from math import pi
@@ -54,41 +63,80 @@ RooInf  = RooNumber.infinity()
 KKMin   = KpiMassBinBounds[0]
 KKMax   = KpiMassBinBounds[-1]
 
-obsDict = dict(   runPeriod         = ( 'runPeriod',       'run period', { 'p%s'%runPeriod : runPeriod for runPeriod in runPeriods }     )
-                 , KpiMassCat       = ( 'KpiMassCat',      'KpiMassCat', {       'bin%s'%b : b  for b in range(1,len(KpiMassBinBounds))} )               
-                 , kaonSign         = ( 'kaonSign',        'kaon sign',  {        'neg': -1, 'pos': 1}                                   )
-                 , mass             = ( 'mass',            'm(J/#psi K^{+}#pi^{-})', 'MeV/c^{2}', 5368.,  5110.,   5690.        ) # 5110.,    5690.       )
-                 , Mjpsik           = ( 'mJpsiK',          'm(J/#psi K^{+}',         'MeV/c^{2}', 4594,   -RooInf,  RooInf      )
-                 , Kst_892_0_MM     = ( 'mdau2',           'm(K^{+}#pi^{-})',        'MeV/c^{2}', 892.,   KKMin,    KKMax       )
-                  , J_psi_1S_MM      = ( 'mdau1',           'm(mu^{+}#mu^{-})',       'MeV/c^{2}', 3094,  -RooInf,    RooInf    )
-                 #, sWeights_Bs      = ( 'sWeights_Bs',     'Bs sWeights',            '',           0.,    -RooInf, RooInf       )
-                 #, sWeights_Bd      = ( 'sWeights_Bd',     'Bd sWeights',            '',           0.,    -RooInf, RooInf       )
-                 , cor_sWeights_Bs  = ( 'Bs_sWeight', 'corrected Bs sWeights',       '',           0.,    -RooInf, RooInf       )
-                 , cor_sWeights_Bd  = ( 'Bd_sWeight', 'corrected Bd sWeights',       '',           0.,    -RooInf, RooInf       )
-                 , helcosthetaK     = ( 'helcosthetaK',    'cos(#theta_{K})',        '',           0.,      -1.,     +1.        )
-                 , helcosthetaL     = ( 'helcosthetaL',    'cos(#theta_{#mu})',      '',           0.,      -1.,     +1.        )
-                 , helphi           = ( 'helphi',          '#phi_{h}',               'rad',        0.,      -pi,     +pi        )
-                 )
+obsDict = dict( runPeriod        = ( 'runPeriod',    'run period', { 'p%s'%runPeriod : runPeriod for runPeriod in runPeriods }       ,'runPeriod'               ),
+                KpiMassCat       = ( 'KpiMassCat',   'KpiMassCat', {       'bin%s'%b : b  for b in range(1,len(KpiMassBinBounds))}   ,'KpiMassCat'               ),               
+                kaonSign         = ( 'kaonSign',     'kaon sign',  {        'neg': -1, 'pos': 1}                                     ,'kaonSign'                 ),  
+                mass             = ( 'mass',         'm(J/#psi K^{+}#pi^{-})', 'MeV/c^{2}', 5368., 5110.,  5690.,  'B0_M'                      ), 
+                Mjpsik           = ( 'mJpsiK',       'm(J/#psi K^{+}',         'MeV/c^{2}', 4594, -RooInf, RooInf, 'Mjpsik'                    ),
+                Kst_892_0_MM     = ( 'mdau2',        'm(K^{+}#pi^{-})',        'MeV/c^{2}', 892.,  KKMin,  KKMax,  'Kst_892_0_MM'              ),
+                J_psi_1S_MM      = ( 'mdau1',        'm(mu^{+}#mu^{-})',       'MeV/c^{2}', 3094, -RooInf, RooInf, 'J_psi_1S_MM'               ),
+               # sWeights_Bs      = ( 'sWeights_Bs', 'Bs sWeights',            '',           0.,   -RooInf, RooInf, 'sWeights_Bs'               ),
+               # sWeights_Bd      = ( 'sWeights_Bd', 'Bd sWeights',            '',           0.,   -RooInf, RooInf, 'sWeights_Bd'               ),
+                cor_sWeights_Bs  = ( 'Bs_sWeight',   'corrected Bs sWeights',  '',           0.,  -RooInf, RooInf,  'cor_sWeights_Bs'          ),
+                cor_sWeights_Bd  = ( 'Bd_sWeight',   'corrected Bd sWeights',  '',           0.,  -RooInf, RooInf,  'cor_sWeights_Bd'          ),
+                helcosthetaK     = ( 'helcosthetaK', 'cos(#theta_{K})',        '',           0.,    -1.,     +1. ,  oldHelAngleNames['ctheta'] ),
+                helcosthetaL     = ( 'helcosthetaL', 'cos(#theta_{#mu})',      '',           0.,    -1.,     +1. ,  oldHelAngleNames['cpsi']   ),
+                helphi           = ( 'helphi',       '#phi_{h}',               'rad',        0.,    -pi,     +pi ,  oldHelAngleNames['phi']    )
+                )
 
 # add branches for angEff or helicity angles calculation
 if createAngAccNtuple or calculateHelAngles:
     for name in [ '%s_P%s' % ( part, comp ) for part in [ 'muplus', 'muminus', 'Kplus', 'piminus' ] for comp in ( 'X', 'Y', 'Z' ) ]:
-        obsDict[name] = ( name, name, 'MeV/c', 0.,   -RooInf, +RooInf )
+        obsDict[name] = ( name, name, 'MeV/c', 0.,   -RooInf, +RooInf, name )
 
 # remove unecesessary weights 
 if weightName == 'Bs': obsDict.pop('cor_sWeights_Bd')
 if weightName == 'Bd': obsDict.pop('cor_sWeights_Bs')
 
+# minimal dataset for fitting
+if minimalNtuple: 
+    for key in ['Mjpsik','J_psi_1S_MM','Kst_892_0_MM']: obsDict.pop(key)
+
 #####################################################################################################################
 ## refine all ntuple ##
 #######################
+
+# load p2vv library
+from P2VV.Load import P2VVLibrary
 
 # read input file
 from ROOT import TFile
 protoFile   = TFile.Open(protoTreePath)
 protoTree   = protoFile.Get(inputTreeName)
+initNumEvts = protoTree.GetEntries()
+print 'P2VV - INFO: Processing tree (%s initial entries): %s'%(initNumEvts,protoTreePath)
+
+# save old helicity angles in case you calculate new ones
+if saveOldHelAngles:
+    print 'P2VV - INFO: Saving old Helicity angles'
+    protoTree.SetBranchStatus('*',0)
+    for branch in oldHelAngleNames.values():protoTree.SetBranchStatus(branch,1)
+
+    from ROOT import TFile
+    oldHelAngFile = TFile.Open('oldHelAnglesFor_%s.root'%dataSetKey,'recreate')
+    oldHelAngTree = protoTree.CloneTree()
+
+    from ROOT import copyFloatInTree 
+    for oldHelAngBranch, copyOldHelAngBranch in { oldHelAngleNames['ctheta'] : 'helcosthetaK_old',
+                                                  oldHelAngleNames['cpsi']    : 'helcosthetaL_old', 
+                                                  oldHelAngleNames['phi']     : 'helphi_old'        }.iteritems():
+        print 'P2VV - INFO: Copying and renaming branch: %s --> %s'%(oldHelAngBranch, copyOldHelAngBranch)
+        copyFloatInTree( oldHelAngTree, oldHelAngBranch, copyOldHelAngBranch )
+
+    oldHelAngTree.Write()
+    oldHelAngFile.Close()
+    del oldHelAngFile
+
+    protoTree.SetBranchStatus('*',1)
+    for branch in oldHelAngleNames.values(): protoTree.SetBranchStatus(branch,0)
+    print 'P2VV - INFO: Wrote old helicity angles to file: %s'%'oldHelAnglesFor_%s.root'%dataSetKey
+    print 'P2VV - INFO: Continue processing main file'
 
 # create temporary intermediate file
+# for branch in protoTree.GetListOfBranches():
+#     # if branch.GetName() not in [item[-1] for item in obsDict.items() ]:
+#     for element in  ['L0','has','SS','OS','Hlt','PID','END','OWN','TOP','TRACK','Prob','ORI']:
+#         if element in  branch.GetName() : protoTree.SetBranchStatus(branch.GetName(),0)
 intermediateFileName = 'temp_FileFor_%s.root'%dataSetKey
 intermediateFile = TFile.Open(intermediateFileName, 'recreate')
 intermediateTree = protoTree.CloneTree()
@@ -97,10 +145,7 @@ protoFile.Close()
 del protoFile
 
 # create new branches
-from P2VV.Load import P2VVLibrary
 from ROOT import addIntegerToTree 
-
-print 'P2VV - INFO: Processing tree (%s initial entries): %s'%(intermediateTree.GetEntries(),protoTreePath)
 if addRunPeriodInfo:   
     print 'P2VV - INFO: Adding run period (%s) info to ntuple'%runPeriod
     addIntegerToTree(intermediateTree, int(runPeriod), 'runPeriod' )
@@ -108,8 +153,6 @@ if addRunPeriodInfo:
 if addKaonSignInfo:
     print 'P2VV - INFO: Adding kaon sign (%+i) info to ntuple'%kaonSign
     addIntegerToTree(intermediateTree, int(kaonSign), 'kaonSign' )
-
-if calculateHelAngles: calculateHelicityAngles(intermediateTree)
 
 if addKpiMassCategory: 
     from ROOT import addCategoryToTree, std
@@ -122,18 +165,55 @@ if addKpiMassCategory:
 
 # copy-rename branches
 from ROOT import copyFloatInTree
-for oldBranchName, newBranchName in obsDict.iteritems():
-    if oldBranchName != newBranchName[0]:
-        print 'P2VV - INFO: Copying and renaming branch: %s --> %s'%(oldBranchName,newBranchName[0])
-        copyFloatInTree( intermediateTree, oldBranchName, newBranchName[0] )
+for observable in obsDict.itervalues():
+    if observable[-1] != observable[0]:
+        if observable[-1] not in oldHelAngleNames.values():
+            print 'P2VV - INFO: Copying and renaming branch: %s --> %s'%(observable[-1],observable[0])
+            copyFloatInTree( intermediateTree, observable[-1], observable[0])
+        else:
+            if not calculateHelAngles == True:
+                print 'P2VV - INFO: Copying and renaming branch: %s --> %s'%(observable[-1],observable[0])
+                copyFloatInTree( intermediateTree, observable[-1], observable[0])
+            else: pass 
+    else: pass
 
+if calculateHelAngles:
+    print 'P2VV - INFO: Calculating helicity angles'
+    from ROOT import TDatabasePDG, addHelicityAnglesToTree
+    MeV = 1000 # TDatabasePDG is in GeV
+    PDG = TDatabasePDG()
+    Mmu = PDG.GetParticle('mu-').Mass()*MeV
+    Mk  = PDG.GetParticle('K-').Mass()*MeV
+    Mpi = PDG.GetParticle('pi-').Mass()*MeV
+    
+    posHadMass = Mk  if 'K' in daughterPartNames['posHad'] else Mpi
+    negHadMass = Mpi if 'pi' in daughterPartNames['negHad'] else Mk
+    lepMass    = Mmu
+    
+    print ' P2VV - INFO: The following associations will be made:\n '\
+        ' Positive hadron name: %s, mass=%s \n  Negative hadron name: %s, mass=%s \n '\
+        ' Positive lepton name: %s, mass=%s \n  Negative lepton name: %s, mass=%s \n'\
+        ' Units MUST be in GeV. Check!!!'\
+        %(daughterPartNames['posHad'], posHadMass, daughterPartNames['negHad'], negHadMass,\
+          daughterPartNames['posLep'], lepMass, daughterPartNames['negLep'], lepMass)
+
+    print ' Helicity angles names:\n helcosthetaK = %s \n helcosthetaL = %s \n helphi = %s'\
+        %( obsDict['helcosthetaK'][0], obsDict['helcosthetaL'][0], obsDict['helphi'][0] )
+
+    addHelicityAnglesToTree(intermediateTree, 
+                            daughterPartNames['posHad'], daughterPartNames['negHad'], 
+                            daughterPartNames['posLep'], daughterPartNames['negLep'],
+                            posHadMass, negHadMass, lepMass, lepMass,
+                            obsDict['helcosthetaK'][0], obsDict['helcosthetaL'][0], obsDict['helphi'][0]
+                            )
+    
+    
 # close intermediate files
 intermediateTree.Write()
 intermediateFile.Close()
 del intermediateFile
 print 'P2VV - INFO: Wrote intermediate tree to file: %s'%intermediateFileName
 print 'P2VV - INFO: Finished refining tree. Continuing to create RooDataSet'        
-
 
 ##########################################################################################
 ## create RooDataSet ##
@@ -144,6 +224,10 @@ from P2VV.RooFitWrappers import RooObject, RealVar, Category
 ws = RooObject(workspace = 'JpsiphiWorkspace').ws()
 
 # create observables
+if not createAngAccNtuple:
+    for name in [ '%s_P%s' % ( part, comp ) for part in [ 'muplus', 'muminus', 'Kplus', 'piminus' ] for comp in ( 'X', 'Y', 'Z' ) ]:
+        obsDict.pop(name)
+
 observables  = { }
 for obs in obsDict.keys():
     if type( obsDict[obs][2] ) == dict or type( obsDict[obs][2] ) == list :
@@ -170,14 +254,23 @@ outDataSet = readData( intermediateFileName, inputTreeName,
                        ImportIntoWS = False,
                        **dataSetArgs
                        )
+outDataSet.SetName(outDataSetName)
 outDataSet.Print()
+if initNumEvts != outDataSet.numEntries(): print 'P2VV -INFO: You lost %s entries due to selection cuts:'% (initNumEvts-outDataSet.numEntries()) 
 
 # create final output file
-outFileName = outDataSetPaths[dataSetKey] + '_fitNtuple_%s_%s.root'%(prodDate,weightName + '_weighted')
-#if createFitNtuple: outFileName += '_fitNtuple'
-#if createAngAccNtuple or calculateHelAngles: outFileName += '_angEff'
+outFileName = outDataSetPaths[dataSetKey]
+if createAngAccNtuple: outFileName += '_angEff'
+if createFitNtuple: outFileName += '_fitNtuple'
+outFileName += '_%s_%s.root'%(prodDate,weightName + '_weighted')
 
 outFile = TFile.Open(outFileName, 'recreate')
 outDataSet.Write()
 outFile.Close()
 del outFile
+print 'P2VV - INFO: Wrote final dataset to file %s'%(outFileName) 
+
+if delIntermidiatTree:
+    import os
+    os.remove(intermediateFileName)
+    print 'P2VV - INFO: Delete temporary file %s'%(intermediateFileName) 

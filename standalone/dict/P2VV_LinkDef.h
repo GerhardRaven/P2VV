@@ -67,6 +67,7 @@
 #pragma link C++ function HelicityAngles;
 #pragma link C++ function GetOwnership;
 #pragma link C++ function getRooRealMaxVal;
+#pragma link C++ function addHelicityAnglesToTree;
 
 #pragma link C++ class std::map<RooAbsCategory*, std::string>;
 #pragma link C++ class std::map<RooCategoryProxy*, std::string>;

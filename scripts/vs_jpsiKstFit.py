@@ -1,22 +1,26 @@
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument( '-B', '--BsFit',         default = 's',   type = str )
+parser.add_argument( '-c', '--NumCpu',        default = 1,     type = int )   
+parser.add_argument( '-s', '--sWave',         default = False, action = 'store_true'  )               
+parser.add_argument( '-d', '--FitData',       default = False, action = 'store_true'  )
+parser.add_argument( '-a', '--AngAccFile',    default = False, action = 'store_true'  )
+parser.add_argument( '-i', '--ParFileIn',     default = False, action = 'store_true'  )
+parser.add_argument( '-o', '--ParFileOut',    default = False, action = 'store_true'  )
+parser.add_argument( '-b', '--writeUnBlPar',  default = True,  action = 'store_false' )
+parser.add_argument( '-u', '--unblind',       default = False, action = 'store_true'  )
+options = parser.parse_args()
+
 #####################################################################################################################
 ## configuration  ##
 ############################
 
-from optparse import OptionParser
-parser = OptionParser()
-parser.add_option('-d', '--FitData',      dest='FitData',      default='',        help='' )
-parser.add_option('-a', '--AngAccFile',   dest='AngAccFile',   default='',        help='' )
-parser.add_option('-i', '--ParFileIn',    dest='ParFileIn',    default='',        help='' )
-parser.add_option('-o', '--ParFileOut',   dest='ParFileOut',   default='',        help='' )
-parser.add_option('-b', '--writeUnBlPar', dest='writeUnBlPar', default='True',    help='' )
-parser.add_option('-u', '--unblind',      dest='unblind',      default='False',   help='' )
-parser.add_option('-c', '--NumCpu',       dest='NumCpu',       default=1,         help='', type=int )
-(options, args) = parser.parse_args()
+bsFit = options.BsFit
 
-# data
-path        = '/project/bfys/vsyropou/data/Bs2JpsiPhi/'
-dataSetFile = options.FitData if options.FitData else path + 'MC/Bd_MCT_p_correctAngles.root'
-dataSetName = 'T'
+# dataset
+path = '/project/bfys/vsyropou/data/Bs2JpsiKst'
+dataSetFile = path + '/RealData/P2VVDataSet_20112012Reco14_Bs2JpsiKst_allKaons_fitNtuple_120614_%s_weighted.root'%('Bs'if bsFit else 'Bd')
+dataSetName = 'jpsiKst'
 
 # read / write fited parameters from file
 parFileIn  = options.ParFileIn if options.ParFileIn else path + 'nominalFitResults/<writedetails>.par'
@@ -26,8 +30,14 @@ parFileOut = options.ParFileOut if options.ParFileOut else '<detailsoutput>.par'
 from P2VV.Parameterizations.FullPDFs import Bs2JpsiKst_RunIAnalysis as PdfConfig
 pdfConfig = PdfConfig()
 
+# Bd/Bs weights
+pdfConfig['sWeights'] = 'Bs' if bsFit else 'Bd'
+
+# KK mass binning
+# pdfConfig[''] = 
+
 # swich blidn on/off
-if 'True' in options.unblind: pdfConfig['blind'] = {}
+if options.unblind: pdfConfig['blind'] = {}
 
 # angular acceptance input
 pdfConfig['anglesEffType']   = 'weights'
@@ -44,14 +54,9 @@ ws = RooObject( workspace = 'JpsiKstWorkspace' ).ws()
 
 # read data set from file
 from P2VV.Utilities.DataHandling import readData
-dataSet = readData( filePath = dataSetFile, dataSetName = dataSetName,  NTuple = False )
+dataSet = readData( filePath = dataSetFile, dataSetName = dataSetName,  NTuple = False, ImportIntoWS = False )
 pdfConfig['signalData'] = dataSet
-pdfConfig['readFromWS'] = True
-
-## TODO:: make correct sWeights for jpsiKst.
-# data set with weights corrected for background dilution
-# from P2VV.Utilities.DataHandling import correctWeights
-# fitData = correctWeights( dataSet, [ 'runPeriod', 'KKMassCat' ] )
+pdfConfig['readFromWS'] = False
 
 # build PDF
 from P2VV.Parameterizations.FullPDFs import Bs2JpsiKst_PdfBuilder as PdfBuilder
@@ -93,3 +98,5 @@ if parFileOut:
             par = pdfConfig.parameters().pop('__%s__'%parName)
             pdfConfig.parameters()[parName] = (ws[parName].getVal(), ) + par[1:]
         pdfConfig.writeParametersToFile( filePath = parFileOut.replace('.par','_unbl.par'), Floating = True )
+
+## TODO:update csp
