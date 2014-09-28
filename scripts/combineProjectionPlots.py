@@ -1,4 +1,4 @@
-plotVar = 'phi'
+plotVar = 'timeLin'
 ROOTFilePaths = [ 'plots/Reco14/projPlot_%s_%s.root' % ( plotVar, comp ) for comp in [ 'total', 'even', 'odd', 'S' ] ]
 plotFilePath = 'plots/Reco14/projPlot_%s.pdf' % plotVar
 minMax = dict(  timeLin = ( 0.,    6000. )
@@ -36,16 +36,80 @@ for it, path in enumerate(ROOTFilePaths) :
 
 projPlot.SetMinimum( minMax[plotVar][0] )
 projPlot.SetMaximum( minMax[plotVar][1] )
+if not drawLabel :
+  projPlot.SetYTitle( projPlot.GetYaxis().GetTitle().replace( 'Candidates', 'Decays' ) )
 
+# draw plot
 from ROOT import TCanvas
-canv = TCanvas()
-canv.SetLeftMargin(0.18)
-canv.SetRightMargin(0.05)
-canv.SetBottomMargin(0.18)
-canv.SetTopMargin(0.05)
-if plotVar == 'timeLog' : canv.SetLogy()
+canv0 = TCanvas('plotCanv')
+canv0.SetLeftMargin(0.18)
+canv0.SetRightMargin(0.05)
+canv0.SetBottomMargin(0.18)
+canv0.SetTopMargin(0.05)
+if plotVar == 'timeLog' : canv0.SetLogy()
 
 projPlot.Draw()
 if drawLabel : LHCbLabel.Draw()
+canv0.Print( plotFilePath + '(' )
 
-canv.Print(plotFilePath)
+# draw plot with residuals
+residHist = projPlot.residHist( 'data', 'pdf', True )
+residFrame = projPlot.emptyClone( projPlot.GetName() + '_resid' )
+residFrame.SetXTitle( projPlot.GetXaxis().GetTitle() )
+residFrame.SetBarWidth(1.02)
+residFrame.addPlotable( residHist, 'BX' )
+residFrame.SetMinimum(-5.)
+residFrame.SetMaximum(+5.)
+
+from ROOT import TLine, kRed
+zeroLine = TLine( residFrame.GetXaxis().GetXmin(), 0., residFrame.GetXaxis().GetXmax(), 0. )
+zeroLine.SetLineColor(kRed)
+residFrame.addObject(zeroLine)
+
+canv1 = TCanvas('plotCanvResid')
+canv1.SetLeftMargin(0.18)
+canv1.SetRightMargin(0.05)
+canv1.SetBottomMargin(0.18)
+canv1.SetTopMargin(0.05)
+
+from ROOT import TPad
+canv1.cd()
+plotPad = TPad( 'plotPad', 'plotPad', 0., 0.32, 1., 1. )
+if plotVar == 'timeLog' : plotPad.SetLogy()
+plotPad.SetNumber(1)
+plotPad.SetLeftMargin(0.18)
+plotPad.SetRightMargin(0.12)
+plotPad.SetBottomMargin(0.05)
+plotPad.SetTopMargin(0.06)
+plotPad.Draw()
+canv1.cd(1)
+
+projPlot.SetLabelOffset( 1.1,  'x' )
+projPlot.SetLabelOffset( 0.01, 'y' )
+projPlot.SetTitleOffset( 0.7 if plotVar == 'timeLog' else 0.8,  'y' )
+projPlot.Draw()
+if drawLabel :
+    LHCbLabel.SetX( 0.93 * LHCbLabel.GetX() )
+    LHCbLabel.SetY( 0.96 * LHCbLabel.GetY() )
+    LHCbLabel.Draw()
+
+canv1.cd()
+residPad = TPad( 'residPad', 'residPad', 0., 0., 1., 0.32 )
+residPad.SetNumber(2)
+residPad.SetLeftMargin(0.18)
+residPad.SetRightMargin(0.12)
+residPad.SetBottomMargin(0.47)
+residPad.SetTopMargin(0.05)
+residPad.Draw()
+canv1.cd(2)
+
+residFrame.GetYaxis().SetNdivisions( 4, 5, 0 )
+residFrame.SetLabelSize( 68. / 32. * 0.06,  'x' )
+residFrame.SetLabelSize( 68. / 32. * 0.06,  'y' )
+residFrame.SetTitleSize( 68. / 32. * 0.072, 'x' )
+residFrame.SetLabelOffset( 0.06, 'x' )
+residFrame.SetLabelOffset( 0.01, 'y' )
+residFrame.SetTitleOffset( 1.3, 'x' )
+residFrame.Draw()
+
+canv1.Print( plotFilePath + ')' )

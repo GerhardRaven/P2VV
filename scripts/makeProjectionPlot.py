@@ -28,16 +28,22 @@ from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_RunIAnalysis as PdfConfig
 pdfConfig = PdfConfig()
 
 # job parameters
-parFileIn   = '/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/parVals.par'
+#parFileIn   = '/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/parVals.par'
+parFileIn   = '/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/LHCb/parVals.par'
 dataPath    = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
 dataSetName = 'JpsiKK_sigSWeight'
-dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140309.root'
-plotsFilePath = '/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/projPlot_%s_%s.ps' % ( plotVar, plotComp )
-ROOTFilePath  = '/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/projPlot_%s_%s.root' % ( plotVar, plotComp )
+#dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140309.root'
+dataSetFile = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140822_fromNTuple_v2_corrWeights.root'
+#plotsFilePath = '/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/projPlot_%s_%s.ps' % ( plotVar, plotComp )
+#ROOTFilePath  = '/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/projPlot_%s_%s.root' % ( plotVar, plotComp )
+plotsFilePath = '/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/LHCb/projPlot_%s_%s.ps' % ( plotVar, plotComp )
+ROOTFilePath  = '/project/bfys/jleerdam/softDevel/P2VV2/test/plots/Reco14/LHCb/projPlot_%s_%s.root' % ( plotVar, plotComp )
 
 # PDF options
-pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file'] = dataPath + 'timeAcceptanceFit_2011.root'
-pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] )['file'] = dataPath + 'timeAcceptanceFit_2012.root'
+#pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file'] = dataPath + 'timeAcceptanceFit_2011.root'
+#pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] )['file'] = dataPath + 'timeAcceptanceFit_2012.root'
+pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file'] = '/project/bfys/jleerdam/softDevel/P2VV2/test/fitResults/Reco14/effWeights/timeAcceptanceFit_2011.root'
+pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2012' ) ] )['file'] = '/project/bfys/jleerdam/softDevel/P2VV2/test/fitResults/Reco14/effWeights/timeAcceptanceFit_2012.root'
 pdfConfig['anglesEffType'] = 'basisSig6'
 pdfConfig['angEffMomsFiles'] = dataPath + 'angEffNominalRew_5thOrder.par'
 
