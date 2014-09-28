@@ -35,7 +35,8 @@ if len(sys.argv) > 1 :
 
 jobID = '%02dbins_%s_b%s_p%s_f%s%s' % ( numTimeBinsTot, ( '%.3f' % binOffset ).replace( '-', 'm' ).replace( '.', 'p' )
                                        , ''.join( '%02d' % bin for bin in timeBins ), ''.join( '%02d' % per for per in periods )
-                                       , ''.join( '%02.0f' % ( 100. * frac ) for frac in timeFracs ), '_b' if blindVars else '' )
+                                       , ( ''.join( '%02.0f' % ( 100. * frac ) for frac in timeFracs ) ) if len(timeFracs) < 10\
+                                         else '%dp' % len(timeFracs), '_b' if blindVars else '' )
 pdfValsFilePath = 'pdfVals/pdfVals_%s.par' % jobID
 oscPeriod = 2. * pi / Deltam
 
