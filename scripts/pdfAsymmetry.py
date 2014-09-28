@@ -1,8 +1,7 @@
+model            = 'lamb_phi'
 dataPath         = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
 dataSetFilePath  = 'asymmetryData.root'
-parFilePath      = 'parVals.par'
 applyPlotWeights = True
-blindVars        = [ 'phiCP', 'dGamma' ]
 
 from math import pi, sqrt
 Deltam         = 17.723
@@ -16,6 +15,7 @@ import sys
 if len(sys.argv) > 1 :
     import argparse
     parser = argparse.ArgumentParser()
+    parser.add_argument( 'model' )
     parser.add_argument( 'numTimeBinsTot', type = int )
     parser.add_argument( 'startBin',       type = int )
     parser.add_argument( 'numTimeBins',    type = int )
@@ -26,6 +26,7 @@ if len(sys.argv) > 1 :
     parser.add_argument( 'timeFracs',      type = float, nargs = '+' )
 
     args = parser.parse_args()
+    model = args.model
     numTimeBinsTot = args.numTimeBinsTot
     timeBins = [ args.startBin + it for it in range(args.numTimeBins) ]
     periods = [ args.startPeriod + it for it in range(args.numPeriods) ]
@@ -33,14 +34,17 @@ if len(sys.argv) > 1 :
     Deltam = args.Deltam
     timeFracs = [ val for val in args.timeFracs ]
 
-jobID = '%02dbins_%s_b%s_p%s_f%s%s' % ( numTimeBinsTot, ( '%.3f' % binOffset ).replace( '-', 'm' ).replace( '.', 'p' )
-                                       , ''.join( '%02d' % bin for bin in timeBins ), ''.join( '%02d' % per for per in periods )
-                                       , ( ''.join( '%02.0f' % ( 100. * frac ) for frac in timeFracs ) ) if len(timeFracs) < 10\
-                                         else '%dp' % len(timeFracs), '_b' if blindVars else '' )
+blindVars = [ 'phiCP', 'dGamma' ] if model != 'polarDep' else [ 'dGamma', 'phiCPAv', 'phiCPRel_Apar', 'phiCPRel_AperpApar', 'phiCPRel_AS' ]
+jobID = '%s_%02dbins_%s_b%s_p%s_f%s%s' % ( model, numTimeBinsTot, ( '%.3f' % binOffset ).replace( '-', 'm' ).replace( '.', 'p' )
+                                          , ''.join( '%02d' % bin for bin in timeBins ), ''.join( '%02d' % per for per in periods )
+                                          , ( ''.join( '%02.0f' % ( 100. * frac ) for frac in timeFracs ) ) if len(timeFracs) < 10\
+                                            else '%dp' % len(timeFracs), '_b' if blindVars else '' )
+parFilePath = 'parVals_%s.par' % model
 pdfValsFilePath = 'pdfVals/pdfVals_%s.par' % jobID
 oscPeriod = 2. * pi / Deltam
 
 print 'pdfAsymmetry: job %s parameters:' % jobID
+print '  model: ' + model
 print '  dataset file: ' + dataSetFilePath
 print '  parameter file: ' + parFilePath
 print '  apply plot weights: %s' % ( 'yes' if applyPlotWeights else 'no' )
@@ -88,6 +92,10 @@ dataSetAsymW.Print()
 from P2VV.Parameterizations.FullPDFs import Bs2Jpsiphi_RunIAnalysis as PdfConfig
 pdfConfig = PdfConfig( RunPeriods = '3fb' )
 
+pdfConfig['lambdaCPParam'] = 'observables_CPVDecay' if model == 'polarDep' else 'lambPhi'
+if pdfConfig['lambdaCPParam'] == 'observables_CPVDecay' :
+    pdfConfig['splitParams']['KKMassCat'] = [ 'av' + par if par == 'f_S' else par for par in pdfConfig['splitParams']['KKMassCat'] ]
+
 timeEffFile2011 = dataPath + 'timeAcceptanceFit_2011.root'
 timeEffFile2012 = dataPath + 'timeAcceptanceFit_2012.root'
 pdfConfig['timeEffHistFiles'].getSettings( [ ( 'runPeriod', 'p2011' ) ] )['file'] = timeEffFile2011
@@ -102,6 +110,13 @@ pdfBuild = PdfBuilder( **pdfConfig )
 pdf = pdfBuild.pdf()
 pdfConfig.readParametersFromFile( filePath = parFilePath )
 pdfConfig.setParametersInPdf(pdf)
+
+# fix of float |lambda|
+if model == 'phi' :
+    ws['lambdaCP'].setVal(1.)
+    ws['lambdaCP'].setConstant(True)
+elif model == 'lamb_phi' :
+    ws['lambdaCP'].setConstant(False)
 
 # create projection data sets
 projSet = [ obs for obs in pdf.ConditionalObservables() ] + [ cat for cat in pdf.indexCat().inputCatList() ]
