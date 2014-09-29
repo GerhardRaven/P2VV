@@ -225,17 +225,17 @@ asymPdfVals = getPdfVals()
 
 valsFile = open( pdfValsFilePath, 'w' )
 for bin in sorted( rangeNames.keys() ) :
-    periodStr = ', '.join( '%.5f - %.5f' % ( ws['time'].getMin(name), ws['time'].getMax(name) ) for name in rangeNames[bin] )
+    periodStr = ', '.join( '%.8f - %.8f' % ( ws['time'].getMin(name), ws['time'].getMax(name) ) for name in rangeNames[bin] )
     valsFile.write( 'bin %d : %s\n' % ( bin, periodStr ) )
-    valsFile.write( '    integrals : %.5g  %.5g' % ( asymPdfIntVals['plus'][bin], asymPdfIntVals['minus'][bin] ) )
+    valsFile.write( '    integrals : %.10g  %.10g' % ( asymPdfIntVals['plus'][bin], asymPdfIntVals['minus'][bin] ) )
     if asymPdfBlindIntVals :
-        valsFile.write( '  %.5g  %.5g' % ( asymPdfBlindIntVals['plus'][bin], asymPdfBlindIntVals['minus'][bin] ) )
+        valsFile.write( '  %.10g  %.10g' % ( asymPdfBlindIntVals['plus'][bin], asymPdfBlindIntVals['minus'][bin] ) )
     valsFile.write('\n')
     for it, frac in enumerate(timeFracs) :
-        valsFile.write( '    %.2f (%.5f) : %.5g  %.5g'\
+        valsFile.write( '    %.2f (%.8f) : %.10g  %.10g'\
                         % ( frac, ( float(bin) + binOffset + frac ) / float(numTimeBinsTot) * oscPeriod
                            , sum( asymPdfVals['plus'][bin][it] ), sum( asymPdfVals['minus'][bin][it] ) ) )
         if asymPdfBlindVals :
-            valsFile.write( '  %.5g  %.5g' % ( sum( asymPdfBlindVals['plus'][bin][it] ), sum( asymPdfBlindVals['minus'][bin][it] ) ) )
+            valsFile.write( '  %.10g  %.10g' % ( sum( asymPdfBlindVals['plus'][bin][it] ), sum( asymPdfBlindVals['minus'][bin][it] ) ) )
         valsFile.write('\n')
 valsFile.close()
