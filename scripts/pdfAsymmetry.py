@@ -183,25 +183,27 @@ if plotComp in [ 'phi', 'even', 'odd', 'S' ] :
     pdfCust = RooCustomizer( __dref__(pdf), plotComp )
     zeroCust = RooConstVar( 'zeroCust', 'zeroCust', 1.e-6 )
 
+    parDict = dict( A0Mag2 = 'A0Mag2', AparMag2 = 'AparMag2', AperpMag2 = 'AperpMag2', f_S = 'f_S' ) if model != 'polarDep' else\
+              dict( A0Mag2 = 'avA02',  AparMag2 = 'avApar2',  AperpMag2 = 'avAperp2',  f_S = 'avf_S' )
     if plotComp == 'even' :
-        AparMag2Cust = RooRealVar( 'AparMag2Cust', 'AparMag2Cust', ws['AparMag2'].getVal(), 0., 1. )
-        pdfCust.replaceArg( ws['AparMag2'], AparMag2Cust )
-        pdfCust.replaceArg( ws['AperpMag2'], zeroCust )
+        AparMag2Cust = RooRealVar( 'AparMag2Cust', 'AparMag2Cust', ws[ parDict['AparMag2'] ].getVal(), 0., 1. )
+        pdfCust.replaceArg( ws[ parDict['AparMag2'] ], AparMag2Cust )
+        pdfCust.replaceArg( ws[ parDict['AperpMag2'] ], zeroCust )
 
     elif plotComp == 'odd' :
-        pdfCust.replaceArg( ws['AparMag2'], zeroCust )
-        pdfCust.replaceArg( ws['A0Mag2'], zeroCust )
+        pdfCust.replaceArg( ws[ parDict['AparMag2'] ], zeroCust )
+        pdfCust.replaceArg( ws[ parDict['A0Mag2'] ], zeroCust )
 
     if plotComp == 'S' :
-        pdfCust.replaceArg( ws['AparMag2'], zeroCust )
-        pdfCust.replaceArg( ws['AperpMag2'], zeroCust )
-        pdfCust.replaceArg( ws['A0Mag2'], zeroCust )
+        pdfCust.replaceArg( ws[ parDict['AparMag2'] ], zeroCust )
+        pdfCust.replaceArg( ws[ parDict['AperpMag2'] ], zeroCust )
+        pdfCust.replaceArg( ws[ parDict['A0Mag2'] ], zeroCust )
 
     else :
         if pdfConfig['paramKKMass'] :
-            fSNames = [ '%s_bin%d' % ( 'f_S', bin ) for bin in range( pdfBuild['KKMassBinning'].numBins() ) ]
+            fSNames = [ '%s_bin%d' % ( parDict['f_S'], bin ) for bin in range( pdfBuild['KKMassBinning'].numBins() ) ]
         else :
-            fSNames = ['f_S']
+            fSNames = [ parDict['f_S'] ]
         for name in fSNames :
             pdfCust.replaceArg( ws[name], zeroCust )
 
@@ -209,6 +211,7 @@ if plotComp in [ 'phi', 'even', 'odd', 'S' ] :
 
 else :
     func = pdf
+
 print 'pdfAsymmetry: function:'
 func.Print()
 
