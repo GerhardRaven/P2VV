@@ -1,20 +1,22 @@
-createDataSets    = True
+model             = 'lamb_phi'
+createDataSets    = False
 plotData          = True
 plotPDFInt        = False
-plotPDF           = False
+plotPDF           = True
 blind             = False
 applyDilWeights   = True
 applyAngWeights   = '' # 'para_perp'
 dilutionCut       = 0.01
 dataPath          = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
-plotsFilePath     = 'asymPlot_blindBins.pdf' # 'asymPlot_08bins_m1p590_f0050_b.ps' # 'asymPlot_08bins_f0050_b.ps' # 'asymPlot_04bins_f00255075_b.ps'
-plotsROOTFilePath = 'asymPlot_blindBins.root'
+plotsFilePath     = 'asymPlot_%s_realBins_points.pdf'  % model # 'asymPlot_08bins_m1p590_f0050_b.ps' # 'asymPlot_08bins_f0050_b.ps' # 'asymPlot_04bins_f00255075_b.ps'
+plotsROOTFilePath = 'asymPlot_%s_realBins_points.root' % model
 dataSetName       = 'JpsiKK_sigSWeight'
 dataSetFileIn     = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140309.root'
 dataSetFileOut    = 'asymmetryData.root'
-#pdfFilePaths      = 'pdfVals/pdfVals_08bins_m3p234_b*_p*_f0050_b.par'
-pdfFilePaths      = 'pdfVals/pdfVals_08bins_m1p616_b*_p*_f0050_b.par'
-timeFracs         = [ '0.00', '0.50' ] # [ '0.00', '0.50' ] # [ '0.00', '0.25', '0.50', '0.75' ]
+pdfFilePaths      = 'pdfVals/pdfVals_%s_08bins_6p760_b*_p*_f100p_b.par' % model
+#pdfFilePaths      = 'pdfVals/pdfVals_%s_08bins_m3p234_b*_p*_f100p_b.par' % model
+#pdfFilePaths      = 'pdfVals/pdfVals_08bins_m1p616_b*_p*_f0050_b.par'
+timeFracs         = [ '%.2f' % ( float(it) / 100. ) for it in range(100) ] # [ '0.00', '0.50' ] # [ '0.00', '0.25', '0.50', '0.75' ]
 labelText = '' # 'LHCb'
 if blind :
     addText = 'blind: C #approx +0.04; S #approx -0.07'
@@ -22,15 +24,26 @@ else :
     addText = ''
 
 from math import pi, sqrt, sin, cos, atan2
-numTimeBins = 8 # 4
-Deltam      = 17.723
-oscPeriod   = 2. * pi / Deltam
-phis        = +0.073 #-0.057 #+0.073
-lamb        = 0.963
-AperpSq     = 0.251
-fS          = ( 2443. * 0.426 + 9885. * 0.0587 + 34190. * 0.0096 + 28012. * 0.0094 + 12428. * 0.0482 + 7676. * 0.1920 ) / 94634.
-binOffset   = -0.5 - atan2( 1. - lamb**2, 2. * ( (1. - fS) * (1. - 2. * AperpSq) - fS ) * lamb * sin(phis) ) / 2. / pi * float(numTimeBins)
+numTimeBins = 8
 asymMax     = 0.07
+#Deltam      = 17.723
+Deltam      = 17.69654
+oscPeriod   = 2. * pi / Deltam
+
+#phis        = -0.057 #+0.073
+#lamb        = 0.963
+#AperpSq     = 0.251
+#fS          = ( 2443. * 0.426 + 9885. * 0.0587 + 34190. * 0.0096 + 28012. * 0.0094 + 12428. * 0.0482 + 7676. * 0.1920 ) / 94634.
+#binOffset   = -0.5 - atan2( 1. - lamb**2, 2. * ( (1. - fS) * (1. - 2. * AperpSq) - fS ) * lamb * sin(phis) ) / 2. / pi * float(numTimeBins)
+#periodShift = 0
+
+binWidth = 2. * pi / Deltam / float(numTimeBins)
+binOffset = 0.3 / binWidth
+periodShift = -1
+
+# check period shift
+assert type(periodShift) == int
+periodShift = float(periodShift)
 
 # function to set graph attributes
 def setGraphAtts( graph, colour, markerSize, minimum, maximum ) :
@@ -44,7 +57,8 @@ def setGraphAtts( graph, colour, markerSize, minimum, maximum ) :
     graph.GetYaxis().SetTitle('B/#bar{B}-tag asymmetry')
     graph.GetXaxis().SetTitleOffset(1.2)
     graph.GetYaxis().SetTitleOffset(1.2)
-    graph.GetXaxis().SetLimits( binOffset / float(numTimeBins) * oscPeriod, ( 1. + binOffset / float(numTimeBins) ) * oscPeriod )
+    graph.GetXaxis().SetLimits( ( periodShift + binOffset / float(numTimeBins) ) * oscPeriod
+                               , ( periodShift + ( 1. + binOffset / float(numTimeBins) ) ) * oscPeriod )
     graph.SetMinimum(minimum)
     graph.SetMaximum(maximum)
     graph.GetXaxis().SetNdivisions( 10, 5, 0, True )
@@ -181,11 +195,12 @@ else :
 
 # create arrays of time bins
 from array import array
-timeArr = array( 'd', [ ( float(it) + binOffset + 0.5 ) / float(numTimeBins) * oscPeriod for it in range( numTimeBins + 1 ) ] )
+timeArr = array( 'd', [ ( periodShift + ( float(it) + binOffset + 0.5 ) / float(numTimeBins) ) * oscPeriod\
+                       for it in range( numTimeBins + 1 ) ] )
 timeErrArr = array( 'd', [ 0.5 / float(numTimeBins) * oscPeriod ] * ( numTimeBins + 1 ) )
-timeArrPdf = array( 'd', [ ( float(it) + binOffset + float(frac) ) / float(numTimeBins) * oscPeriod\
+timeArrPdf = array( 'd', [ ( periodShift + ( float(it) + binOffset + float(frac) ) / float(numTimeBins) ) * oscPeriod\
                            for it in range( numTimeBins + 1 ) for frac in timeFracs ]\
-                         + [ ( 1. + ( 1. + binOffset + float( timeFracs[0] ) ) / float(numTimeBins) ) * oscPeriod ] )
+                         + [ ( periodShift + 1. + ( 1. + binOffset + float( timeFracs[0] ) ) / float(numTimeBins) ) * oscPeriod ] )
 timeErrArrPdf = array( 'd', [ 0. ] * len(timeArrPdf) )
 
 pdfBlindVals    = { }
@@ -254,6 +269,7 @@ if plotPDF :
     for it in range( len(timeFracs) + 1 ) : pdfArr.append( pdfArr[it] )
     pdfErrArr = array( 'd', [ 0. ] * len(pdfArr) )
     pdfGraph = Graph( len(timeArrPdf), timeArrPdf, pdfArr, timeErrArrPdf, pdfErrArr )
+    pdfGraph.SetName('pdf')
 
 pdfIntGraph = None
 if plotPDFInt :
@@ -267,6 +283,7 @@ if plotPDFInt :
     pdfIntArr.append( pdfIntArr[0] )
     pdfIntErrArr = array( 'd', [ 0. ] * len(pdfIntArr) )
     pdfIntGraph = Graph( len(timeArr), timeArr, pdfIntArr, timeErrArr, pdfIntErrArr )
+    pdfIntGraph.SetName('pdfInt')
 
 dataGraph = None
 if plotData :
@@ -307,6 +324,7 @@ if plotData :
     dataArr.append( dataArr[0] )
     dataErrArr.append( dataErrArr[0] )
     dataGraph = Graph( len(timeArr), timeArr, dataArr, timeErrArr, dataErrArr )
+    dataGraph.SetName('data')
     if not asymMax :
         asymMax = 1.1 * max( max( abs( val + err ), abs( val - err ) ) for val, err in zip( dataArr, dataErrArr ) )
 
@@ -314,10 +332,11 @@ if plotData :
 if not asymMax : asymMax = 1.
 from ROOT import kBlack, kBlue, kRed
 dummyGraph = Graph( numTimeBins + 1 )
+dummyGraph.SetName('dummy')
 dummyGraph.setAtts( kBlack, 0., -asymMax, +asymMax )
 if dataGraph : dataGraph.setAtts( kBlack, 1., -asymMax, +asymMax )
 if pdfIntGraph : pdfIntGraph.setAtts( kBlue, 1., -asymMax, +asymMax )
-if pdfGraph : pdfGraph.setAtts( kRed if pdfIntGraph else kBlue, 1., -asymMax, +asymMax )
+if pdfGraph : pdfGraph.setAtts( kRed if pdfIntGraph else kBlue, 0.1, -asymMax, +asymMax )
 
 # create line
 from ROOT import TLine, kDotted
@@ -351,7 +370,7 @@ horLine = dotLine.DrawLine( tMin, ASumW, tMax, ASumW )
 #vertLine1 = dotLine.DrawLine( oscPeriod, dummyGraph.GetMinimum(), oscPeriod, dummyGraph.GetMaximum() )
 if dataGraph : dataGraph.Draw('P SAMES')
 if pdfIntGraph : pdfIntGraph.Draw('P SAMES')
-if pdfGraph : pdfGraph.Draw('C SAMES')
+if pdfGraph : pdfGraph.Draw('L SAMES')
 if labelText : label.DrawLatex( tMin + 0.77 * ( tMax - tMin ), 0.76 * asymMax, labelText )
 if addText : text.DrawLatex( 0.5 * ( tMax + tMin ), -0.7 * asymMax, addText )
 canv.Print(plotsFilePath)
