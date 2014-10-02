@@ -1,4 +1,5 @@
 model            = 'lamb_phi'
+plotComp         = ''
 dataPath         = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
 dataSetFilePath  = 'asymmetryData.root'
 applyPlotWeights = True
@@ -16,6 +17,7 @@ if len(sys.argv) > 1 :
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument( 'model' )
+    parser.add_argument( 'plotComp' )
     parser.add_argument( 'numTimeBinsTot', type = int )
     parser.add_argument( 'startBin',       type = int )
     parser.add_argument( 'numTimeBins',    type = int )
@@ -27,6 +29,7 @@ if len(sys.argv) > 1 :
 
     args = parser.parse_args()
     model = args.model
+    plotComp = args.plotComp
     numTimeBinsTot = args.numTimeBinsTot
     timeBins = [ args.startBin + it for it in range(args.numTimeBins) ]
     periods = [ args.startPeriod + it for it in range(args.numPeriods) ]
@@ -34,8 +37,10 @@ if len(sys.argv) > 1 :
     Deltam = args.Deltam
     timeFracs = [ val for val in args.timeFracs ]
 
+assert plotComp in [ '', 'total', 'phi', 'even', 'odd', 'S' ]
 blindVars = [ 'phiCP', 'dGamma' ] if model != 'polarDep' else [ 'dGamma', 'phiCPAv', 'phiCPRel_Apar', 'phiCPRel_AperpApar', 'phiCPRel_AS' ]
-jobID = '%s_%02dbins_%s_b%s_p%s_f%s%s' % ( model, numTimeBinsTot, ( '%.3f' % binOffset ).replace( '-', 'm' ).replace( '.', 'p' )
+jobID = '%s_%02dbins_%s_b%s_p%s_f%s%s' % ( model + ( '_' + plotComp if plotComp else '' ), numTimeBinsTot
+                                          , ( '%.3f' % binOffset ).replace( '-', 'm' ).replace( '.', 'p' )
                                           , ''.join( '%02d' % bin for bin in timeBins ), ''.join( '%02d' % per for per in periods )
                                           , ( ''.join( '%02.0f' % ( 100. * frac ) for frac in timeFracs ) ) if len(timeFracs) < 10\
                                             else '%dp' % len(timeFracs), '_b' if blindVars else '' )
@@ -45,6 +50,7 @@ oscPeriod = 2. * pi / Deltam
 
 print 'pdfAsymmetry: job %s parameters:' % jobID
 print '  model: ' + model
+print '  plot component: ' + plotComp
 print '  dataset file: ' + dataSetFilePath
 print '  parameter file: ' + parFilePath
 print '  apply plot weights: %s' % ( 'yes' if applyPlotWeights else 'no' )
@@ -110,6 +116,8 @@ pdfBuild = PdfBuilder( **pdfConfig )
 pdf = pdfBuild.pdf()
 pdfConfig.readParametersFromFile( filePath = parFilePath )
 pdfConfig.setParametersInPdf(pdf)
+print 'pdfAsymmetry: PDF:'
+pdf.Print()
 
 # fix of float |lambda|
 if model == 'phi' :
@@ -168,6 +176,42 @@ for per in periods :
 #      print '[%s]' % ', '.join( '%.3f' % val for val in vals ),
 #  print
 
+# create function to plot
+from P2VV.RooFitWrappers import __dref__
+if plotComp in [ 'phi', 'even', 'odd', 'S' ] :
+    from ROOT import RooRealVar, RooConstVar, RooCustomizer
+    pdfCust = RooCustomizer( __dref__(pdf), plotComp )
+    zeroCust = RooConstVar( 'zeroCust', 'zeroCust', 1.e-6 )
+
+    if plotComp == 'even' :
+        AparMag2Cust = RooRealVar( 'AparMag2Cust', 'AparMag2Cust', ws['AparMag2'].getVal(), 0., 1. )
+        pdfCust.replaceArg( ws['AparMag2'], AparMag2Cust )
+        pdfCust.replaceArg( ws['AperpMag2'], zeroCust )
+
+    elif plotComp == 'odd' :
+        pdfCust.replaceArg( ws['AparMag2'], zeroCust )
+        pdfCust.replaceArg( ws['A0Mag2'], zeroCust )
+
+    if plotComp == 'S' :
+        pdfCust.replaceArg( ws['AparMag2'], zeroCust )
+        pdfCust.replaceArg( ws['AperpMag2'], zeroCust )
+        pdfCust.replaceArg( ws['A0Mag2'], zeroCust )
+
+    else :
+        if pdfConfig['paramKKMass'] :
+            fSNames = [ '%s_bin%d' % ( 'f_S', bin ) for bin in range( pdfBuild['KKMassBinning'].numBins() ) ]
+        else :
+            fSNames = ['f_S']
+        for name in fSNames :
+            pdfCust.replaceArg( ws[name], zeroCust )
+
+    func = pdfCust.build()
+
+else :
+    func = pdf
+print 'pdfAsymmetry: function:'
+func.Print()
+
 # create PDF integrals in bins for plus and minus categories
 emptySet = RooArgSet()
 timeSet  = RooArgSet( ws['time'] )
@@ -175,18 +219,20 @@ angleSet = RooArgSet( ws[varName] for varName in [ 'helcosthetaK', 'helcosthetaL
 intSet   = RooArgSet(timeSet)
 intSet.add(angleSet)
 from ROOT import RooExplicitNormPdf
-asymPdfs = dict(  plus  = RooExplicitNormPdf( 'pdfPlus', 'pdfPlus', timeSet, angleSet, pdf._var, pdf._var
+asymPdfs = dict(  plus  = RooExplicitNormPdf( 'pdfPlus', 'pdfPlus', timeSet, angleSet, __dref__(func), __dref__(pdf)
                                              , projDataSets['plus'].sumEntries() / dataSetAsymW.sumEntries(), projDataSets['plus'] )
-                , minus = RooExplicitNormPdf( 'pdfMinus', 'pdfMinus', timeSet, angleSet, pdf._var, pdf._var
+                , minus = RooExplicitNormPdf( 'pdfMinus', 'pdfMinus', timeSet, angleSet, __dref__(func), __dref__(pdf)
                                              , projDataSets['minus'].sumEntries() / dataSetAsymW.sumEntries(), projDataSets['minus'] )
                )
-asymPdfInts = dict(  plus  = dict( [ ( bin, RooExplicitNormPdf( 'pdfPlus%02d' % bin, 'pdfPlus%02d' % bin, emptySet, intSet, pdf._var
-                                                               , pdf._var, projDataSets['plus'].sumEntries() / dataSetAsymW.sumEntries()
+asymPdfInts = dict(  plus  = dict( [ ( bin, RooExplicitNormPdf( 'pdfPlus%02d' % bin, 'pdfPlus%02d' % bin, emptySet, intSet
+                                                               , __dref__(pdf), __dref__(pdf)
+                                                               , projDataSets['plus'].sumEntries() / dataSetAsymW.sumEntries()
                                                                , projDataSets['plus'], ','.join( name for name in rangeNames[bin] )
                                                               ) ) for bin in sorted( rangeNames.keys() )
                                  ] )
-                   , minus = dict( [ ( bin, RooExplicitNormPdf( 'pdfMinus%02d' % bin, 'pdfMinus%02d' % bin, emptySet, intSet, pdf._var
-                                                               , pdf._var, projDataSets['minus'].sumEntries() / dataSetAsymW.sumEntries()
+                   , minus = dict( [ ( bin, RooExplicitNormPdf( 'pdfMinus%02d' % bin, 'pdfMinus%02d' % bin, emptySet, intSet
+                                                               , __dref__(pdf), __dref__(pdf)
+                                                               , projDataSets['minus'].sumEntries() / dataSetAsymW.sumEntries()
                                                                , projDataSets['minus'], ','.join( name for name in rangeNames[bin] )
                                                               ) ) for bin in sorted( rangeNames.keys() )
                                  ] )
