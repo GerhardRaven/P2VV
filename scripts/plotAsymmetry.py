@@ -1,4 +1,5 @@
-model             = 'lamb_phi'
+model             = 'polarDep'
+plotComp          = ''
 createDataSets    = False
 plotData          = True
 plotPDFInt        = False
@@ -8,12 +9,12 @@ applyDilWeights   = True
 applyAngWeights   = '' # 'para_perp'
 dilutionCut       = 0.01
 dataPath          = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/'
-plotsFilePath     = 'asymPlot_%s_realBins_points.pdf'  % model # 'asymPlot_08bins_m1p590_f0050_b.ps' # 'asymPlot_08bins_f0050_b.ps' # 'asymPlot_04bins_f00255075_b.ps'
-plotsROOTFilePath = 'asymPlot_%s_realBins_points.root' % model
+plotsFilePath     = 'asymPlot_%s%s_realBins_points.pdf'  % ( model, '_' + plotComp if plotComp else '' ) # 'asymPlot_08bins_m1p590_f0050_b.ps' # 'asymPlot_08bins_f0050_b.ps' # 'asymPlot_04bins_f00255075_b.ps'
+plotsROOTFilePath = 'asymPlot_%s%s_realBins_points.root' % ( model, '_' + plotComp if plotComp else '' )
 dataSetName       = 'JpsiKK_sigSWeight'
 dataSetFileIn     = dataPath + 'P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_HLT2B_20140309.root'
 dataSetFileOut    = 'asymmetryData.root'
-pdfFilePaths      = 'pdfVals/pdfVals_%s_08bins_6p760_b*_p*_f100p_b.par' % model
+pdfFilePaths      = 'pdfVals/pdfVals_%s%s_08bins_6p760_b*_p*_f100p_b.par'
 #pdfFilePaths      = 'pdfVals/pdfVals_%s_08bins_m3p234_b*_p*_f100p_b.par' % model
 #pdfFilePaths      = 'pdfVals/pdfVals_08bins_m1p616_b*_p*_f0050_b.par'
 timeFracs         = [ '%.2f' % ( float(it) / 100. ) for it in range(100) ] # [ '0.00', '0.50' ] # [ '0.00', '0.25', '0.50', '0.75' ]
@@ -40,6 +41,9 @@ oscPeriod   = 2. * pi / Deltam
 binWidth = 2. * pi / Deltam / float(numTimeBins)
 binOffset = 0.3 / binWidth
 periodShift = -1
+
+# check plot component
+assert plotComp in [ '', 'even', 'odd', 'S' ]
 
 # check period shift
 assert type(periodShift) == int
@@ -206,66 +210,77 @@ timeErrArrPdf = array( 'd', [ 0. ] * len(timeArrPdf) )
 pdfBlindVals    = { }
 pdfIntBlindVals = { }
 if blind or plotPDFInt or plotPDF :
-    # read files with PDF values
-    from glob import glob
-    filePaths = glob(pdfFilePaths)
-    pdfIntVals = dict( plus = [ 0. ] * numTimeBins, minus = [ 0. ] * numTimeBins )
-    pdfIntBlindVals = dict( plus = [ 0. ] * numTimeBins, minus = [ 0. ] * numTimeBins )
-    pdfVals = dict(  plus  = [ dict( ( frac, 0. ) for frac in timeFracs ) for bin in range(numTimeBins) ]
-                   , minus = [ dict( ( frac, 0. ) for frac in timeFracs ) for bin in range(numTimeBins) ]
-                  )
-    pdfBlindVals = dict(  plus  = [ dict( ( frac, 0. ) for frac in timeFracs ) for bin in range(numTimeBins) ]
+    # function to read files with PDF values
+    def readPDFValues(filePathsString) :
+        from glob import glob
+        filePaths = glob(filePathsString)
+        _pdfIntVals = dict( plus = [ 0. ] * numTimeBins, minus = [ 0. ] * numTimeBins )
+        _pdfIntBlindVals = dict( plus = [ 0. ] * numTimeBins, minus = [ 0. ] * numTimeBins )
+        _pdfVals = dict(  plus  = [ dict( ( frac, 0. ) for frac in timeFracs ) for bin in range(numTimeBins) ]
                         , minus = [ dict( ( frac, 0. ) for frac in timeFracs ) for bin in range(numTimeBins) ]
                        )
-    fileCount = 0
-    for path in filePaths :
-        valFile = open(path)
-        bin = -1
-        plusIntBlindVal = None
-        minIntBlindVal  = None
-        readBlindPdf    = False
-        while True :
-            line = valFile.readline().split()
-            if not line : break
-            if bin < 0 :
-                assert line[0] == 'bin'
-                bin = int( line[1] )
-            elif line[0] == 'integrals' :
-                plusIntVal = float( line[2] )
-                minIntVal  = float( line[3] )
-                if len(line) > 4 :
-                    plusIntBlindVal = float( line[4] )
-                    minIntBlindVal  = float( line[5] )
-            else :
-                pdfVals['plus'][bin][ line[0] ]  += float( line[3] )
-                pdfVals['minus'][bin][ line[0] ] += float( line[4] )
-                if len(line) > 5 :
-                    readBlindPdf = True
-                    pdfBlindVals['plus'][bin][ line[0] ]  += float( line[5] )
-                    pdfBlindVals['minus'][bin][ line[0] ] += float( line[6] )
+        _pdfBlindVals = dict(  plus  = [ dict( ( frac, 0. ) for frac in timeFracs ) for bin in range(numTimeBins) ]
+                             , minus = [ dict( ( frac, 0. ) for frac in timeFracs ) for bin in range(numTimeBins) ]
+                            )
+        fileCount = 0
+        for path in filePaths :
+            valFile = open(path)
+            bin = -1
+            plusIntBlindVal = None
+            minIntBlindVal  = None
+            readBlindPdf    = False
+            while True :
+                line = valFile.readline().split()
+                if not line : break
+                if bin < 0 :
+                    assert line[0] == 'bin'
+                    bin = int( line[1] )
+                elif line[0] == 'integrals' :
+                    plusIntVal = float( line[2] )
+                    minIntVal  = float( line[3] )
+                    if len(line) > 4 :
+                        plusIntBlindVal = float( line[4] )
+                        minIntBlindVal  = float( line[5] )
+                else :
+                    _pdfVals['plus'][bin][ line[0] ]  += float( line[3] )
+                    _pdfVals['minus'][bin][ line[0] ] += float( line[4] )
+                    if len(line) > 5 :
+                        readBlindPdf = True
+                        _pdfBlindVals['plus'][bin][ line[0] ]  += float( line[5] )
+                        _pdfBlindVals['minus'][bin][ line[0] ] += float( line[6] )
 
-        pdfIntVals['plus'][bin]  += plusIntVal
-        pdfIntVals['minus'][bin] += minIntVal
-        if blind or readBlindPdf :
-            assert plusIntBlindVal != None and minIntBlindVal != None and readBlindPdf
-            pdfIntBlindVals['plus'][bin]  += plusIntBlindVal
-            pdfIntBlindVals['minus'][bin] += minIntBlindVal
+            _pdfIntVals['plus'][bin]  += plusIntVal
+            _pdfIntVals['minus'][bin] += minIntVal
+            if blind or readBlindPdf :
+                assert plusIntBlindVal != None and minIntBlindVal != None and readBlindPdf
+                _pdfIntBlindVals['plus'][bin]  += plusIntBlindVal
+                _pdfIntBlindVals['minus'][bin] += minIntBlindVal
 
-        valFile.close()
-        fileCount += 1
-    print 'plotAsymmetry: read data from %d PDF values files' % fileCount
+            valFile.close()
+            fileCount += 1
+        print 'plotAsymmetry: read data from %d PDF values files (%s)' % ( fileCount, filePathsString )
+        return ( _pdfIntVals, _pdfIntBlindVals, _pdfVals, _pdfBlindVals )
 
+    ( pdfIntVals, pdfIntBlindVals, pdfVals, pdfBlindVals ) = readPDFValues( pdfFilePaths % ( model, '_' + plotComp if plotComp else '' ) )
+    if plotComp :
+        ( pdfIntValsTot, pdfIntBlindValsTot, pdfValsTot, pdfBlindValsTot ) = readPDFValues( pdfFilePaths % ( model, '' ) )
+
+from ROOT import gStyle
 from P2VV.Load import LHCbStyle
+gStyle.SetColorModelPS(1)
 pdfGraph = None
 if plotPDF :
     # plot PDF asymmetry in time bins
     if blind or not pdfBlindVals :
         vals = pdfVals
+        valsTot = pdfValsTot if plotComp else pdfVals
     else :
         vals = pdfBlindVals
+        valsTot = pdfBlindValsTot if plotComp else pdfBlindVals
         
-    pdfArr = array( 'd', [ 2. * pVals[frac] / ( pVals[frac] + mVals[frac] ) - 1.\
-                           for pVals, mVals in zip( vals['plus'], vals['minus'] ) for frac in timeFracs ] )
+    pdfArr = array( 'd', [ ( pVals[frac] - mVals[frac] ) / ( pValsTot[frac] + mValsTot[frac] )\
+                           for pVals, mVals, pValsTot, mValsTot in zip( vals['plus'], vals['minus'], valsTot['plus'], valsTot['minus'] )\
+                           for frac in timeFracs ] )
     for it in range( len(timeFracs) + 1 ) : pdfArr.append( pdfArr[it] )
     pdfErrArr = array( 'd', [ 0. ] * len(pdfArr) )
     pdfGraph = Graph( len(timeArrPdf), timeArrPdf, pdfArr, timeErrArrPdf, pdfErrArr )

@@ -1,6 +1,12 @@
-plotFilePath = 'asymPlot_realBins_points.pdf'
-ROOTFilePaths = [ 'asymPlot_%s_realBins_points.root' % model for model in [ 'polarDep', 'lamb_phi', 'phi' ] ]
-minMax = ( -0.07, +0.07 )
+mode = ''
+if mode == 'polarizations' :
+    plotFilePath = 'asymPlot_polarDep_realBins_points_polar.pdf'
+    ROOTFilePaths = [ 'asymPlot_polarDep%s_realBins_points.root' % model for model in [ '', '_even', '_odd', '_S' ] ]
+    minMax = ( -0.07, +0.07 )
+else :
+    plotFilePath = 'asymPlot_realBins_points.pdf'
+    ROOTFilePaths = [ 'asymPlot_%s_realBins_points.root' % model for model in [ 'polarDep', 'lamb_phi', 'phi' ] ]
+    minMax = ( -0.07, +0.07 )
 drawLabel = True
 
 from ROOT import gStyle
@@ -35,9 +41,9 @@ dummyGraph = None
 dataGraph = None
 pdfGraphs = [ ]
 LHCbLabel = None
-from ROOT import TFile, TCanvas, TGraphErrors, TLine, TLatex, kBlack, kBlue, kRed, kGreen, kSolid
-lineColors = [ kBlue, kGreen + 3, kRed ]
-lineStyles = [ kSolid, 5, 7 ]
+from ROOT import TFile, TCanvas, TGraphErrors, TLine, TLatex, kBlack, kBlue, kRed, kGreen, kMagenta, kSolid
+lineColors = [ kBlue, kRed, kGreen + 3, kMagenta + 3 ] if mode == 'polarizations' else [ kBlue, kGreen + 3, kRed ]
+lineStyles = [ kSolid, 9, 7, 5 ] if mode == 'polarizations' else [ kSolid, 5, 7 ]
 for it, path in enumerate(ROOTFilePaths) :
     plot = None
     ROOTFile = TFile.Open(path)
@@ -67,5 +73,5 @@ canv.SetTopMargin(0.05)
 dummyGraph.Draw('AP')
 zeroLine.Draw()
 dataGraph.Draw('P SAMES')
-for graph in pdfGraphs : graph.Draw('L SAMES')
+for graph in reversed(pdfGraphs) : graph.Draw('L SAMES')
 canv.Print(plotFilePath)
