@@ -178,8 +178,9 @@ class TaggingParams ( _util_parse_mixin, _util_extConstraints_mixin, _util_condi
         if self._numTagCats[0] == 0 : self._ADilWTags = ( [ ], self._ADilWTags )
         if self._numTagCats[0] == 0 : self._CEvenOdds = [ self._CEvenOdds ]
 
-        self._tagCatCoefs = kwargs.pop('TagCatCoefs')
-        if self._numTagCats[0] == 0 : self._tagCatCoefs = [ self._tagCatCoefs ]
+        if self._numTagCats[0] > 0 or self._numTagCats[1] > 1 :
+            self._tagCatCoefs = kwargs.pop('TagCatCoefs')
+            if self._numTagCats[0] == 0 : self._tagCatCoefs = [ self._tagCatCoefs ]
 
         # cache integrals as a function of observables
         for dils in self._dilutions + self._ADilWTags :
