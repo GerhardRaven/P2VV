@@ -1,20 +1,20 @@
 plotVar = 'timeLin'
 ROOTFilePaths = [ 'plots/Reco14/projPlot_%s_%s.root' % ( plotVar, comp ) for comp in [ 'total', 'even', 'odd', 'S' ] ]
-plotFilePath = 'plots/Reco14/projPlot_%s.pdf' % plotVar
+plotFilePath = 'plots/Reco14/projPlot_%s_LHCb.pdf' % plotVar
 minMax = dict(  timeLin = ( 0.,    6000. )
               , timeLog = ( 1.e-1, 2.e4  )
               , ctk     = ( 0.,    3500. )
               , ctl     = ( 0.,    3500. )
               , phi     = ( 0.,    3500. )
              )
-drawLabel = False
+drawLabel = True
 
 from ROOT import gStyle
 from P2VV.Load import LHCbStyle
 gStyle.SetLineStyleString( 5, ' 40 20 10 20' )
 gStyle.SetLineStyleString( 7, ' 40 20'       )
 gStyle.SetLineStyleString( 9, ' 100 20'      )
-gStyle.SetColorModelPS(1)
+gStyle.SetColorModelPS(0)
 
 projPlot = None
 LHCbLabel = None
@@ -84,13 +84,16 @@ plotPad.SetTopMargin(0.06)
 plotPad.Draw()
 canv1.cd(1)
 
+projPlot.SetLabelSize( 0.92 / 0.68 * 0.060, 'y' )
+projPlot.SetTitleSize( 0.92 / 0.68 * 0.072, 'y' )
 projPlot.SetLabelOffset( 1.1,  'x' )
 projPlot.SetLabelOffset( 0.01, 'y' )
 projPlot.SetTitleOffset( 0.7 if plotVar == 'timeLog' else 0.8,  'y' )
 projPlot.Draw()
 if drawLabel :
+    LHCbLabel.SetTextSize( 0.92 / 0.68 * 0.072 )
     LHCbLabel.SetX( 0.93 * LHCbLabel.GetX() )
-    LHCbLabel.SetY( 0.96 * LHCbLabel.GetY() )
+    LHCbLabel.SetY( 0.97 * LHCbLabel.GetY() )
     LHCbLabel.Draw()
 
 canv1.cd()
@@ -98,18 +101,18 @@ residPad = TPad( 'residPad', 'residPad', 0., 0., 1., 0.32 )
 residPad.SetNumber(2)
 residPad.SetLeftMargin(0.18)
 residPad.SetRightMargin(0.12)
-residPad.SetBottomMargin(0.47)
-residPad.SetTopMargin(0.05)
+residPad.SetBottomMargin(0.54)
+residPad.SetTopMargin(0.06)
 residPad.Draw()
 canv1.cd(2)
 
 residFrame.GetYaxis().SetNdivisions( 4, 5, 0 )
-residFrame.SetLabelSize( 68. / 32. * 0.06,  'x' )
-residFrame.SetLabelSize( 68. / 32. * 0.06,  'y' )
-residFrame.SetTitleSize( 68. / 32. * 0.072, 'x' )
+residFrame.SetLabelSize( 0.92 / 0.32 * 0.060, 'x' )
+residFrame.SetLabelSize( 0.92 / 0.32 * 0.060, 'y' )
+residFrame.SetTitleSize( 0.92 / 0.32 * 0.072, 'x' )
 residFrame.SetLabelOffset( 0.06, 'x' )
 residFrame.SetLabelOffset( 0.01, 'y' )
-residFrame.SetTitleOffset( 1.3, 'x' )
+residFrame.SetTitleOffset( 1.1, 'x' )
 residFrame.Draw()
 
 canv1.Print( plotFilePath + ')' )

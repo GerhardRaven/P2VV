@@ -1,11 +1,12 @@
-plotsFilePathIn  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_20140309_plots.root'
-plotsFilePathOut = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_20140309_mass_adjPaper.pdf'
+#plotsFilePathIn  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_20140309_plots.root'
+#plotsFilePathOut = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_20140309_mass_adjPaper.pdf'
+plotsFilePathIn  = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/peakBkg/P2VVDataSets20112012Reco14_noMC_I2Mass_6KKMassBins_2TagCats_plots.root'
+plotsFilePathOut = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/peakBkg/P2VVDataSets20112012Reco14_noMC_I2Mass_6KKMassBins_2TagCats_mass_adjPaper.pdf'
 plotLabelText = 'LHCb' # 'LHCb'
 minMax = [ ( 5.e2, 2.e4 ), ( 0., 16000. ) ]
 minMaxResid = [ ( -5., 5. ), ( -5., 5. ) ]
 div = [ ( 5, 5, 0 ), ( 5, 5, 0 ) ]
 divResid = [ ( 4, 5, 0 ), ( 4, 5, 0 ) ]
-yTitleOffs = [ 1.00, 1.25 ]
 
 from ROOT import gStyle
 from P2VV.Load import LHCbStyle
@@ -18,7 +19,6 @@ if plotLabelText :
     from ROOT import TLatex
     plotLabel = TLatex()
     plotLabel.SetTextAlign(32)
-    plotLabel.SetTextSize(0.072)
 
 from ROOT import TFile, TPad, TCanvas
 plotsFile = TFile.Open(plotsFilePathIn)
@@ -52,61 +52,57 @@ for plotIt, name in enumerate( [ 'mass', 'mass_signal', 'mass_left', 'mass_right
     plot.SetLabelOffset( 0.03, 'x' )
     plot.SetLabelOffset( 0.01, 'y' )
     plot.SetTitleOffset( 1.15, 'x' )
-    if len(yTitleOffs) > plotIt :
-        plot.SetTitleOffset( yTitleOffs[plotIt], 'y' )
-    else :
-        plot.SetTitleOffset( 1.0 if plotIt == 0 else 1.15, 'y' )
+    plot.SetTitleOffset( 1.0 if plotIt == 0 else 1.3, 'y' )
     #plot.GetYaxis().SetMoreLogLabels()
     plot.Draw()
 
     if plotLabelText and plotIt < 2 :
-        plotLabel.DrawLatexNDC( 0.87, 0.85, plotLabelText )
+        plotLabel.SetTextSize(0.072)
+        plotLabel.DrawLatexNDC( 0.88, 0.85, plotLabelText )
 
     canv.Print(plotsFilePathOut)
 
     # draw mass plot
     canv = TCanvas( name + '_resid' )
+    plot.SetLabelSize( 0.92 / 0.68 * 0.060, 'y' )
+    plot.SetTitleSize( 0.92 / 0.68 * 0.072, 'y' )
     plot.SetLabelOffset( 1.1, 'x' )
     plot.SetLabelOffset( 0.01, 'y' )
-    if len(yTitleOffs) > plotIt :
-        plot.SetTitleOffset( 0.8 * yTitleOffs[plotIt], 'y' )
-    else :
-        plot.SetTitleOffset( 0.8 * 1.0 if plotIt == 0 else 0.8 * 1.15, 'y' )
+    plot.SetTitleOffset( 0.7 if plotIt == 0 else 0.9, 'y' )
     canv.cd()
     plotName = name + '_plot'
     plotPad = TPad( plotName, plotName, 0, 0.32, 1, 1 )
     if plotIt == 0 : plotPad.SetLogy(1)
     plotPad.SetNumber(1)
     plotPad.SetLeftMargin(0.18)
-    plotPad.SetRightMargin(0.10)
+    plotPad.SetRightMargin(0.12)
     plotPad.SetBottomMargin(0.05)
-    plotPad.SetTopMargin(0.04)
+    plotPad.SetTopMargin(0.05)
     plotPad.Draw()
     canv.cd(1)
     plot.Draw()
+    if plotLabelText and plotIt < 2 :
+        plotLabel.SetTextSize( 0.92 / 0.68 * 0.072 )
+        plotLabel.DrawLatexNDC( 0.818, 0.825, plotLabelText )
 
     # draw residuals
-    residPlot.SetLabelSize( 68. / 32. * 0.06,  'x' )
-    residPlot.SetLabelSize( 68. / 32. * 0.06,  'y' )
-    residPlot.SetTitleSize( 68. / 32. * 0.072, 'x' )
-    residPlot.SetLabelOffset( 0.09, 'x' )
+    residPlot.SetLabelSize( 0.92 / 0.32 * 0.060, 'x' )
+    residPlot.SetLabelSize( 0.92 / 0.32 * 0.060, 'y' )
+    residPlot.SetTitleSize( 0.92 / 0.32 * 0.072, 'x' )
+    residPlot.SetLabelOffset( 0.08, 'x' )
     residPlot.SetLabelOffset( 0.01, 'y' )
-    residPlot.SetTitleOffset( 1.4, 'x' )
+    residPlot.SetTitleOffset( 1.2, 'x' )
     canv.cd()
     residName = name + '_resid'
     residPad = TPad( residName, residName, 0, 0, 1, 0.32 )
     residPad.SetNumber(2)
     residPad.SetLeftMargin(0.18)
-    residPad.SetRightMargin(0.10)
-    residPad.SetBottomMargin(0.45)
-    residPad.SetTopMargin(0.05)
+    residPad.SetRightMargin(0.12)
+    residPad.SetBottomMargin(0.54)
+    residPad.SetTopMargin(0.06)
     residPad.Draw()
     canv.cd(2)
     residPlot.Draw()
-
-    if plotLabelText and plotIt < 2 :
-        canv.cd()
-        plotLabel.DrawLatexNDC( 0.87, 0.88, plotLabelText )
 
     canv.Print(plotsFilePathOut)
 
