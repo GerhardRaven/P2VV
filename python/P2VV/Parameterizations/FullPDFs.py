@@ -2228,14 +2228,17 @@ def buildBs2JpsiphiSignalPdf( self, **kwargs ) :
                     , tagCatCoefs = self['taggingParams']['tagCatCoefs']
                    )
 
+    assert all( timeBasisCoefs[comp][ind] and not timeBasisCoefs[comp][abs(ind - 1)]\
+           for comp, ind in [ ( 'cosh', 0 ), ( 'sinh', 0 ), ( 'cos', 1 ), ( 'sin', 1 ) ] )\
+           , 'P2VV - ERROR: buildBs2JpsiphiSignalPdf(): in the standard RooBTagDecay it is assumed that the "cosh" and "sinh" coefficients don\'t flip sign between B and Bbar and the "cos" and "sin" coefficients do'
     args.update(  time                   = observables['time']
                 , tau                    = self['lifetimeParams']['MeanLifetime']
                 , dGamma                 = self['lifetimeParams']['dGamma']
                 , dm                     = self['lifetimeParams']['dM']
-                , coshCoef               = timeBasisCoefs['cosh']
-                , sinhCoef               = timeBasisCoefs['sinh']
-                , cosCoef                = timeBasisCoefs['cos']
-                , sinCoef                = timeBasisCoefs['sin']
+                , coshCoef               = timeBasisCoefs['cosh'][0]
+                , sinhCoef               = timeBasisCoefs['sinh'][0]
+                , cosCoef                = timeBasisCoefs['cos'][1]
+                , sinCoef                = timeBasisCoefs['sin'][1]
                 , resolutionModel        = self['timeResModels']['prototype']['model']
                 , ConditionalObservables = self['amplitudes'].ConditionalObservables()\
                                            | self['timeResModels']['prototype'].ConditionalObservables()\

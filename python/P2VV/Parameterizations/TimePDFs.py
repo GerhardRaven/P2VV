@@ -118,10 +118,12 @@ class JpsiphiBTagDecayBasisCoefficients( BDecayBasisCoefficients ) :
         args = dict()
         for tCoefType in [ 'cosh', 'sinh', 'cos', 'sin' ] :
             # NOTE: 'Amplitudes' must be traversed 'in order' : A0, Apar, Aperp, AS, so we cannot use Amplitudes.keys() out of the box
-            args[ tCoefType ] = self._parseArg( '%sCoef' % tCoefType, { }, ObjectType = 'Addition'
-                                               , Arguments = [ term for ( i, j ) in cwr( Order, 2 )\
-                                                               for term in combine( tCoefType, AngFuncs, Amplitudes, CPParams, i, j ) ]
-                                              )
+            coef = self._parseArg( '%sCoef' % tCoefType, { }, ObjectType = 'Addition'
+                                  , Arguments = [ term for ( i, j ) in cwr( Order, 2 )\
+                                                  for term in combine( tCoefType, AngFuncs, Amplitudes, CPParams, i, j ) ]
+                                 )
+            # same B/Bbar sign for cosh and sinh coefficients ("even"), opposite B/Bbar sign for cos and sin coefficients ("odd")
+            args[ tCoefType ] = ( coef, None ) if tCoefType in [ 'cosh', 'sinh' ] else ( None, coef )
 
         BDecayBasisCoefficients.__init__( self, **args )
 

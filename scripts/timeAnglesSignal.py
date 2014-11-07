@@ -111,6 +111,9 @@ from P2VV.Parameterizations.TimePDFs import JpsiphiBTagDecayBasisCoefficients
 timeBasisCoefs = JpsiphiBTagDecayBasisCoefficients( angleFuncs.functions, transAmps, lambdaCP, [ 'A0', 'Apar', 'Aperp', 'AS' ] ) 
 
 # build the B_s -> J/psi phi signal PDF
+assert all( timeBasisCoefs[comp][ind] and not timeBasisCoefs[comp][abs(ind - 1)]\
+       for comp, ind in [ ( 'cosh', 0 ), ( 'sinh', 0 ), ( 'cos', 1 ), ( 'sin', 1 ) ] )\
+       , 'in the standard RooBTagDecay it is assumed that the "cosh" and "sinh" coefficients don\'t flip sign between B and Bbar and the "cos" and "sin" coefficients do'
 args = {
     'time'            : time
   , 'iTag'            : iTag
@@ -121,10 +124,10 @@ args = {
   , 'ADilWTag'        : taggingParams['ADilWTag']
   , 'avgCEven'        : taggingParams['avgCEven']
   , 'avgCOdd'         : taggingParams['avgCOdd']
-  , 'coshCoef'        : timeBasisCoefs['cosh']
-  , 'sinhCoef'        : timeBasisCoefs['sinh']
-  , 'cosCoef'         : timeBasisCoefs['cos']
-  , 'sinCoef'         : timeBasisCoefs['sin']
+  , 'coshCoef'        : timeBasisCoefs['cosh'][0]
+  , 'sinhCoef'        : timeBasisCoefs['sinh'][0]
+  , 'cosCoef'         : timeBasisCoefs['cos'][1]
+  , 'sinCoef'         : timeBasisCoefs['sin'][1]
   , 'resolutionModel' : timeResModel['model']
 }
 

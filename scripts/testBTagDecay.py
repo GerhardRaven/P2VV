@@ -6,6 +6,8 @@ numEvents     = 10000  # -1 to read dataset from file
 dataFilePath  = 'testBTagDecay.root'
 plotsFilePath = 'testBTagDecay.pdf'
 
+generalTagging = True
+
 phis         = 0.8
 lambdas      = 1.
 wrongTagProb = 0.1
@@ -54,27 +56,69 @@ timeBasisCoefs = TimeBasisCoefs( angleFuncs.functions, amplitudes, lambdaCP, amp
 
 # tagging observables and parameters
 from P2VV.RooFitWrappers import Category
-observables['iTag'] = Category( Name = 'iTag', Title = 'flavour tag', States = { 'B' : +1, 'Bbar' : -1 } )
+observables['iTag'] = Category( Name = 'iTag', Title = 'flavour tag', States = { 'B' : +1, 'Bbar' : -1 }, Observable = True )
 from P2VV.Parameterizations.FlavourTagging import WTag_TaggingParams as TaggingParams
 taggingParams = TaggingParams()
 taggingParams.parameter('wTag').setVal(wrongTagProb)
 
-# build signal PDF
+# time PDF arguments
 pdfArgs = dict(  time            = observables['time']
-               , iTag            = observables['iTag']
                , tau             = lifetimeParams['MeanLifetime']
                , dGamma          = lifetimeParams['dGamma']
                , dm              = lifetimeParams['dM']
-               , dilution        = taggingParams['dilution']
-               , ADilWTag        = taggingParams['ADilWTag']
-               , avgCEven        = taggingParams['avgCEven']
-               , avgCOdd         = taggingParams['avgCOdd']
-               , coshCoef        = timeBasisCoefs['cosh']
-               , sinhCoef        = timeBasisCoefs['sinh']
-               , cosCoef         = timeBasisCoefs['cos']
-               , sinCoef         = timeBasisCoefs['sin']
                , resolutionModel = resModel['model']
               )
+
+if generalTagging :
+    # check if there are no B/Bbar asymmetries provided (not implemented yet)
+    for par in [ 'ADilWTag', 'avgCEven', 'avgCOdd' ] :
+        assert taggingParams[par].ClassName() == 'RooConstVar'\
+               and abs( taggingParams[par].getVal() - ( 1. if par == 'avgCEven' else 0. ) ) < 1.e-10\
+               , 'no B/Bbar asymmetries implemented'
+
+    # loop over the four time coefficients
+    for comp in [ 'cosh', 'sinh', 'cos', 'sin' ] :
+        if timeBasisCoefs[comp][1] :
+            # multiply "odd" time coefficient by tagging factors: q*D*C_O
+            from P2VV.RooFitWrappers import Product, Addition, RealCategory
+            oddCoef = Product(  Name = comp + 'Coef_odd'
+                              , Arguments = [  RealCategory( 'iTag_real', observables['iTag'] )
+                                             , taggingParams['dilution']
+                                             , timeBasisCoefs[comp][1]
+                                            ]
+                             )
+            if timeBasisCoefs[comp][0] :
+                # build sum of "even" and "odd" coefficient
+                coef = Addition( Name = comp + 'Coef_evenOdd', Arguments = [ timeBasisCoefs[comp][0], oddCoef ] )
+            else :
+                # only an "odd" coefficient
+                coef = oddCoef
+        else :
+            # only an "even" coefficient
+            assert timeBasisCoefs[comp][0], 'no time-PDF coefficients found for "%s" component' % comp
+            coef = timeBasisCoefs[comp][0]
+
+        pdfArgs[ comp + 'Coef' ] = coef
+
+else :
+    # provide time coefficients and tagging arguments separately
+    assert all( timeBasisCoefs[comp][ind] and not timeBasisCoefs[comp][abs(ind - 1)]\
+                for comp, ind in [ ( 'cosh', 0 ), ( 'sinh', 0 ), ( 'cos', 1 ), ( 'sin', 1 ) ] )\
+           , 'in the standard RooBTagDecay it is assumed that the "cosh" and "sinh" coefficients don\'t flip sign between B and Bbar and the "cos" and "sin" coefficients do'
+    pdfArgs.update(
+        dict(  coshCoef = timeBasisCoefs['cosh'][0]
+             , sinhCoef = timeBasisCoefs['sinh'][0]
+             , cosCoef  = timeBasisCoefs['cos'][1]
+             , sinCoef  = timeBasisCoefs['sin'][1]
+             , iTag     = observables['iTag']
+             , dilution = taggingParams['dilution']
+             , ADilWTag = taggingParams['ADilWTag']
+             , avgCEven = taggingParams['avgCEven']
+             , avgCOdd  = taggingParams['avgCOdd']
+            )
+    )
+
+# build signal PDF
 from P2VV.RooFitWrappers import BTagDecay
 pdf = BTagDecay( 'sig_t_angles', **pdfArgs )
 
@@ -93,10 +137,14 @@ pdf.getVariables().Print('v')
 
 # set maximum value of PDF for generating angles with accept/reject (is 0.1 a good value?!!)
 pdf.setMaxVal(0.1)
+#pdf.setConditionalObservables( set( [ observables['iTag'] ] ) )
 
 from ROOT import TFile
 if numEvents > 0 :
     # generate data
+    if generalTagging :
+        from P2VV.Load import MultiCatGen
+
     print 'generating %d events' % numEvents
     data = pdf.generate( [ observables[name] for name in [ 'time', 'iTag', 'cpsi', 'ctheta', 'phi' ] ], numEvents, Name = 'JpsiphiData' )
     dataFile = TFile.Open( dataFilePath, 'RECREATE' )
