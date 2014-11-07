@@ -1,6 +1,6 @@
 dataSetPath   = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_20140309.root'
 dataSetName   = 'JpsiKK_sigSWeight'
-plotsFilePath = 'sigWeights.ps'
+plotsFilePath = 'sigWeights.pdf'
 massName      = 'mass'
 hlt2BName     = 'hlt2_biased'
 wMCName       = 'wMC'
@@ -37,7 +37,9 @@ for obsSet in dataSet :
         weightVals['MCNB'].append( dataSet.weight() )
 
 # create weights vs. mass graphs
+from ROOT import gStyle
 from P2VV.Load import LHCbStyle
+gStyle.SetColorModelPS(1)
 from array import array
 massArrs   = dict( [ ( sample, array( 'd', massVals[sample]   ) ) for sample in plotSamples ] )
 weightArrs = dict( [ ( sample, array( 'd', weightVals[sample] ) ) for sample in plotSamples ] )
@@ -55,8 +57,9 @@ for sample, graph in graphs.iteritems() :
     graph.GetXaxis().SetLimits( mass.getMin(), mass.getMax() )
     graph.GetXaxis().SetTitle('m(J/#psi K^{+}K^{-}) [MeV/c^{2}]')
     graph.GetYaxis().SetTitle('signal weight')
-    graph.GetXaxis().SetTitleOffset(1.1)
-    graph.GetYaxis().SetTitleOffset(0.9)
+    graph.GetXaxis().SetTitleOffset(1.2)
+    graph.GetYaxis().SetTitleOffset(1.0)
+    graph.GetYaxis().SetNdivisions(6, 5, 0)
 
 # draw graphs
 from ROOT import TCanvas, TLine
