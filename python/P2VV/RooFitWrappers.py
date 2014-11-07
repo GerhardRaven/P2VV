@@ -1550,8 +1550,8 @@ class BTagDecay( Pdf ) :
                                               " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % argDict
                          )
 
-        else :
-            # no tagging categories
+        elif 'iTag' in kwargs :
+            # tagging without tagging categories
             for argName in [  'time', 'iTag', 'tau', 'dGamma', 'dm'
                             , 'dilution', 'ADilWTag', 'avgCEven', 'avgCOdd'
                             , 'coshCoef', 'sinhCoef', 'cosCoef', 'sinCoef'
@@ -1561,6 +1561,19 @@ class BTagDecay( Pdf ) :
 
             self._declare("BTagDecay::%(Name)s( %(time)s, %(iTag)s, %(tau)s, %(dGamma)s, %(dm)s,"\
                                               " %(dilution)s, %(ADilWTag)s, %(avgCEven)s, %(avgCOdd)s,"\
+                                              " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s,"\
+                                              " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % argDict
+                         )
+
+        else :
+            # no tagging
+            for argName in [  'time', 'tau', 'dGamma', 'dm'
+                            , 'coshCoef', 'sinhCoef', 'cosCoef', 'sinCoef'
+                            , 'resolutionModel', 'decayType', 'checkVars'
+                           ] :
+                if argName not in argDict or argName in kwargs : argDict[argName] = convert( kwargs.pop(argName) )
+
+            self._declare("BTagDecay::%(Name)s( %(time)s, %(tau)s, %(dGamma)s, %(dm)s,"\
                                               " %(coshCoef)s, %(sinhCoef)s, %(cosCoef)s, %(sinCoef)s,"\
                                               " %(resolutionModel)s, %(decayType)s, %(checkVars)s )" % argDict
                          )
