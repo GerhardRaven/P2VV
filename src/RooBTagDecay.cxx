@@ -943,8 +943,8 @@ Int_t RooBTagDecay::getCoefAnalyticalIntegral(Int_t coef, RooArgSet& allVars,
     bool odd = ( coef == _sinhBasis || coef == _sinBasis );
     if (odd && _tags > 1 ) return 0;
     
-    intCode += 32 * coefArg(coef).getAnalyticalIntegral(intVars, analVars,
-        rangeName);
+    intCode += 32 * coefArg(coef).getAnalyticalIntegralWN(intVars, analVars,
+        0, rangeName);
   }
 
   // return the integration code if there are no explicit tags
@@ -1001,7 +1001,9 @@ Double_t RooBTagDecay::coefAnalyticalIntegral(Int_t coef, Int_t code,
   // determine if basis function is even or odd
   Bool_t odd = coef == _cosBasis || coef == _sinBasis;
   if (odd && _tags>1) return 0;
-  coefInt = (coefCode!=0?coefArg(coef).analyticalIntegral(coefCode, rangeName):coefArg(coef).getVal());
+  coefInt = (coefCode != 0 ?
+      coefArg(coef).analyticalIntegralWN(coefCode, 0, rangeName)
+      : coefArg(coef).getVal());
 
   // return the integral if we don't have to evaluate explicit tags
   if (_tags < 1 || coefInt == 0.) return coefInt;
