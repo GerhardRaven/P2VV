@@ -8,7 +8,7 @@ massPlotRange = ( 5300., 5440. ) #( 5200., 5550. ) #( 5300., 5440. )
 binSize = 2.5
 
 #cutKeys = [ 'none', 'trigger', 'vertex', 'KKPT', 'time', 'all' ]
-cutKeys = [ 'trigger', 'vertex', 'KKPT', 'time', 'all' ]
+cutKeys = [ 'trigger', 'KKPT', 'vertex', 'time', 'all' ]
 cuts = dict(  muPID       = 'min(muplus_PIDmu,muminus_PIDmu) > 0.'
             , muTrack     = 'muplus_TRACK_CHI2NDOF < 4. && muminus_TRACK_CHI2NDOF < 4.'
             , muPT        = 'min(muplus_PT,muminus_PT) > 500.'
@@ -26,16 +26,17 @@ cuts = dict(  muPID       = 'min(muplus_PIDmu,muminus_PIDmu) > 0.'
                             + ' && (muminus_TRACK_CloneDist < 0. || muminus_TRACK_CloneDist > 5000.)'
                             + ' && (Kplus_TRACK_CloneDist < 0. || Kplus_TRACK_CloneDist > 5000.)'
                             + ' && (Kminus_TRACK_CloneDist < 0. || Kminus_TRACK_CloneDist > 5000.)'
-            , decTime     = 'B_s0_LOKI_DTF_CTAU/0.299792458 > 0.3 && B_s0_LOKI_DTF_CTAU/0.299792458 < 14.'
+            , decTime     = 'B_s0_LOKI_DTF_CTAU/0.299792458 > 0.3'
+            , decTimeMax  = 'B_s0_LOKI_DTF_CTAU/0.299792458 < 14.'
             , decTimeRes  = 'B_s0_LOKI_DTF_CTAUERR/0.299792458 < 0.12'
             , HLT1        = '(B_s0_Hlt1DiMuonHighMassDecision_TOS == 1 || B_s0_Hlt1TrackMuonDecision_TOS == 1 || B_s0_Hlt1TrackAllL0Decision_TOS == 1)'
             , HLT2        = '(B_s0_Hlt2DiMuonJPsiDecision_TOS == 1 || B_s0_Hlt2DiMuonDetachedJPsiDecision_TOS == 1)'
            )
 cutCombs = dict(  none    = [ 'psiKKMass' ]
                 , trigger = [ 'psiKKMass', 'HLT1', 'HLT2' ]
-                , vertex  = [ 'psiKKMass', 'HLT1', 'HLT2', 'psiKKVertex' ]
-                , KKPT    = [ 'psiKKMass', 'HLT1', 'HLT2', 'psiKKVertex', 'KKPT' ]
-                , time    = [ 'psiKKMass', 'HLT1', 'HLT2', 'psiKKVertex', 'KKPT', 'decTime' ]
+                , KKPT    = [ 'psiKKMass', 'HLT1', 'HLT2', 'KKPT' ]
+                , vertex  = [ 'psiKKMass', 'HLT1', 'HLT2', 'KKPT', 'psiKKVertex' ]
+                , time    = [ 'psiKKMass', 'HLT1', 'HLT2', 'KKPT', 'psiKKVertex', 'decTime' ]
                 , all     = [ name for name in cuts.keys() ]
                )
 
@@ -101,19 +102,19 @@ bkgMassComps += bkgMass.pdf()
 from P2VV.RooFitWrappers import buildPdf
 massPdf = buildPdf( [ sigMassComps, bkgMassComps ], Observables = [ mass ], Name = 'JpsiKKMass' )
 
-ws['N_sigMass'].setVal(126.e3)
-ws['m_sig_mean'].setVal(5368.3)
-ws['m_sig_sigma_1'].setVal(6.)
-ws['m_sig_sigma_2'].setVal(18.)
-ws['m_sig_frac'].setVal(0.7)
-ws['m_bkg_exp'].setVal(-0.0013)
+ws['N_sigMass'].setVal(123.e3)
+ws['m_sig_mean'].setVal(5368.2)
+ws['m_sig_sigma_1'].setVal(5.6)
+ws['m_sig_sigma_2'].setVal(14.)
+ws['m_sig_frac'].setVal(0.65)
+ws['m_bkg_exp'].setVal(-0.0015)
 massPdf.getVariables().Print('v')
 
 print 'draw mass plots'
 from P2VV.Load import LHCbStyle
 from ROOT import gStyle, TCanvas, kFullDotLarge, kBlack, kBlue, kGreen, kRed, kYellow
 gStyle.SetColorModelPS(1)
-colours = dict( none = kBlack, trigger = kBlack, vertex = kBlue, KKPT = kGreen + 3, time = kYellow + 3, all = kRed )
+colours = dict( none = kBlack, trigger = kBlack, KKPT = kBlue, vertex = kGreen + 3, time = kYellow + 3, all = kRed )
 nBins = int( ( massPlotRange[1] - massPlotRange[0] ) / binSize )
 binWidth = ( massPlotRange[1] - massPlotRange[0] ) / float(nBins)
 plots = dict( [ ( key, dataSets[key].get().find('mass').frame( massPlotRange[0], massPlotRange[1], nBins ) ) for key in cutKeys ] )
@@ -137,8 +138,9 @@ for keyIt, key in enumerate(cutKeys) :
     massPdf.plotOn( plots[key], LineWidth = 3, LineColor = colours[key] )
 
     plots[key].SetMinimum(0.)
+    plots[key].GetYaxis().SetNdivisions( 5, 5, 0 )
     plots[key].SetXTitle('m(J/#psi K^{+}K^{-}) [MeV/c^{2}]')
-    plots[key].SetYTitle( 'Decays / (%.1f MeV/c^{2})' % binWidth )
+    plots[key].SetYTitle( 'Candidates / (%.1f MeV/c^{2})' % binWidth )
     plots[key].SetLabelOffset( 0.03, 'x' )
     plots[key].SetLabelOffset( 0.01, 'y' )
     plots[key].SetTitleOffset( 1.2,  'x' )
