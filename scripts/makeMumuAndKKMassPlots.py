@@ -2,12 +2,12 @@
 ## Script options ##
 ####################
 
-dataSetName = 'JpsiKK_sigSWeight'
-dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_20140309.root'
+dataSetFile = '/project/bfys/jleerdam/data/Bs2Jpsiphi/Reco14/P2VVDataSets20112012Reco14_I2Mass_6KKMassBins_2TagCats_20140619.root'
 
 mumuPlotsFilePath = 'mumuMass.pdf'
 KKPlotsFilePath   = 'KKMass.pdf'
 
+drawTotalDists = True
 fitOpts = dict( NumCPU = 8, Optimize = 2, Timer = True, Minimizer = 'Minuit2', Strategy = 1, Offset = True )
 
 from ROOT import gStyle, kFullCircle, kSolid, kBlue, kRed, kMagenta
@@ -30,7 +30,11 @@ ws = RooObject( workspace = 'JpsiphiWorkspace' ).ws()
 
 # read data set from file
 from P2VV.Utilities.DataHandling import readData
-sigData = readData( filePath = dataSetFile, dataSetName = dataSetName, NTuple = False )
+if drawTotalDists:
+    data = readData( filePath = dataSetFile, dataSetName = 'JpsiKK', NTuple = False )
+    data = data.reduce('hlt2_biased==1 && mass>5338. && mass<5398.')
+    data.Print()
+sigData = readData( filePath = dataSetFile, dataSetName = 'JpsiKK_sigSWeight', NTuple = False )
 sigData = sigData.reduce('hlt2_biased==1')
 sigData.Print()
 
@@ -95,7 +99,9 @@ mumuMassPlot = mumuMass.frame(60)
 #sigArgs = {'Components':'sig_mumu', 'LineColor':kRed,     'LineStyle':10, 'LineWidth':3}
 #bkgArgs = {'Components':'bkg_mumu', 'LineColor':kGreen+3, 'LineStyle': 2, 'LineWidth':3}
 
-sigData.plotOn( mumuMassPlot, MarkerStyle = kFullCircle, MarkerSize = 0.7, LineWidth = 3)
+if drawTotalDists :
+    data.plotOn( mumuMassPlot, MarkerStyle = kFullCircle, MarkerSize = 0.5, MarkerColor = kRed, LineWidth = 2, LineColor = kRed )
+sigData.plotOn( mumuMassPlot, MarkerStyle = kFullCircle, MarkerSize = 0.5, LineWidth = 2)
 mumuMassPdf.plotOn(mumuMassPlot, LineWidth = 3)
 #mumuMassPdf.plotOn(mumuMassPlot, **sigArgs)
 #mumuMassPdf.plotOn(mumuMassPlot, **bkgArgs)
@@ -104,7 +110,7 @@ binWidth = ( mumuMassPlot.GetXaxis().GetXmax() - mumuMassPlot.GetXaxis().GetXmin
 mumuMassPlot.SetXTitle('m(#mu^{+}#mu^{-}) [MeV/c^{2}]')
 mumuMassPlot.SetYTitle('Candidates / (%.2g MeV/c^{2})' % binWidth )
 mumuMassPlot.SetMinimum(0.)
-mumuMassPlot.SetMaximum(6200.)
+mumuMassPlot.SetMaximum( 6200. if not drawTotalDists else 8000. )
 mumuMassPlot.SetTitleOffset( 1.10, 'x' )
 mumuMassPlot.SetTitleOffset( 1.15, 'y' )
 
@@ -185,7 +191,9 @@ fitResult.PrintSpecial( text = True )
 #Plot
 KKMassPlot = KKMassVar.frame(120)
 
-sigData.plotOn( KKMassPlot, MarkerStyle = kFullCircle, MarkerSize = 0.7, LineWidth = 3 )
+if drawTotalDists :
+    data.plotOn( KKMassPlot, MarkerStyle = kFullCircle, MarkerSize = 0.5, MarkerColor = kRed, LineWidth = 2, LineColor = kRed )
+sigData.plotOn( KKMassPlot, MarkerStyle = kFullCircle, MarkerSize = 0.5, LineWidth = 2 )
 KKMassPdf.plotOn( KKMassPlot, LineStyle = kSolid, LineWidth = 3, LineColor = kBlue                                   )
 #KKMassPdf.plotOn( KKMassPlot, LineStyle = 7,      LineWidth = 3, LineColor = kRed,         Components = 'phiMassPdf' )
 #KKMassPdf.plotOn( KKMassPlot, LineStyle = 5,      LineWidth = 3, LineColor = kMagenta + 3, Components = 'KKSWavePdf' )
@@ -194,7 +202,7 @@ binWidth = ( KKMassPlot.GetXaxis().GetXmax() - KKMassPlot.GetXaxis().GetXmin() )
 KKMassPlot.SetXTitle('m(K^{+}K^{-}) [MeV/c^{2}]')
 KKMassPlot.SetYTitle('Candidates / (%.2g MeV/c^{2})' % binWidth )
 KKMassPlot.SetMinimum(0.)
-KKMassPlot.SetMaximum(6200.)
+KKMassPlot.SetMaximum( 6200. if not drawTotalDists else 7000. )
 KKMassPlot.SetTitleOffset( 1.10, 'x' )
 KKMassPlot.SetTitleOffset( 1.15, 'y' )
 
@@ -210,7 +218,7 @@ if labelText : label.DrawLatexNDC( 0.25, 0.85, labelText )
 KKMassCanv.Print( KKPlotsFilePath + '(' )
 
 KKMassPlot.SetMinimum(1.e1)
-KKMassPlot.SetMaximum(2.e4)
+KKMassPlot.SetMaximum(1.e4)
 KKMassPlot.SetTitleOffset( 1.0, 'y' )
 
 KKMassCanvLog = TCanvas('KKMassCanvLog')
